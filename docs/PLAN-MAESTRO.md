@@ -1,4 +1,4 @@
-# OZ Browser — Plan Maestro v2 (reestructurado)
+# OZ Browser — Plan Maestro v2.1 (reestructurado)
 
 **Fecha:** 2026-05-09
 **Estado:** Etapa 0 ✅ · Bloque 1.1 ✅ · Bloque 1.2 ~70% (sidebar + lazy tabs + identity manager + logger + error popup hechos; falta integración con todo lo nuevo descubierto)
@@ -7,21 +7,48 @@ Este documento reemplaza `04-Plan-en-Etapas.md` como fuente única de verdad. Lo
 
 ---
 
-## 0. Resumen ejecutivo
+## 0. Caso de uso primario (la razón por la que existe OZ Browser)
 
-OZ Browser es un clon-mejor de Ghost Browser, vendido como SaaS más barato. El stack es **Electron 37/42 + electron-browser-shell + IdentityManager + WorkspaceManager + FingerprintEngine + Cloud Sync**. Todo el código vive en módulos chicos y bien separados. El plan tiene **10 etapas**, cada una útil por sí sola.
+> **Manejar 50+ cuentas de redes sociales al mismo tiempo, todas logoneadas, todas persistidas, con sus claves seguras y exportables/importables a Excel.**
+
+Ejemplo concreto: Jose tiene 50 cuentas de X (Twitter), las quiere abiertas TODAS al mismo tiempo en un Workspace, cada una con su proxy mobile dedicado, cada una **logoneada y que se quede logoneada sin desloguearse**, claves guardadas, listables/exportables a Excel para administrarlas.
+
+Funcionalidad core derivada (Bloque 1.10 — la columna vertebral del producto):
+1. **Account Vault** — credenciales (username + password + 2FA seed) cifradas con AES-256-GCM, encriptadas con master password (derivado con scrypt) o macOS Keychain.
+2. **Auto-fill por Identity** — al cargar una página de login conocida (X, Instagram, FB, TikTok, LinkedIn, YouTube, Reddit, Threads, Telegram, Discord), se inyectan las credenciales de esa Identity.
+3. **Auto-save** — al detectar form submission en login, popup "guardar credenciales para Identity X / Workspace Y?".
+4. **Anti-logout robusto** — extender cookie expiry de session cookies a 1 año en dominios de redes sociales (Ghost no hace esto). Health check pasivo (visita el feed cada N días para mantener sesión warm). Detección + auto-relogin si una sesión muere.
+5. **Excel Export** — `.xlsx` con: Workspace, Identity, Site, Username, Password, Last Login, Status, Notes, Cookies Count, Last IP del proxy. Usa SheetJS.
+6. **Excel Import con 3 modos:**
+   a) **PERMANENT MERGE** — agrega las identities y cuentas al estado actual.
+   b) **EPHEMERAL SESSION** — sessions in-memory (no persist), abre tabs, al cerrar todo se descarta, Mac queda como estaba (modo "viaje").
+   c) **NEW WORKSPACE** — agrega como workspace dedicado, sin tocar los existentes.
+7. **Bulk identity creation desde Excel/CSV** — importas N filas y se crean N identities con auto-login. Onboarding de 50 cuentas en un click.
+8. **Site templates** — selectores CSS conocidos por plataforma para form fields, login button, "logged in" detection.
+9. **Cap de 25 identities por workspace de Ghost → REMOVIDO** (palette de colores generada algorítmicamente; sidebar con virtual scroll para soportar 50+).
+
+Esto NO es una feature más. **Es el producto.** Todo lo demás (workspaces, proxies, antidetect, sync) existe para servir este flujo.
+
+---
+
+## 1. Resumen ejecutivo
+
+OZ Browser es un clon-mejor de Ghost Browser, vendido como SaaS más barato, **enfocado en gestión masiva de cuentas de redes sociales**. El stack es **Electron 37/42 + electron-browser-shell + IdentityManager + WorkspaceManager + FingerprintEngine + AccountVault + Cloud Sync**. Todo el código vive en módulos chicos y bien separados. El plan tiene **10 etapas**, cada una útil por sí sola.
 
 **Lo que vamos a hacer mejor que Ghost** (nuestros diferenciadores reales, no hype):
-1. Pasar Pixelscan/CreepJS por default (Ghost falla — Trustpilot 2.9)
-2. Sync E2E real en la nube (Ghost solo sincroniza a una carpeta tipo Dropbox)
-3. Multi-window workspaces de verdad (Ghost obliga a usar profiles separados)
-4. Cancelación self-service real (Ghost cobra después de "deactivate")
-5. Per-identity timezone/locale/geo automático del proxy (Ghost lo hace global)
-6. Templates de proveedores de proxies (Bright Data, Smartproxy, Oxylabs, IPRoyal)
-7. Health-check automático de proxies con auto-disable
-8. CDP endpoint para Puppeteer/Playwright (Ghost no tiene automation API)
-9. Multi-extension SIN whitelist hardcodeada (Ghost solo permite ~7 extensions)
-10. Bandwidth meter por proxy/identity
+1. **Account Vault + auto-fill + anti-logout + Excel import/export** ← Ghost no tiene nada de esto, es nuestro #1 moat
+2. Pasar Pixelscan/CreepJS por default (Ghost falla — Trustpilot 2.9)
+3. Sync E2E real en la nube (Ghost solo sincroniza a una carpeta tipo Dropbox)
+4. Multi-window workspaces de verdad (Ghost obliga a usar profiles separados)
+5. Cancelación self-service real (Ghost cobra después de "deactivate")
+6. Per-identity timezone/locale/geo automático del proxy (Ghost lo hace global)
+7. Templates de proveedores de proxies (Bright Data, Smartproxy, Oxylabs, IPRoyal)
+8. Health-check automático de proxies con auto-disable
+9. CDP endpoint para Puppeteer/Playwright (Ghost no tiene automation API)
+10. Multi-extension SIN whitelist hardcodeada (Ghost solo permite ~7 extensions)
+11. Bandwidth meter por proxy/identity
+12. **Modo Ephemeral Session** — abre 50 cuentas desde un Excel, las usas, cierras, Mac queda limpia (Ghost no tiene)
+13. **Cap de 25 Temporary Identities por workspace REMOVIDO** (Ghost lo tiene hardcodeado a 25 colores)
 
 ---
 
@@ -46,6 +73,9 @@ oz-browser/
 │  ├─ workspace-manager.js    🚧      # Workspace CRUD + freeze/archive
 │  ├─ proxy-manager.js        🚧      # Pool, bulk import, auto-assign, health
 │  ├─ fingerprint-engine.js   🚧      # Per-identity coherent fingerprint
+│  ├─ account-vault.js        🆕      # 🌟 CORE: cred storage + auto-fill + anti-logout
+│  ├─ site-templates.js       🆕      # CSS selectors para X/IG/FB/TikTok/LinkedIn/YT/Reddit
+│  ├─ excel-io.js             🆕      # Import/export Excel (.xlsx) con SheetJS
 │  ├─ extension-manager.js    🚧      # Multi-extension per identity
 │  │
 │  ├─ tabs.js                 ✅      # Tab + Tabs (lazy materialization)
@@ -288,6 +318,70 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
   3. Confirm overwrite
   4. App reinicia con datos restaurados — TODO funciona idéntico (logins, cookies, proxies, identidades, workspaces)
 - Edge case: import desde otra mac/PC con paths distintos — mapping handler
+
+#### 🆕 Bloque 1.10 — Account Vault + Auto-fill + Excel I/O + Anti-logout (🌟 CORE)
+
+**Este es el bloque más importante del plan — es la razón por la que el producto existe.**
+
+**Modelo:**
+```js
+Account = {
+  id, identityId, workspaceId,
+  site, // 'x.com', 'instagram.com', 'facebook.com', etc.
+  username, passwordEncrypted, totpSecretEncrypted?,
+  cookies?, lastLoginAt, lastIp, status, // active/inactive/needs_relogin
+  notes, customFields
+}
+Vault = {
+  master_key_derived_with_scrypt_from_password,
+  encrypted_blob: AES-GCM(JSON.stringify(accounts), key)
+}
+```
+
+**Componentes:**
+
+1. **`account-vault.js`** — credenciales cifradas en disk (`data/vault.enc`). API: `getAccount(identityId, site)`, `saveAccount(...)`, `listAccounts(filter)`, `unlock(masterPassword)`, `lock()`. Master password se guarda en macOS Keychain (via `keytar`) — usuario solo lo escribe la primera vez.
+
+2. **`site-templates.js`** — selectores CSS y URLs por plataforma:
+   ```js
+   {
+     'x.com': {
+       loginUrl: 'https://x.com/i/flow/login',
+       usernameSelector: 'input[autocomplete="username"]',
+       passwordSelector: 'input[name="password"]',
+       submitSelector: '[data-testid="LoginForm_Login_Button"]',
+       loggedInIndicator: '[data-testid="SideNav_AccountSwitcher_Button"]',
+       sessionCookies: ['auth_token', 'ct0', 'twid'],
+     },
+     'instagram.com': {...},
+     'facebook.com': {...},
+     // X, Instagram, Facebook, TikTok, LinkedIn, YouTube, Reddit, Threads, Telegram, Discord
+   }
+   ```
+
+3. **Auto-fill** — content script inyectado en cada Identity. Cuando carga una página de login conocida, lee credentials del vault y rellena.
+
+4. **Auto-save** — interceptar form submissions; popup "Save credentials para Identity X?".
+
+5. **Anti-logout robusto:**
+   - Hook a `webContents.session.cookies.onChanged` — cuando cambia una session cookie de redes sociales, EXTENDER expiry a 1 año.
+   - Health check daemon: cada 6 días, navega passively al home de cada plataforma para refresh de session.
+   - Detección de logout: si tab navega a `/login` o session cookie vacía → `status='needs_relogin'` + notification + opción de auto-relogin.
+
+6. **Excel Export** — Settings → Accounts → Export. `.xlsx` columnas: Workspace, Identity, Site, Username, Password, 2FA Secret, Last Login, Status, Cookies Count, Last IP, Proxy, Notes. SheetJS hace el writeFile.
+
+7. **Excel Import** — Drag-drop .xlsx o file picker. Pre-visualiza N identities + cuentas. Pregunta modo:
+   - **PERMANENT MERGE** — agrega al estado actual (persist).
+   - **EPHEMERAL SESSION** — sessions in-memory (`session.fromPartition('memory:...')` o no-persist), al cerrar la app desaparece todo, Mac queda igual.
+   - **NEW WORKSPACE** — crea workspace dedicado.
+
+8. **Bulk identity creation** — importar Excel = crear N identities + asignar proxies + auto-login.
+
+9. **Identity cap remove** — Ghost tiene cap 25; nosotros generamos colores algorítmicamente (HSL espaciados), virtual scroll en sidebar para 100+.
+
+10. **Account Manager UI** — sección dedicada en sidebar y página completa en Settings. Search por username/site/identity. Filter por workspace/identity/site/status. Bulk actions: re-login all, export selected, delete.
+
+11. **Per-account proxy chip** — visual indicator del país de la IP por la que la cuenta está logoneada. Si proxy cambia y geo no match → warning.
 
 #### 🆕 Bloque 1.9 — Polish + bug fixes + extensions support en partitions
 - Extensions de Chrome Web Store funcionando en TODAS las identities (no solo Default)
