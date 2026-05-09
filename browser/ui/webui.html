@@ -245,6 +245,20 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
+      .identity-row.default .identity-name::after {
+        content: '·';
+        color: var(--text-muted);
+        margin-left: 6px;
+        font-weight: 400;
+      }
+      .identity-count {
+        flex: 0 0 auto;
+        font-size: 11px;
+        color: var(--text-muted);
+        font-variant-numeric: tabular-nums;
+        margin-right: 2px;
+      }
+      .identity-count.zero { opacity: 0.45; }
       .identity-name input {
         background: var(--bg-color);
         border: 1px solid var(--accent);
@@ -348,6 +362,174 @@
       }
       .ctx-menu button:hover { background: rgba(255,255,255,0.08); }
       .ctx-menu button.danger { color: var(--danger); }
+
+      /*----- IDENTITY EDITOR MODAL -----*/
+
+      .oz-modal[hidden] { display: none !important; }
+      .oz-modal {
+        position: fixed;
+        inset: 0;
+        z-index: 10000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .oz-modal-backdrop {
+        position: absolute;
+        inset: 0;
+        background: rgba(0,0,0,0.55);
+        backdrop-filter: blur(2px);
+      }
+      .oz-modal-window {
+        position: relative;
+        width: 420px;
+        max-width: calc(100% - 32px);
+        background: var(--bg-elevated);
+        border-radius: 10px;
+        box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+        padding: 18px 20px 16px;
+        color: var(--text-color);
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .oz-modal-window header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin: 0;
+      }
+      .oz-modal-window h2 {
+        margin: 0;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .oz-modal-close {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 16px;
+        cursor: pointer;
+        padding: 0 4px;
+      }
+      .oz-modal-close:hover { color: var(--text-color); }
+
+      .oz-modal label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+      }
+      .oz-modal input[type="text"],
+      .oz-modal textarea {
+        background: var(--bg-color);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 5px;
+        color: var(--text-color);
+        padding: 7px 9px;
+        font: inherit;
+        outline: none;
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 400;
+        user-select: text;
+      }
+      .oz-modal textarea {
+        resize: vertical;
+        min-height: 56px;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 11.5px;
+      }
+      .oz-modal input:focus,
+      .oz-modal textarea:focus { border-color: var(--accent); }
+      .oz-modal small {
+        color: var(--text-muted);
+        font-size: 11px;
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 400;
+        line-height: 1.4;
+      }
+
+      .color-swatches {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+      }
+      .color-swatches button {
+        width: 22px;
+        height: 22px;
+        border-radius: 50%;
+        border: 2px solid transparent;
+        cursor: pointer;
+        padding: 0;
+      }
+      .color-swatches button.selected {
+        border-color: var(--text-color);
+        box-shadow: 0 0 0 2px var(--bg-elevated), 0 0 0 3px var(--accent);
+      }
+
+      .oz-modal-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        margin-top: 4px;
+      }
+      .oz-modal-actions button {
+        padding: 7px 14px;
+        border-radius: 6px;
+        border: 1px solid transparent;
+        cursor: pointer;
+        font: inherit;
+        font-weight: 500;
+      }
+      .oz-btn-cancel {
+        background: transparent;
+        color: var(--text-muted);
+        border-color: rgba(255,255,255,0.12);
+      }
+      .oz-btn-cancel:hover { color: var(--text-color); }
+      .oz-btn-save {
+        background: var(--accent);
+        color: #fff;
+      }
+      .oz-btn-save:hover { background: #5a7be0; }
+      .oz-btn-secondary {
+        background: transparent;
+        color: var(--text-muted);
+        border-color: rgba(255,255,255,0.12);
+        font-size: 11px;
+        padding: 4px 9px;
+      }
+
+      .oz-modal .ua-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        justify-content: space-between;
+      }
+      .oz-modal .ua-row > span {
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+      }
+
+      .oz-modal-error {
+        background: rgba(248, 113, 113, 0.15);
+        color: var(--danger);
+        border-radius: 5px;
+        padding: 8px 10px;
+        font-size: 12px;
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 400;
+      }
     </style>
   </head>
   <body>
@@ -397,8 +579,47 @@
       <div id="oz-content"></div>
     </div>
 
+    <!-- Identity editor modal — managed by identity-editor.js -->
+    <div class="oz-modal" id="oz-identity-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div class="oz-modal-window" role="dialog" aria-modal="true" aria-labelledby="oz-identity-modal-title">
+        <header>
+          <h2 id="oz-identity-modal-title">Edit Identity</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">✕</button>
+        </header>
+        <div class="oz-modal-error" id="oz-identity-modal-error" hidden></div>
+        <form id="oz-identity-form" autocomplete="off">
+          <label>
+            Name
+            <input name="name" type="text" required maxlength="60" />
+          </label>
+          <label>
+            Color
+            <div class="color-swatches" id="oz-identity-swatches"></div>
+          </label>
+          <label>
+            <div class="ua-row">
+              <span>User-Agent (HTTP)</span>
+              <button type="button" class="oz-btn-secondary" id="oz-identity-ua-default">Use default</button>
+            </div>
+            <textarea name="userAgent" rows="3" placeholder="(default — Chromium picks the value)"></textarea>
+            <small id="oz-identity-ua-hint">
+              Sets the HTTP User-Agent header for this Identity's session.
+              Does <strong>not</strong> yet override <code>navigator.userAgent</code>
+              — full coherent fingerprint comes in Bloque 1.5. ADR 0010.
+            </small>
+          </label>
+          <div class="oz-modal-actions">
+            <button type="button" class="oz-btn-cancel" data-close>Cancel</button>
+            <button type="submit" class="oz-btn-save">Save</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
+    <script src="./identity-editor.js"></script>
     <script src="./sidebar.js"></script>
     <script src="./webui.js"></script>
   </body>

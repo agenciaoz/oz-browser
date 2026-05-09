@@ -10,7 +10,51 @@ function registerIpcHandlers(browser) {
   registerIdentityHandlers(browser)
   registerTabHandlers(browser)
   registerNavHandlers(browser)
+  registerUiHandlers(browser)
   log.info('ipc', 'All IPC handlers registered')
+}
+
+// ----- UI overlay control ---------------------------------------------------
+// WebContentsViews are native and render ON TOP of the WebUI HTML. To show
+// modals/overlays in the WebUI that need to cover the content area, we must
+// temporarily hide the active tab's view.
+
+function registerUiHandlers(browser) {
+  ipcMain.handle('oz:ui:setContentVisible', (event, visible) => {
+    log.info('ui', 'setContentVisible IPC called', { visible })
+
+    // Resolve the window from the SENDER webContents (which window's WebUI
+    // chrome invoked us), NOT from getFocusedWindow(). With multi-window,
+    // the OS focus may differ from where the modal lives — applying setVisible
+    // on the focused window's tab leaves the calling window's content visible
+    // and covers its own modal.
+    const senderWC = event.sender
+    const win = browser.windows.find(
+      (w) => w.window && w.window.webContents === senderWC,
+    )
+    if (!win) {
+      log.warn('ui', 'setContentVisible: sender webContents does not match any window', {
+        senderId: senderWC && senderWC.id,
+      })
+      return false
+    }
+    const tab = win.tabs && win.tabs.selected
+    if (!tab) {
+      log.warn('ui', 'setContentVisible: no selected tab', { windowId: win.id })
+      return false
+    }
+    if (!tab.view) {
+      log.warn('ui', 'setContentVisible: selected tab has no view (lazy?)', {
+        tabId: tab.id, materialized: tab.materialized,
+      })
+      return false
+    }
+    tab.view.setVisible(!!visible)
+    log.info('ui', 'tab.view.setVisible called', {
+      visible: !!visible, tabId: tab.id, windowId: win.id,
+    })
+    return true
+  })
 }
 
 // ----- Logging / error reporting from renderer ------------------------------
@@ -51,9 +95,19 @@ function registerIdentityHandlers(browser) {
   })
 
   ipcMain.handle('oz:identities:create', (_e, opts) => {
-    const ident = im().create(opts || {})
-    browser.broadcastToWebUI('oz:identities:changed')
-    return ident
+    try {
+      const ident = im().create(opts || {})
+      browser.broadcastToWebUI('oz:identities:changed')
+      return ident
+    } catch (err) {
+      // Surface a structured error so the renderer can show an inline message
+      // instead of a generic "An error occurred" popup.
+      if (err && err.code === 'IDENTITY_CAP_REACHED') {
+        return { __error: { code: err.code, message: err.message,
+          current: err.current, max: err.max } }
+      }
+      throw err
+    }
   })
 
   ipcMain.handle('oz:identities:rename', (_e, id, name) => {
@@ -64,6 +118,12 @@ function registerIdentityHandlers(browser) {
 
   ipcMain.handle('oz:identities:setColor', (_e, id, color) => {
     const ident = im().setColor(id, color)
+    if (ident) browser.broadcastToWebUI('oz:identities:changed')
+    return ident
+  })
+
+  ipcMain.handle('oz:identities:update', (_e, id, patch) => {
+    const ident = im().update(id, patch || {})
     if (ident) browser.broadcastToWebUI('oz:identities:changed')
     return ident
   })
@@ -103,7 +163,7 @@ function registerTabHandlers(browser) {
   ipcMain.handle('oz:tabs:openInIdentity', (_e, identityId, url) => {
     const win = browser.getFocusedWindow()
     if (!win) return null
-    const tab = win.tabs.create({ identityId, url })
+    const tab = win.tabs.create({ identityId, url, source: 'ipc.openInIdentity' })
     browser.broadcastToWebUI('oz:tabs:updated', {
       kind: 'created',
       tab: { ...tab.serialize(), windowId: win.id },
@@ -137,7 +197,7 @@ function registerTabHandlers(browser) {
     if (!win) return 0
     for (let i = 0; i < count; i++) {
       const url = urlTemplate ? urlTemplate.replace('{i}', String(i)) : 'about:blank'
-      win.tabs.create({ identityId, url })
+      win.tabs.create({ identityId, url, source: 'ipc.bulkCreateLazy' })
     }
     browser.broadcastToWebUI('oz:tabs:updated', { kind: 'bulk-created', count })
     return count

@@ -31,9 +31,10 @@ Registra todos los `ipcMain.handle()` del proyecto, organizados por dominio. Rec
 | `oz:identities:get(id)` | Identity\|null | Por id. |
 | `oz:identities:getActive` | string | Active identity id. |
 | `oz:identities:setActive(id)` | bool | Cambia activa + broadcast `active-changed`. |
-| `oz:identities:create({name, color?})` | Identity | Crea + broadcast `changed`. |
+| `oz:identities:create({name, color?, userAgent?})` | Identity \| `{__error}` | Crea + broadcast `changed`. Si free-tier cap superado, devuelve `{__error: {code:'IDENTITY_CAP_REACHED', message, current, max}}` (no throw, UX más limpia). |
 | `oz:identities:rename(id, name)` | Identity\|null | Rename + broadcast `changed`. |
 | `oz:identities:setColor(id, color)` | Identity\|null | SetColor + broadcast `changed`. |
+| `oz:identities:update(id, patch)` | Identity\|null | Patch genérico (whitelist `name`, `color`, `userAgent`) + broadcast `changed`. ADR 0010. |
 | `oz:identities:remove(id)` | bool | Remove (excepto default) + broadcast. |
 
 ### Tabs

@@ -1,7 +1,7 @@
 # Módulo `ui-sidebar`
 
 **Path:** `browser/ui/sidebar.js`
-**Líneas:** 304
+**Líneas:** ~340
 **Bloque:** 1.2 ✅
 
 ## Qué hace
@@ -28,10 +28,11 @@ Sidebar lateral izquierda con la lista de Identities y sus tabs agrupadas. CRUD 
 | `handleCloseTab(ozTabId, ev)` | window.oz.tabs.close. |
 | `handleSelectIdentity(id)` | window.oz.identities.setActive. |
 | `handleRenameIdentity(id, currentName, rowEl)` | Inline editor. |
+| `handleEditIdentity(identity)` | Abre modal completo via `window.OZ.IdentityEditor.open(identity)`. |
 | `handleDeleteIdentity(identity)` | confirm() + window.oz.identities.remove. |
-| `showContextMenu(e, identity)` | Right-click → Rename / Delete. |
+| `showContextMenu(e, identity)` | Right-click → Rename / Edit identity… / Delete. |
 | `render()` | Re-render del DOM completo. |
-| `renderIdentityRow(identity)` / `renderTabItem(tab, identity)` | DOM helpers. |
+| `renderIdentityRow(identity)` / `renderTabItem(tab, identity)` | DOM helpers. Renderiza chip color, nombre, contador `(n)` con tabs de la identity, botón `+` (hover-revealed). Default identity recibe class `default` + dot indicator. |
 
 ## Layout HTML target
 
@@ -41,9 +42,10 @@ Sidebar lateral izquierda con la lista de Identities y sus tabs agrupadas. CRUD 
   ├─ div.header "IDENTITIES"
   └─ #oz-identity-list
       └─ .identity (per identity)
-          ├─ .identity-row
-          │   ├─ .identity-chip (color)
-          │   ├─ .identity-name
+          ├─ .identity-row[.default?][.active?]
+          │   ├─ .identity-chip (color dot)
+          │   ├─ .identity-name (con · trailing si Default)
+          │   ├─ .identity-count (n)
           │   └─ .add-tab (hover-revealed)
           └─ .identity-tabs
               └─ .oz-tab (per tab)

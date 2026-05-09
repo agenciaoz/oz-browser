@@ -56,7 +56,7 @@ Navegador Chromium-based para **manejar 50+ cuentas de redes sociales al mismo t
 ```
 ✅ Etapa 0 — Validación técnica (Electron + partition + proxy auth)
 ✅ Bloque 1.1 — Foundation (fork shell, repo, tabs+omnibox)
-🚧 Bloque 1.2 — Identity Manager + Lazy + Sidebar + Logger + Top tabstrip ~70%
+✅ Bloque 1.2 — Identity Manager + Lazy + Sidebar + Logger + Custom UA + Free-tier cap
 
 ⏳ Bloque 1.3 — Workspace Manager
 ⏳ Bloque 1.4 — Proxy Manager
@@ -137,13 +137,17 @@ oz-browser/
 
 ## Próximo paso concreto
 
-**Cerrar Bloque 1.2** (~1-2 sesiones):
-- Default Identity como row siempre visible en sidebar
-- Per-identity custom UA en modal
-- Fix bug tab duplicada al arranque
-- Drag-drop reorder
+**Bloque 1.3-MCP — OZ MCP server** (~12-16h, ADR 0012, re-priorizado 2026-05-09):
+- Server MCP embebido en main process (stdio + HTTP localhost)
+- Tools: `oz.identities.*`, `oz.tabs.*` (executeJS, getDOMSnapshot, waitForSelector, screenshot), `oz.workspaces.*` (cuando llegue 1.4-WS)
+- Auth: localhost-only por default + bearer token opcional
+- Settings UI toggle "Enable MCP server (advanced)"
+- **Beneficio inmediato:** reemplaza computer-use para smoke tests de bloques siguientes (los bugs de hoy se hubieran detectado en minutos vs horas)
+- **Beneficio user-facing:** automation API que cubre el diferenciador #9 (Ghost no tiene)
 
-**Después arrancar Bloque 1.5 (CORE — Account Vault).**
+**Después:**
+- **Bloque 1.4-WS — Workspace Manager** (era 1.3): CRUD workspace, freeze/archive, multi-window=multi-workspace, drag-drop tabs + "Move to workspace…" en right-click.
+- **Bloque 1.5 (⭐ CORE — Account Vault)**.
 
 ---
 

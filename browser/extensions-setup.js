@@ -58,10 +58,16 @@ function buildChromeExtensions(browser) {
         typeof details.windowId === 'number' &&
         browser.windows.find((w) => w.id === details.windowId)
       if (!win) throw new Error(`Unable to find windowId=${details.windowId}`)
+      log.info('ext', 'chrome.tabs.create incoming', {
+        url: details.url,
+        windowId: details.windowId,
+        active: details.active,
+      })
       const tab = win.tabs.create({
         identityId: browser.activeIdentityId,
         url: details.url,
         materialize: true,
+        source: 'chromeExtensionsAPI.createTab',
       })
       if (typeof details.active === 'boolean' ? details.active : true) {
         win.tabs.select(tab.id)
@@ -168,11 +174,17 @@ function setupWebContentsCreatedHandler(browser) {
           outlivesOpener: true,
           createWindow: ({ webContents: guest, webPreferences }) => {
             const win = browser.getWindowFromWebContents(webContents)
+            log.info('wc', 'window.open → new tab', {
+              disposition: details.disposition,
+              url: details.url,
+              opener: webContents.getURL(),
+            })
             const tab = win.tabs.create({
               webContents: guest,
               webPreferences,
               identityId: browser.activeIdentityId,
               url: details.url,
+              source: `windowOpen[${details.disposition}]`,
             })
             return tab.webContents
           },
@@ -191,7 +203,11 @@ function setupWebContentsCreatedHandler(browser) {
           if (disposition === 'new-window') {
             browser.createWindow({ initialUrl: url })
           } else {
-            const tab = win.tabs.create({ identityId: browser.activeIdentityId, url })
+            const tab = win.tabs.create({
+              identityId: browser.activeIdentityId,
+              url,
+              source: 'contextMenu.openLink',
+            })
             win.tabs.select(tab.id)
           }
         },

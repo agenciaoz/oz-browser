@@ -14,6 +14,10 @@ Decisiones arquitectónicas del proyecto, numeradas. Cada cambio que afecta la a
 | 0006 | [Apple Silicon como target primario](0006-apple-silicon-target.md) | Aceptado | 2026-05-09 |
 | 0007 | [Sync con backend pluggable](0007-sync-pluggable-backend.md) | Aceptado | 2026-05-09 |
 | 0008 | [Account Vault — encryption con scrypt + AES-256-GCM](0008-account-vault-encryption.md) | Propuesto | 2026-05-09 |
+| 0009 | [Logging exhaustivo en todo componente y flujo](0009-logging-everything.md) | Aceptado | 2026-05-09 |
+| 0010 | [Per-identity custom User-Agent](0010-per-identity-user-agent.md) | Aceptado | 2026-05-09 |
+| 0011 | [Modals must hide WebContentsView](0011-modals-hide-content-view.md) | Aceptado | 2026-05-09 |
+| 0012 | [OZ MCP server (automation + validation API)](0012-oz-mcp-server.md) | Propuesto | 2026-05-09 |
 
 ## Cómo agregar un ADR
 

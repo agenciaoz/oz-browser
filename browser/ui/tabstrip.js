@@ -1,7 +1,13 @@
 // OZ Browser — Top tabstrip (uses window.oz, NOT chrome.tabs).
 // Shows ALL tabs across ALL identities with an identity-color stripe.
+//
+// Wrapped in IIFE so the `const { safe, ... }` destructure stays file-local.
+// Without this, classic scripts in the same document share a global lexical
+// environment and any `const safe` declared at top-level in a sibling script
+// (sidebar.js, identity-editor.js, webui.js) collides with this one.
 
-const { safe, identityColor, identityName } = window.OZ.utils
+;(function () {
+  const { safe, identityColor, identityName } = window.OZ.utils
 
 class TabStrip {
   tabs = []
@@ -155,4 +161,5 @@ class TabStrip {
   }
 }
 
-window.OZ.TabStrip = TabStrip
+  window.OZ.TabStrip = TabStrip
+})()

@@ -1,8 +1,12 @@
 // OZ Browser — Left sidebar with Identities + their tabs grouped underneath.
 // Uses window.oz.identities + window.oz.tabs. Provides inline rename, context
 // menu (rename / delete), and "+ tab in this identity" hover button.
+//
+// Wrapped in IIFE — see comment in tabstrip.js for the global-lexical-scope
+// reasoning.
 
-const { safe } = window.OZ.utils
+;(function () {
+  const { safe } = window.OZ.utils
 
 class IdentitySidebar {
   identities = []
@@ -44,8 +48,20 @@ class IdentitySidebar {
       const t = info.tab
       if (!t) return
       const idx = this.tabs.findIndex((x) => x.id === t.id)
-      if (idx >= 0) this.tabs[idx] = { ...this.tabs[idx], ...t }
-      else this.tabs.push(t)
+      if (idx >= 0) {
+        this.tabs[idx] = { ...this.tabs[idx], ...t }
+      } else if (info.kind === 'created') {
+        this.tabs.push(t)
+      } else {
+        // Updated/materialized event for a tab we don't have cached yet —
+        // this happens normally when listeners attach mid-flow. Push it.
+        this.tabs.push(t)
+        if (window.oz && window.oz.log) {
+          window.oz.log.debug('webui/sidebar', 'tab event without prior create cached', {
+            kind: info.kind, tabId: t.id,
+          })
+        }
+      }
     } else if (info.kind === 'removed') {
       this.tabs = this.tabs.filter((x) => x.id !== info.tabId)
     } else if (info.kind === 'selected') {
@@ -85,6 +101,11 @@ class IdentitySidebar {
           window.oz.identities.create({ name }),
           'identities.create',
         )
+        if (ident && ident.__error) {
+          // Free-tier cap reached or other structured error.
+          alert(ident.__error.message || 'Cannot create identity.')
+          return
+        }
         if (ident && ident.id) {
           await safe(window.oz.identities.setActive(ident.id), 'identities.setActive')
         }
@@ -143,6 +164,15 @@ class IdentitySidebar {
     })
   }
 
+  handleEditIdentity(identity) {
+    const editor = window.OZ && window.OZ.IdentityEditor
+    if (!editor) {
+      alert('Identity editor not available.')
+      return
+    }
+    editor.open(identity)
+  }
+
   handleDeleteIdentity(identity) {
     if (identity.isDefault) {
       alert('Cannot delete the Default identity.')
@@ -179,6 +209,14 @@ class IdentitySidebar {
       if (rowEl) this.handleRenameIdentity(identity.id, identity.name, rowEl)
     })
     menu.appendChild(renameBtn)
+
+    const editBtn = document.createElement('button')
+    editBtn.textContent = 'Edit identity…'
+    editBtn.addEventListener('click', () => {
+      menu.remove()
+      this.handleEditIdentity(identity)
+    })
+    menu.appendChild(editBtn)
 
     if (!identity.isDefault) {
       const delBtn = document.createElement('button')
@@ -235,6 +273,7 @@ class IdentitySidebar {
     row.className = 'identity-row'
     row.dataset.identityId = identity.id
     if (identity.id === this.activeIdentityId) row.classList.add('active')
+    if (identity.isDefault) row.classList.add('default')
 
     const chip = document.createElement('span')
     chip.className = 'identity-chip'
@@ -245,6 +284,14 @@ class IdentitySidebar {
     name.className = 'identity-name'
     name.textContent = identity.name
     row.appendChild(name)
+
+    // Tab count badge — total tabs of this identity (lazy + materialized).
+    const tabCount = this.tabs.filter((t) => t.identityId === identity.id).length
+    const count = document.createElement('span')
+    count.className = 'identity-count'
+    count.textContent = `(${tabCount})`
+    if (tabCount === 0) count.classList.add('zero')
+    row.appendChild(count)
 
     const addTab = document.createElement('button')
     addTab.className = 'add-tab'
@@ -301,4 +348,5 @@ class IdentitySidebar {
   }
 }
 
-window.OZ.IdentitySidebar = IdentitySidebar
+  window.OZ.IdentitySidebar = IdentitySidebar
+})()

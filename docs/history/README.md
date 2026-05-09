@@ -10,6 +10,7 @@ Es la regla 4 de [`../DOCUMENTATION-RULES.md`](../DOCUMENTATION-RULES.md): un bl
 |---|---|
 | [`05-etapa-0-resultado.md`](05-etapa-0-resultado.md) | Etapa 0 — validación spike Oxylabs HTTPS |
 | [`06-bloque-1.1-resultado.md`](06-bloque-1.1-resultado.md) | Bloque 1.1 — foundation OZ Browser |
+| [`07-bloque-1.2-resultado.md`](07-bloque-1.2-resultado.md) | Bloque 1.2 — Identity Manager + Lazy Tabs + Custom UA + Free-tier cap |
 
 ## Documentos de research (incluidos por contexto)
 

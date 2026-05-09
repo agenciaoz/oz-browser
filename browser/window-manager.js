@@ -81,6 +81,7 @@ class TabbedBrowserWindow {
       const tab = this.tabs.create({
         url: options.initialUrl || options.urls.newtab,
         materialize: true,
+        source: 'window-manager._createInitialTab',
       })
       this.tabs.select(tab.id)
     })

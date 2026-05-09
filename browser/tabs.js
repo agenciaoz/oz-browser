@@ -12,6 +12,7 @@
 const { EventEmitter } = require('events')
 const { WebContentsView } = require('electron')
 const crypto = require('crypto')
+const log = require('./logger')
 
 // Layout constants — must match CSS in browser/ui/webui.html
 const TOOLBAR_HEIGHT = 64
@@ -285,6 +286,16 @@ class Tabs extends EventEmitter {
     // Re-emit per-tab updates so callers can listen at the Tabs level.
     tab.on('updated', (info) => this.emit('tab-updated', tab, info))
     tab.on('materialized', () => this.emit('tab-materialized', tab))
+
+    log.info('tabs', 'tab created', {
+      tabId: tab.id,
+      identityId: tab.identityId,
+      url: opts.url || '(none)',
+      source: opts.source || '(unknown)',
+      eager: !!opts.materialize,
+      total: this.tabList.length,
+      windowId: this.window && this.window.id,
+    })
 
     this.emit('tab-created', tab)
 

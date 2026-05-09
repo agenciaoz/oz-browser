@@ -9,10 +9,10 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `main.js` | 155 | [main.md](main.md) |
 | `paths.js` | 33 | [paths.md](paths.md) |
 | `window-manager.js` | 105 | [window-manager.md](window-manager.md) |
-| `ipc-handlers.js` | 190 | [ipc-handlers.md](ipc-handlers.md) |
-| `extensions-setup.js` | 210 | [extensions-setup.md](extensions-setup.md) |
-| `identity-manager.js` | 177 | [identity-manager.md](identity-manager.md) |
-| `tabs.js` | 334 | [tabs.md](tabs.md) |
+| `ipc-handlers.js` | ~205 | [ipc-handlers.md](ipc-handlers.md) |
+| `extensions-setup.js` | ~225 | [extensions-setup.md](extensions-setup.md) |
+| `identity-manager.js` | 270 | [identity-manager.md](identity-manager.md) |
+| `tabs.js` | ~345 | [tabs.md](tabs.md) |
 | `logger.js` | 111 | [logger.md](logger.md) |
 | `error-handler.js` | 141 | [error-handler.md](error-handler.md) |
 | `menu.js` | 51 | [menu.md](menu.md) |
@@ -25,7 +25,8 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `webui.js` | 22 | [ui-webui.md](ui-webui.md) |
 | `oz-utils.js` | 32 | [ui-oz-utils.md](ui-oz-utils.md) |
 | `tabstrip.js` | 158 | [ui-tabstrip.md](ui-tabstrip.md) |
-| `sidebar.js` | 304 | [ui-sidebar.md](ui-sidebar.md) |
+| `sidebar.js` | ~340 | [ui-sidebar.md](ui-sidebar.md) |
+| `identity-editor.js` | 156 | [ui-identity-editor.md](ui-identity-editor.md) |
 
 ## Preload (preload.js — root)
 

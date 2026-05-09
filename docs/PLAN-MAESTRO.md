@@ -1,7 +1,7 @@
 # OZ Browser — Plan Maestro v4 (con pilares arquitectónicos)
 
 **Fecha:** 2026-05-09
-**Estado:** Etapa 0 ✅ · Bloque 1.1 ✅ · Bloque 1.2 ~70% (sidebar + lazy tabs + identity manager + logger + error popup + refactor modular + estructura docs hechos)
+**Estado:** Etapa 0 ✅ · Bloque 1.1 ✅ · **Bloque 1.2 ✅** (Identity Manager + lazy tabs + sidebar (n) count + custom UA + free-tier cap + tab-create logging + smoke test)
 **Plataforma target primaria:** macOS Apple Silicon (M1 / M2 / M3 / M4). Build universal binary también soporta Intel x86_64.
 
 Este documento reemplaza `04-Plan-en-Etapas.md` como fuente única de verdad. Lo de antes queda como referencia histórica.
@@ -324,6 +324,8 @@ Workspace = {
 - Multiple windows = multiple workspaces (1 ventana = 1 workspace) — **diferenciador vs Ghost**
 - Persistence en `workspaces.json`
 - Quick Tabs 4 modos (load all / one-by-one / on-click / on-click+confirm)
+- **Drag-and-drop de tabs entre workspaces** (pedido por Jose 2026-05-09): arrastrar una tab del sidebar/topbar a otro workspace lo mueve. Implementación: HTML5 drag-drop API en `tabstrip.js` y `sidebar.js`, IPC `oz:tabs:moveToWorkspace(tabId, workspaceId)`. Si el workspace destino no está activo, la tab se persiste en su nueva pertenencia y aparece cuando se cambie a ese workspace.
+- **Right-click menu en tab con "Move to workspace…"** (pedido por Jose 2026-05-09): submenu dinámico listando todos los workspaces activos (excepto el actual). Mismo IPC que drag-drop.
 
 #### 🆕 Bloque 1.4 — Proxy Manager
 **Modelo:**
@@ -520,6 +522,7 @@ Vault = {
 - Modular Sidebar opcional (post-MVP)
 - App Dock para PWAs pinnables (post-MVP)
 - Browser-action toolbar limpio (clean toolbar mode)
+- **OZ MCP server** (pedido por Jose 2026-05-09 — ADR 0012): server MCP embebido en main process que expone identities/workspaces/tabs/proxies/vault como tools, transport stdio + HTTP localhost. Reemplaza computer-use para validación programática de Claude (ahorra tiempo en smoke tests de bloques siguientes) Y es la **automation API user-facing** que diferencia OZ vs Ghost. Cubre el diferenciador #9 (CDP automation) en una capa más amigable. ~12-16h estimadas.
 
 ### ETAPA 3 — Distribución firmada + auto-update
 - Apple Developer ($99) + signing + notarización
