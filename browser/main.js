@@ -122,7 +122,10 @@ class Browser {
       identitiesCount: this.identityManager.list().length,
     })
 
-    this.workspaceManager = new WorkspaceManager()
+    // 1.4b: enable throttled save (2s debounce). Bursts of tab-updated events
+    // coalesce into one disk write. Snapshot path (switchWorkspace) calls
+    // flush() explicitly to bypass throttle on critical writes.
+    this.workspaceManager = new WorkspaceManager({ saveDelayMs: 2000 })
     log.info('browser', 'WorkspaceManager loaded', {
       workspacesCount: this.workspaceManager.list().length,
       defaultId: this.workspaceManager.getDefault().id,
@@ -166,6 +169,7 @@ class Browser {
       urls: this.urls,
       extensions: this.extensions,
       identityManager: this.identityManager,
+      browser: this, // 1.4b: needed for workspace switch logic
       webuiExtensionId: this.webuiExtensionId,
       window: {
         width: 1280,

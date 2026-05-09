@@ -10,7 +10,8 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | -------------------------- | ---- | ---------------------------------------------- |
 | `main.js`                  | ~175 | [main.md](main.md)                             |
 | `paths.js`                 | 33   | [paths.md](paths.md)                           |
-| `window-manager.js`        | 106  | [window-manager.md](window-manager.md)         |
+| `window-manager.js`        | ~165 | [window-manager.md](window-manager.md)         |
+| `window-workspace.js` 🆕   | ~210 | [window-workspace.md](window-workspace.md)     |
 | `ipc-handlers.js`          | ~250 | [ipc-handlers.md](ipc-handlers.md)             |
 | `identity-handlers.js` ✨  | ~95  | [identity-handlers.md](identity-handlers.md)   |
 | `tab-handlers.js` ✨       | ~85  | [tab-handlers.md](tab-handlers.md)             |
@@ -54,6 +55,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `tests/identity-manager.smoketest.js`     | 331  | header inline                                                |
 | `tests/mcp-server.smoketest.js` ✨        | ~330 | header inline                                                |
 | `tests/workspace-manager.smoketest.js` 🆕 | ~270 | header inline                                                |
+| `tests/window-workspace.smoketest.js` 🆕  | ~330 | header inline                                                |
 
 ## Pendientes (placeholders, se llenan al implementarse)
 

@@ -32,6 +32,7 @@ class Tab extends EventEmitter {
     this.pendingUrl = opts.url || null
     this.title = opts.title || 'New Tab'
     this.favicon = opts.favicon || null
+    this.pinned = !!opts.pinned // 1.4b: persisted in tabSpecs; UI in 1.7
     this.window = parentWindow
     this.identityManager = identityManager
 
@@ -224,8 +225,24 @@ class Tab extends EventEmitter {
       url: this.pendingUrl || (this.webContents && this.webContents.getURL()) || '',
       title: this.title,
       favicon: this.favicon,
+      pinned: this.pinned,
       isLoaded: this.materialized,
       webContentsId: this.webContentsId,
+    }
+  }
+
+  /**
+   * Workspace-friendly spec used by WorkspaceManager.setTabSpecs() during
+   * switch (1.4b). Strips runtime-only fields (isLoaded, webContentsId).
+   */
+  toSpec() {
+    return {
+      id: this.id,
+      identityId: this.identityId,
+      url: this.pendingUrl || (this.webContents && this.webContents.getURL()) || '',
+      title: this.title,
+      favicon: this.favicon,
+      pinned: this.pinned,
     }
   }
 }
@@ -274,9 +291,15 @@ class Tabs extends EventEmitter {
    */
   create(opts = {}) {
     const tab = new Tab(this.window, this.identityManager, {
+      // 1.4b: id/title/favicon/pinned are propagated so we can recreate tabs
+      // from a workspace's tabSpecs and preserve identity (sidebar selection,
+      // active tab pointer, etc.) across switches.
+      id: opts.id,
       identityId: opts.identityId,
       url: opts.url,
       title: opts.title,
+      favicon: opts.favicon,
+      pinned: opts.pinned,
       webContents: opts.webContents,
       wcvOpts: opts.webPreferences ? { webPreferences: opts.webPreferences } : null,
     })
@@ -337,6 +360,15 @@ class Tabs extends EventEmitter {
   /** All tabs as JSON-serializable objects (for OZ sidebar UI). */
   serializeAll() {
     return this.tabList.map((t) => t.serialize())
+  }
+
+  /**
+   * All tabs as workspace tabSpecs (no runtime fields). Used by
+   * window-workspace.js to snapshot a window's state into a workspace
+   * before destroying its WebContentsViews on switch (1.4b).
+   */
+  toSpecs() {
+    return this.tabList.map((t) => t.toSpec())
   }
 }
 

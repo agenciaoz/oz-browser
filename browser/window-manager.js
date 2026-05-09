@@ -2,12 +2,18 @@
 
 const { BrowserWindow, session } = require('electron')
 const { Tabs } = require('./tabs')
+const {
+  switchWorkspace,
+  hydrateWorkspace,
+  releaseOnDestroy,
+} = require('./window-workspace')
 
 class TabbedBrowserWindow {
   constructor(options) {
     this.session = options.session || session.defaultSession
     this.extensions = options.extensions
     this.identityManager = options.identityManager
+    this.browser = options.browser // 1.4b: needed for workspace switch logic
 
     // Can't inherit BrowserWindow (Electron #23 regression).
     this.window = new BrowserWindow(options.window)
@@ -19,8 +25,40 @@ class TabbedBrowserWindow {
 
     this.tabs = new Tabs(this.window, this.identityManager)
 
+    // 1.4b: each window owns exactly one workspace (1-1 lock — ADR 0015).
+    // Default to the workspace explicitly requested, or the Default workspace.
+    const wm = this.browser && this.browser.workspaceManager
+    this.workspaceId = options.workspaceId || (wm ? wm.getDefault().id : null)
+
     this._wireTabEvents(options.urls)
     this._createInitialTab(options)
+
+    // 1.4b: when the BrowserWindow closes (user-initiated, not via destroy()),
+    // snapshot the workspace + release the lock so another window can claim it.
+    this.window.on('close', () => {
+      if (this.browser) {
+        try {
+          releaseOnDestroy(this, this.browser)
+        } catch (_e) {
+          // best-effort
+        }
+      }
+    })
+  }
+
+  /**
+   * Switch this window to another workspace. Delegates to window-workspace.js.
+   * Returns { ok, workspaceId, ... } with reason if rejected (lock conflict, etc.).
+   */
+  switchToWorkspace(targetWorkspaceId) {
+    if (!this.browser) {
+      return { ok: false, reason: 'no-browser-ref' }
+    }
+    return switchWorkspace({
+      window: this,
+      browser: this.browser,
+      targetWorkspaceId,
+    })
   }
 
   /** Wire Tabs events → ChromeExtensions API + sidebar IPC notifications. */
@@ -77,7 +115,16 @@ class TabbedBrowserWindow {
 
   _createInitialTab(options) {
     queueMicrotask(() => {
-      // First tab is always eager so the window has something to display.
+      // 1.4b: if this window owns a workspace with persisted tabSpecs, recreate
+      // them lazy and select the persisted activeTabId. Otherwise (first run /
+      // empty workspace) hydrateWorkspace creates a fresh newtab.
+      const wm = this.browser && this.browser.workspaceManager
+      const ws = wm && this.workspaceId ? wm.get(this.workspaceId) : null
+      if (ws && ws.tabSpecs && ws.tabSpecs.length > 0) {
+        hydrateWorkspace({ window: this, browser: this.browser })
+        return
+      }
+      // No tabSpecs — original behavior: eager newtab.
       const tab = this.tabs.create({
         url: options.initialUrl || options.urls.newtab,
         materialize: true,
@@ -94,6 +141,15 @@ class TabbedBrowserWindow {
   }
 
   destroy() {
+    // 1.4b: snapshot live tabs into the workspace + release the lock so another
+    // window can claim it. Must happen BEFORE we destroy WebContentsViews.
+    if (this.browser) {
+      try {
+        releaseOnDestroy(this, this.browser)
+      } catch (_e) {
+        // Don't block shutdown on a snapshot failure — log handled inside.
+      }
+    }
     this.tabs.destroy()
     this.window.destroy()
   }
