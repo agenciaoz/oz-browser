@@ -461,6 +461,7 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 - **C-13 Demo Mode launcher** — botón "Open OZ in Demo Mode" → sessions in-memory, todo se borra al cerrar, ningún archivo escrito. Cliente lo prueba sin instalar permanente. ~1.5h sobre el sistema de Bloque 1.5 (EPHEMERAL).
 - **C-14 Recipes (macros MCP)** — secuencia de tool MCP guardada como receta YAML/JSON. "Login en X con identity 5 → posteo → screenshot → cerrar". Diferenciador único vs Ghost. ~6h.
 - **C-15 Health endpoint** (`/health` del HTTP server del MCP) — `{ status, identities, tabs, memoryMB, uptime }`. Útil para Admin Dashboard sin tocar Dropbox. ~30 min sobre 1.3-MCP.
+- **C-16 Telemetría + remote config para soporte (idea de Jose 2026-05-09)** — sincroniza periódicamente la config de cada usuario (identities/workspaces metadata + last error log + version + flags + crash dumps) al Dropbox de la oficina (mismo backend que Etapa 7-OFFICE — un solo storage). Habilita: (a) cuando un user reporta un bug Jose ve la config exacta sin pedírsela, (b) Admin puede pushear un cambio de config remoto (`remote-config.json` lee al boot, override flags/feature switches/forced-update). Privacy: opt-in fuerte, banner claro, granular (config sí, contenido del vault NO). ~6-8h. Bloque sugerido: post-Etapa 7-OFFICE (depende del Dropbox sync ya implementado). Diferenciador para venta a oficinas/equipos.
 
 ### ETAPA 3 — Distribución firmada + auto-update
 
@@ -623,6 +624,7 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 40. Demo mode launcher (C-13)
 41. MCP recipes (C-14)
 42. Health endpoint (C-15)
+43. Telemetría + remote config para soporte vía Dropbox (C-16, idea Jose 2026-05-09)
 
 ---
 

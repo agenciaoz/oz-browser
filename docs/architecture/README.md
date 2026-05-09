@@ -20,11 +20,12 @@ Decisiones arquitectónicas del proyecto, numeradas. Cada cambio que afecta la a
 | 0012 | [OZ MCP server (automation + validation API)](0012-oz-mcp-server.md)                    | Aceptado (scope expandido v1) | 2026-05-09 |
 | 0013 | [CI strategy (GitHub Actions)](0013-ci-strategy.md)                                     | Aceptado                      | 2026-05-09 |
 | 0014 | [Linter mínimo + pre-commit hook](0014-lint-precommit.md)                               | Aceptado                      | 2026-05-09 |
+| 0015 | [Workspace model + ventana 1-1 lock exclusivo](0015-workspace-model.md)                 | Aceptado                      | 2026-05-09 |
 
 ## Cómo agregar un ADR
 
 1. Copia la plantilla de [`../DOCUMENTATION-RULES.md`](../DOCUMENTATION-RULES.md#plantilla-de-adr)
-2. Numera secuencial (siguiente disponible: 0015)
+2. Numera secuencial (siguiente disponible: 0016)
 3. Estado inicial: "Propuesto"
 4. Cuando se acepta y se ejecuta: cambiar a "Aceptado"
 5. Si después se reemplaza por otro ADR, marcar "Reemplazado por NNNN"

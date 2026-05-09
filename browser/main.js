@@ -21,6 +21,7 @@ log.init()
 setupErrorHandlers()
 
 const { IdentityManager } = require('./identity-manager')
+const { WorkspaceManager } = require('./workspace-manager')
 const { setupMenu } = require('./menu')
 const { TabbedBrowserWindow } = require('./window-manager')
 const { registerIpcHandlers } = require('./ipc-handlers')
@@ -39,6 +40,7 @@ class Browser {
   urls = { newtab: 'about:blank' }
   activeIdentityId = null
   identityManager = null
+  workspaceManager = null
   webuiExtensionId = null
 
   constructor() {
@@ -55,6 +57,16 @@ class Browser {
     })
 
     app.on('before-quit', async (e) => {
+      // Flush any pending throttled workspace writes (1.4b switch logic).
+      if (this.workspaceManager) {
+        try {
+          this.workspaceManager.flush()
+        } catch (err) {
+          log.error('browser', 'workspaceManager.flush failed', {
+            message: err.message,
+          })
+        }
+      }
       if (this.mcpServer) {
         e.preventDefault()
         await this.mcpServer.stop()
@@ -108,6 +120,12 @@ class Browser {
     this.activeIdentityId = this.identityManager.getDefault().id
     log.info('browser', 'IdentityManager loaded', {
       identitiesCount: this.identityManager.list().length,
+    })
+
+    this.workspaceManager = new WorkspaceManager()
+    log.info('browser', 'WorkspaceManager loaded', {
+      workspacesCount: this.workspaceManager.list().length,
+      defaultId: this.workspaceManager.getDefault().id,
     })
 
     registerIpcHandlers(this)

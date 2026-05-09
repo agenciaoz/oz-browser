@@ -6,22 +6,24 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 
 ## Backend (browser/)
 
-| Módulo                    | LOC  | Doc                                          |
-| ------------------------- | ---- | -------------------------------------------- |
-| `main.js`                 | ~175 | [main.md](main.md)                           |
-| `paths.js`                | 33   | [paths.md](paths.md)                         |
-| `window-manager.js`       | 106  | [window-manager.md](window-manager.md)       |
-| `ipc-handlers.js`         | ~250 | [ipc-handlers.md](ipc-handlers.md)           |
-| `identity-handlers.js` ✨ | ~95  | [identity-handlers.md](identity-handlers.md) |
-| `tab-handlers.js` ✨      | ~85  | [tab-handlers.md](tab-handlers.md)           |
-| `mcp-server.js` ✨        | ~250 | [mcp-server.md](mcp-server.md)               |
-| `mcp-tools.js` ✨         | ~184 | [mcp-tools.md](mcp-tools.md)                 |
-| `extensions-setup.js`     | 226  | [extensions-setup.md](extensions-setup.md)   |
-| `identity-manager.js`     | 270  | [identity-manager.md](identity-manager.md)   |
-| `tabs.js`                 | 344  | [tabs.md](tabs.md)                           |
-| `logger.js`               | 111  | [logger.md](logger.md)                       |
-| `error-handler.js`        | 141  | [error-handler.md](error-handler.md)         |
-| `menu.js`                 | 51   | [menu.md](menu.md)                           |
+| Módulo                     | LOC  | Doc                                            |
+| -------------------------- | ---- | ---------------------------------------------- |
+| `main.js`                  | ~175 | [main.md](main.md)                             |
+| `paths.js`                 | 33   | [paths.md](paths.md)                           |
+| `window-manager.js`        | 106  | [window-manager.md](window-manager.md)         |
+| `ipc-handlers.js`          | ~250 | [ipc-handlers.md](ipc-handlers.md)             |
+| `identity-handlers.js` ✨  | ~95  | [identity-handlers.md](identity-handlers.md)   |
+| `tab-handlers.js` ✨       | ~85  | [tab-handlers.md](tab-handlers.md)             |
+| `workspace-handlers.js` 🆕 | ~165 | [workspace-handlers.md](workspace-handlers.md) |
+| `mcp-server.js` ✨         | ~250 | [mcp-server.md](mcp-server.md)                 |
+| `mcp-tools.js` ✨          | ~184 | [mcp-tools.md](mcp-tools.md)                   |
+| `extensions-setup.js`      | 226  | [extensions-setup.md](extensions-setup.md)     |
+| `identity-manager.js`      | 270  | [identity-manager.md](identity-manager.md)     |
+| `workspace-manager.js` 🆕  | ~340 | [workspace-manager.md](workspace-manager.md)   |
+| `tabs.js`                  | 344  | [tabs.md](tabs.md)                             |
+| `logger.js`                | 111  | [logger.md](logger.md)                         |
+| `error-handler.js`         | 141  | [error-handler.md](error-handler.md)           |
+| `menu.js`                  | 51   | [menu.md](menu.md)                             |
 
 ✨ = creado en Bloque 1.3-MCP.
 
@@ -44,13 +46,14 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 
 ## Tooling (scripts/, tests/, tools/)
 
-| Archivo                               | LOC  | Doc                                                          |
-| ------------------------------------- | ---- | ------------------------------------------------------------ |
-| `scripts/check-loc.js`                | ~115 | header inline (script standalone)                            |
-| `scripts/safe-test.sh`                | ~46  | header inline                                                |
-| `tools/mcp-stdio-bridge.js` ✨        | ~85  | [`../guides/mcp-automation.md`](../guides/mcp-automation.md) |
-| `tests/identity-manager.smoketest.js` | 331  | header inline                                                |
-| `tests/mcp-server.smoketest.js` ✨    | ~330 | header inline                                                |
+| Archivo                                   | LOC  | Doc                                                          |
+| ----------------------------------------- | ---- | ------------------------------------------------------------ |
+| `scripts/check-loc.js`                    | ~115 | header inline (script standalone)                            |
+| `scripts/safe-test.sh`                    | ~46  | header inline                                                |
+| `tools/mcp-stdio-bridge.js` ✨            | ~85  | [`../guides/mcp-automation.md`](../guides/mcp-automation.md) |
+| `tests/identity-manager.smoketest.js`     | 331  | header inline                                                |
+| `tests/mcp-server.smoketest.js` ✨        | ~330 | header inline                                                |
+| `tests/workspace-manager.smoketest.js` 🆕 | ~270 | header inline                                                |
 
 ## Pendientes (placeholders, se llenan al implementarse)
 
@@ -64,7 +67,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 
 ### Bloques siguientes
 
-- `workspace-manager.js` (Bloque 1.4-WS)
+- ~~`workspace-manager.js` (Bloque 1.4-WS)~~ ✅ creado en 1.4a
 - `account-vault.js` ⭐ (Bloque 1.5)
 - `excel-io.js` (Bloque 1.5)
 - `site-templates.js` (Bloque 1.5)

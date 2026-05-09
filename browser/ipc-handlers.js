@@ -15,17 +15,20 @@ const log = require('./logger')
 const { showErrorDialog } = require('./error-handler')
 const { buildIdentityHandlers } = require('./identity-handlers')
 const { buildTabHandlers } = require('./tab-handlers')
+const { buildWorkspaceHandlers } = require('./workspace-handlers')
 
 function registerIpcHandlers(browser) {
   // Domain handlers — shared with MCP server. Build once per browser instance.
   browser.handlers = {
     identities: buildIdentityHandlers(browser),
     tabs: buildTabHandlers(browser),
+    workspaces: buildWorkspaceHandlers(browser),
   }
 
   registerLogHandlers(browser)
   registerIdentityHandlersIPC(browser)
   registerTabHandlersIPC(browser)
+  registerWorkspaceHandlersIPC(browser)
   registerNavHandlers(browser)
   registerUiHandlers(browser)
 
@@ -112,6 +115,32 @@ function registerIdentityHandlersIPC(browser) {
   ipcMain.handle('oz:identities:setColor', (_e, id, color) => h.setColor(id, color))
   ipcMain.handle('oz:identities:update', (_e, id, patch) => h.update(id, patch))
   ipcMain.handle('oz:identities:remove', (_e, id) => h.remove(id))
+}
+
+// ----- Workspaces -----------------------------------------------------------
+// Wires the workspace handlers map (browser.handlers.workspaces) into ipcMain.
+// Same map is consumed by the MCP server in 1.4e to expose oz.workspaces.* tools.
+
+function registerWorkspaceHandlersIPC(browser) {
+  const h = browser.handlers.workspaces
+
+  ipcMain.handle('oz:workspaces:list', () => h.list())
+  ipcMain.handle('oz:workspaces:listActive', () => h.listActive())
+  ipcMain.handle('oz:workspaces:get', (_e, id) => h.get(id))
+  ipcMain.handle('oz:workspaces:getActive', (_e, windowId) => h.getActive(windowId))
+  ipcMain.handle('oz:workspaces:setActive', (_e, workspaceId, windowId) =>
+    h.setActive(workspaceId, windowId),
+  )
+  ipcMain.handle('oz:workspaces:create', (_e, opts) => h.create(opts))
+  ipcMain.handle('oz:workspaces:update', (_e, id, patch) => h.update(id, patch))
+  ipcMain.handle('oz:workspaces:rename', (_e, id, name) => h.rename(id, name))
+  ipcMain.handle('oz:workspaces:setColor', (_e, id, color) => h.setColor(id, color))
+  ipcMain.handle('oz:workspaces:duplicate', (_e, id) => h.duplicate(id))
+  ipcMain.handle('oz:workspaces:archive', (_e, id) => h.archive(id))
+  ipcMain.handle('oz:workspaces:restore', (_e, id) => h.restore(id))
+  ipcMain.handle('oz:workspaces:freeze', (_e, id) => h.freeze(id))
+  ipcMain.handle('oz:workspaces:unfreeze', (_e, id) => h.unfreeze(id))
+  ipcMain.handle('oz:workspaces:remove', (_e, id) => h.remove(id))
 }
 
 // ----- Tabs ↔ Identity binding & sidebar API --------------------------------
