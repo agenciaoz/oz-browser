@@ -80,10 +80,17 @@ Estas decisiones afectan cada módulo del proyecto y NO tienen que repetirse en 
 - Cache caps por partition (50 MB Light, 100 MB Balanced, 200 MB Power).
 - Disk I/O: SQLite WAL mode, lazy partition init, compresión zstd para snapshots.
 
-### Logging
-- Cada operación crítica loggea via `logger.js` (DEBUG/INFO/WARN/ERROR).
-- Errores no manejados → `error-handler.js` popup con email a Jose.
-- Activity tracker registra eventos comerciales (bandwidth, time, accounts).
+### Logging (pilar arquitectónico — ADR 0009)
+- **Todo se loggea.** Cada componente, cada flujo. Sin excepciones.
+- Niveles: DEBUG (datos diagnósticos), INFO (lifecycle), WARN (recoverable), ERROR (fallas reales).
+- Cada IPC handler loggea entrada (DEBUG) + salida (INFO con duration).
+- Cada operación crítica genera al menos un INFO con source + id + outcome + latency.
+- Métricas cada 30 s: RAM, CPU, tabs count, identities materialized.
+- Privacy filters automáticos (regex) en logger.js — passwords/tokens/cookies nunca llegan al log.
+- Errores no manejados → `error-handler.js` popup con email a Jose, auto-attach últimas N líneas del log.
+- Storage: `~/Library/Logs/OZ Browser/oz-browser.log`, rotation 10 MB × 3.
+- UI in-app: Log Viewer (Cmd+Opt+L) — Bloque 1.7.
+- Activity tracker (Etapa 7.5) reusa logs INFO+WARN+ERROR sin DEBUG para metrics.
 
 ### Persistencia
 - Datos sensibles (vault) → AES-256-GCM, master key en macOS Keychain.

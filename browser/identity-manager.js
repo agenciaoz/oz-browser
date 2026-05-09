@@ -1,11 +1,14 @@
 // OZ Browser — Identity Manager
 //
-// An Identity is a persistent isolated browsing profile (cookies, storage,
-// optional proxy, optional UA). Tabs are bound to one Identity at create time.
+// Qué hace: CRUD de Identities + caching de Sessions per-Identity.
+// Doc: docs/modules/identity-manager.md
+// ADRs: docs/architecture/0003-default-identity-uses-defaultsession.md
+//
+// Exports: IdentityManager (class)
+// IPC: registrado en ipc-handlers.js como oz:identities:*
 //
 // Storage: ~/Library/Application Support/<appName>/identities.json
-// Sessions: lazily created via session.fromPartition('persist:identity-<id>')
-// Cached so that all tabs of the same Identity share the same Session object.
+// Sessions: persist:identity-<id> (excepto Default que usa defaultSession).
 
 const fs = require('fs')
 const path = require('path')

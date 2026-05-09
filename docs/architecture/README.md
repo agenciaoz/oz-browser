@@ -1,0 +1,24 @@
+# Architecture Decision Records
+
+Decisiones arquitectónicas del proyecto, numeradas. Cada cambio que afecta la arquitectura del producto se documenta aquí ANTES de escribir el código.
+
+## Índice
+
+| # | Título | Estado | Fecha |
+|---|---|---|---|
+| 0001 | [Electron como stack](0001-electron-stack.md) | Aceptado | 2026-05-09 |
+| 0002 | [Lazy tabs (no renderer hasta click)](0002-lazy-tabs.md) | Aceptado | 2026-05-09 |
+| 0003 | [Default Identity usa defaultSession](0003-default-identity-uses-defaultsession.md) | Aceptado | 2026-05-09 |
+| 0004 | [HTTPS preferido sobre SOCKS5](0004-https-over-socks5.md) | Aceptado | 2026-05-09 |
+| 0005 | [Regla 500 LOC máximo por archivo](0005-modular-500-loc-rule.md) | Aceptado | 2026-05-09 |
+| 0006 | [Apple Silicon como target primario](0006-apple-silicon-target.md) | Aceptado | 2026-05-09 |
+| 0007 | [Sync con backend pluggable](0007-sync-pluggable-backend.md) | Aceptado | 2026-05-09 |
+| 0008 | [Account Vault — encryption con scrypt + AES-256-GCM](0008-account-vault-encryption.md) | Propuesto | 2026-05-09 |
+
+## Cómo agregar un ADR
+
+1. Copia la plantilla de [`../DOCUMENTATION-RULES.md`](../DOCUMENTATION-RULES.md#plantilla-de-adr)
+2. Numera secuencial (siguiente disponible)
+3. Estado inicial: "Propuesto"
+4. Cuando se acepta y se ejecuta: cambiar a "Aceptado"
+5. Si después se reemplaza por otro ADR, marcar "Reemplazado por NNNN"

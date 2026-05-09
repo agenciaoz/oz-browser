@@ -1,14 +1,13 @@
-// OZ Browser — Tabs with lazy loading
+// OZ Browser — Tabs (lazy materialization)
 //
-// Each Tab is a lightweight stub (~1 KB) until the user actually activates it.
-// On first activation, materialize() creates the WebContentsView, attaches it
-// to the window, and starts loading. Until then a tab consumes no renderer
-// process — letting us hold 100+ tabs at minimal cost.
+// Qué hace: Tab + Tabs class. Lazy: WebContentsView/renderer NO existe hasta primer click.
+// Doc: docs/modules/tabs.md
+// ADR: docs/architecture/0002-lazy-tabs.md
 //
-// Stable tab IDs (UUID) are assigned at construction so the UI can reference
-// tabs that don't yet have a webContents. After materialization,
-// `tab.webContentsId` returns the underlying webContents.id used by the
-// Chrome tabs extension API.
+// Exports: Tab, Tabs (classes)
+// IPC: ninguno directo — usado por window-manager.js + ipc-handlers.js
+//
+// Stable tab IDs (UUID) — independientes de webContents.id que solo existe post-materialize.
 
 const { EventEmitter } = require('events')
 const { WebContentsView } = require('electron')
