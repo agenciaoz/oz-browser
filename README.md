@@ -1,6 +1,11 @@
 # OZ Browser
 
-Multi-session Chromium browser with per-tab proxies and antidetect — un clon-mejor de Ghost Browser, vendido como SaaS más barato.
+Multi-session Chromium browser para **manejar 50+ cuentas de redes sociales al mismo tiempo** con vault de credenciales, anti-logout, Excel I/O, Time Machine, y admin dashboard para oficina. Optimizado para MacBook Apple Silicon (M1 8 GB target). Vendido como SaaS más barato que Ghost Browser.
+
+**Empezar por aquí:**
+- [`docs/OVERVIEW.md`](docs/OVERVIEW.md) — TL;DR de 2 minutos
+- [`docs/DEPENDENCIES.md`](docs/DEPENDENCIES.md) — diagrama de dependencias entre bloques + reglas transversales
+- [`docs/PLAN-MAESTRO.md`](docs/PLAN-MAESTRO.md) — plan completo
 
 Built on Electron 37/42 + [`samuelmaddock/electron-browser-shell`](https://github.com/samuelmaddock/electron-browser-shell) (MIT) — heredamos la base, customizamos todo el resto.
 
