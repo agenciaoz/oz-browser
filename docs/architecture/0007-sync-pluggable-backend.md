@@ -6,6 +6,7 @@
 ## Contexto
 
 Tres casos de uso para sync:
+
 1. **SaaS público** — usuarios random pagan suscripción. Necesita backend nuestro.
 2. **Office Edition (Jose)** — empleados de Jose, todos comparten cuenta Dropbox Business. No queremos costo de infra.
 3. **Enterprise self-hosted** — clientes que no quieren su data en cloud nuestro.
@@ -44,6 +45,7 @@ interface SyncBackend {
 ```
 
 Implementaciones:
+
 - `sync-backend-supabase.js` (Etapa 7)
 - `sync-backend-dropbox.js` (Etapa 7-OFFICE)
 - `sync-backend-s3.js` (Etapa 10 enterprise)

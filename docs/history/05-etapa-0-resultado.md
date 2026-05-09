@@ -23,9 +23,9 @@ Cada uno es un SQLite separado. **Verificado a nivel de archivo**, no es un hack
 
 Cada partition con su propio proxy via `session.setProxy({ proxyRules })`.
 
-| Identity | IP recibida | Ciudad | Proveedor (org) |
-|---|---|---|---|
-| A (sessid spikeA001) | 172.56.234.232 | Los Angeles | T-Mobile USA (AS21928) |
+| Identity             | IP recibida     | Ciudad        | Proveedor (org)          |
+| -------------------- | --------------- | ------------- | ------------------------ |
+| A (sessid spikeA001) | 172.56.234.232  | Los Angeles   | T-Mobile USA (AS21928)   |
 | B (sessid spikeB002) | 151.204.147.207 | New York City | Verizon Business (AS701) |
 
 Mismo endpoint Oxylabs, distintos sessid, IPs móviles distintas de carriers distintos.
@@ -40,19 +40,21 @@ Mismo endpoint Oxylabs, distintos sessid, IPs móviles distintas de carriers dis
 ```
 
 Patrón del handler (canonical):
+
 ```js
 app.on('login', (event, webContents, request, authInfo, callback) => {
   if (authInfo.isProxy) {
-    event.preventDefault();
-    const cred = sessionCreds.get(webContents.session);
-    callback(cred.username, cred.password);
+    event.preventDefault()
+    const cred = sessionCreds.get(webContents.session)
+    callback(cred.username, cred.password)
   }
-});
+})
 ```
 
 ### 4. ✅ Persistencia de cookies entre reinicios
 
 Procedimiento:
+
 1. Run 1 → set cookies vía test buttons → cerrar app con `kill`
 2. Run 2 → click "Persistence" → cookies del run anterior leídas correctamente
 3. SQLite confirmó valores idénticos sobrevivieron:

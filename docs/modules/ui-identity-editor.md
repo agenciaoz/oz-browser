@@ -10,11 +10,11 @@ Modal overlay (en `webui.html`, no popup window) para editar una Identity: name,
 
 ## API
 
-| Símbolo | Tipo | Descripción |
-|---|---|---|
-| `window.OZ.IdentityEditor` | singleton | Instancia única; el modal vive embebido en `webui.html` (id `oz-identity-modal`). |
-| `IdentityEditor.open(identity)` | método | Muestra el modal seedado con la identity dada (snapshot — no mutado). |
-| `IdentityEditor.close()` | método | Oculta el modal. También se cierra con backdrop click, botón `✕`, botón Cancel, tecla Escape. |
+| Símbolo                         | Tipo      | Descripción                                                                                   |
+| ------------------------------- | --------- | --------------------------------------------------------------------------------------------- |
+| `window.OZ.IdentityEditor`      | singleton | Instancia única; el modal vive embebido en `webui.html` (id `oz-identity-modal`).             |
+| `IdentityEditor.open(identity)` | método    | Muestra el modal seedado con la identity dada (snapshot — no mutado).                         |
+| `IdentityEditor.close()`        | método    | Oculta el modal. También se cierra con backdrop click, botón `✕`, botón Cancel, tecla Escape. |
 
 ## Estructura HTML (en `webui.html`)
 

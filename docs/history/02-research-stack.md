@@ -7,6 +7,7 @@
 > **Validado en spike Etapa 0 (2026-05-09)** — ver `05-Resultado-Etapa-0.md`. Las 4 hipótesis técnicas críticas (aislamiento, proxy per-pestaña, auth user/pass, persistencia) pasaron contra Oxylabs Mobile HTTPS real.
 
 Razones:
+
 - API `session.fromPartition()` + `session.setProxy()` resuelve nativamente "cookie jar aislado por pestaña + proxy distinto por pestaña" — el corazón de Ghost Browser
 - Time-to-MVP: 4–8 semanas (vs 6–12 meses fork de Chromium)
 - Mantenimiento: subir versión de Electron = subir Chromium gratis (Electron sigue Chrome con 3-6 semanas de delay)
@@ -16,16 +17,16 @@ Razones:
 
 ## Tabla comparativa
 
-| Criterio | Fork Chromium | CEF | **Electron** ⭐ | Tauri | Extension |
-|---|---|---|---|---|---|
-| Tiempo a MVP | 6–12 meses | 4–8 meses | **4–8 semanas** | 6–10 sem (sin features) | 2–4 sem |
-| Mantenimiento por release | Días-semanas | Semanas | **Horas** | Bajo | Bajo |
-| Tamaño binario | 250–400 MB | 150–250 MB | 150–220 MB | 8–20 MB | 1–5 MB |
-| Aislamiento cookies | Total | Total | **Total (`persist:`)** | Limitado | Hack |
-| Proxy por pestaña | Total | Total | **Sí, por sesión** | Difícil | Sólo PAC tricks |
-| Chrome Web Store | Total | Limitado | **Parcial** | **No** | N/A |
-| Distribución mac | Compleja | Media | **Simple** | Simple | App Store ext |
-| Riesgo Google rompa | Alto | Alto | Medio | Bajo | **Crítico (MV3)** |
+| Criterio                  | Fork Chromium | CEF        | **Electron** ⭐        | Tauri                   | Extension         |
+| ------------------------- | ------------- | ---------- | ---------------------- | ----------------------- | ----------------- |
+| Tiempo a MVP              | 6–12 meses    | 4–8 meses  | **4–8 semanas**        | 6–10 sem (sin features) | 2–4 sem           |
+| Mantenimiento por release | Días-semanas  | Semanas    | **Horas**              | Bajo                    | Bajo              |
+| Tamaño binario            | 250–400 MB    | 150–250 MB | 150–220 MB             | 8–20 MB                 | 1–5 MB            |
+| Aislamiento cookies       | Total         | Total      | **Total (`persist:`)** | Limitado                | Hack              |
+| Proxy por pestaña         | Total         | Total      | **Sí, por sesión**     | Difícil                 | Sólo PAC tricks   |
+| Chrome Web Store          | Total         | Limitado   | **Parcial**            | **No**                  | N/A               |
+| Distribución mac          | Compleja      | Media      | **Simple**             | Simple                  | App Store ext     |
+| Riesgo Google rompa       | Alto          | Alto       | Medio                  | Bajo                    | **Crítico (MV3)** |
 
 ## Por qué se descartan las otras opciones
 
@@ -45,7 +46,7 @@ Razones:
 // Cada Identity = una partition
 const identityPartition = `persist:identity-${identityId}`
 const view = new WebContentsView({
-  webPreferences: { partition: identityPartition }
+  webPreferences: { partition: identityPartition },
 })
 ```
 
@@ -64,11 +65,11 @@ session.setProxy({ proxyRules: 'http=1.2.3.4:8080;https=1.2.3.4:8080' })
 // Patrón canonical confirmado en spike
 app.on('login', (event, webContents, request, authInfo, callback) => {
   if (authInfo.isProxy) {
-    event.preventDefault();
-    const cred = sessionCreds.get(webContents.session); // map session→creds
-    callback(cred.username, cred.password);
+    event.preventDefault()
+    const cred = sessionCreds.get(webContents.session) // map session→creds
+    callback(cred.username, cred.password)
   }
-});
+})
 ```
 
 **Decisión adicional del spike:** usar **HTTPS** como protocolo default para proxies en lugar de SOCKS5. Razones: `app.on('login')` es rock-solid para HTTPS; SOCKS5 ha tenido bugs históricos en Electron; debugging más fácil. SOCKS5 queda como opción avanzada en la app final pero no es la ruta principal.
@@ -91,6 +92,7 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 **Fase 0 (1 semana) — Setup**: Apple Developer Program, signing + notarize end-to-end con hello-world Electron.
 
 **Fase 1 — MVP (4–6 semanas)**:
+
 - Fork de `electron-browser-shell`
 - Modelo Identity `{id, name, color, proxyConfig, partition}`
 - UI "nueva pestaña con Identity X"
@@ -101,6 +103,7 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 - Build + sign + notarize + DMG
 
 **Fase 2 — Workspaces y polish (3–4 semanas)**:
+
 - Modelo Workspace = grupo tabs + identity + URL + estado
 - Save/load workspace
 - UI gestión Identities
@@ -108,6 +111,7 @@ app.on('login', (event, webContents, request, authInfo, callback) => {
 - Auto-update (electron-updater)
 
 **Fase 3 — Extensions (opcional, 2–4 semanas)**:
+
 - `electron-chrome-extensions`
 - UI instalación (drag .crx o Web Store)
 - Test extensiones top, documentar limitaciones MV3

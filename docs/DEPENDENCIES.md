@@ -74,6 +74,7 @@ graph TD
 Estas decisiones afectan cada módulo del proyecto y NO tienen que repetirse en cada bloque:
 
 ### Performance (Apple Silicon)
+
 - Universal binary arm64 nativo. Sin Rosetta. Sin C++ addons que no soporten arm64.
 - Tab discarding daemon respeta los límites del Performance mode.
 - Memory pressure handler activo en todos los modos.
@@ -81,6 +82,7 @@ Estas decisiones afectan cada módulo del proyecto y NO tienen que repetirse en 
 - Disk I/O: SQLite WAL mode, lazy partition init, compresión zstd para snapshots.
 
 ### Logging (pilar arquitectónico — ADR 0009)
+
 - **Todo se loggea.** Cada componente, cada flujo. Sin excepciones.
 - Niveles: DEBUG (datos diagnósticos), INFO (lifecycle), WARN (recoverable), ERROR (fallas reales).
 - Cada IPC handler loggea entrada (DEBUG) + salida (INFO con duration).
@@ -93,27 +95,32 @@ Estas decisiones afectan cada módulo del proyecto y NO tienen que repetirse en 
 - Activity tracker (Etapa 7.5) reusa logs INFO+WARN+ERROR sin DEBUG para metrics.
 
 ### Persistencia
+
 - Datos sensibles (vault) → AES-256-GCM, master key en macOS Keychain.
 - Datos no sensibles (identities, workspaces, proxies) → JSON plano en `data/`.
 - Snapshots automáticos antes de operaciones destructivas.
 
 ### Sync (cuando exista)
+
 - Backend pluggable: Cloud OZ (Supabase) / Dropbox / S3 self-hosted / Off.
 - Cliente cifra antes de subir. Backend solo ve blobs.
 - Conflict resolution last-write-wins → vector clocks v2.
 
 ### UX
+
 - Todo IPC pasa por `window.oz.*` (preload bridge). Renderer NUNCA llama a Node directo.
 - Renderer errors se reportan via `oz.log.reportError(...)` al main.
 - Todo en español para Jose / oficina; inglés para SaaS público (i18n en Etapa 6).
 
 ### Seguridad
+
 - Master password nunca toca disco en plaintext.
 - Tokens (Stripe, Supabase, Dropbox) en env vars o macOS Keychain.
 - Logs nunca contienen passwords/tokens (filter automático).
 - Updates firmados (Etapa 3 onwards).
 
 ### Modularidad
+
 - **Regla dura: ningún archivo de código > 500 LOC.** Si un módulo crece, dividir en submódulos. Esto facilita trabajar con Claude Cowork (Read sin offset, comprensión rápida).
 - Estado actual: todos los archivos del backend < 250 LOC (main.js: 155, ipc-handlers: 190, extensions-setup: 210, window-manager: 105, paths: 33, tabs: 334, identity-manager: 177, error-handler: 141, logger: 111, menu: 51).
 - WebUI dividido en oz-utils.js + tabstrip.js + sidebar.js + webui.js (boot).

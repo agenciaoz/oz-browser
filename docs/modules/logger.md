@@ -10,14 +10,14 @@ Logger central del proyecto. Escribe líneas timestamped a `~/Library/Logs/OZ Br
 
 ## Exports
 
-| Símbolo | Tipo | Descripción |
-|---|---|---|
-| `init()` | function | Inicializa el logger. Llamar una vez al inicio de la app. |
-| `debug(source, msg, ...args)` | function | Log nivel DEBUG. |
-| `info(source, msg, ...args)` | function | Log nivel INFO. |
-| `warn(source, msg, ...args)` | function | Log nivel WARN. |
-| `error(source, msg, ...args)` | function | Log nivel ERROR. |
-| `getLogFilePath()` | function | Retorna path al archivo de log activo. |
+| Símbolo                       | Tipo     | Descripción                                               |
+| ----------------------------- | -------- | --------------------------------------------------------- |
+| `init()`                      | function | Inicializa el logger. Llamar una vez al inicio de la app. |
+| `debug(source, msg, ...args)` | function | Log nivel DEBUG.                                          |
+| `info(source, msg, ...args)`  | function | Log nivel INFO.                                           |
+| `warn(source, msg, ...args)`  | function | Log nivel WARN.                                           |
+| `error(source, msg, ...args)` | function | Log nivel ERROR.                                          |
+| `getLogFilePath()`            | function | Retorna path al archivo de log activo.                    |
 
 ## Dependencias
 
@@ -38,6 +38,7 @@ Logger central del proyecto. Escribe líneas timestamped a `~/Library/Logs/OZ Br
 ```
 
 Ejemplo:
+
 ```
 [2026-05-09T19:42:48.927Z] INFO  [browser] IdentityManager loaded {"identitiesCount":2}
 ```
@@ -46,7 +47,7 @@ Ejemplo:
 
 ```js
 const log = require('./logger')
-log.init()  // una vez al inicio
+log.init() // una vez al inicio
 log.info('identity-manager', 'Identity created', { id: 'abc123', name: 'Cliente A' })
 log.warn('proxy', 'Slow proxy detected', { id: 'p7', latency: 4500 })
 log.error('vault', 'Decryption failed', { reason: err.message })
@@ -55,6 +56,7 @@ log.error('vault', 'Decryption failed', { reason: err.message })
 ## Privacy filters (Bloque 1.X — pendiente)
 
 A implementar: regex automáticos antes de escribir cualquier línea para reemplazar:
+
 - `password=...` → `password=[REDACTED]`
 - `Bearer xxx` → `Bearer [REDACTED]`
 - `Cookie: ...` → `Cookie: [REDACTED]`

@@ -52,16 +52,16 @@ asdf                            ← (no comment)
 
 ## Tags útiles en subject
 
-| Tag | Cuándo |
-|---|---|
-| `Bloque X.Y:` | Trabajo del bloque X.Y |
-| `Etapa N:` | Trabajo de etapa N |
-| `Docs:` | Solo documentación |
-| `Refactor:` | Refactor sin cambio de comportamiento |
-| `Fix:` | Bug fix |
-| `Perf:` | Optimización |
-| `Chore:` | Maintenance (deps, ci, build) |
-| `Revert:` | Revertir commit anterior |
+| Tag           | Cuándo                                |
+| ------------- | ------------------------------------- |
+| `Bloque X.Y:` | Trabajo del bloque X.Y                |
+| `Etapa N:`    | Trabajo de etapa N                    |
+| `Docs:`       | Solo documentación                    |
+| `Refactor:`   | Refactor sin cambio de comportamiento |
+| `Fix:`        | Bug fix                               |
+| `Perf:`       | Optimización                          |
+| `Chore:`      | Maintenance (deps, ci, build)         |
+| `Revert:`     | Revertir commit anterior              |
 
 ## Reglas
 

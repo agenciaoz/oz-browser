@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+# OZ Browser — pre-commit hook (ADR 0014).
+# 1) lint-staged corre eslint --fix + prettier --write sobre archivos staged
+# 2) check:loc valida la regla de 500 LOC (ADR 0005) sobre TODO el repo
+#
+# Bypass de emergencia: git commit --no-verify (uso esperado: 0-2 veces/mes)
+
+npx lint-staged
+npm run check:loc

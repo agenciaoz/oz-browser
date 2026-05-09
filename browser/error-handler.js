@@ -42,7 +42,10 @@ function showErrorDialog(title, errOrDetail) {
     type: 'error',
     title: 'OZ Browser — Error',
     message: title,
-    detail: detailStr.length > 1500 ? detailStr.slice(0, 1500) + '\n…[truncated, see log file]' : detailStr,
+    detail:
+      detailStr.length > 1500
+        ? detailStr.slice(0, 1500) + '\n…[truncated, see log file]'
+        : detailStr,
     buttons: ['Email Jose', 'Copy details', 'Open log file', 'Dismiss'],
     defaultId: 0,
     cancelId: 3,
@@ -68,7 +71,9 @@ function showErrorDialog(title, errOrDetail) {
       const url = `mailto:${REPORT_TO}?subject=${encodeURIComponent(
         subject,
       )}&body=${encodeURIComponent(body)}`
-      shell.openExternal(url).catch((e) => log.error('error-handler', 'openExternal failed', e))
+      shell
+        .openExternal(url)
+        .catch((e) => log.error('error-handler', 'openExternal failed', e))
     } else if (choice === 1) {
       clipboard.writeText(`${title}\n\n${detailStr}`)
     } else if (choice === 2) {
@@ -78,15 +83,21 @@ function showErrorDialog(title, errOrDetail) {
   }
 
   if (focused) {
-    dialog.showMessageBox(focused, opts).then(handle).catch((e) => {
-      dialogShowing = false
-      log.error('error-handler', 'showMessageBox failed', e)
-    })
+    dialog
+      .showMessageBox(focused, opts)
+      .then(handle)
+      .catch((e) => {
+        dialogShowing = false
+        log.error('error-handler', 'showMessageBox failed', e)
+      })
   } else {
-    dialog.showMessageBox(opts).then(handle).catch((e) => {
-      dialogShowing = false
-      log.error('error-handler', 'showMessageBox failed', e)
-    })
+    dialog
+      .showMessageBox(opts)
+      .then(handle)
+      .catch((e) => {
+        dialogShowing = false
+        log.error('error-handler', 'showMessageBox failed', e)
+      })
   }
 }
 
@@ -127,7 +138,10 @@ function wrapHandler(channel, fn) {
     try {
       return await fn(event, ...args)
     } catch (err) {
-      log.error('ipc', `Handler ${channel} threw`, { stack: err.stack, message: err.message })
+      log.error('ipc', `Handler ${channel} threw`, {
+        stack: err.stack,
+        message: err.message,
+      })
       showErrorDialog(`IPC handler error: ${channel}`, err)
       throw err
     }

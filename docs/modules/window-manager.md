@@ -10,8 +10,8 @@ Define `TabbedBrowserWindow` — clase que combina una `BrowserWindow` con sus `
 
 ## Exports
 
-| Símbolo | Tipo | Descripción |
-|---|---|---|
+| Símbolo               | Tipo  | Descripción        |
+| --------------------- | ----- | ------------------ |
 | `TabbedBrowserWindow` | class | Window+Tabs combo. |
 
 ## Constructor options
@@ -32,13 +32,13 @@ new TabbedBrowserWindow({
 
 Configurado en `_wireTabEvents()`:
 
-| Evento de Tabs | Acción |
-|---|---|
-| `tab-created` | Si no tiene URL, queue `urls.newtab`. Notify sidebar `oz:tabs:updated kind=created`. |
-| `tab-materialized` | Si session === defaultSession, llamar `extensions.addTab()`. Notify sidebar `kind=materialized`. |
-| `tab-updated` | Notify sidebar `kind=updated` con info nueva. |
-| `tab-selected` | Si webContents.session === defaultSession, llamar `extensions.selectTab()`. Notify sidebar `kind=selected`. |
-| `tab-destroyed` | Notify sidebar `kind=removed`. |
+| Evento de Tabs     | Acción                                                                                                      |
+| ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `tab-created`      | Si no tiene URL, queue `urls.newtab`. Notify sidebar `oz:tabs:updated kind=created`.                        |
+| `tab-materialized` | Si session === defaultSession, llamar `extensions.addTab()`. Notify sidebar `kind=materialized`.            |
+| `tab-updated`      | Notify sidebar `kind=updated` con info nueva.                                                               |
+| `tab-selected`     | Si webContents.session === defaultSession, llamar `extensions.selectTab()`. Notify sidebar `kind=selected`. |
+| `tab-destroyed`    | Notify sidebar `kind=removed`.                                                                              |
 
 ## Initial tab
 
@@ -53,10 +53,10 @@ Primera tab siempre eager (debe ser visible inmediatamente). Tabs subsecuentes s
 
 ## API
 
-| Método | Descripción |
-|---|---|
-| `destroy()` | tabs.destroy() + window.destroy() |
-| `getFocusedTab()` | tabs.selected |
+| Método                           | Descripción                            |
+| -------------------------------- | -------------------------------------- |
+| `destroy()`                      | tabs.destroy() + window.destroy()      |
+| `getFocusedTab()`                | tabs.selected                          |
 | `_sendToWebUI(channel, payload)` | webContents.send con guard isDestroyed |
 
 ## Gotchas

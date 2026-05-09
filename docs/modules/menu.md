@@ -10,8 +10,8 @@ Configura el app menu (top menubar de macOS). Heredado de electron-browser-shell
 
 ## Exports
 
-| Símbolo | Tipo | Descripción |
-|---|---|---|
+| Símbolo              | Tipo     | Descripción                                           |
+| -------------------- | -------- | ----------------------------------------------------- |
 | `setupMenu(browser)` | function | Aplica el menú a la app. Recibe instancia de Browser. |
 
 ## Pendiente (Bloque 1.7)

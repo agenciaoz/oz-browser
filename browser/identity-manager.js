@@ -17,8 +17,16 @@ const { app, session } = require('electron')
 const log = require('./logger')
 
 const DEFAULT_COLORS = [
-  '#5b8def', '#ff7a45', '#36b37e', '#ffab00', '#9c5cf2',
-  '#e85a8c', '#00b8d9', '#f15a5a', '#36b37e', '#ff5630',
+  '#5b8def',
+  '#ff7a45',
+  '#36b37e',
+  '#ffab00',
+  '#9c5cf2',
+  '#e85a8c',
+  '#00b8d9',
+  '#f15a5a',
+  '#36b37e',
+  '#ff5630',
 ]
 
 // Free-tier cap. Bypass for development/internal builds via env OZ_TIER=paid.
@@ -31,7 +39,7 @@ class IdentityCapError extends Error {
   constructor(current, max) {
     super(
       `Free tier limit reached (${current}/${max} identities). ` +
-      `Upgrade to Basic ($12/mo) for unlimited identities, or set OZ_TIER=paid for development.`,
+        `Upgrade to Basic ($12/mo) for unlimited identities, or set OZ_TIER=paid for development.`,
     )
     this.code = 'IDENTITY_CAP_REACHED'
     this.current = current
@@ -139,7 +147,9 @@ class IdentityManager {
     this.identities.push(identity)
     this._save()
     log.info('identity-manager', 'identity created', {
-      id: identity.id, name: identity.name, total: this.identities.length,
+      id: identity.id,
+      name: identity.name,
+      total: this.identities.length,
     })
     return { ...identity }
   }
@@ -170,9 +180,14 @@ class IdentityManager {
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(patch, key)) {
         if (key === 'userAgent' && ident.isDefault && patch.userAgent) {
-          log.warn('identity-manager', 'refusing userAgent override on Default identity', {
-            id, requested: patch.userAgent,
-          })
+          log.warn(
+            'identity-manager',
+            'refusing userAgent override on Default identity',
+            {
+              id,
+              requested: patch.userAgent,
+            },
+          )
           continue
         }
         ident[key] = patch[key] === '' ? null : patch[key]
@@ -190,12 +205,16 @@ class IdentityManager {
       const ses = this.sessionCache.get(id)
       const ua = ident.userAgent || ''
       ses.setUserAgent(ua)
-      log.info('identity-manager', 'live session UA updated', { id, ua: ua || '(default)' })
+      log.info('identity-manager', 'live session UA updated', {
+        id,
+        ua: ua || '(default)',
+      })
     }
 
     log.info('identity-manager', 'identity updated', {
-      id, changedKeys: allowed.filter((k) =>
-        Object.prototype.hasOwnProperty.call(patch, k) && before[k] !== ident[k],
+      id,
+      changedKeys: allowed.filter(
+        (k) => Object.prototype.hasOwnProperty.call(patch, k) && before[k] !== ident[k],
       ),
     })
 
@@ -246,14 +265,17 @@ class IdentityManager {
       if (ident && ident.userAgent) {
         ses.setUserAgent(ident.userAgent)
         log.debug('identity-manager', 'session created with custom UA', {
-          id, ua: ident.userAgent,
+          id,
+          ua: ident.userAgent,
         })
       }
     }
 
     this.sessionCache.set(id, ses)
     log.debug('identity-manager', 'session resolved', {
-      id, cached: false, isDefault: !!(ident && ident.isDefault),
+      id,
+      cached: false,
+      isDefault: !!(ident && ident.isDefault),
     })
     return ses
   }

@@ -10,20 +10,20 @@ Captura errores no manejados (main + renderer + workers) y muestra un popup con 
 
 ## Exports
 
-| Símbolo | Tipo | Descripción |
-|---|---|---|
-| `setupErrorHandlers()` | function | Registra handlers globales. Llamar al inicio. |
-| `showErrorDialog(title, errOrDetail)` | function | Muestra popup manualmente. |
-| `wrapHandler(channel, fn)` | function | Wrappea un IPC handler para auto-log+popup en errores. |
+| Símbolo                               | Tipo     | Descripción                                            |
+| ------------------------------------- | -------- | ------------------------------------------------------ |
+| `setupErrorHandlers()`                | function | Registra handlers globales. Llamar al inicio.          |
+| `showErrorDialog(title, errOrDetail)` | function | Muestra popup manualmente.                             |
+| `wrapHandler(channel, fn)`            | function | Wrappea un IPC handler para auto-log+popup en errores. |
 
 ## Handlers registrados
 
-| Evento | Origen |
-|---|---|
-| `process.on('uncaughtException')` | main |
-| `process.on('unhandledRejection')` | main |
-| `app.on('render-process-gone')` | renderer crashed |
-| `app.on('child-process-gone')` | child (utility, GPU) |
+| Evento                             | Origen               |
+| ---------------------------------- | -------------------- |
+| `process.on('uncaughtException')`  | main                 |
+| `process.on('unhandledRejection')` | main                 |
+| `app.on('render-process-gone')`    | renderer crashed     |
+| `app.on('child-process-gone')`     | child (utility, GPU) |
 
 ## Email-Jose flow
 
@@ -52,9 +52,12 @@ Captura errores no manejados (main + renderer + workers) y muestra un popup con 
 
 ```js
 const { wrapHandler } = require('./error-handler')
-ipcMain.handle('oz:foo', wrapHandler('oz:foo', async (e, args) => {
-  // Si throws, se loggea + popup automático.
-}))
+ipcMain.handle(
+  'oz:foo',
+  wrapHandler('oz:foo', async (e, args) => {
+    // Si throws, se loggea + popup automático.
+  }),
+)
 ```
 
 (No usado todavía — patrón disponible para futuro.)

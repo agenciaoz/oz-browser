@@ -5,6 +5,7 @@
 Ghost Browser es un **fork cerrado de Chromium** mantenido por **Webatix** (activo desde 2015). Su propuesta de valor NO es antidetect — es **productividad por aislamiento de cookie jars**: loguear muchas cuentas en el mismo sitio en una sola ventana, con tabs de colores, y opcionalmente rutearlas por proxies distintos. Stack 2026: Chromium ~129 (desde v2.4, oct 2024; build actual 2.4.1.2 de ago 2025), corre en Windows 10+, macOS 11+, Ubuntu/Debian 64-bit. No mobile.
 
 Tres primitivas dominan el producto:
+
 - **Identities permanentes**: nombradas, color-coded, persistentes entre reinicios, con proxy y user-agent dedicados opcionales.
 - **Temporary Identities** (antes "Sessions"): efímeras, scoped a un Workspace, destruidas al cerrar la última pestaña, **máx 25 por Workspace**.
 - **Workspaces**: sets de pestañas guardados con estado, "freezable", archivables.
@@ -15,12 +16,12 @@ Los proxies se manejan con **Ghost Proxy Control (GPC)**, su extensión propia. 
 
 ## Pricing real (mayo 2026)
 
-| Plan | Anual | Mensual equivalente | Gating |
-|---|---|---|---|
-| **Free** | $0 | — | 3 Identities, GPC scope WS/Identity solo, no per-tab |
-| **Basic** | $21/mo facturado anual (≈$25/mo mensual) | ~$25 | Identities/Workspaces ilimitadas. **NO incluye GPC** |
-| **Pro** | $46/mo anual | **~$55–$59/mo mensual** | Todo Basic + GPC completo (per-tab/Identity/Workspace), priority email |
-| **Enterprise** | Custom | — | Volumen de seats |
+| Plan           | Anual                                    | Mensual equivalente     | Gating                                                                 |
+| -------------- | ---------------------------------------- | ----------------------- | ---------------------------------------------------------------------- |
+| **Free**       | $0                                       | —                       | 3 Identities, GPC scope WS/Identity solo, no per-tab                   |
+| **Basic**      | $21/mo facturado anual (≈$25/mo mensual) | ~$25                    | Identities/Workspaces ilimitadas. **NO incluye GPC**                   |
+| **Pro**        | $46/mo anual                             | **~$55–$59/mo mensual** | Todo Basic + GPC completo (per-tab/Identity/Workspace), priority email |
+| **Enterprise** | Custom                                   | —                       | Volumen de seats                                                       |
 
 Lo que paga Jose ($59) = Pro mensual. Aceptan crypto.
 
@@ -28,11 +29,11 @@ Lo que paga Jose ($59) = Pro mensual. Aceptan crypto.
 
 ### Tipos de Identity
 
-| Tipo | Cookies | Scope | Color | Proxy |
-|---|---|---|---|---|
-| **Default** | Permanente, jar global compartido | Global | Gris | Per-tab solo |
-| **Temporary** | Efímera | Workspace específico | 25 colores preset (cap 25 por WS) | Per-tab GPC, se pierde al cerrar. Auto-assign rota aquí |
-| **Permanent** | Persistente entre reinicios y updates | Global | Custom | Pinned + UA custom por Identity |
+| Tipo          | Cookies                               | Scope                | Color                             | Proxy                                                   |
+| ------------- | ------------------------------------- | -------------------- | --------------------------------- | ------------------------------------------------------- |
+| **Default**   | Permanente, jar global compartido     | Global               | Gris                              | Per-tab solo                                            |
+| **Temporary** | Efímera                               | Workspace específico | 25 colores preset (cap 25 por WS) | Per-tab GPC, se pierde al cerrar. Auto-assign rota aquí |
+| **Permanent** | Persistente entre reinicios y updates | Global               | Custom                            | Pinned + UA custom por Identity                         |
 
 Cada Identity tiene su propio cookie jar, localStorage, IndexedDB, WebSQL, Service Workers, Notifications. **Reset Identity** limpia el jar pero conserva nombre/color/proxy/UA y "regenera fingerprint" (reroll de seeds, no reroll completo).
 

@@ -10,28 +10,28 @@ Sidebar lateral izquierda con la lista de Identities y sus tabs agrupadas. CRUD 
 
 ## Class `IdentitySidebar`
 
-| Estado | Descripción |
-|---|---|
-| `identities[]` | Cache de identities. |
-| `tabs[]` | Cache de todas las tabs. |
+| Estado             | Descripción                         |
+| ------------------ | ----------------------------------- |
+| `identities[]`     | Cache de identities.                |
+| `tabs[]`           | Cache de todas las tabs.            |
 | `activeIdentityId` | Identity activa (chip highlighted). |
-| `activeOzTabId` | Tab activo. |
+| `activeOzTabId`    | Tab activo.                         |
 
-| Método | Descripción |
-|---|---|
-| `init()` | Carga inicial + subscribe a oz:identities:changed/active-changed/tabs:updated. |
-| `refresh()` | Re-fetch de toda la data. |
-| `handleTabEvent(info)` | Delta-update del cache. |
-| `handleNewIdentity()` | Inline input (window.prompt está bloqueado en Electron). |
-| `handleNewTabIn(id)` | + button hover. |
-| `handleSelectTab(ozTabId)` | window.oz.tabs.select. |
-| `handleCloseTab(ozTabId, ev)` | window.oz.tabs.close. |
-| `handleSelectIdentity(id)` | window.oz.identities.setActive. |
-| `handleRenameIdentity(id, currentName, rowEl)` | Inline editor. |
-| `handleEditIdentity(identity)` | Abre modal completo via `window.OZ.IdentityEditor.open(identity)`. |
-| `handleDeleteIdentity(identity)` | confirm() + window.oz.identities.remove. |
-| `showContextMenu(e, identity)` | Right-click → Rename / Edit identity… / Delete. |
-| `render()` | Re-render del DOM completo. |
+| Método                                                         | Descripción                                                                                                                                                             |
+| -------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `init()`                                                       | Carga inicial + subscribe a oz:identities:changed/active-changed/tabs:updated.                                                                                          |
+| `refresh()`                                                    | Re-fetch de toda la data.                                                                                                                                               |
+| `handleTabEvent(info)`                                         | Delta-update del cache.                                                                                                                                                 |
+| `handleNewIdentity()`                                          | Inline input (window.prompt está bloqueado en Electron).                                                                                                                |
+| `handleNewTabIn(id)`                                           | + button hover.                                                                                                                                                         |
+| `handleSelectTab(ozTabId)`                                     | window.oz.tabs.select.                                                                                                                                                  |
+| `handleCloseTab(ozTabId, ev)`                                  | window.oz.tabs.close.                                                                                                                                                   |
+| `handleSelectIdentity(id)`                                     | window.oz.identities.setActive.                                                                                                                                         |
+| `handleRenameIdentity(id, currentName, rowEl)`                 | Inline editor.                                                                                                                                                          |
+| `handleEditIdentity(identity)`                                 | Abre modal completo via `window.OZ.IdentityEditor.open(identity)`.                                                                                                      |
+| `handleDeleteIdentity(identity)`                               | confirm() + window.oz.identities.remove.                                                                                                                                |
+| `showContextMenu(e, identity)`                                 | Right-click → Rename / Edit identity… / Delete.                                                                                                                         |
+| `render()`                                                     | Re-render del DOM completo.                                                                                                                                             |
 | `renderIdentityRow(identity)` / `renderTabItem(tab, identity)` | DOM helpers. Renderiza chip color, nombre, contador `(n)` con tabs de la identity, botón `+` (hover-revealed). Default identity recibe class `default` + dot indicator. |
 
 ## Layout HTML target

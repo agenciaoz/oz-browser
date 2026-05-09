@@ -20,7 +20,7 @@ Ghost Browser permite configurar el User-Agent global pero NO por-identity. Para
 ## Alternativas consideradas
 
 - **UA per-tab:** demasiado granular para v1, complica la UI. Tab-level overrides los dejamos para Bloque 1.6 (context menu).
-- **Aplicar UA via preload script (override navigator.userAgent):** hace que `document.userAgent` mienta pero el `User-Agent` HTTP header sigue siendo el real → fingerprint inconsistente, peor que no hacer nada. El FE de Bloque 1.5 va a hacer override de navigator.* coordinado con `setUserAgent` del transport — coherencia es lo que diferencia "Ghost+". Por ahora `setUserAgent` solo (header consistente, navigator no necesariamente).
+- **Aplicar UA via preload script (override navigator.userAgent):** hace que `document.userAgent` mienta pero el `User-Agent` HTTP header sigue siendo el real → fingerprint inconsistente, peor que no hacer nada. El FE de Bloque 1.5 va a hacer override de navigator.\* coordinado con `setUserAgent` del transport — coherencia es lo que diferencia "Ghost+". Por ahora `setUserAgent` solo (header consistente, navigator no necesariamente).
 - **No exponerlo hasta Bloque 1.5:** lo que originalmente plan v3 decía. Pero Jose lo pidió porque el modal de Identity ya existe y este es el campo más útil para empezar a fingerprinting per-identity sin esperar 7 bloques.
 
 ## Consecuencias

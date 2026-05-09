@@ -41,10 +41,8 @@ if (isWebUI) {
       setActive: (id) => ipcRenderer.invoke('oz:identities:setActive', id),
       create: (opts) => ipcRenderer.invoke('oz:identities:create', opts),
       rename: (id, name) => ipcRenderer.invoke('oz:identities:rename', id, name),
-      setColor: (id, color) =>
-        ipcRenderer.invoke('oz:identities:setColor', id, color),
-      update: (id, patch) =>
-        ipcRenderer.invoke('oz:identities:update', id, patch),
+      setColor: (id, color) => ipcRenderer.invoke('oz:identities:setColor', id, color),
+      update: (id, patch) => ipcRenderer.invoke('oz:identities:update', id, patch),
       remove: (id) => ipcRenderer.invoke('oz:identities:remove', id),
 
       onChanged(cb) {

@@ -5,7 +5,7 @@ const { app, session, dialog } = require('electron')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 const { installChromeWebStore, loadAllExtensions } = require('electron-chrome-web-store')
-const { PATHS, getParentWindowOfTab } = require('./paths')
+const { PATHS } = require('./paths')
 const log = require('./logger')
 
 /** Set up the default session: strip Electron/App from UA, log SW status. */
@@ -141,7 +141,9 @@ async function loadExtensions(browser) {
   if (!app.isPackaged) {
     await loadAllExtensions(browser.session, PATHS.LOCAL_EXTENSIONS, {
       allowUnpacked: true,
-    }).catch((err) => log.warn('ext', 'loadAllExtensions failed (folder may not exist)', err.message))
+    }).catch((err) =>
+      log.warn('ext', 'loadAllExtensions failed (folder may not exist)', err.message),
+    )
   }
 
   await Promise.all(
@@ -168,7 +170,9 @@ function setupWebContentsCreatedHandler(browser) {
     }
 
     webContents.setWindowOpenHandler((details) => {
-      if (['foreground-tab', 'background-tab', 'new-window'].includes(details.disposition)) {
+      if (
+        ['foreground-tab', 'background-tab', 'new-window'].includes(details.disposition)
+      ) {
         return {
           action: 'allow',
           outlivesOpener: true,

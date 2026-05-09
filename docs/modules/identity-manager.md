@@ -10,26 +10,26 @@ CRUD de Identities con persistencia en `~/Library/Application Support/OZ Browser
 
 ## Exports
 
-| Símbolo | Tipo | Descripción |
-|---|---|---|
-| `IdentityManager` | class | Manager principal. |
-| `IdentityCapError` | Error class | Lanzado por `create()` cuando se supera el cap free. Tiene `code='IDENTITY_CAP_REACHED'`, `current`, `max`. |
-| `MAX_IDENTITIES_FREE` | constant | 3 (incluye Default). |
+| Símbolo               | Tipo        | Descripción                                                                                                 |
+| --------------------- | ----------- | ----------------------------------------------------------------------------------------------------------- |
+| `IdentityManager`     | class       | Manager principal.                                                                                          |
+| `IdentityCapError`    | Error class | Lanzado por `create()` cuando se supera el cap free. Tiene `code='IDENTITY_CAP_REACHED'`, `current`, `max`. |
+| `MAX_IDENTITIES_FREE` | constant    | 3 (incluye Default).                                                                                        |
 
 ## API de la clase
 
-| Método | Descripción |
-|---|---|
-| `list()` | Array de identities (copia). |
-| `get(id)` | Identity por id, o null. |
-| `getDefault()` | Identity isDefault=true. |
-| `create({name, color?, userAgent?})` | Crea + persiste + retorna nueva. **Lanza `IdentityCapError`** si free-tier cap superado. |
-| `rename(id, name)` | Actualiza name + persiste. (Wrapper sobre `update`). |
-| `setColor(id, color)` | Actualiza color + persiste. (Wrapper sobre `update`). |
-| `update(id, patch)` | Patch genérico. Whitelist: `name`, `color`, `userAgent`. Si `userAgent` cambia y la session ya está cacheada, llama `setUserAgent` en vivo. Default identity rechaza patches de `userAgent` (warn). |
-| `remove(id)` | Elimina (excepto default). NO borra storage en disk (manual cleanup). |
-| `getSession(id)` | Devuelve `Session` electron, cacheada. Default → defaultSession. Otras → `persist:identity-<id>` con `setUserAgent(identity.userAgent)` si hay UA custom. |
-| `resolve(id)` | `{ identity, session }` — resuelve null/undefined al default. |
+| Método                               | Descripción                                                                                                                                                                                         |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `list()`                             | Array de identities (copia).                                                                                                                                                                        |
+| `get(id)`                            | Identity por id, o null.                                                                                                                                                                            |
+| `getDefault()`                       | Identity isDefault=true.                                                                                                                                                                            |
+| `create({name, color?, userAgent?})` | Crea + persiste + retorna nueva. **Lanza `IdentityCapError`** si free-tier cap superado.                                                                                                            |
+| `rename(id, name)`                   | Actualiza name + persiste. (Wrapper sobre `update`).                                                                                                                                                |
+| `setColor(id, color)`                | Actualiza color + persiste. (Wrapper sobre `update`).                                                                                                                                               |
+| `update(id, patch)`                  | Patch genérico. Whitelist: `name`, `color`, `userAgent`. Si `userAgent` cambia y la session ya está cacheada, llama `setUserAgent` en vivo. Default identity rechaza patches de `userAgent` (warn). |
+| `remove(id)`                         | Elimina (excepto default). NO borra storage en disk (manual cleanup).                                                                                                                               |
+| `getSession(id)`                     | Devuelve `Session` electron, cacheada. Default → defaultSession. Otras → `persist:identity-<id>` con `setUserAgent(identity.userAgent)` si hay UA custom.                                           |
+| `resolve(id)`                        | `{ identity, session }` — resuelve null/undefined al default.                                                                                                                                       |
 
 ## Modelo Identity
 

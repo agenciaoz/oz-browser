@@ -9,11 +9,13 @@
 ## Lo que entregamos en esta sesión de cierre
 
 ### 1. Default Identity siempre visible con `(n)` count
+
 - `sidebar.js renderIdentityRow` agrega `.identity-count` con número de tabs (lazy + materialized) de esa identity al lado del nombre.
 - Default identity recibe class CSS `.default` que pinta un `·` muted al final del nombre — diferenciador visual sutil sin agregar otra columna.
 - CSS en `webui.html`: estilo `.identity-count` (tabular-nums, `--text-muted`) + opacity 0.45 cuando `(0)`.
 
 ### 2. Per-identity custom User-Agent (ADR 0010)
+
 - **ADR nuevo**: `docs/architecture/0010-per-identity-user-agent.md` — explica decisión, alternativas (per-tab, preload override, diferir a Bloque 1.5) y deuda asumida (UA del HTTP header consistente, `navigator.userAgent` no override hasta Bloque 1.5).
 - **Modelo**: campo `userAgent: string|null` en Identity. `IdentityManager.create({...userAgent})` lo acepta. Default rechaza con warn (compartiría defaultSession con extensions, riesgo).
 - **Método nuevo**: `IdentityManager.update(id, patch)` — whitelist de keys (`name`, `color`, `userAgent`). `rename`/`setColor` ahora son wrappers. Si `userAgent` cambia y la session ya está cacheada, llama `setUserAgent` en vivo (no requiere restart).
@@ -24,12 +26,14 @@
 - **Doc módulo**: `docs/modules/ui-identity-editor.md` nuevo + `identity-manager.md` actualizado.
 
 ### 3. Free-tier cap placeholder (3 identities)
+
 - `MAX_IDENTITIES_FREE = 3` en `identity-manager.js` (Default + 2 custom).
 - `process.env.OZ_TIER === 'paid'` bypassa el cap (uso dev / internal builds; reemplazado por entitlement check de `auth-client.js` cuando llegue Etapa 5).
 - `IdentityCapError` exportado. `create()` lanza si supera. IPC handler captura y devuelve `{ __error: { code, message, current, max } }` al renderer (mejor UX que throw → generic error popup).
 - Sidebar `handleNewIdentity` muestra `alert(message)` cuando recibe `__error`.
 
 ### 4. Bug "tab duplicada al arranque" — diagnóstico observable
+
 - No se encontró duplicación reproducible por inspección estática (sidebar y tabstrip ya dedupean por id correctamente).
 - **Logging fino agregado** en cada punto donde nace una tab: `tabs.create()` ahora acepta `source` opcional y loggea INFO con `tabId, identityId, url, source, eager, total, windowId`. Cada caller pasa `source` identificable:
   - `window-manager._createInitialTab`
@@ -42,6 +46,7 @@
 - En sidebar.js, `handleTabEvent` ahora distingue eventos `created` (push) vs `updated`/`materialized` con tab desconocido (push + log debug "tab event without prior create cached") — útil para detectar inconsistencias futuras.
 
 ### 5. Smoke test manual reproducible
+
 - `docs/guides/manual-test-1.2.md` con checklist de 7 secciones (arranque, Default visible, CRUD identity, lazy tab materializa, custom UA, free-tier cap, persistencia). Tiempo estimado 5 min.
 - En Bloque 1.10 polish se convierte en Playwright-electron / Spectron.
 
@@ -50,12 +55,14 @@
 Durante la ejecución del smoke test visual (Claude controlando la app via computer-use), se encontraron 2 bugs que el code review estático no detectó:
 
 **Bug A: `Identifier 'safe' has already been declared` — sidebar vacío al arrancar.**
+
 - Síntoma: el sidebar mostraba botón "+ New Identity" y header "IDENTITIES" pero NO renderizaba las identities ni tabs. Console del DevTools tenía 4 SyntaxErrors idénticos.
 - Causa: `oz-utils.js` declaraba `function safe()` al top-level (entra en global object), y luego `tabstrip.js`, `sidebar.js`, `identity-editor.js`, `webui.js` cada uno hacía `const { safe } = window.OZ.utils` al top-level. Hay regla en JS: NO puedes declarar `const X` en global lexical scope si `X` ya existe en el global object via `function`. Y como classic scripts comparten el global lexical scope entre archivos del mismo documento, los `const safe` también chocaban entre ellos.
 - Bug pre-existente desde el fork de electron-browser-shell. Solo se manifestó visiblemente cuando agregamos `identity-editor.js` (cuarto archivo declarando lo mismo) — antes con 3 archivos también ocurría pero el booteo de webui.js fallaba más silenciosamente.
 - Fix: IIFE wrap en los 5 archivos UI (`oz-utils.js`, `tabstrip.js`, `sidebar.js`, `identity-editor.js`, `webui.js`). Cada `const safe` queda local al IIFE, no choca con nadie. Comentario en `oz-utils.js` explica el porqué.
 
 **Bug B: Modal cubierto por WebContentsView nativa.**
+
 - Síntoma: al abrir el modal "Edit identity…", el sidebar/topbar se atenuaban (backdrop visible) pero el modal era invisible — el área del content (~1060×620 px) lo cubría por completo.
 - Causa: `WebContentsView` es una primitive nativa de Electron que se renderiza ENCIMA de cualquier DOM HTML del browser chrome. No hay z-index HTML que la pueda tapar.
 - Fix: nuevo IPC `oz:ui:setContentVisible(visible)` registrado en `ipc-handlers.js → registerUiHandlers`. Hace `tab.view.setVisible(visible)` sobre el tab activo del window focused. `identity-editor.js` lo invoca con `false` en `open()` y `true` en `close()`. Documentado como pattern en **ADR 0011** para reutilizar en futuras overlays (workspace switcher, settings, command palette, etc.).
@@ -118,6 +125,7 @@ open docs/guides/manual-test-1.2.md
 ## Próximo paso concreto
 
 **Arrancar Bloque 1.3 — Workspace Manager** (estimado 5-6 sesiones, ~10 horas):
+
 - Modelo `Workspace { id, name, color?, isDefault, isArchived, isFrozen, tabs[], identities[] }`.
 - CRUD: create / rename / duplicate / archive / restore / delete.
 - "General Browsing" workspace default no eliminable.

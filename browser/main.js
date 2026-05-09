@@ -32,6 +32,7 @@ const {
   setupWebContentsCreatedHandler,
 } = require('./extensions-setup')
 const { getParentWindowOfTab } = require('./paths')
+const { MCPServer } = require('./mcp-server')
 
 class Browser {
   windows = []
@@ -42,6 +43,7 @@ class Browser {
 
   constructor() {
     this.ready = new Promise((resolve) => (this.resolveReady = resolve))
+    this.mcpServer = null
     app.whenReady().then(() => this.init())
 
     app.on('window-all-closed', () => {
@@ -52,11 +54,21 @@ class Browser {
       if (BrowserWindow.getAllWindows().length === 0) this.createInitialWindow()
     })
 
+    app.on('before-quit', async (e) => {
+      if (this.mcpServer) {
+        e.preventDefault()
+        await this.mcpServer.stop()
+        this.mcpServer = null
+        app.quit()
+      }
+    })
+
     setupWebContentsCreatedHandler(this)
   }
 
   destroy() {
-    app.quit()
+    if (this.mcpServer) this.mcpServer.stop().finally(() => app.quit())
+    else app.quit()
   }
 
   /** Broadcast an event to all WebUI webContents (every window's chrome). */
@@ -73,9 +85,7 @@ class Browser {
   }
 
   getWindowFromBrowserWindow(window) {
-    return !window.isDestroyed()
-      ? this.windows.find((w) => w.id === window.id)
-      : null
+    return !window.isDestroyed() ? this.windows.find((w) => w.id === window.id) : null
   }
 
   getWindowFromWebContents(webContents) {
@@ -108,6 +118,26 @@ class Browser {
     log.info('browser', `WebUI extension loaded id=${this.webuiExtensionId}`)
 
     this.createInitialWindow()
+
+    // Start MCP server if env-enabled. Off by default — see ADR 0012.
+    if (process.env.OZ_MCP_ENABLED === '1' || process.env.OZ_MCP_ENABLED === 'true') {
+      try {
+        this.mcpServer = new MCPServer(this)
+        await this.mcpServer.start()
+        log.info('browser', 'MCP server enabled', {
+          port: this.mcpServer.port,
+          endpoint: `http://127.0.0.1:${this.mcpServer.port}/mcp`,
+        })
+      } catch (err) {
+        log.error('browser', 'MCP server failed to start', {
+          message: err.message,
+          stack: err.stack,
+        })
+        // Don't crash the browser — just leave MCP off.
+        this.mcpServer = null
+      }
+    }
+
     this.resolveReady()
     log.info('browser', 'Browser.init() done — initial window created')
   }

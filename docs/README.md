@@ -11,14 +11,14 @@
 
 ## Estructura
 
-| Carpeta | Para qué |
-|---|---|
+| Carpeta                                   | Para qué                                                                               |
+| ----------------------------------------- | -------------------------------------------------------------------------------------- |
 | [`architecture/`](architecture/README.md) | Architecture Decision Records (ADRs). Cada decisión grande tiene su número y su razón. |
-| [`modules/`](modules/README.md) | Un `.md` por archivo de código en `browser/`. Qué hace, qué exporta, IPC, gotchas. |
-| [`features/`](features/README.md) | Features transversales (Identity, Workspace, Vault, Time Machine, etc.) end-to-end. |
-| [`guides/`](guides/README.md) | How-to: levantar dev, hacer release, debug, agregar feature. |
-| [`processes/`](processes/) | Procesos de equipo: commit style, code review. |
-| [`history/`](history/) | Bitácora por bloque/etapa cerrado. |
+| [`modules/`](modules/README.md)           | Un `.md` por archivo de código en `browser/`. Qué hace, qué exporta, IPC, gotchas.     |
+| [`features/`](features/README.md)         | Features transversales (Identity, Workspace, Vault, Time Machine, etc.) end-to-end.    |
+| [`guides/`](guides/README.md)             | How-to: levantar dev, hacer release, debug, agregar feature.                           |
+| [`processes/`](processes/)                | Procesos de equipo: commit style, code review.                                         |
+| [`history/`](history/)                    | Bitácora por bloque/etapa cerrado.                                                     |
 
 ## Reglas duras (no negociables)
 

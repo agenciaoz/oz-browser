@@ -27,11 +27,11 @@ Jose tiene varias MacBook Air M1 8 GB en su oficina. Los empleados van a usar OZ
 
 ### Benchmarks objetivo (gates de release)
 
-| Mac (RAM) | Lazy tabs | Materialized concurrentes | RAM total |
-|---|---|---|---|
-| MacBook Air M1 8 GB | 100 | 10 | < 4 GB |
-| MacBook Pro M1/M2 16 GB | 200 | 30 | < 8 GB |
-| MacBook Pro M2/M3 32 GB+ | 500 | 100 | < 16 GB |
+| Mac (RAM)                | Lazy tabs | Materialized concurrentes | RAM total |
+| ------------------------ | --------- | ------------------------- | --------- |
+| MacBook Air M1 8 GB      | 100       | 10                        | < 4 GB    |
+| MacBook Pro M1/M2 16 GB  | 200       | 30                        | < 8 GB    |
+| MacBook Pro M2/M3 32 GB+ | 500       | 100                       | < 16 GB   |
 
 - Cold start < 2 s en M1 Air
 - Crear identity nueva < 100 ms

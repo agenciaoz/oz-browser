@@ -10,25 +10,27 @@ Top tabstrip de la WebUI. Muestra TODAS las tabs (across all identities) con str
 
 ## Class `TabStrip`
 
-| Estado | Descripción |
-|---|---|
-| `tabs[]` | Array de tab serializations cacheado. |
-| `identities[]` | Idem identities. |
-| `activeOzTabId` | Tab actualmente seleccionado. |
+| Estado          | Descripción                           |
+| --------------- | ------------------------------------- |
+| `tabs[]`        | Array de tab serializations cacheado. |
+| `identities[]`  | Idem identities.                      |
+| `activeOzTabId` | Tab actualmente seleccionado.         |
 
-| Método | Descripción |
-|---|---|
-| `init()` | Carga inicial via window.oz + subscribe a eventos. |
-| `handleEvent(info)` | Aplica delta del evento `oz:tabs:updated` al cache local. |
-| `handleCreate()` | + button — abre tab en active identity. |
-| `render()` | Re-render completo del tabstrip. |
-| `renderTabNode(tab)` | DOM de un tab con stripe de color. |
-| `renderToolbar(tab)` | Actualiza la URL del omnibox. |
+| Método               | Descripción                                               |
+| -------------------- | --------------------------------------------------------- |
+| `init()`             | Carga inicial via window.oz + subscribe a eventos.        |
+| `handleEvent(info)`  | Aplica delta del evento `oz:tabs:updated` al cache local. |
+| `handleCreate()`     | + button — abre tab en active identity.                   |
+| `render()`           | Re-render completo del tabstrip.                          |
+| `renderTabNode(tab)` | DOM de un tab con stripe de color.                        |
+| `renderToolbar(tab)` | Actualiza la URL del omnibox.                             |
 
 ## Color stripe
 
 ```css
-boxShadow: inset 3px 0 0 0 <identity-color>, inset -1px 0 0 0 rgba(0,0,0,0.33)
+boxshadow:
+  inset 3px 0 0 0 <identity-color>,
+  inset -1px 0 0 0 rgba(0, 0, 0, 0.33);
 ```
 
 3px stripe a la izquierda del tab con el color de su identity.
@@ -36,7 +38,7 @@ boxShadow: inset 3px 0 0 0 <identity-color>, inset -1px 0 0 0 rgba(0,0,0,0.33)
 ## Gotchas
 
 - Reusa el `<template id="tabtemplate">` heredado del shell (lo mismo que usaba el TabStrip original que iba contra chrome.tabs).
-- chrome.windows.* (minimize/maximize/close) sigue siendo chrome API porque el WebContentsView del browser chrome es una Chrome extension.
+- chrome.windows.\* (minimize/maximize/close) sigue siendo chrome API porque el WebContentsView del browser chrome es una Chrome extension.
 - Lazy tabs se renderizan con opacity 0.7 para distinguirlas visualmente.
 
 ## Referencias

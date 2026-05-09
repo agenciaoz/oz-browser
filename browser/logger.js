@@ -26,14 +26,13 @@ function getLogFilePath() {
 function rotate() {
   // Move .log -> .log.1 -> .log.2 -> .log.3 (drop .log.3)
   for (let i = ROTATE_KEEP; i >= 1; i--) {
-    const from =
-      i === 1 ? logFile : `${logFile}.${i - 1}`
+    const from = i === 1 ? logFile : `${logFile}.${i - 1}`
     const to = `${logFile}.${i}`
     try {
       if (fs.existsSync(from)) {
         fs.renameSync(from, to)
       }
-    } catch (e) {
+    } catch (_e) {
       // ignore rotation errors
     }
   }
@@ -76,7 +75,8 @@ function fmt(level, source, message, args) {
   let line = `[${ts}] ${level.padEnd(5)} [${source}] ${message}`
   if (args && args.length) {
     try {
-      line += ' ' + args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
+      line +=
+        ' ' + args.map((a) => (typeof a === 'string' ? a : JSON.stringify(a))).join(' ')
     } catch (_e) {
       line += ' [unserializable args]'
     }
@@ -90,6 +90,7 @@ function log(level, source, message, ...args) {
   // the parent process and to the log file.
   if (level === 'ERROR') console.error(line.trim())
   else if (level === 'WARN') console.warn(line.trim())
+  // eslint-disable-next-line no-console -- logger IS the console output for INFO/DEBUG
   else console.log(line.trim())
 
   if (logStream) {

@@ -10,40 +10,40 @@ Toda la integración con Chrome extensions: setup de sesión (UA scrub), instanc
 
 ## Exports
 
-| Símbolo | Tipo | Descripción |
-|---|---|---|
-| `initSession(browser)` | function | Configura defaultSession (UA scrub, SW logging). |
-| `registerPreload(session)` | function | Registra preload script en una session. |
-| `buildChromeExtensions(browser)` | function | Crea instancia de ElectronChromeExtensions. |
-| `loadExtensions(browser)` | function (async) | Carga WebUI ext + Chrome Web Store + locales. |
-| `setupWebContentsCreatedHandler(browser)` | function | Wirea app.on('web-contents-created'). |
+| Símbolo                                   | Tipo             | Descripción                                      |
+| ----------------------------------------- | ---------------- | ------------------------------------------------ |
+| `initSession(browser)`                    | function         | Configura defaultSession (UA scrub, SW logging). |
+| `registerPreload(session)`                | function         | Registra preload script en una session.          |
+| `buildChromeExtensions(browser)`          | function         | Crea instancia de ElectronChromeExtensions.      |
+| `loadExtensions(browser)`                 | function (async) | Carga WebUI ext + Chrome Web Store + locales.    |
+| `setupWebContentsCreatedHandler(browser)` | function         | Wirea app.on('web-contents-created').            |
 
 ## Flow de setup (en main.js init)
 
 ```js
-initSession(this)              // 1. UA scrub
-registerPreload(this.session)  // 2. preload.js para todos los frames
-this.extensions = buildChromeExtensions(this)  // 3. instancia
-await loadExtensions(this)     // 4. carga extensions
+initSession(this) // 1. UA scrub
+registerPreload(this.session) // 2. preload.js para todos los frames
+this.extensions = buildChromeExtensions(this) // 3. instancia
+await loadExtensions(this) // 4. carga extensions
 ```
 
 ## ChromeExtensions config (passed at construction)
 
-| Key | Descripción |
-|---|---|
-| `license` | 'internal-license-do-not-use' (no requerido para uso interno) |
-| `session` | browser.session (defaultSession) |
-| `createTab` | callback async — usa `tabs.create({materialize: true})` |
-| `selectTab` | maps webContents.id → OZ tab id, llama tabs.select |
-| `removeTab` | idem para remove |
-| `createWindow` | crea nueva BrowserWindow |
-| `removeWindow` | destroy |
+| Key            | Descripción                                                   |
+| -------------- | ------------------------------------------------------------- |
+| `license`      | 'internal-license-do-not-use' (no requerido para uso interno) |
+| `session`      | browser.session (defaultSession)                              |
+| `createTab`    | callback async — usa `tabs.create({materialize: true})`       |
+| `selectTab`    | maps webContents.id → OZ tab id, llama tabs.select            |
+| `removeTab`    | idem para remove                                              |
+| `createWindow` | crea nueva BrowserWindow                                      |
+| `removeWindow` | destroy                                                       |
 
 ## WebContents handlers
 
 Para cada `web-contents-created`:
 
-1. **window.open handler** — intercepta target=_blank / disposition=foreground-tab. Crea nueva tab con webContents pre-supplied (eager). URL del details.
+1. **window.open handler** — intercepta target=\_blank / disposition=foreground-tab. Crea nueva tab con webContents pre-supplied (eager). URL del details.
 2. **context-menu handler** — `buildChromeContextMenu` (de electron-chrome-context-menu) con extensionMenuItems del extensions API. `openLink` callback abre tabs lazy con activeIdentityId.
 
 ## Gotchas

@@ -100,18 +100,31 @@ oz-browser/
 ## Comandos útiles
 
 ```bash
-# Ver tamaño de archivos (verificar regla 500 LOC)
-wc -l browser/*.js browser/ui/*.js | sort -rn
+# Tests (smoke tests Node-puro, mock-Electron)
+npm test                       # corre todos los *.smoketest.js
+npm run test:safe              # backups data/ antes (uso recomendado)
+
+# Validación de la regla 500 LOC (ADR 0005)
+npm run check:loc              # falla si algún archivo > 500 LOC
+npm run check:loc:verbose      # muestra top 20 archivos por LOC
+
+# Lint (post-Bloque 1.3.6-DX)
+npm run lint                   # ESLint + Prettier check
+
+# MCP server (post-Bloque 1.3-MCP)
+OZ_MCP_ENABLED=1 npm start                         # arranca con MCP en :9223
+OZ_MCP_ENABLED=1 OZ_MCP_TOKEN=secret npm start     # con bearer token
 
 # Tail logs
 tail -f ~/Library/Logs/OZ\ Browser/oz-browser.log
 
-# Reset state
+# Reset state (cuidado — borra TODAS tus identities reales)
 rm -rf ~/Library/Application\ Support/OZ\ Browser/
 
 # Kill stuck processes
 pkill -9 -f oz-browser
 lsof -i :9000 -t | xargs -r kill -9
+lsof -i :9223 -t | xargs -r kill -9   # puerto MCP
 
 # Push docs + code
 git add -A && git commit -m "..." && git push
@@ -119,12 +132,12 @@ git add -A && git commit -m "..." && git push
 
 ## Troubleshooting
 
-| Síntoma | Causa probable | Fix |
-|---|---|---|
-| `electron-forge: command not found` | NODE_ENV=production bloqueó devDeps | `NODE_ENV= npm install --include=dev` |
-| Port 9000 in use | run anterior no cerró bien | `lsof -i :9000 -t \| xargs -r kill -9` |
-| App "damaged and can't be opened" | macOS quarantine de unsigned app | `xattr -cr node_modules/electron/dist/Electron.app` |
-| Logs vacíos | logger no inicializó (raro) | Buscar "Logger started" — si no aparece, revisar consola en main process |
+| Síntoma                             | Causa probable                      | Fix                                                                      |
+| ----------------------------------- | ----------------------------------- | ------------------------------------------------------------------------ |
+| `electron-forge: command not found` | NODE_ENV=production bloqueó devDeps | `NODE_ENV= npm install --include=dev`                                    |
+| Port 9000 in use                    | run anterior no cerró bien          | `lsof -i :9000 -t \| xargs -r kill -9`                                   |
+| App "damaged and can't be opened"   | macOS quarantine de unsigned app    | `xattr -cr node_modules/electron/dist/Electron.app`                      |
+| Logs vacíos                         | logger no inicializó (raro)         | Buscar "Logger started" — si no aparece, revisar consola en main process |
 
 ## Próximos pasos
 

@@ -80,10 +80,10 @@ class Tab extends EventEmitter {
     }
 
     // Clean undefined props that crash the WebContentsView constructor.
-    if (wcvOpts.hasOwnProperty('webContents') && !wcvOpts.webContents) {
+    if (Object.hasOwn(wcvOpts, 'webContents') && !wcvOpts.webContents) {
       delete wcvOpts.webContents
     }
-    if (wcvOpts.hasOwnProperty('webPreferences') && !wcvOpts.webPreferences) {
+    if (Object.hasOwn(wcvOpts, 'webPreferences') && !wcvOpts.webPreferences) {
       delete wcvOpts.webPreferences
     }
 
@@ -116,7 +116,7 @@ class Tab extends EventEmitter {
       this.favicon = favicons[0] || null
       this.emit('updated', this.serialize())
     })
-    this.webContents.on('did-navigate', (_e, url) => {
+    this.webContents.on('did-navigate', (_e, _url) => {
       this.pendingUrl = null
       this.emit('updated', this.serialize())
     })

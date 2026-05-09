@@ -10,7 +10,6 @@
   const sidebar = new window.OZ.IdentitySidebar()
   window.tabstrip = tabstrip
   window.ozsidebar = sidebar
-
   ;(async () => {
     await tabstrip.init()
     await sidebar.init()

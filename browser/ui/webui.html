@@ -1,7 +1,7 @@
-<!DOCTYPE html>
+<!doctype html>
 <html>
   <head>
-    <meta charset="utf-8">
+    <meta charset="utf-8" />
     <title>OZ Browser</title>
     <style>
       :root {
@@ -19,18 +19,22 @@
         --browser-action-badge-outline: var(--tab-color);
       }
 
-      *, *:before, *:after {
+      *,
+      *:before,
+      *:after {
         box-sizing: border-box;
         user-select: none;
       }
 
-      html, body {
+      html,
+      body {
         margin: 0;
         padding: 0;
         height: 100%;
         background: var(--bg-color);
         color: var(--text-color);
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe WPC", "Segoe UI", sans-serif;
+        font-family:
+          -apple-system, BlinkMacSystemFont, 'Segoe WPC', 'Segoe UI', sans-serif;
         font-size: 14px;
       }
 
@@ -40,8 +44,14 @@
         overflow: hidden;
       }
 
-      ul { margin: 0; padding: 0; list-style: none; }
-      button { font-family: inherit; }
+      ul {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+      }
+      button {
+        font-family: inherit;
+      }
 
       /*----- TOPBAR (existing tabstrip + toolbar) -----*/
 
@@ -80,7 +90,9 @@
         font-weight: bold;
         font-family: 'Courier New', Courier, monospace;
       }
-      #createtab:hover { background: rgba(255,255,255,0.2); }
+      #createtab:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
 
       .tab {
         padding: 0.2rem 0.4rem;
@@ -90,11 +102,20 @@
         flex-wrap: nowrap;
         align-items: center;
         width: 12rem;
-        box-shadow: inset -1px 0 0 0 rgba(0,0,0,0.33);
+        box-shadow: inset -1px 0 0 0 rgba(0, 0, 0, 0.33);
       }
-      .tab[data-active] { background: var(--tab-color); }
-      .tab .favicon[src] { display: none; width: 16px; height: 16px; margin-right: 0.2rem; }
-      .tab .favicon[src].loaded { display: block; }
+      .tab[data-active] {
+        background: var(--tab-color);
+      }
+      .tab .favicon[src] {
+        display: none;
+        width: 16px;
+        height: 16px;
+        margin-right: 0.2rem;
+      }
+      .tab .favicon[src].loaded {
+        display: block;
+      }
       .tab .title {
         white-space: nowrap;
         flex: 1 1 auto;
@@ -103,9 +124,12 @@
         overflow: hidden;
         font-size: 0.725rem;
       }
-      .tab .controls { flex: 0 0 auto; font-size: 0; }
+      .tab .controls {
+        flex: 0 0 auto;
+        font-size: 0;
+      }
       .tab .controls .control {
-        background: rgba(0,0,0,0.2);
+        background: rgba(0, 0, 0, 0.2);
         border: none;
         border-radius: 50%;
         padding: 0;
@@ -116,7 +140,9 @@
         font-size: 0.7rem;
         line-height: 0;
       }
-      .tab .controls .control:disabled { display: none; }
+      .tab .controls .control:disabled {
+        display: none;
+      }
 
       .app-drag {
         flex: 1 0 auto;
@@ -126,10 +152,23 @@
         align-self: flex-end;
       }
 
-      .window-controls { display: none; flex-direction: row; flex: 0 0 auto; }
-      .platform-linux .window-controls { display: flex; }
-      .window-controls .control { width: 2.5rem; background: none; border: none; color: #fff; }
-      .window-controls .control:hover { background: rgba(255, 255, 255, 0.2); }
+      .window-controls {
+        display: none;
+        flex-direction: row;
+        flex: 0 0 auto;
+      }
+      .platform-linux .window-controls {
+        display: flex;
+      }
+      .window-controls .control {
+        width: 2.5rem;
+        background: none;
+        border: none;
+        color: #fff;
+      }
+      .window-controls .control:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
 
       /*----- TOOLBAR (back/fwd/reload + omnibox) -----*/
 
@@ -140,8 +179,14 @@
         align-items: center;
         padding: 0.2rem 0.5rem;
       }
-      .toolbar .page-controls { margin-right: 0.5rem; }
-      .address-bar { flex: 1 0 auto; line-height: 0; height: 100%; }
+      .toolbar .page-controls {
+        margin-right: 0.5rem;
+      }
+      .address-bar {
+        flex: 1 0 auto;
+        line-height: 0;
+        height: 100%;
+      }
       .address-bar input {
         width: 100%;
         height: 100%;
@@ -180,7 +225,7 @@
         display: flex;
         flex-direction: column;
         gap: 4px;
-        border-right: 1px solid rgba(255,255,255,0.05);
+        border-right: 1px solid rgba(255, 255, 255, 0.05);
       }
 
       #oz-sidebar .header {
@@ -201,7 +246,7 @@
         gap: 6px;
         padding: 7px 8px;
         background: transparent;
-        border: 1px dashed rgba(255,255,255,0.15);
+        border: 1px dashed rgba(255, 255, 255, 0.15);
         border-radius: 6px;
         color: var(--text-muted);
         font-size: 12px;
@@ -209,7 +254,7 @@
         margin-bottom: 6px;
       }
       #oz-sidebar .new-identity:hover {
-        background: rgba(255,255,255,0.04);
+        background: rgba(255, 255, 255, 0.04);
         color: var(--text-color);
       }
 
@@ -228,8 +273,12 @@
         cursor: pointer;
         position: relative;
       }
-      .identity-row:hover { background: rgba(255,255,255,0.04); }
-      .identity-row.active { background: rgba(255,255,255,0.08); }
+      .identity-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .identity-row.active {
+        background: rgba(255, 255, 255, 0.08);
+      }
 
       .identity-chip {
         width: 10px;
@@ -258,7 +307,9 @@
         font-variant-numeric: tabular-nums;
         margin-right: 2px;
       }
-      .identity-count.zero { opacity: 0.45; }
+      .identity-count.zero {
+        opacity: 0.45;
+      }
       .identity-name input {
         background: var(--bg-color);
         border: 1px solid var(--accent);
@@ -280,8 +331,13 @@
         opacity: 0;
         transition: opacity 0.15s;
       }
-      .identity-row:hover .add-tab { opacity: 1; }
-      .identity-row .add-tab:hover { background: rgba(255,255,255,0.1); color: var(--text-color); }
+      .identity-row:hover .add-tab {
+        opacity: 1;
+      }
+      .identity-row .add-tab:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: var(--text-color);
+      }
 
       .identity-tabs {
         display: flex;
@@ -301,7 +357,9 @@
         color: var(--text-color);
         position: relative;
       }
-      .oz-tab:hover { background: rgba(255,255,255,0.04); }
+      .oz-tab:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
       .oz-tab.active {
         background: rgba(108, 142, 239, 0.2);
         box-shadow: inset 2px 0 0 0 var(--accent);
@@ -313,7 +371,7 @@
         opacity: 0.7;
       }
       .oz-tab .oz-favicon.lazy {
-        background: rgba(255,255,255,0.15);
+        background: rgba(255, 255, 255, 0.15);
         border-radius: 50%;
       }
       .oz-tab .oz-title {
@@ -322,7 +380,10 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .oz-tab.lazy .oz-title { color: var(--text-muted); font-style: italic; }
+      .oz-tab.lazy .oz-title {
+        color: var(--text-muted);
+        font-style: italic;
+      }
       .oz-tab .oz-close {
         flex: 0 0 auto;
         background: transparent;
@@ -333,18 +394,25 @@
         opacity: 0;
         cursor: pointer;
       }
-      .oz-tab:hover .oz-close { opacity: 1; }
-      .oz-tab .oz-close:hover { color: var(--text-color); }
+      .oz-tab:hover .oz-close {
+        opacity: 1;
+      }
+      .oz-tab .oz-close:hover {
+        color: var(--text-color);
+      }
 
-      #oz-content { flex: 1; min-width: 0; }
+      #oz-content {
+        flex: 1;
+        min-width: 0;
+      }
 
       .ctx-menu {
         position: fixed;
         background: var(--bg-elevated);
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 6px;
         padding: 4px;
-        box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+        box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
         font-size: 12px;
         z-index: 9999;
         min-width: 140px;
@@ -360,12 +428,18 @@
         border-radius: 4px;
         cursor: pointer;
       }
-      .ctx-menu button:hover { background: rgba(255,255,255,0.08); }
-      .ctx-menu button.danger { color: var(--danger); }
+      .ctx-menu button:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .ctx-menu button.danger {
+        color: var(--danger);
+      }
 
       /*----- IDENTITY EDITOR MODAL -----*/
 
-      .oz-modal[hidden] { display: none !important; }
+      .oz-modal[hidden] {
+        display: none !important;
+      }
       .oz-modal {
         position: fixed;
         inset: 0;
@@ -377,7 +451,7 @@
       .oz-modal-backdrop {
         position: absolute;
         inset: 0;
-        background: rgba(0,0,0,0.55);
+        background: rgba(0, 0, 0, 0.55);
         backdrop-filter: blur(2px);
       }
       .oz-modal-window {
@@ -386,7 +460,7 @@
         max-width: calc(100% - 32px);
         background: var(--bg-elevated);
         border-radius: 10px;
-        box-shadow: 0 12px 36px rgba(0,0,0,0.6);
+        box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
         padding: 18px 20px 16px;
         color: var(--text-color);
         display: flex;
@@ -412,7 +486,9 @@
         cursor: pointer;
         padding: 0 4px;
       }
-      .oz-modal-close:hover { color: var(--text-color); }
+      .oz-modal-close:hover {
+        color: var(--text-color);
+      }
 
       .oz-modal label {
         display: flex;
@@ -424,10 +500,10 @@
         letter-spacing: 0.04em;
         font-weight: 600;
       }
-      .oz-modal input[type="text"],
+      .oz-modal input[type='text'],
       .oz-modal textarea {
         background: var(--bg-color);
-        border: 1px solid rgba(255,255,255,0.1);
+        border: 1px solid rgba(255, 255, 255, 0.1);
         border-radius: 5px;
         color: var(--text-color);
         padding: 7px 9px;
@@ -441,11 +517,13 @@
       .oz-modal textarea {
         resize: vertical;
         min-height: 56px;
-        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-family: ui-monospace, 'SF Mono', Menlo, monospace;
         font-size: 11.5px;
       }
       .oz-modal input:focus,
-      .oz-modal textarea:focus { border-color: var(--accent); }
+      .oz-modal textarea:focus {
+        border-color: var(--accent);
+      }
       .oz-modal small {
         color: var(--text-muted);
         font-size: 11px;
@@ -470,7 +548,9 @@
       }
       .color-swatches button.selected {
         border-color: var(--text-color);
-        box-shadow: 0 0 0 2px var(--bg-elevated), 0 0 0 3px var(--accent);
+        box-shadow:
+          0 0 0 2px var(--bg-elevated),
+          0 0 0 3px var(--accent);
       }
 
       .oz-modal-actions {
@@ -490,18 +570,22 @@
       .oz-btn-cancel {
         background: transparent;
         color: var(--text-muted);
-        border-color: rgba(255,255,255,0.12);
+        border-color: rgba(255, 255, 255, 0.12);
       }
-      .oz-btn-cancel:hover { color: var(--text-color); }
+      .oz-btn-cancel:hover {
+        color: var(--text-color);
+      }
       .oz-btn-save {
         background: var(--accent);
         color: #fff;
       }
-      .oz-btn-save:hover { background: #5a7be0; }
+      .oz-btn-save:hover {
+        background: #5a7be0;
+      }
       .oz-btn-secondary {
         background: transparent;
         color: var(--text-muted);
-        border-color: rgba(255,255,255,0.12);
+        border-color: rgba(255, 255, 255, 0.12);
         font-size: 11px;
         padding: 4px 9px;
       }
@@ -582,10 +666,17 @@
     <!-- Identity editor modal — managed by identity-editor.js -->
     <div class="oz-modal" id="oz-identity-modal" hidden>
       <div class="oz-modal-backdrop" data-close></div>
-      <div class="oz-modal-window" role="dialog" aria-modal="true" aria-labelledby="oz-identity-modal-title">
+      <div
+        class="oz-modal-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-identity-modal-title"
+      >
         <header>
           <h2 id="oz-identity-modal-title">Edit Identity</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">✕</button>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
         </header>
         <div class="oz-modal-error" id="oz-identity-modal-error" hidden></div>
         <form id="oz-identity-form" autocomplete="off">
@@ -600,12 +691,18 @@
           <label>
             <div class="ua-row">
               <span>User-Agent (HTTP)</span>
-              <button type="button" class="oz-btn-secondary" id="oz-identity-ua-default">Use default</button>
+              <button type="button" class="oz-btn-secondary" id="oz-identity-ua-default">
+                Use default
+              </button>
             </div>
-            <textarea name="userAgent" rows="3" placeholder="(default — Chromium picks the value)"></textarea>
+            <textarea
+              name="userAgent"
+              rows="3"
+              placeholder="(default — Chromium picks the value)"
+            ></textarea>
             <small id="oz-identity-ua-hint">
-              Sets the HTTP User-Agent header for this Identity's session.
-              Does <strong>not</strong> yet override <code>navigator.userAgent</code>
+              Sets the HTTP User-Agent header for this Identity's session. Does
+              <strong>not</strong> yet override <code>navigator.userAgent</code>
               — full coherent fingerprint comes in Bloque 1.5. ADR 0010.
             </small>
           </label>

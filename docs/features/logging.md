@@ -14,12 +14,12 @@
 
 ## Niveles
 
-| Nivel | Cuándo |
-|---|---|
-| `DEBUG` | parámetros, IDs internos, latencias detalladas |
-| `INFO` | eventos del lifecycle (app start, identity created, sync started) |
-| `WARN` | anomalías recuperables (proxy lento, retry, fallback) |
-| `ERROR` | fallas reales (excepciones, IPC errors, render-process-gone) |
+| Nivel   | Cuándo                                                            |
+| ------- | ----------------------------------------------------------------- |
+| `DEBUG` | parámetros, IDs internos, latencias detalladas                    |
+| `INFO`  | eventos del lifecycle (app start, identity created, sync started) |
+| `WARN`  | anomalías recuperables (proxy lento, retry, fallback)             |
+| `ERROR` | fallas reales (excepciones, IPC errors, render-process-gone)      |
 
 ## Storage
 
@@ -42,16 +42,19 @@ log.getLogFilePath()                 // for email-Jose popup
 ## Qué loggea cada módulo
 
 ### `main.js` (Browser orchestrator)
+
 - App start / quit
 - Init lifecycle: session ready, IdentityManager loaded, IPC registered, WebUI loaded, initial window
 - `window-all-closed`, `activate`
 
 ### `identity-manager.js`
+
 - `_load()` — quantity loaded
 - `create/rename/setColor/remove` — identity id + outcome
 - `getSession(id)` — cache hit/miss
 
 ### `tabs.js`
+
 - `create()` — tab id + identityId + lazy/eager
 - `materialize()` — tab id + URL + duration
 - `select()` — from id → to id
@@ -59,31 +62,37 @@ log.getLogFilePath()                 // for email-Jose popup
 - `loadURL()` — URL + status code (success/fail)
 
 ### `proxy-manager.js` (Bloque 1.4)
+
 - Bulk import — count + duration
 - Test connectivity per proxy — host + latency + ok/fail
 - Health check daemon tick — counts
 - Auto-disable due to N failures — proxy id + reason
 
 ### `account-vault.js` (Bloque 1.5)
+
 - Vault unlock — success/fail (NEVER log password)
 - Save account — site + identityId (NEVER log password)
 - Auto-fill — site + identityId + outcome
 - Anti-logout cookie extension — site + extension applied
 
 ### `sync-client.js` (Etapa 7)
+
 - Push/pull cycle — bytes + duration + outcome
 - Conflict detected — entity + resolution
 
 ### `ipc-handlers.js`
+
 - Cada handler: `[DEBUG] entered oz:foo:bar args=...` al entrar, `[INFO] oz:foo:bar ok duration=N` al salir.
 - Errores capturados → `[ERROR] oz:foo:bar threw stack=...`
 
 ### Renderer (UI)
+
 - Errors via `window.addEventListener('error')` y `unhandledrejection` → `oz:report-error` IPC → ERROR en main log.
 
 ## Métricas periódicas
 
 Cada 30 segundos:
+
 ```js
 log.debug('metrics', 'snapshot', {
   ramRSS: process.getProcessMemoryInfo().private,
@@ -101,12 +110,12 @@ log.debug('metrics', 'snapshot', {
 
 `logger.js` aplica regex automáticos antes de escribir:
 
-| Patrón | Reemplazo |
-|---|---|
-| `(password|passwd|pwd)\W+\S+` | `password=[REDACTED]` |
-| `Bearer\s+[\w.\-]+` | `Bearer [REDACTED]` |
-| `Cookie:\s*[^\s;]+` | `Cookie: [REDACTED]` |
-| `(api[_-]?key)\W+\S+` | `apikey=[REDACTED]` |
+| Patrón                | Reemplazo            |
+| --------------------- | -------------------- | ----------- | --------------------- |
+| `(password            | passwd               | pwd)\W+\S+` | `password=[REDACTED]` |
+| `Bearer\s+[\w.\-]+`   | `Bearer [REDACTED]`  |
+| `Cookie:\s*[^\s;]+`   | `Cookie: [REDACTED]` |
+| `(api[_-]?key)\W+\S+` | `apikey=[REDACTED]`  |
 
 Tests del filtro en `tests/logger-privacy.test.js` (cuando lleguemos a tests).
 
@@ -115,6 +124,7 @@ Tests del filtro en `tests/logger-privacy.test.js` (cuando lleguemos a tests).
 Acceso: `View → Show Log Viewer` (Cmd+Opt+L).
 
 Layout:
+
 ```
 ┌─────────────────────────────────────────────────────────────┐
 │ [Filters] Level: [DEBUG INFO WARN ERROR]                     │

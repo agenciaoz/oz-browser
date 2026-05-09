@@ -23,6 +23,7 @@ Estos cubren la lógica core de IdentityManager — corren con `node tests/ident
 Las secciones de abajo cubren lo que NO se puede automatizar sin GUI: el modal, el sidebar, lazy materialization, y el bug "tab duplicada al arranque".
 
 **Setup:**
+
 ```bash
 cd "/Users/joserodrigocoronel/Documents/Claude/Projects/Ghost Browser Clone/oz-browser"
 NODE_ENV= SHELL_DEBUG=1 npm start

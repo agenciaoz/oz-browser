@@ -20,6 +20,7 @@ Descubierto durante smoke test visual del Bloque 1.2: al hacer "Edit identity…
 **Toda overlay del WebUI que necesite cubrir el área del content (modales, dialogs, command palettes, etc.) debe ocultar la WebContentsView del tab activo mientras está visible, y restaurarla al cerrar.**
 
 Implementación canónica:
+
 1. IPC `oz:ui:setContentVisible(visible: boolean)` registrado en `ipc-handlers.js → registerUiHandlers`.
 2. Preload expone `window.oz.ui.setContentVisible(visible)`.
 3. El componente del WebUI (`identity-editor.js`, futuras: settings, command palette, etc.) llama:

@@ -10,8 +10,8 @@ Entry point del main process. Es el **orquestador** — instancia los demás mó
 
 ## Exports
 
-| Símbolo | Tipo | Descripción |
-|---|---|---|
+| Símbolo   | Tipo                   | Descripción            |
+| --------- | ---------------------- | ---------------------- |
 | `Browser` | class (default export) | Instancia del browser. |
 
 ## Lifecycle
@@ -47,22 +47,22 @@ init()
 
 ## Métodos públicos
 
-| Método | Descripción |
-|---|---|
+| Método                               | Descripción                                          |
+| ------------------------------------ | ---------------------------------------------------- |
 | `broadcastToWebUI(channel, ...args)` | Envía IPC a todos los WebContents de browser chrome. |
-| `getFocusedWindow()` | TabbedBrowserWindow con foco. |
-| `getWindowFromBrowserWindow(window)` | Lookup en this.windows por id. |
-| `getWindowFromWebContents(wc)` | Resuelve via `getParentWindowOfTab`. |
-| `createWindow(options?)` | Crea nueva TabbedBrowserWindow. |
-| `createInitialWindow()` | Llama createWindow(). |
+| `getFocusedWindow()`                 | TabbedBrowserWindow con foco.                        |
+| `getWindowFromBrowserWindow(window)` | Lookup en this.windows por id.                       |
+| `getWindowFromWebContents(wc)`       | Resuelve via `getParentWindowOfTab`.                 |
+| `createWindow(options?)`             | Crea nueva TabbedBrowserWindow.                      |
+| `createInitialWindow()`              | Llama createWindow().                                |
 
 ## Eventos handled
 
-| Evento | Acción |
-|---|---|
-| `app.whenReady` | init() |
-| `app.window-all-closed` | quit() (excepto darwin) |
-| `app.activate` | createInitialWindow si no hay windows |
+| Evento                     | Acción                                   |
+| -------------------------- | ---------------------------------------- |
+| `app.whenReady`            | init()                                   |
+| `app.window-all-closed`    | quit() (excepto darwin)                  |
+| `app.activate`             | createInitialWindow si no hay windows    |
 | `app.web-contents-created` | wired via setupWebContentsCreatedHandler |
 
 ## Logs

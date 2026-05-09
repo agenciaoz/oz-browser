@@ -55,12 +55,12 @@ Esto suma capas que el plan personal no tenía:
 
 Si vas a competir con Ghost Browser pero más barato, el sweet spot:
 
-| Plan | Ghost | **Tu producto (target)** | Features |
-|---|---|---|---|
-| Free | $0, 3 identities | $0, 3 identities | Hook de adquisición |
-| Basic | $21/mo anual / $25 mes | **$12-15/mo** | Identities ilimitadas, sin proxies |
-| Pro | $46-59/mo | **$29-35/mo** | + Proxy management completo |
-| Team / Enterprise | Custom | **$15/seat (min 5)** | + Sync, admin console |
+| Plan              | Ghost                  | **Tu producto (target)** | Features                           |
+| ----------------- | ---------------------- | ------------------------ | ---------------------------------- |
+| Free              | $0, 3 identities       | $0, 3 identities         | Hook de adquisición                |
+| Basic             | $21/mo anual / $25 mes | **$12-15/mo**            | Identities ilimitadas, sin proxies |
+| Pro               | $46-59/mo              | **$29-35/mo**            | + Proxy management completo        |
+| Team / Enterprise | Custom                 | **$15/seat (min 5)**     | + Sync, admin console              |
 
 Si entregas el mismo valor y cobras la mitad, sin la trampa de cancelación, ganas el segmento de Ghost descontento (Trustpilot 2.9).
 

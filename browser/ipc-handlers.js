@@ -1,23 +1,41 @@
-// OZ Browser — All ipcMain.handle registrations live here, organized by domain.
-// Receives the Browser instance to access state (identityManager, windows, etc.).
+// OZ Browser — IPC layer.
+//
+// Qué hace: registra ipcMain.handle('oz:X:Y', fn) consumiendo los maps puros
+// que exportan identity-handlers.js y tab-handlers.js. Los maps los consume
+// también el MCP server (mcp-server.js) — misma implementación, dos transports.
+//
+// Doc: docs/modules/ipc-handlers.md
+// ADRs: 0009 (logging), 0011 (modals hide content view), 0012 (MCP refactor)
+//
+// Exports: registerIpcHandlers(browser)
+// IPC channels registrados: ver tabla en docs/modules/ipc-handlers.md
 
 const { ipcMain } = require('electron')
 const log = require('./logger')
 const { showErrorDialog } = require('./error-handler')
+const { buildIdentityHandlers } = require('./identity-handlers')
+const { buildTabHandlers } = require('./tab-handlers')
 
 function registerIpcHandlers(browser) {
+  // Domain handlers — shared with MCP server. Build once per browser instance.
+  browser.handlers = {
+    identities: buildIdentityHandlers(browser),
+    tabs: buildTabHandlers(browser),
+  }
+
   registerLogHandlers(browser)
-  registerIdentityHandlers(browser)
-  registerTabHandlers(browser)
+  registerIdentityHandlersIPC(browser)
+  registerTabHandlersIPC(browser)
   registerNavHandlers(browser)
   registerUiHandlers(browser)
+
   log.info('ipc', 'All IPC handlers registered')
 }
 
 // ----- UI overlay control ---------------------------------------------------
 // WebContentsViews are native and render ON TOP of the WebUI HTML. To show
 // modals/overlays in the WebUI that need to cover the content area, we must
-// temporarily hide the active tab's view.
+// temporarily hide the active tab's view. ADR 0011.
 
 function registerUiHandlers(browser) {
   ipcMain.handle('oz:ui:setContentVisible', (event, visible) => {
@@ -25,13 +43,9 @@ function registerUiHandlers(browser) {
 
     // Resolve the window from the SENDER webContents (which window's WebUI
     // chrome invoked us), NOT from getFocusedWindow(). With multi-window,
-    // the OS focus may differ from where the modal lives — applying setVisible
-    // on the focused window's tab leaves the calling window's content visible
-    // and covers its own modal.
+    // the OS focus may differ from where the modal lives.
     const senderWC = event.sender
-    const win = browser.windows.find(
-      (w) => w.window && w.window.webContents === senderWC,
-    )
+    const win = browser.windows.find((w) => w.window && w.window.webContents === senderWC)
     if (!win) {
       log.warn('ui', 'setContentVisible: sender webContents does not match any window', {
         senderId: senderWC && senderWC.id,
@@ -45,13 +59,16 @@ function registerUiHandlers(browser) {
     }
     if (!tab.view) {
       log.warn('ui', 'setContentVisible: selected tab has no view (lazy?)', {
-        tabId: tab.id, materialized: tab.materialized,
+        tabId: tab.id,
+        materialized: tab.materialized,
       })
       return false
     }
     tab.view.setVisible(!!visible)
     log.info('ui', 'tab.view.setVisible called', {
-      visible: !!visible, tabId: tab.id, windowId: win.id,
+      visible: !!visible,
+      tabId: tab.id,
+      windowId: win.id,
     })
     return true
   })
@@ -71,140 +88,53 @@ function registerLogHandlers(_browser) {
     const title = `Renderer error: ${detail.message || 'unknown'}`
     const body =
       (detail.stack || detail.reason || detail.message || JSON.stringify(detail)) +
-      (detail.filename ? `\n\nat ${detail.filename}:${detail.lineno}:${detail.colno}` : '')
+      (detail.filename
+        ? `\n\nat ${detail.filename}:${detail.lineno}:${detail.colno}`
+        : '')
     showErrorDialog(title, body)
     return true
   })
 }
 
 // ----- Identity CRUD --------------------------------------------------------
+// Wires the identity handlers map (browser.handlers.identities) into ipcMain.
+// Each handler keeps its same name & arg order — the IPC layer is pure adapter.
 
-function registerIdentityHandlers(browser) {
-  const im = () => browser.identityManager
+function registerIdentityHandlersIPC(browser) {
+  const h = browser.handlers.identities
 
-  ipcMain.handle('oz:identities:list', () => im().list())
-  ipcMain.handle('oz:identities:get', (_e, id) => im().get(id))
-  ipcMain.handle('oz:identities:getActive', () => browser.activeIdentityId)
-
-  ipcMain.handle('oz:identities:setActive', (_e, id) => {
-    const ident = im().get(id)
-    if (!ident) return false
-    browser.activeIdentityId = id
-    browser.broadcastToWebUI('oz:identities:active-changed', id)
-    return true
-  })
-
-  ipcMain.handle('oz:identities:create', (_e, opts) => {
-    try {
-      const ident = im().create(opts || {})
-      browser.broadcastToWebUI('oz:identities:changed')
-      return ident
-    } catch (err) {
-      // Surface a structured error so the renderer can show an inline message
-      // instead of a generic "An error occurred" popup.
-      if (err && err.code === 'IDENTITY_CAP_REACHED') {
-        return { __error: { code: err.code, message: err.message,
-          current: err.current, max: err.max } }
-      }
-      throw err
-    }
-  })
-
-  ipcMain.handle('oz:identities:rename', (_e, id, name) => {
-    const ident = im().rename(id, name)
-    if (ident) browser.broadcastToWebUI('oz:identities:changed')
-    return ident
-  })
-
-  ipcMain.handle('oz:identities:setColor', (_e, id, color) => {
-    const ident = im().setColor(id, color)
-    if (ident) browser.broadcastToWebUI('oz:identities:changed')
-    return ident
-  })
-
-  ipcMain.handle('oz:identities:update', (_e, id, patch) => {
-    const ident = im().update(id, patch || {})
-    if (ident) browser.broadcastToWebUI('oz:identities:changed')
-    return ident
-  })
-
-  ipcMain.handle('oz:identities:remove', (_e, id) => {
-    if (browser.activeIdentityId === id) {
-      browser.activeIdentityId = im().getDefault().id
-      browser.broadcastToWebUI('oz:identities:active-changed', browser.activeIdentityId)
-    }
-    const ok = im().remove(id)
-    if (ok) browser.broadcastToWebUI('oz:identities:changed')
-    return ok
-  })
+  ipcMain.handle('oz:identities:list', () => h.list())
+  ipcMain.handle('oz:identities:get', (_e, id) => h.get(id))
+  ipcMain.handle('oz:identities:getActive', () => h.getActive())
+  ipcMain.handle('oz:identities:setActive', (_e, id) => h.setActive(id))
+  ipcMain.handle('oz:identities:create', (_e, opts) => h.create(opts))
+  ipcMain.handle('oz:identities:rename', (_e, id, name) => h.rename(id, name))
+  ipcMain.handle('oz:identities:setColor', (_e, id, color) => h.setColor(id, color))
+  ipcMain.handle('oz:identities:update', (_e, id, patch) => h.update(id, patch))
+  ipcMain.handle('oz:identities:remove', (_e, id) => h.remove(id))
 }
 
 // ----- Tabs ↔ Identity binding & sidebar API --------------------------------
 
-function registerTabHandlers(browser) {
-  ipcMain.handle('oz:tabs:list', () => {
-    const result = []
-    for (const win of browser.windows) {
-      for (const t of win.tabs.tabList) {
-        result.push({ ...t.serialize(), windowId: win.id })
-      }
-    }
-    return result
-  })
+function registerTabHandlersIPC(browser) {
+  const h = browser.handlers.tabs
 
-  ipcMain.handle('oz:tabs:getIdentity', (_e, tabId) => {
-    for (const win of browser.windows) {
-      const tab = win.tabs.get(tabId)
-      if (tab) return tab.identityId
-    }
-    return null
-  })
-
-  ipcMain.handle('oz:tabs:openInIdentity', (_e, identityId, url) => {
-    const win = browser.getFocusedWindow()
-    if (!win) return null
-    const tab = win.tabs.create({ identityId, url, source: 'ipc.openInIdentity' })
-    browser.broadcastToWebUI('oz:tabs:updated', {
-      kind: 'created',
-      tab: { ...tab.serialize(), windowId: win.id },
-    })
-    return tab.id
-  })
-
-  ipcMain.handle('oz:tabs:select', (_e, tabId) => {
-    for (const win of browser.windows) {
-      if (win.tabs.get(tabId)) {
-        win.tabs.select(tabId)
-        return true
-      }
-    }
-    return false
-  })
-
-  ipcMain.handle('oz:tabs:close', (_e, tabId) => {
-    for (const win of browser.windows) {
-      if (win.tabs.get(tabId)) {
-        win.tabs.remove(tabId)
-        browser.broadcastToWebUI('oz:tabs:updated', { kind: 'removed', tabId })
-        return true
-      }
-    }
-    return false
-  })
-
-  ipcMain.handle('oz:tabs:bulkCreateLazy', (_e, count, identityId, urlTemplate) => {
-    const win = browser.getFocusedWindow()
-    if (!win) return 0
-    for (let i = 0; i < count; i++) {
-      const url = urlTemplate ? urlTemplate.replace('{i}', String(i)) : 'about:blank'
-      win.tabs.create({ identityId, url, source: 'ipc.bulkCreateLazy' })
-    }
-    browser.broadcastToWebUI('oz:tabs:updated', { kind: 'bulk-created', count })
-    return count
-  })
+  ipcMain.handle('oz:tabs:list', () => h.list())
+  ipcMain.handle('oz:tabs:getIdentity', (_e, tabId) => h.getIdentity(tabId))
+  ipcMain.handle('oz:tabs:openInIdentity', (_e, identityId, url) =>
+    h.openInIdentity(identityId, url),
+  )
+  ipcMain.handle('oz:tabs:select', (_e, tabId) => h.select(tabId))
+  ipcMain.handle('oz:tabs:close', (_e, tabId) => h.close(tabId))
+  ipcMain.handle('oz:tabs:bulkCreateLazy', (_e, count, identityId, urlTemplate) =>
+    h.bulkCreateLazy(count, identityId, urlTemplate),
+  )
 }
 
 // ----- Navigation controls (operate on focused tab) -------------------------
+// These don't go through MCP yet — they're chrome shell controls, not data
+// primitives. Tab-level navigation (oz.tabs.navigate) entra como tool MCP en
+// el Bloque 1.5 cuando el Vault necesite manejar login flows.
 
 function registerNavHandlers(browser) {
   const focusedTab = () => {

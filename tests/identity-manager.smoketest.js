@@ -120,10 +120,13 @@ function freshIM(envOverride = {}) {
   delete require.cache[require.resolve('../browser/logger.js')]
 
   const mod = require('../browser/identity-manager.js')
-  return { ...mod, _restoreEnv: () => {
-    if (prevTier === undefined) delete process.env.OZ_TIER
-    else process.env.OZ_TIER = prevTier
-  } }
+  return {
+    ...mod,
+    _restoreEnv: () => {
+      if (prevTier === undefined) delete process.env.OZ_TIER
+      else process.env.OZ_TIER = prevTier
+    },
+  }
 }
 
 // ----- Test cases ------------------------------------------------------------
@@ -140,8 +143,10 @@ section('_load() auto-crea Default')
   ok('list().length === 1', list.length === 1)
   ok('list()[0].isDefault === true', list[0].isDefault === true)
   ok('list()[0].name === "Default"', list[0].name === 'Default')
-  ok('Default.userAgent ausente o null',
-     list[0].userAgent === undefined || list[0].userAgent === null)
+  ok(
+    'Default.userAgent ausente o null',
+    list[0].userAgent === undefined || list[0].userAgent === null,
+  )
 }
 
 // 2. create() respeta cap de 3 (Default + 2 custom)
@@ -157,12 +162,17 @@ section('Cap free tier MAX_IDENTITIES_FREE=3')
   ok('crea hasta llegar a 3 identities', im.list().length === 3)
 
   let threw = null
-  try { im.create({ name: 'Cliente C' }) } catch (e) { threw = e }
-  ok('4ta identity tira IdentityCapError',
-     threw && threw.code === 'IDENTITY_CAP_REACHED',
-     threw ? `code=${threw.code} message=${threw.message.slice(0, 80)}` : 'no throw')
-  ok('error tiene current/max correctos',
-     threw && threw.current === 3 && threw.max === 3)
+  try {
+    im.create({ name: 'Cliente C' })
+  } catch (e) {
+    threw = e
+  }
+  ok(
+    '4ta identity tira IdentityCapError',
+    threw && threw.code === 'IDENTITY_CAP_REACHED',
+    threw ? `code=${threw.code} message=${threw.message.slice(0, 80)}` : 'no throw',
+  )
+  ok('error tiene current/max correctos', threw && threw.current === 3 && threw.max === 3)
 }
 
 // 3. OZ_TIER=paid bypassa cap
@@ -206,9 +216,11 @@ section('Default rechaza userAgent custom (ADR 0010)')
   const im = new IdentityManager()
   const def = im.getDefault()
   const result = im.update(def.id, { userAgent: 'EvilUA' })
-  ok('Default.userAgent NO cambió',
-     !result.userAgent,
-     `después del update userAgent=${JSON.stringify(result.userAgent)}`)
+  ok(
+    'Default.userAgent NO cambió',
+    !result.userAgent,
+    `después del update userAgent=${JSON.stringify(result.userAgent)}`,
+  )
 }
 
 // 6. getSession devuelve defaultSession para Default, partition para otras
@@ -223,8 +235,10 @@ section('getSession() routing')
   ok('Default → defaultSession (label="default")', defSes.__label === 'default')
 
   const xSes = im.getSession(x.id)
-  ok(`Custom → partition session (label="persist:identity-${x.id}")`,
-     xSes.__label === `persist:identity-${x.id}`)
+  ok(
+    `Custom → partition session (label="persist:identity-${x.id}")`,
+    xSes.__label === `persist:identity-${x.id}`,
+  )
 
   // Cache check
   const xSes2 = im.getSession(x.id)
@@ -243,9 +257,11 @@ section('getSession aplica setUserAgent al crear partition')
   im.getSession(x.id)
 
   const matches = setUACalls.filter((c) => c.ua === customUA)
-  ok('setUserAgent llamado con el UA custom al crear session',
-     matches.length === 1,
-     `setUACalls=${JSON.stringify(setUACalls)}`)
+  ok(
+    'setUserAgent llamado con el UA custom al crear session',
+    matches.length === 1,
+    `setUACalls=${JSON.stringify(setUACalls)}`,
+  )
 }
 
 // 8. update(userAgent) aplica setUserAgent en vivo a session cacheada
@@ -261,17 +277,21 @@ section('update(userAgent) en vivo sobre session cacheada')
   im.update(x.id, { userAgent: newUA })
 
   const matches = setUACalls.filter((c) => c.ua === newUA)
-  ok('setUserAgent llamado en vivo al update',
-     matches.length === 1,
-     `setUACalls=${JSON.stringify(setUACalls)}`)
+  ok(
+    'setUserAgent llamado en vivo al update',
+    matches.length === 1,
+    `setUACalls=${JSON.stringify(setUACalls)}`,
+  )
 
   // Clear UA → debe llamar setUserAgent('')
   setUACalls.length = 0
   im.update(x.id, { userAgent: '' })
   const cleared = setUACalls.filter((c) => c.ua === '')
-  ok('setUserAgent("") al limpiar UA',
-     cleared.length === 1,
-     `setUACalls=${JSON.stringify(setUACalls)}`)
+  ok(
+    'setUserAgent("") al limpiar UA',
+    cleared.length === 1,
+    `setUACalls=${JSON.stringify(setUACalls)}`,
+  )
 }
 
 // 9. Default getSession NO llama setUserAgent (ADR 0010 / 0003)
@@ -282,9 +302,11 @@ section('Default getSession NO llama setUserAgent')
   setUACalls.length = 0
   im.getSession(im.getDefault().id)
   const callsOnDefault = setUACalls.filter((c) => c.sessionLabel === 'default')
-  ok('defaultSession.setUserAgent NO se llama desde getSession',
-     callsOnDefault.length === 0,
-     `setUACalls=${JSON.stringify(setUACalls)}`)
+  ok(
+    'defaultSession.setUserAgent NO se llama desde getSession',
+    callsOnDefault.length === 0,
+    `setUACalls=${JSON.stringify(setUACalls)}`,
+  )
 }
 
 // 10. remove() no permite borrar Default
@@ -325,7 +347,8 @@ Module._resolveFilename = originalResolve
 console.log(`\n=== ${passed} passed · ${failed} failed ===`)
 if (failed > 0) {
   console.log('\nFailures:')
-  for (const f of failures) console.log(`  - ${f.label}${f.detail ? ' :: ' + f.detail : ''}`)
+  for (const f of failures)
+    console.log(`  - ${f.label}${f.detail ? ' :: ' + f.detail : ''}`)
   process.exit(1)
 }
 process.exit(0)

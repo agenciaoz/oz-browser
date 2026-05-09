@@ -49,6 +49,7 @@ Sin logs no se debuggea nada. Cuando algo se rompe, lo raro pasa, o el cliente r
 ### UI in-app: Log Viewer (Bloque 1.2 / 1.7)
 
 Vista accesible vía `View → Show Log Viewer` (Cmd+Opt+L). Muestra:
+
 - Stream live de logs (auto-scroll opcional)
 - Filtros: por nivel, por source, por search string, por time range
 - Botones: Clear, Copy all, Export to file, Email to Jose

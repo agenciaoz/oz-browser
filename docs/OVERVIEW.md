@@ -32,15 +32,16 @@ Navegador Chromium-based para **manejar 50+ cuentas de redes sociales al mismo t
 
 ## Hardware target y benchmarks
 
-| Mac (RAM) | Lazy | Materialized | Memoria total |
-|---|---|---|---|
-| **MacBook Air M1 8 GB** ← target oficina | 100 | 10 | < 4 GB |
-| MacBook Pro M1/M2 16 GB | 200 | 30 | < 8 GB |
-| MacBook Pro M2/M3 32 GB+ | 500 | 100 | < 16 GB |
+| Mac (RAM)                                | Lazy | Materialized | Memoria total |
+| ---------------------------------------- | ---- | ------------ | ------------- |
+| **MacBook Air M1 8 GB** ← target oficina | 100  | 10           | < 4 GB        |
+| MacBook Pro M1/M2 16 GB                  | 200  | 30           | < 8 GB        |
+| MacBook Pro M2/M3 32 GB+                 | 500  | 100          | < 16 GB       |
 
 **SLOs:** cold start < 2s, switch tab < 50ms, materialize lazy < 800ms.
 
 **Cómo lo logramos en M1 Air 8 GB:**
+
 - Lazy tabs (1 KB cada uno hasta click)
 - Tab discarding (materialized idle > 30 min → vuelve a lazy)
 - Memory pressure handler (>80% RAM → auto-discard)
@@ -57,17 +58,19 @@ Navegador Chromium-based para **manejar 50+ cuentas de redes sociales al mismo t
 ✅ Etapa 0 — Validación técnica (Electron + partition + proxy auth)
 ✅ Bloque 1.1 — Foundation (fork shell, repo, tabs+omnibox)
 ✅ Bloque 1.2 — Identity Manager + Lazy + Sidebar + Logger + Custom UA + Free-tier cap
+✅ Bloque 1.3-MCP — OZ MCP server (HTTP :9223 + SSE + stdio bridge, 13 tools, 57/57 smoke)
+✅ Bloque 1.3.5-CI — GitHub Actions (lint + check:loc + tests por push, cron nightly, badge)
+✅ Bloque 1.3.6-DX — ESLint v9 flat + Prettier + Husky pre-commit + lint-staged
 
-⏳ Bloque 1.3 — Workspace Manager
-⏳ Bloque 1.4 — Proxy Manager
-⏳ Bloque 1.5 — ⭐ Account Vault (CORE) — auto-fill, Excel I/O, anti-logout
-⏳ Bloque 1.6 — Time Machine + Backup
-⏳ Bloque 1.7 — Tab context menu
-⏳ Bloque 1.8 — FingerprintEngine "Ghost+" (pasa Pixelscan/CreepJS)
-⏳ Bloque 1.9 — Settings UI + Bookmarks/Downloads/History
-⏳ Bloque 1.10 — Polish + Extensions multi-identity + M-series perf
+⏳ Bloque 1.4-WS    — Workspace Manager                       ← NEXT
+⏳ Bloque 1.5       — ⭐ Account Vault (CORE) — auto-fill, Excel I/O, anti-logout
+⏳ Bloque 1.6       — Time Machine + Backup
+⏳ Bloque 1.7       — Tab context menu
+⏳ Bloque 1.8       — Proxy Manager
+⏳ Bloque 1.9       — FingerprintEngine "Ghost+" (pasa Pixelscan/CreepJS)
+⏳ Bloque 1.10      — Settings UI + Bookmarks/Downloads/History + Polish + Extensions multi-identity + M-series perf
 
-⏳ Etapa 2  — UX competitiva
+⏳ Etapa 2  — UX competitiva + candidatos C-11..C-15 (headless mode, Ghost importer, demo mode, MCP recipes, health endpoint)
 ⏳ Etapa 3  — Distribución firmada + auto-update ($99 Apple Dev)
 ⏳ Etapa 4  — Backend SaaS auth + entitlements (Supabase)
 ⏳ Etapa 5  — Stripe billing + self-service cancel
@@ -82,7 +85,7 @@ Navegador Chromium-based para **manejar 50+ cuentas de redes sociales al mismo t
 
 ---
 
-## Tu moat real vs Ghost (16 cosas Ghost no tiene o hace mal)
+## Tu moat real vs Ghost (18 cosas Ghost no tiene o hace mal)
 
 1. ⭐ **Account Vault + auto-fill + Excel I/O + anti-logout**
 2. **Pasar Pixelscan/CreepJS** por default (Ghost falla)
@@ -92,7 +95,7 @@ Navegador Chromium-based para **manejar 50+ cuentas de redes sociales al mismo t
 6. **Per-identity timezone/locale/geo** automático del proxy
 7. **Templates de proxy providers** (Oxylabs/Bright Data/Smartproxy/IPRoyal)
 8. **Health-check + auto-disable** de proxies muertos
-9. **CDP automation API** para Puppeteer/Playwright
+9. **MCP automation API** para Claude/Cursor/Puppeteer/Playwright (Bloque 1.3-MCP)
 10. **Multi-extension SIN whitelist** (Ghost solo permite ~7 específicas)
 11. **Bandwidth meter** por proxy/identity
 12. **Modo Ephemeral Session** (abre desde Excel, cierra, Mac queda limpia)
@@ -100,6 +103,8 @@ Navegador Chromium-based para **manejar 50+ cuentas de redes sociales al mismo t
 14. **Time Machine** (snapshot diario + rollback)
 15. **Workflow colaborativo Excel** (export → corregir → OVERWRITE)
 16. **Office Edition con admin dashboard** (Ghost no tiene team management)
+17. **Headless mode** (candidato C-11) — `oz-browser --headless` para automation/scraping
+18. **MCP Recipes** (candidato C-14) — macros guardados como YAML/JSON
 
 ---
 
@@ -137,17 +142,21 @@ oz-browser/
 
 ## Próximo paso concreto
 
-**Bloque 1.3-MCP — OZ MCP server** (~12-16h, ADR 0012, re-priorizado 2026-05-09):
-- Server MCP embebido en main process (stdio + HTTP localhost)
-- Tools: `oz.identities.*`, `oz.tabs.*` (executeJS, getDOMSnapshot, waitForSelector, screenshot), `oz.workspaces.*` (cuando llegue 1.4-WS)
-- Auth: localhost-only por default + bearer token opcional
-- Settings UI toggle "Enable MCP server (advanced)"
-- **Beneficio inmediato:** reemplaza computer-use para smoke tests de bloques siguientes (los bugs de hoy se hubieran detectado en minutos vs horas)
-- **Beneficio user-facing:** automation API que cubre el diferenciador #9 (Ghost no tiene)
+**Bloques 1.3-MCP + 1.3.5-CI + 1.3.6-DX cerrados 2026-05-09.** Detalles en [`history/08-bloque-1.3-mcp-resultado.md`](history/08-bloque-1.3-mcp-resultado.md) y [`history/09-bloque-1.3.5-1.3.6-resultado.md`](history/09-bloque-1.3.5-1.3.6-resultado.md).
 
-**Después:**
-- **Bloque 1.4-WS — Workspace Manager** (era 1.3): CRUD workspace, freeze/archive, multi-window=multi-workspace, drag-drop tabs + "Move to workspace…" en right-click.
-- **Bloque 1.5 (⭐ CORE — Account Vault)**.
+**Próximo: Bloque 1.4-WS — Workspace Manager** (~10h):
+
+- CRUD workspace + freeze/archive
+- Multi-window = multi-workspace (1 ventana = 1 workspace) — diferenciador vs Ghost
+- Drag-drop tabs entre workspaces + "Move to workspace…" en right-click (pedidos por Jose)
+- `oz.workspaces.*` se agrega al MCP server al cerrar
+
+**Después en orden:**
+
+1. **Bloque 1.5 (⭐ CORE — Account Vault)** — el corazón del producto. Vault encriptado con scrypt+AES-GCM (deps audit corregido en ADR 0008: `@napi-rs/keyring` + `exceljs` + `otplib`, todas pre-instaladas por Jose). Auto-fill, anti-logout, Excel I/O.
+2. **Bloque 1.6** — Time Machine + Backup
+3. **Bloque 1.7** — Tab Context Menu
+4. … (ver [PLAN-MAESTRO.md](PLAN-MAESTRO.md))
 
 ---
 

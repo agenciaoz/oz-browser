@@ -15,33 +15,44 @@ Preload script que se inyecta en CADA WebContents. Su trabajo: exponer `window.o
 ### `window.oz.identities.*`
 
 ```js
-list(), get(id), getActive(), setActive(id),
-create(opts), rename(id, name), setColor(id, color), remove(id),
-onChanged(cb), onActiveChanged(cb)
+;(list(),
+  get(id),
+  getActive(),
+  setActive(id),
+  create(opts),
+  rename(id, name),
+  setColor(id, color),
+  remove(id),
+  onChanged(cb),
+  onActiveChanged(cb))
 ```
 
 ### `window.oz.tabs.*`
 
 ```js
-list(), getIdentity(tabId), openInIdentity(identityId, url),
-select(tabId), close(tabId), bulkCreateLazy(count, identityId, urlTemplate),
-onUpdated(cb)
+;(list(),
+  getIdentity(tabId),
+  openInIdentity(identityId, url),
+  select(tabId),
+  close(tabId),
+  bulkCreateLazy(count, identityId, urlTemplate),
+  onUpdated(cb))
 ```
 
 ### `window.oz.nav.*`
 
 ```js
-back(), forward(), reload(), loadURL(url)
+;(back(), forward(), reload(), loadURL(url))
 ```
 
 ### `window.oz.log.*`
 
 ```js
-debug(source, msg, ...args),
-info(source, msg, ...args),
-warn(source, msg, ...args),
-error(source, msg, ...args),
-reportError(detail)
+;(debug(source, msg, ...args),
+  info(source, msg, ...args),
+  warn(source, msg, ...args),
+  error(source, msg, ...args),
+  reportError(detail))
 ```
 
 ## Forward de errores del renderer
