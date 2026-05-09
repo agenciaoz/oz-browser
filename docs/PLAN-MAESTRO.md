@@ -23,6 +23,7 @@ Funcionalidad core derivada (Bloque 1.10 — la columna vertebral del producto):
    a) **PERMANENT MERGE** — agrega las identities y cuentas al estado actual.
    b) **EPHEMERAL SESSION** — sessions in-memory (no persist), abre tabs, al cerrar todo se descarta, Mac queda como estaba (modo "viaje").
    c) **NEW WORKSPACE** — agrega como workspace dedicado, sin tocar los existentes.
+   d) **OVERWRITE TOTAL** — reemplaza TODO el estado actual con el contenido del Excel. Antes de aplicar, snapshot automático del estado anterior (Time Machine). Use case: exportas, alguien externo organiza/limpia, te lo devuelve, lo cargas en OVERWRITE y queda como él lo dejó. **Round-trip lossless:** import → merge → export = Excel UNIFICADO; o exportar → mandar → recibir corregido → OVERWRITE.
 7. **Bulk identity creation desde Excel/CSV** — importas N filas y se crean N identities con auto-login. Onboarding de 50 cuentas en un click.
 8. **Site templates** — selectores CSS conocidos por plataforma para form fields, login button, "logged in" detection.
 9. **Cap de 25 identities por workspace de Ghost → REMOVIDO** (palette de colores generada algorítmicamente; sidebar con virtual scroll para soportar 50+).
@@ -49,6 +50,8 @@ OZ Browser es un clon-mejor de Ghost Browser, vendido como SaaS más barato, **e
 11. Bandwidth meter por proxy/identity
 12. **Modo Ephemeral Session** — abre 50 cuentas desde un Excel, las usas, cierras, Mac queda limpia (Ghost no tiene)
 13. **Cap de 25 Temporary Identities por workspace REMOVIDO** (Ghost lo tiene hardcodeado a 25 colores)
+14. **Time Machine** — snapshot diario automático del estado completo, retention configurable, restore a cualquier versión anterior con un click. Antes de cualquier operación destructiva (OVERWRITE, bulk delete, restore) snapshot forzado. Ghost no tiene nada parecido.
+15. **Workflow colaborativo Excel** — exporta → manda a alguien para que organice/limpie/agregue → recibe corregido → OVERWRITE en OZ → queda exacto como te lo devolvió. Sin Ghost.
 
 ---
 
@@ -306,18 +309,22 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 - History page (filterable por identity)
 - Per-identity browsing data clear (URL bar shield + identity dropdown)
 
-#### 🆕 Bloque 1.8 — Backup / Restore completo
-- `backup-manager.js`: empaqueta a `.ozbackup` (zip cifrado opcional con AES-256-GCM):
-  - identities.json + workspaces.json + proxies.json + settings.json + bookmarks
+#### 🆕 Bloque 1.8 — Backup / Restore + Time Machine (snapshots automáticos)
+- `backup-manager.js`: empaqueta a `.ozbackup` (zip cifrado AES-256-GCM):
+  - identities.json + workspaces.json + proxies.json + settings.json + bookmarks + vault.enc
   - Todo `data/Partitions/*` (cookies, IndexedDB, localStorage, service workers, cache)
-  - Metadata: version, timestamp, machine fingerprint
-- Export desde Settings → Backup
-- Import flow:
-  1. Pick .ozbackup file
-  2. Enter passcode if encrypted
-  3. Confirm overwrite
-  4. App reinicia con datos restaurados — TODO funciona idéntico (logins, cookies, proxies, identidades, workspaces)
-- Edge case: import desde otra mac/PC con paths distintos — mapping handler
+  - Metadata: version, timestamp, machine fingerprint, label (auto-snapshot/manual/pre-overwrite)
+- Export manual desde Settings → Backup
+- Import flow: pick .ozbackup → passcode → confirm → reinicia con datos restaurados
+
+**Time Machine (snapshots automáticos):**
+- **Daily snapshot:** cron interno cada día a las 3am en `data/snapshots/YYYY-MM-DD-HHMMSS.ozbackup`. Configurable: daily / weekly / on-change-only.
+- **Pre-destructive snapshots:** snapshot forzado antes de OVERWRITE de Excel, bulk delete, factory reset, restore de otro backup. Siempre se puede revertir.
+- **Retention policy** (Settings → Time Machine): keep last N días (default 30) / keep all / keep weekly forever / custom.
+- **UI Settings → Time Machine:** lista cronológica de snapshots con label + tamaño + descripción. Botón "Restore this version" (con snapshot automático del estado actual antes de revertir). Diff view opcional (qué cambió entre 2 snapshots). Export individual snapshot a archivo.
+- **Manual snapshot button** + atajo de teclado para crear snapshot etiquetable.
+- **Almacenamiento:** snapshots cifrados con master password del vault. Compresión zstd. ~50 MB/snapshot con 100 identities + 1000 cookies. ~1.5 GB/mes peor caso.
+- **Cloud snapshots (Etapa 7):** push a Supabase encriptado, restore desde otra Mac.
 
 #### 🆕 Bloque 1.10 — Account Vault + Auto-fill + Excel I/O + Anti-logout (🌟 CORE)
 
