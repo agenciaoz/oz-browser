@@ -1,7 +1,8 @@
 const path = require('path')
-const { app, session, BrowserWindow, dialog } = require('electron')
+const { app, session, BrowserWindow, dialog, ipcMain } = require('electron')
 
 const { Tabs } = require('./tabs')
+const { IdentityManager } = require('./identity-manager')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { setupMenu } = require('./menu')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
@@ -38,6 +39,7 @@ class TabbedBrowserWindow {
   constructor(options) {
     this.session = options.session || session.defaultSession
     this.extensions = options.extensions
+    this.identityManager = options.identityManager
 
     // Can't inheret BrowserWindow
     // https://github.com/electron/electron/issues/23#issuecomment-19613241
@@ -48,28 +50,84 @@ class TabbedBrowserWindow {
     const webuiUrl = `chrome-extension://${webuiExtensionId}/webui.html`
     this.webContents.loadURL(webuiUrl)
 
-    this.tabs = new Tabs(this.window)
+    this.tabs = new Tabs(this.window, this.identityManager)
 
     const self = this
 
+    // For lazy tabs we wait for materialization before registering with the
+    // Chrome extensions API (which keys tabs by webContents.id).
     this.tabs.on('tab-created', function onTabCreated(tab) {
-      tab.loadURL(options.urls.newtab)
+      // If a URL wasn't pre-supplied, queue the new-tab page so it loads
+      // on first materialization.
+      if (!tab.pendingUrl && !tab.isMaterialized()) {
+        tab.pendingUrl = options.urls.newtab
+      }
+      // Notify sidebar
+      if (self.window?.webContents && !self.window.webContents.isDestroyed()) {
+        self.window.webContents.send('oz:tabs:updated', {
+          kind: 'created',
+          tab: { ...tab.serialize(), windowId: self.id },
+        })
+      }
+    })
 
-      // Track tab that may have been created outside of the extensions API.
-      self.extensions.addTab(tab.webContents, tab.window)
+    this.tabs.on('tab-materialized', function onTabMaterialized(tab) {
+      // The Chrome extensions API was constructed with the default session.
+      // Tabs whose Identity uses a partition session must NOT be registered
+      // there (would throw "Invalid WebContents argument"). Per-Identity
+      // extension support comes in Bloque 1.5.
+      if (tab.webContents.session === self.session) {
+        self.extensions.addTab(tab.webContents, tab.window)
+      }
+      // Notify sidebar
+      if (self.window?.webContents && !self.window.webContents.isDestroyed()) {
+        self.window.webContents.send('oz:tabs:updated', {
+          kind: 'materialized',
+          tabId: tab.id,
+          tab: { ...tab.serialize(), windowId: self.id },
+        })
+      }
+    })
+
+    this.tabs.on('tab-updated', function onTabUpdated(tab, info) {
+      if (self.window?.webContents && !self.window.webContents.isDestroyed()) {
+        self.window.webContents.send('oz:tabs:updated', {
+          kind: 'updated',
+          tabId: tab.id,
+          tab: { ...info, windowId: self.id },
+        })
+      }
     })
 
     this.tabs.on('tab-selected', function onTabSelected(tab) {
-      self.extensions.selectTab(tab.webContents)
+      // Selection always materializes via Tab.show().
+      if (tab.webContents && tab.webContents.session === self.session) {
+        self.extensions.selectTab(tab.webContents)
+      }
+      if (self.window?.webContents && !self.window.webContents.isDestroyed()) {
+        self.window.webContents.send('oz:tabs:updated', {
+          kind: 'selected',
+          tabId: tab.id,
+        })
+      }
+    })
+
+    this.tabs.on('tab-destroyed', function onTabDestroyed(tab) {
+      if (self.window?.webContents && !self.window.webContents.isDestroyed()) {
+        self.window.webContents.send('oz:tabs:updated', {
+          kind: 'removed',
+          tabId: tab.id,
+        })
+      }
     })
 
     queueMicrotask(() => {
-      // Create initial tab
-      const tab = this.tabs.create()
-
-      if (options.initialUrl) {
-        tab.loadURL(options.initialUrl)
-      }
+      // First tab is always eager so the window has something to display.
+      const tab = this.tabs.create({
+        url: options.initialUrl || options.urls.newtab,
+        materialize: true,
+      })
+      this.tabs.select(tab.id)
     })
   }
 
@@ -90,10 +148,19 @@ class Browser {
     newtab: 'about:blank',
   }
 
+  // Active identity used when a tab is created without specifying one
+  // (e.g. via the Chrome tabs.create() API from inside a regular page).
+  // The sidebar UI updates this when the user picks an Identity.
+  activeIdentityId = null
+
   constructor() {
     this.ready = new Promise((resolve) => {
       this.resolveReady = resolve
     })
+
+    // IdentityManager needs app.getPath('userData') which is available before whenReady,
+    // but to be safe we instantiate inside init().
+    this.identityManager = null
 
     app.whenReady().then(this.init.bind(this))
 
@@ -114,6 +181,121 @@ class Browser {
 
   destroy() {
     app.quit()
+  }
+
+  /**
+   * Broadcast an event to all WebUI webContents (the browser chrome of every
+   * window). Used to notify the sidebar UI when identities change.
+   */
+  broadcastToWebUI(channel, ...args) {
+    for (const win of this.windows) {
+      if (win.webContents && !win.webContents.isDestroyed()) {
+        win.webContents.send(channel, ...args)
+      }
+    }
+  }
+
+  registerIpcHandlers() {
+    // Identities CRUD
+    ipcMain.handle('oz:identities:list', () => this.identityManager.list())
+    ipcMain.handle('oz:identities:get', (_e, id) => this.identityManager.get(id))
+    ipcMain.handle('oz:identities:getActive', () => this.activeIdentityId)
+    ipcMain.handle('oz:identities:setActive', (_e, id) => {
+      const ident = this.identityManager.get(id)
+      if (!ident) return false
+      this.activeIdentityId = id
+      this.broadcastToWebUI('oz:identities:active-changed', id)
+      return true
+    })
+    ipcMain.handle('oz:identities:create', (_e, opts) => {
+      const ident = this.identityManager.create(opts || {})
+      this.broadcastToWebUI('oz:identities:changed')
+      return ident
+    })
+    ipcMain.handle('oz:identities:rename', (_e, id, name) => {
+      const ident = this.identityManager.rename(id, name)
+      if (ident) this.broadcastToWebUI('oz:identities:changed')
+      return ident
+    })
+    ipcMain.handle('oz:identities:setColor', (_e, id, color) => {
+      const ident = this.identityManager.setColor(id, color)
+      if (ident) this.broadcastToWebUI('oz:identities:changed')
+      return ident
+    })
+    ipcMain.handle('oz:identities:remove', (_e, id) => {
+      // If removing the active identity, fall back to default first.
+      if (this.activeIdentityId === id) {
+        this.activeIdentityId = this.identityManager.getDefault().id
+        this.broadcastToWebUI('oz:identities:active-changed', this.activeIdentityId)
+      }
+      const ok = this.identityManager.remove(id)
+      if (ok) this.broadcastToWebUI('oz:identities:changed')
+      return ok
+    })
+
+    // Tabs ↔ Identity binding & sidebar API
+    ipcMain.handle('oz:tabs:list', () => {
+      // Return all OZ tabs across windows. Sidebar UI uses this on first paint.
+      const result = []
+      for (const win of this.windows) {
+        for (const t of win.tabs.tabList) {
+          result.push({ ...t.serialize(), windowId: win.id })
+        }
+      }
+      return result
+    })
+    ipcMain.handle('oz:tabs:getIdentity', (_e, tabId) => {
+      for (const win of this.windows) {
+        const tab = win.tabs.get(tabId)
+        if (tab) return tab.identityId
+      }
+      return null
+    })
+    ipcMain.handle('oz:tabs:openInIdentity', (_e, identityId, url) => {
+      const win = this.getFocusedWindow()
+      if (!win) return null
+      // Lazy by default: just queues the URL; renderer process is created on click.
+      const tab = win.tabs.create({ identityId, url })
+      this.broadcastToWebUI('oz:tabs:updated', {
+        kind: 'created',
+        tab: { ...tab.serialize(), windowId: win.id },
+      })
+      return tab.id
+    })
+    ipcMain.handle('oz:tabs:select', (_e, tabId) => {
+      for (const win of this.windows) {
+        const tab = win.tabs.get(tabId)
+        if (tab) {
+          win.tabs.select(tabId)
+          return true
+        }
+      }
+      return false
+    })
+    ipcMain.handle('oz:tabs:close', (_e, tabId) => {
+      for (const win of this.windows) {
+        const tab = win.tabs.get(tabId)
+        if (tab) {
+          win.tabs.remove(tabId)
+          this.broadcastToWebUI('oz:tabs:updated', { kind: 'removed', tabId })
+          return true
+        }
+      }
+      return false
+    })
+    ipcMain.handle('oz:tabs:bulkCreateLazy', (_e, count, identityId, urlTemplate) => {
+      // Useful for stress testing: create N lazy tabs at once.
+      const win = this.getFocusedWindow()
+      if (!win) return 0
+      const ids = []
+      for (let i = 0; i < count; i++) {
+        const url = urlTemplate ? urlTemplate.replace('{i}', String(i)) : 'about:blank'
+        const tab = win.tabs.create({ identityId, url })
+        ids.push(tab.id)
+      }
+      this.broadcastToWebUI('oz:tabs:updated', { kind: 'bulk-created', count })
+      return ids.length
+    })
   }
 
   getFocusedWindow() {
@@ -138,6 +320,9 @@ class Browser {
 
   async init() {
     this.initSession()
+    this.identityManager = new IdentityManager()
+    this.activeIdentityId = this.identityManager.getDefault().id
+    this.registerIpcHandlers()
     setupMenu(this)
 
     if ('registerPreloadScript' in this.session) {
@@ -166,20 +351,31 @@ class Browser {
           throw new Error(`Unable to find windowId=${details.windowId}`)
         }
 
-        const tab = win.tabs.create()
-
-        if (details.url) tab.loadURL(details.url)
-        if (typeof details.active === 'boolean' ? details.active : true) win.tabs.select(tab.id)
+        // Chrome extensions API needs a webContents back synchronously, so
+        // tabs created via this path must be materialized eagerly.
+        const tab = win.tabs.create({
+          identityId: this.activeIdentityId,
+          url: details.url,
+          materialize: true,
+        })
+        if (typeof details.active === 'boolean' ? details.active : true) {
+          win.tabs.select(tab.id)
+        }
 
         return [tab.webContents, tab.window]
       },
       selectTab: (tab, browserWindow) => {
         const win = this.getWindowFromBrowserWindow(browserWindow)
-        win?.tabs.select(tab.id)
+        if (!win) return
+        // Map Chrome's webContents.id to our stable OZ tab id.
+        const ozTab = win.tabs.getByWebContentsId(tab.id)
+        if (ozTab) win.tabs.select(ozTab.id)
       },
       removeTab: (tab, browserWindow) => {
         const win = this.getWindowFromBrowserWindow(browserWindow)
-        win?.tabs.remove(tab.id)
+        if (!win) return
+        const ozTab = win.tabs.getByWebContentsId(tab.id)
+        if (ozTab) win.tabs.remove(ozTab.id)
       },
 
       createWindow: async (details) => {
@@ -290,6 +486,7 @@ class Browser {
       ...options,
       urls: this.urls,
       extensions: this.extensions,
+      identityManager: this.identityManager,
       window: {
         width: 1280,
         height: 720,
@@ -341,8 +538,14 @@ class Browser {
             outlivesOpener: true,
             createWindow: ({ webContents: guest, webPreferences }) => {
               const win = this.getWindowFromWebContents(webContents)
-              const tab = win.tabs.create({ webContents: guest, webPreferences })
-              tab.loadURL(details.url)
+              // window.open() must return a webContents synchronously, so
+              // materialize eagerly using the supplied guest webContents.
+              const tab = win.tabs.create({
+                webContents: guest,
+                webPreferences,
+                identityId: this.activeIdentityId,
+                url: details.url,
+              })
               return tab.webContents
             },
           }
@@ -364,9 +567,14 @@ class Browser {
             case 'new-window':
               this.createWindow({ initialUrl: url })
               break
-            default:
-              const tab = win.tabs.create()
-              tab.loadURL(url)
+            default: {
+              // Open in a new lazy tab using the active Identity.
+              const tab = win.tabs.create({
+                identityId: this.activeIdentityId,
+                url,
+              })
+              win.tabs.select(tab.id)
+            }
           }
         },
       })

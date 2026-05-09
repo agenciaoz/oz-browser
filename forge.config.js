@@ -26,7 +26,7 @@ module.exports = {
             {
               name: 'browser',
               preload: {
-                js: './preload.ts',
+                js: './preload.js',
               },
             },
           ],
