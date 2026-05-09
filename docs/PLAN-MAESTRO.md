@@ -1,7 +1,7 @@
-# OZ Browser — Plan Maestro v3 (consolidado, reordenado, M-series optimizado)
+# OZ Browser — Plan Maestro v4 (con pilares arquitectónicos)
 
 **Fecha:** 2026-05-09
-**Estado:** Etapa 0 ✅ · Bloque 1.1 ✅ · Bloque 1.2 ~70% (sidebar + lazy tabs + identity manager + logger + error popup hechos)
+**Estado:** Etapa 0 ✅ · Bloque 1.1 ✅ · Bloque 1.2 ~70% (sidebar + lazy tabs + identity manager + logger + error popup + refactor modular + estructura docs hechos)
 **Plataforma target primaria:** macOS Apple Silicon (M1 / M2 / M3 / M4). Build universal binary también soporta Intel x86_64.
 
 Este documento reemplaza `04-Plan-en-Etapas.md` como fuente única de verdad. Lo de antes queda como referencia histórica.
@@ -88,6 +88,27 @@ Esto NO es una feature más. **Es el producto.** Todo lo demás (workspaces, pro
 - ❌ NO usar Rosetta — Electron + addons todos arm64 nativos.
 - ❌ NO C++ addons que no soporten arm64 (lista de checked: keytar ✅, sqlite3 ✅, sharp ✅, native-image-converter ❌ avoid).
 - ❌ NO depender de Intel-only Homebrew packages en runtime.
+
+---
+
+## 0.7. Pilares arquitectónicos (no negociables)
+
+Estas decisiones aplican a TODO bloque, etapa y commit. Documentadas como ADRs en `oz-browser/docs/architecture/`.
+
+| # | Pilar | ADR | Resumen |
+|---|---|---|---|
+| 1 | **Modularidad** | [0005](oz-browser/docs/architecture/0005-modular-500-loc-rule.md) | Ningún archivo de código > 500 LOC. Si crece, se divide en submódulos. |
+| 2 | **Documentación es código de primera clase** | [DOC-RULES](oz-browser/docs/DOCUMENTATION-RULES.md) | Todo se documenta. ADRs para decisiones, .md por módulo, .md por feature, history por bloque cerrado. Sin doc → no hecho. |
+| 3 | **Logging exhaustivo** | [0009](oz-browser/docs/architecture/0009-logging-everything.md) | Cada componente y flujo loggea. IPC handlers con DEBUG entrada + INFO salida + duration. Métricas cada 30s. Privacy filters automáticos. Log Viewer in-app (Bloque 1.7). |
+| 4 | **Apple Silicon target** | [0006](oz-browser/docs/architecture/0006-apple-silicon-target.md) | Universal binary arm64 nativo. M1 8 GB Air = 100 lazy + 10 materialized < 4 GB. Performance modes Light/Balanced/Power. |
+| 5 | **Sync pluggable** | [0007](oz-browser/docs/architecture/0007-sync-pluggable-backend.md) | Backend abstracto: Cloud OZ (Supabase) / Dropbox / S3 self-hosted / Off. E2E encryption client-side. |
+| 6 | **Lazy tabs** | [0002](oz-browser/docs/architecture/0002-lazy-tabs.md) | Tab no crea WebContentsView ni renderer hasta primer click. 100+ tabs viables. |
+| 7 | **Default Identity = defaultSession** | [0003](oz-browser/docs/architecture/0003-default-identity-uses-defaultsession.md) | Para que Chrome Web Store extensions funcionen. Otras identities tienen partitions. Per-Identity ext support en Bloque 1.10. |
+| 8 | **HTTPS sobre SOCKS5** | [0004](oz-browser/docs/architecture/0004-https-over-socks5.md) | `app.on('login')` rock-solid en HTTPS. SOCKS5 disponible pero no default. |
+| 9 | **Vault encryption** | [0008](oz-browser/docs/architecture/0008-account-vault-encryption.md) | scrypt(master) → AES-256-GCM. Master key en macOS Keychain. |
+| 10 | **Electron stack** | [0001](oz-browser/docs/architecture/0001-electron-stack.md) | Electron + electron-browser-shell. Fork de Chromium reservado a Etapa 9 si MRR > $5K. |
+
+**Sin estos pilares, el proyecto se desordena.** Si una decisión nueva contradice alguno, primero se actualiza el ADR (proceso documentado en DOCUMENTATION-RULES.md).
 
 ---
 
@@ -666,7 +687,9 @@ Con sólo Claude (yo) implementando + Jose dirigiendo:
 | 7 | cloud sync E2E | ~12h | 6-8 |
 | 8 | Windows + Linux | ~8h | 4-6 |
 
-**Total realista a producto vendible (Etapas 0–6):** ~135 horas mías + ~$110 de costos directos.
+**Total realista a producto vendible (Etapas 0–6):** ~140 horas mías + ~$110 de costos directos.
+
+> ⚠️ El estimado incluye tiempo dedicado a documentación y logging (regla viva, no opcional). Si lo recortáramos saldría ~25-30% más rápido pero la deuda técnica nos hundiría a las 3 meses. NO recortar.
 
 A 1-2 sesiones por día = ~3 meses calendario.
 

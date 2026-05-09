@@ -20,6 +20,14 @@ Navegador Chromium-based para **manejar 50+ cuentas de redes sociales al mismo t
 4. **Time Machine** — snapshot diario automático, rollback a cualquier versión.
 5. **Office Edition** — Dropbox como sync backend gratis, admin dashboard mide bandwidth/tiempo/accounts por empleado.
 
+## Pilares arquitectónicos (no negociables)
+
+1. **Modularidad** — ningún archivo > 500 LOC ([ADR 0005](architecture/0005-modular-500-loc-rule.md))
+2. **Documentación es código** — todo se documenta ([DOC-RULES](DOCUMENTATION-RULES.md))
+3. **Logging exhaustivo** — cada componente loggea ([ADR 0009](architecture/0009-logging-everything.md))
+4. **Apple Silicon target** — M1 Air 8 GB primer ciudadano ([ADR 0006](architecture/0006-apple-silicon-target.md))
+5. **Lazy tabs**, **Default = defaultSession**, **HTTPS proxies**, **Sync pluggable**, **Vault crypto** — más ADRs en [`architecture/`](architecture/README.md).
+
 ---
 
 ## Hardware target y benchmarks
