@@ -107,6 +107,10 @@ Estas decisiones afectan cada módulo del proyecto y NO tienen que repetirse en 
 - Updates firmados (Etapa 3 onwards).
 
 ### Modularidad
+- **Regla dura: ningún archivo de código > 500 LOC.** Si un módulo crece, dividir en submódulos. Esto facilita trabajar con Claude Cowork (Read sin offset, comprensión rápida).
+- Estado actual: todos los archivos del backend < 250 LOC (main.js: 155, ipc-handlers: 190, extensions-setup: 210, window-manager: 105, paths: 33, tabs: 334, identity-manager: 177, error-handler: 141, logger: 111, menu: 51).
+- WebUI dividido en oz-utils.js + tabstrip.js + sidebar.js + webui.js (boot).
 - Cada bloque entrega un módulo `browser/X-manager.js` autocontenido.
-- IPC channels namespaceados: `oz:identities:*`, `oz:proxies:*`, `oz:vault:*`, etc.
+- IPC channels namespaceados: `oz:identities:*`, `oz:proxies:*`, `oz:vault:*`, `oz:tabs:*`, `oz:nav:*`, etc.
 - Tests por módulo (cuando lleguemos a Etapa 1B).
+- Naming consistente: `<feature>-manager.js` para CRUD modules, `<feature>-setup.js` para wiring, `<feature>-handlers.js` para IPC.
