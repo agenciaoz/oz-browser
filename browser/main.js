@@ -1,6 +1,13 @@
 const path = require('path')
 const { app, session, BrowserWindow, dialog, ipcMain } = require('electron')
 
+const log = require('./logger')
+const { setupErrorHandlers, showErrorDialog } = require('./error-handler')
+
+// Initialize logger and global error handlers as early as possible.
+log.init()
+setupErrorHandlers()
+
 const { Tabs } = require('./tabs')
 const { IdentityManager } = require('./identity-manager')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
@@ -196,6 +203,24 @@ class Browser {
   }
 
   registerIpcHandlers() {
+    // Logging from renderer
+    ipcMain.handle('oz:log', (_e, level, source, message, args) => {
+      const fn = (log[String(level).toLowerCase()] || log.info)
+      fn(`renderer/${source || 'unknown'}`, message, ...(args || []))
+      return true
+    })
+
+    // Error reports from renderer
+    ipcMain.handle('oz:report-error', (_e, detail) => {
+      log.error('renderer', detail.message || 'Renderer error', detail)
+      const title = `Renderer error: ${detail.message || 'unknown'}`
+      const body =
+        (detail.stack || detail.reason || detail.message || JSON.stringify(detail)) +
+        (detail.filename ? `\n\nat ${detail.filename}:${detail.lineno}:${detail.colno}` : '')
+      showErrorDialog(title, body)
+      return true
+    })
+
     // Identities CRUD
     ipcMain.handle('oz:identities:list', () => this.identityManager.list())
     ipcMain.handle('oz:identities:get', (_e, id) => this.identityManager.get(id))
@@ -283,6 +308,42 @@ class Browser {
       }
       return false
     })
+    // Navigation controls (operate on the focused window's selected tab)
+    const focusedTab = () => {
+      const win = this.getFocusedWindow()
+      return win && win.tabs && win.tabs.selected ? win.tabs.selected : null
+    }
+    ipcMain.handle('oz:nav:back', () => {
+      const t = focusedTab()
+      if (!t || !t.webContents) return false
+      if (t.webContents.navigationHistory.canGoBack()) {
+        t.webContents.navigationHistory.goBack()
+        return true
+      }
+      return false
+    })
+    ipcMain.handle('oz:nav:forward', () => {
+      const t = focusedTab()
+      if (!t || !t.webContents) return false
+      if (t.webContents.navigationHistory.canGoForward()) {
+        t.webContents.navigationHistory.goForward()
+        return true
+      }
+      return false
+    })
+    ipcMain.handle('oz:nav:reload', () => {
+      const t = focusedTab()
+      if (!t) return false
+      t.reload()
+      return true
+    })
+    ipcMain.handle('oz:nav:loadURL', (_e, url) => {
+      const t = focusedTab()
+      if (!t) return false
+      t.loadURL(url)
+      return true
+    })
+
     ipcMain.handle('oz:tabs:bulkCreateLazy', (_e, count, identityId, urlTemplate) => {
       // Useful for stress testing: create N lazy tabs at once.
       const win = this.getFocusedWindow()
@@ -319,11 +380,16 @@ class Browser {
   }
 
   async init() {
+    log.info('browser', 'Browser.init() starting')
     this.initSession()
     this.identityManager = new IdentityManager()
+    log.info('browser', 'IdentityManager loaded', {
+      identitiesCount: this.identityManager.list().length,
+    })
     this.activeIdentityId = this.identityManager.getDefault().id
     this.registerIpcHandlers()
     setupMenu(this)
+    log.info('browser', 'IPC handlers + menu registered')
 
     if ('registerPreloadScript' in this.session) {
       this.session.registerPreloadScript({
@@ -455,6 +521,7 @@ class Browser {
 
     this.createInitialWindow()
     this.resolveReady()
+    log.info('browser', 'Browser.init() done — initial window created')
   }
 
   initSession() {

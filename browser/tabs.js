@@ -14,7 +14,9 @@ const { EventEmitter } = require('events')
 const { WebContentsView } = require('electron')
 const crypto = require('crypto')
 
-const toolbarHeight = 64
+// Layout constants — must match CSS in browser/ui/webui.html
+const TOOLBAR_HEIGHT = 64
+const SIDEBAR_WIDTH = 220
 
 function uuid() {
   return crypto.randomBytes(8).toString('hex')
@@ -196,10 +198,10 @@ class Tab extends EventEmitter {
     const [width, height] = this.window.getSize()
     const padding = 4
     this.view.setBounds({
-      x: padding,
-      y: toolbarHeight,
-      width: width - padding * 2,
-      height: height - toolbarHeight - padding,
+      x: SIDEBAR_WIDTH + padding,
+      y: TOOLBAR_HEIGHT,
+      width: width - SIDEBAR_WIDTH - padding * 2,
+      height: height - TOOLBAR_HEIGHT - padding,
     })
     this.view.setBorderRadius(8)
   }

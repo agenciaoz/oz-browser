@@ -1,193 +1,490 @@
-class WebUI {
-  windowId = -1
-  activeTabId = -1
-  /** @type {chrome.tabs.Tab[]} */
-  tabList = []
+// OZ Browser — WebUI: top TabStrip + side IdentitySidebar.
+// Both use window.oz (provided by preload.js) — chrome.tabs is reserved for
+// extensions; our UI is fully OZ-driven so it can show tabs across identities
+// (which the chrome.tabs API doesn't expose for partition sessions).
+
+function safe(promise, source) {
+  return Promise.resolve(promise).catch((err) => {
+    if (window.oz && window.oz.log) {
+      window.oz.log.reportError({
+        source: `webui/${source}`,
+        message: err && err.message ? err.message : String(err),
+        stack: err && err.stack ? err.stack : null,
+      })
+    }
+  })
+}
+
+class TabStrip {
+  tabs = []
+  identities = []
+  activeOzTabId = null
 
   constructor() {
     const $ = document.querySelector.bind(document)
-
     this.$ = {
-      tabList: $('#tabstrip .tab-list'),
-      tabTemplate: $('#tabtemplate'),
-      createTabButton: $('#createtab'),
-      goBackButton: $('#goback'),
-      goForwardButton: $('#goforward'),
-      reloadButton: $('#reload'),
-      addressUrl: $('#addressurl'),
-
-      browserActions: $('#actions'),
-
-      minimizeButton: $('#minimize'),
-      maximizeButton: $('#maximize'),
-      closeButton: $('#close'),
+      list: $('#tabstrip .tab-list'),
+      tpl: $('#tabtemplate'),
+      createBtn: $('#createtab'),
+      back: $('#goback'),
+      forward: $('#goforward'),
+      reload: $('#reload'),
+      url: $('#addressurl'),
+      minimize: $('#minimize'),
+      maximize: $('#maximize'),
+      close: $('#close'),
     }
 
-    this.$.createTabButton.addEventListener('click', () => chrome.tabs.create())
-    this.$.goBackButton.addEventListener('click', () => chrome.tabs.goBack())
-    this.$.goForwardButton.addEventListener('click', () => chrome.tabs.goForward())
-    this.$.reloadButton.addEventListener('click', () => chrome.tabs.reload())
-    this.$.addressUrl.addEventListener('keypress', this.onAddressUrlKeyPress.bind(this))
-
-    this.$.minimizeButton.addEventListener('click', () =>
-      chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, (win) => {
-        chrome.windows.update(win.id, { state: win.state === 'minimized' ? 'normal' : 'minimized' })
-      }),
+    this.$.createBtn.addEventListener('click', () => this.handleCreate())
+    this.$.back.addEventListener('click', () => safe(window.oz.nav.back(), 'nav.back'))
+    this.$.forward.addEventListener('click', () =>
+      safe(window.oz.nav.forward(), 'nav.forward'),
     )
-    this.$.maximizeButton.addEventListener('click', () =>
-      chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, (win) => {
-        chrome.windows.update(win.id, { state: win.state === 'maximized' ? 'normal' : 'maximized' })
-      }),
-    )
-    this.$.closeButton.addEventListener('click', () => chrome.windows.remove())
-
-    const platformClass = `platform-${navigator.userAgentData.platform.toLowerCase()}`
-    document.body.classList.add(platformClass)
-
-    this.initTabs()
-  }
-
-  async initTabs() {
-    const tabs = await new Promise((resolve) => chrome.tabs.query({ windowId: -2 }, resolve))
-    this.tabList = [...tabs]
-    this.renderTabs()
-
-    const activeTab = this.tabList.find((tab) => tab.active)
-    if (activeTab) {
-      this.setActiveTab(activeTab)
-    }
-
-    // Wait to setup tabs and windowId prior to listening for updates.
-    this.setupBrowserListeners()
-  }
-
-  setupBrowserListeners() {
-    if (!chrome.tabs.onCreated) {
-      throw new Error(`chrome global not setup. Did the extension preload not get run?`)
-    }
-
-    const findTab = (tabId) => {
-      const existingTab = this.tabList.find((tab) => tab.id === tabId)
-      return existingTab
-    }
-
-    const findOrCreateTab = (tabId) => {
-      const existingTab = findTab(tabId)
-      if (existingTab) return existingTab
-
-      const newTab = { id: tabId }
-      this.tabList.push(newTab)
-      return newTab
-    }
-
-    chrome.tabs.onCreated.addListener((tab) => {
-      if (tab.windowId !== this.windowId) return
-      const newTab = findOrCreateTab(tab.id)
-      Object.assign(newTab, tab)
-      this.renderTabs()
-    })
-
-    chrome.tabs.onActivated.addListener((activeInfo) => {
-      if (activeInfo.windowId !== this.windowId) return
-
-      this.setActiveTab(activeInfo)
-    })
-
-    chrome.tabs.onUpdated.addListener((tabId, changeInfo, details) => {
-      const tab = findTab(tabId)
-      if (!tab) return
-      Object.assign(tab, details)
-      this.renderTabs()
-      if (tabId === this.activeTabId) this.renderToolbar(tab)
-    })
-
-    chrome.tabs.onRemoved.addListener((tabId) => {
-      const tabIndex = this.tabList.findIndex((tab) => tab.id === tabId)
-      if (tabIndex > -1) {
-        this.tabList.splice(tabIndex, 1)
-        this.$.tabList.querySelector(`[data-tab-id="${tabId}"]`).remove()
+    this.$.reload.addEventListener('click', () => safe(window.oz.nav.reload(), 'nav.reload'))
+    this.$.url.addEventListener('keypress', (ev) => {
+      if (ev.code === 'Enter') {
+        const url = this.$.url.value.trim()
+        if (url) safe(window.oz.nav.loadURL(url), 'nav.loadURL')
       }
     })
+
+    // Window controls (only used on linux per CSS)
+    this.$.minimize.addEventListener('click', () =>
+      chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, (win) =>
+        chrome.windows.update(win.id, {
+          state: win.state === 'minimized' ? 'normal' : 'minimized',
+        }),
+      ),
+    )
+    this.$.maximize.addEventListener('click', () =>
+      chrome.windows.get(chrome.windows.WINDOW_ID_CURRENT, (win) =>
+        chrome.windows.update(win.id, {
+          state: win.state === 'maximized' ? 'normal' : 'maximized',
+        }),
+      ),
+    )
+    this.$.close.addEventListener('click', () => chrome.windows.remove())
+
+    document.body.classList.add(
+      `platform-${navigator.userAgentData.platform.toLowerCase()}`,
+    )
   }
 
-  setActiveTab(activeTab) {
-    this.activeTabId = activeTab.id || activeTab.tabId
-    this.windowId = activeTab.windowId
+  async init() {
+    if (!window.oz) {
+      console.error('[oz-tabstrip] window.oz missing — preload not run.')
+      return
+    }
+    this.identities = await window.oz.identities.list()
+    this.tabs = await window.oz.tabs.list()
+    this.render()
+    window.oz.identities.onChanged(async () => {
+      this.identities = await window.oz.identities.list()
+      this.render()
+    })
+    window.oz.tabs.onUpdated((info) => this.handleEvent(info))
+  }
 
-    for (const tab of this.tabList) {
-      if (tab.id === this.activeTabId) {
-        tab.active = true
-        this.renderTab(tab)
-        this.renderToolbar(tab)
-      } else {
-        if (tab.active) {
-          tab.active = false
-          this.renderTab(tab)
-        }
-      }
+  handleEvent(info) {
+    if (!info) return
+    if (info.kind === 'created' || info.kind === 'updated' || info.kind === 'materialized') {
+      const t = info.tab
+      if (!t) return
+      const idx = this.tabs.findIndex((x) => x.id === t.id)
+      if (idx >= 0) this.tabs[idx] = { ...this.tabs[idx], ...t }
+      else this.tabs.push(t)
+    } else if (info.kind === 'removed') {
+      this.tabs = this.tabs.filter((x) => x.id !== info.tabId)
+    } else if (info.kind === 'selected') {
+      this.activeOzTabId = info.tabId
+      const sel = this.tabs.find((x) => x.id === info.tabId)
+      if (sel) this.renderToolbar(sel)
+    } else if (info.kind === 'bulk-created') {
+      window.oz.tabs.list().then((all) => {
+        this.tabs = all
+        this.render()
+      })
+      return
+    }
+    this.render()
+  }
+
+  identityColor(identityId) {
+    const i = this.identities.find((x) => x.id === identityId)
+    return i ? i.color : '#666'
+  }
+  identityName(identityId) {
+    const i = this.identities.find((x) => x.id === identityId)
+    return i ? i.name : 'Unknown'
+  }
+
+  async handleCreate() {
+    const activeId = await window.oz.identities.getActive()
+    const id = await safe(
+      window.oz.tabs.openInIdentity(activeId, 'about:blank'),
+      'tabs.openInIdentity',
+    )
+    if (id) safe(window.oz.tabs.select(id), 'tabs.select')
+  }
+
+  render() {
+    if (!this.$.list) return
+    this.$.list.innerHTML = ''
+    for (const tab of this.tabs) {
+      this.$.list.appendChild(this.renderTabNode(tab))
     }
   }
 
-  onAddressUrlKeyPress(event) {
-    if (event.code === 'Enter') {
-      const url = this.$.addressUrl.value
-      chrome.tabs.update({ url })
-    }
-  }
+  renderTabNode(tab) {
+    const node = this.$.tpl.content.cloneNode(true).firstElementChild
+    node.dataset.tabId = tab.id
+    if (tab.id === this.activeOzTabId) node.dataset.active = ''
 
-  createTabNode(tab) {
-    const tabElem = this.$.tabTemplate.content.cloneNode(true).firstElementChild
-    tabElem.dataset.tabId = tab.id
+    // Identity color stripe on left edge
+    node.style.boxShadow = `inset 3px 0 0 0 ${this.identityColor(tab.identityId)}, inset -1px 0 0 0 rgba(0,0,0,0.33)`
+    node.title = `Identity: ${this.identityName(tab.identityId)}\n${tab.url || ''}`
 
-    tabElem.addEventListener('click', () => {
-      chrome.tabs.update(tab.id, { active: true })
-    })
-    tabElem.querySelector('.close').addEventListener('click', () => {
-      chrome.tabs.remove(tab.id)
-    })
-    const faviconElem = tabElem.querySelector('.favicon')
-    faviconElem?.addEventListener('load', () => {
-      faviconElem.classList.toggle('loaded', true)
-    })
-    faviconElem?.addEventListener('error', () => {
-      faviconElem.classList.toggle('loaded', false)
+    if (!tab.isLoaded) node.style.opacity = '0.7'
+
+    node.addEventListener('click', () =>
+      safe(window.oz.tabs.select(tab.id), 'tabs.select'),
+    )
+
+    const closeBtn = node.querySelector('.close')
+    closeBtn.addEventListener('click', (ev) => {
+      ev.stopPropagation()
+      safe(window.oz.tabs.close(tab.id), 'tabs.close')
     })
 
-    this.$.tabList.appendChild(tabElem)
-    return tabElem
-  }
-
-  renderTab(tab) {
-    let tabElem = this.$.tabList.querySelector(`[data-tab-id="${tab.id}"]`)
-    if (!tabElem) tabElem = this.createTabNode(tab)
-
-    if (tab.active) {
-      tabElem.dataset.active = ''
-    } else {
-      delete tabElem.dataset.active
+    const fav = node.querySelector('.favicon')
+    if (tab.favicon) {
+      fav.src = tab.favicon
+      fav.classList.add('loaded')
     }
 
-    const favicon = tabElem.querySelector('.favicon')
-    if (tab.favIconUrl) {
-      favicon.src = tab.favIconUrl
-    } else {
-      delete favicon.src
-    }
+    const titleEl = node.querySelector('.title')
+    titleEl.textContent = tab.title || 'New Tab'
 
-    tabElem.querySelector('.title').textContent = tab.title
-    tabElem.querySelector('.audio').disabled = !tab.audible
-  }
+    const audio = node.querySelector('.audio')
+    audio.disabled = true
 
-  renderTabs() {
-    this.tabList.forEach((tab) => {
-      this.renderTab(tab)
-    })
+    return node
   }
 
   renderToolbar(tab) {
-    this.$.addressUrl.value = tab.url
-    // this.$.browserActions.tab = tab.id
+    if (!tab) return
+    this.$.url.value = tab.url || ''
   }
 }
 
-window.webui = new WebUI()
+// =====================================================================
+// IdentitySidebar — uses window.oz.identities + window.oz.tabs
+// =====================================================================
+
+class IdentitySidebar {
+  identities = []
+  tabs = []
+  activeIdentityId = null
+  activeOzTabId = null
+
+  constructor() {
+    if (!window.oz) {
+      console.error('[oz-sidebar] window.oz missing — preload not run.')
+      return
+    }
+    this.$root = document.getElementById('oz-identity-list')
+    this.$newBtn = document.getElementById('oz-new-identity')
+    this.$newBtn.addEventListener('click', () => this.handleNewIdentity())
+  }
+
+  async init() {
+    if (!window.oz) return
+    await this.refresh()
+    window.oz.identities.onChanged(() => this.refresh())
+    window.oz.identities.onActiveChanged((id) => {
+      this.activeIdentityId = id
+      this.render()
+    })
+    window.oz.tabs.onUpdated((info) => this.handleTabEvent(info))
+  }
+
+  async refresh() {
+    this.identities = await window.oz.identities.list()
+    this.activeIdentityId = await window.oz.identities.getActive()
+    this.tabs = await window.oz.tabs.list()
+    this.render()
+  }
+
+  handleTabEvent(info) {
+    if (!info) return
+    if (info.kind === 'created' || info.kind === 'updated' || info.kind === 'materialized') {
+      const t = info.tab
+      if (!t) return
+      const idx = this.tabs.findIndex((x) => x.id === t.id)
+      if (idx >= 0) this.tabs[idx] = { ...this.tabs[idx], ...t }
+      else this.tabs.push(t)
+    } else if (info.kind === 'removed') {
+      this.tabs = this.tabs.filter((x) => x.id !== info.tabId)
+    } else if (info.kind === 'selected') {
+      this.activeOzTabId = info.tabId
+    } else if (info.kind === 'bulk-created') {
+      this.refresh()
+      return
+    }
+    this.render()
+  }
+
+  handleNewIdentity() {
+    if (this.$newBtn.dataset.editing) return
+    this.$newBtn.dataset.editing = '1'
+    const originalText = this.$newBtn.textContent
+    this.$newBtn.textContent = ''
+    const input = document.createElement('input')
+    input.placeholder = 'Identity name…'
+    input.style.cssText =
+      'background: transparent; border: none; outline: none; color: var(--text-color); font: inherit; width: 100%;'
+    this.$newBtn.appendChild(input)
+    input.focus()
+    let committed = false
+    const cleanup = () => {
+      this.$newBtn.textContent = originalText
+      delete this.$newBtn.dataset.editing
+    }
+    const commit = async () => {
+      if (committed) return
+      committed = true
+      const name = input.value.trim()
+      cleanup()
+      if (name) {
+        const ident = await safe(
+          window.oz.identities.create({ name }),
+          'identities.create',
+        )
+        if (ident && ident.id) {
+          await safe(window.oz.identities.setActive(ident.id), 'identities.setActive')
+        }
+      }
+    }
+    input.addEventListener('blur', commit)
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') input.blur()
+      if (e.key === 'Escape') {
+        committed = true
+        cleanup()
+      }
+    })
+  }
+
+  handleNewTabIn(identityId) {
+    safe(
+      window.oz.tabs.openInIdentity(identityId, 'about:blank'),
+      'tabs.openInIdentity',
+    )
+  }
+
+  handleSelectTab(ozTabId) {
+    safe(window.oz.tabs.select(ozTabId), 'tabs.select')
+  }
+
+  handleCloseTab(ozTabId, ev) {
+    if (ev) ev.stopPropagation()
+    safe(window.oz.tabs.close(ozTabId), 'tabs.close')
+  }
+
+  handleSelectIdentity(identityId) {
+    safe(window.oz.identities.setActive(identityId), 'identities.setActive')
+  }
+
+  handleRenameIdentity(identityId, currentName, rowEl) {
+    const nameEl = rowEl.querySelector('.identity-name')
+    nameEl.innerHTML = ''
+    const input = document.createElement('input')
+    input.value = currentName
+    nameEl.appendChild(input)
+    input.focus()
+    input.select()
+    const commit = async () => {
+      const v = input.value.trim()
+      if (v && v !== currentName) {
+        await safe(window.oz.identities.rename(identityId, v), 'identities.rename')
+      } else this.render()
+    }
+    input.addEventListener('blur', commit)
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') input.blur()
+      if (e.key === 'Escape') {
+        input.value = currentName
+        input.blur()
+      }
+    })
+  }
+
+  handleDeleteIdentity(identity) {
+    if (identity.isDefault) {
+      alert('Cannot delete the Default identity.')
+      return
+    }
+    if (
+      !confirm(
+        `Delete identity "${identity.name}"?\n\n` +
+          `Tabs of this identity will be closed.\n` +
+          `Cookies and storage data on disk will remain — recoverable until you clear app data.`,
+      )
+    )
+      return
+    safe(window.oz.identities.remove(identity.id), 'identities.remove')
+  }
+
+  showContextMenu(e, identity) {
+    e.preventDefault()
+    e.stopPropagation()
+    const existing = document.querySelector('.ctx-menu')
+    if (existing) existing.remove()
+    const menu = document.createElement('div')
+    menu.className = 'ctx-menu'
+    menu.style.left = `${e.clientX}px`
+    menu.style.top = `${e.clientY}px`
+
+    const renameBtn = document.createElement('button')
+    renameBtn.textContent = 'Rename'
+    renameBtn.addEventListener('click', () => {
+      menu.remove()
+      const rowEl = document.querySelector(
+        `.identity-row[data-identity-id="${identity.id}"]`,
+      )
+      if (rowEl) this.handleRenameIdentity(identity.id, identity.name, rowEl)
+    })
+    menu.appendChild(renameBtn)
+
+    if (!identity.isDefault) {
+      const delBtn = document.createElement('button')
+      delBtn.className = 'danger'
+      delBtn.textContent = 'Delete identity'
+      delBtn.addEventListener('click', () => {
+        menu.remove()
+        this.handleDeleteIdentity(identity)
+      })
+      menu.appendChild(delBtn)
+    }
+
+    document.body.appendChild(menu)
+    setTimeout(() => {
+      const close = (ev) => {
+        if (!menu.contains(ev.target)) {
+          menu.remove()
+          document.removeEventListener('click', close, true)
+        }
+      }
+      document.addEventListener('click', close, true)
+    }, 0)
+  }
+
+  render() {
+    if (!this.$root) return
+    this.$root.innerHTML = ''
+    for (const identity of this.identities) {
+      const wrapper = document.createElement('div')
+      wrapper.className = 'identity'
+
+      const row = document.createElement('div')
+      row.className = 'identity-row'
+      row.dataset.identityId = identity.id
+      if (identity.id === this.activeIdentityId) row.classList.add('active')
+
+      const chip = document.createElement('span')
+      chip.className = 'identity-chip'
+      chip.style.background = identity.color
+      row.appendChild(chip)
+
+      const name = document.createElement('span')
+      name.className = 'identity-name'
+      name.textContent = identity.name
+      row.appendChild(name)
+
+      const addTab = document.createElement('button')
+      addTab.className = 'add-tab'
+      addTab.title = 'New tab in this identity'
+      addTab.textContent = '+'
+      addTab.addEventListener('click', (ev) => {
+        ev.stopPropagation()
+        this.handleNewTabIn(identity.id)
+      })
+      row.appendChild(addTab)
+
+      row.addEventListener('click', () => this.handleSelectIdentity(identity.id))
+      row.addEventListener('contextmenu', (e) => this.showContextMenu(e, identity))
+      row.addEventListener('dblclick', () =>
+        this.handleRenameIdentity(identity.id, identity.name, row),
+      )
+
+      wrapper.appendChild(row)
+
+      const tabsContainer = document.createElement('div')
+      tabsContainer.className = 'identity-tabs'
+      const tabsOfIdentity = this.tabs.filter((t) => t.identityId === identity.id)
+      for (const tab of tabsOfIdentity) {
+        tabsContainer.appendChild(this.renderTabItem(tab, identity))
+      }
+      wrapper.appendChild(tabsContainer)
+
+      this.$root.appendChild(wrapper)
+    }
+  }
+
+  renderTabItem(tab, identity) {
+    const el = document.createElement('div')
+    el.className = 'oz-tab'
+    if (!tab.isLoaded) el.classList.add('lazy')
+    if (tab.id === this.activeOzTabId) el.classList.add('active')
+
+    const fav = document.createElement('span')
+    fav.className = 'oz-favicon'
+    if (tab.favicon) {
+      const img = document.createElement('img')
+      img.src = tab.favicon
+      img.style.width = '12px'
+      img.style.height = '12px'
+      fav.appendChild(img)
+    } else {
+      fav.classList.add('lazy')
+      fav.style.background = identity.color
+    }
+    el.appendChild(fav)
+
+    const title = document.createElement('span')
+    title.className = 'oz-title'
+    title.textContent = tab.title || tab.url || 'New Tab'
+    title.title = tab.url || ''
+    el.appendChild(title)
+
+    const close = document.createElement('button')
+    close.className = 'oz-close'
+    close.textContent = '✕'
+    close.addEventListener('click', (e) => this.handleCloseTab(tab.id, e))
+    el.appendChild(close)
+
+    el.addEventListener('click', () => this.handleSelectTab(tab.id))
+    return el
+  }
+}
+
+// Boot
+const tabstrip = new TabStrip()
+const sidebar = new IdentitySidebar()
+window.tabstrip = tabstrip
+window.ozsidebar = sidebar
+
+// Coordinate state between strip and sidebar (single source of truth: backend events).
+;(async () => {
+  await tabstrip.init()
+  await sidebar.init()
+  // Cross-wire: when strip sees selection, sidebar updates too (already does
+  // via shared onUpdated, but ensure first paint).
+})().catch((err) => {
+  console.error('[oz/webui] boot failed:', err)
+  if (window.oz && window.oz.log) window.oz.log.reportError({
+    source: 'webui/boot',
+    message: err.message || String(err),
+    stack: err.stack,
+  })
+})
