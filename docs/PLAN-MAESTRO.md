@@ -1,7 +1,8 @@
-# OZ Browser — Plan Maestro v2.1 (reestructurado)
+# OZ Browser — Plan Maestro v3 (consolidado, reordenado, M-series optimizado)
 
 **Fecha:** 2026-05-09
-**Estado:** Etapa 0 ✅ · Bloque 1.1 ✅ · Bloque 1.2 ~70% (sidebar + lazy tabs + identity manager + logger + error popup hechos; falta integración con todo lo nuevo descubierto)
+**Estado:** Etapa 0 ✅ · Bloque 1.1 ✅ · Bloque 1.2 ~70% (sidebar + lazy tabs + identity manager + logger + error popup hechos)
+**Plataforma target primaria:** macOS Apple Silicon (M1 / M2 / M3 / M4). Build universal binary también soporta Intel x86_64.
 
 Este documento reemplaza `04-Plan-en-Etapas.md` como fuente única de verdad. Lo de antes queda como referencia histórica.
 
@@ -32,9 +33,67 @@ Esto NO es una feature más. **Es el producto.** Todo lo demás (workspaces, pro
 
 ---
 
+## 0.5. Plataforma & benchmarks objetivo (Apple Silicon-first)
+
+**Target hardware primario:** Mac con chip M1/M2/M3/M4. Mucho usuario va a estar en MacBook Air M1 con 8 GB RAM (oficina de Jose). El producto debe correr fluido ahí.
+
+**Arquitectura del binario:**
+- `electron-builder` con `mac.target = 'universal'` → un solo `.dmg` que sirve x86_64 e arm64 nativo. Apple Silicon usa el slice arm64 directo (sin Rosetta).
+- Sin C++ addons que no compilen arm64 → todo el stack es JS puro o cross-arch (sqlite3 sí soporta, sharp sí, keytar sí — verificado).
+
+**Benchmarks objetivo (gates de aceptación de cada release):**
+
+| Mac (RAM) | Identities lazy | Identities materialized concurrentes | Memoria total | Notas |
+|---|---|---|---|---|
+| MacBook Air M1 8 GB | 100 | 10 | < 4 GB | Target principal — debe correr cómodo aquí |
+| MacBook Pro M1 16 GB | 200 | 30 | < 8 GB | Sweet spot |
+| MacBook Pro M2/M3 32 GB+ | 500 | 100 | < 16 GB | Power user |
+| Cold start (M1 Air) | — | — | < 2 segundos | hasta primer pixel de UI |
+| Crear identity nueva | — | — | < 100 ms | todo en memoria |
+| Switch entre tabs (materialized) | — | — | < 50 ms | percibido instantáneo |
+| Materializar tab lazy desde click | — | — | < 800 ms | hasta que la página empieza a cargar |
+
+**Optimizaciones M-series específicas:**
+
+1. **Lazy tabs por default** (ya implementado) — un tab lazy = ~1 KB JS, no renderer process. Es la diferencia entre 100 tabs viables vs imposibles en 8 GB.
+
+2. **Tab discarding** — tabs materialized pero idle por más de 30 min → `webContents.destroy()`, view a `lazy=true`, recuperable al click. Configurable. Por default ON en M1 Air, OFF en 32 GB.
+
+3. **Memory pressure handler** — escuchar `process.getMemoryInfo()`/`app.getAppMetrics()` cada 30 s. Si memory > 80% → empezar a discardear tabs idle más viejas. Si > 90% → notification al user "Liberé N tabs de RAM".
+
+4. **Cache eviction policies** — `session.setCacheCapacity(50 MB)` por partition (configurable). Limite de cache TOTAL = 1 GB en M1 Air, escalable.
+
+5. **Hardware acceleration:**
+   - GPU: Metal renderer en Apple Silicon (default Chromium).
+   - Video: VideoToolbox para H.264/H.265 hardware decode (default Chromium ≥ 130).
+   - Verificar `chrome://gpu` muestra todos los flags green en builds de prueba.
+
+6. **Disk I/O minimizado:**
+   - SQLite WAL mode para cookies stores (Electron lo hace por default).
+   - Lazy partition init — no crear SQLite de una identity hasta primera escritura de cookie.
+   - Compresión zstd para snapshots y backups (3-5x mejor ratio que zlib en arm64).
+
+7. **Background throttling** — Chromium ya hace freeze de tabs background. NO deshabilitar. Tabs con video/audio activo siguen vivas.
+
+8. **Performance modes (Settings → Performance):**
+   - **Light** (auto-on en 8 GB): tab discarding 15 min, max 5 materialized, fingerprint engine en lazy mode (solo on first nav).
+   - **Balanced** (auto-on 16 GB): tab discarding 30 min, max 15 materialized, fingerprint normal.
+   - **Power** (32 GB+): tab discarding 60 min, max 50 materialized, fingerprint full.
+
+9. **Battery optimization** — al pasar a battery: cap CPU usage de tabs background, throttle health checks (passive logins) a una vez al día.
+
+10. **Telemetría opt-in** (post-launch) — métricas de memoria/CPU/tabs/crashes, con consentimiento explícito. Permite detectar regresiones antes de que un usuario reporte.
+
+**No-go zones:**
+- ❌ NO usar Rosetta — Electron + addons todos arm64 nativos.
+- ❌ NO C++ addons que no soporten arm64 (lista de checked: keytar ✅, sqlite3 ✅, sharp ✅, native-image-converter ❌ avoid).
+- ❌ NO depender de Intel-only Homebrew packages en runtime.
+
+---
+
 ## 1. Resumen ejecutivo
 
-OZ Browser es un clon-mejor de Ghost Browser, vendido como SaaS más barato, **enfocado en gestión masiva de cuentas de redes sociales**. El stack es **Electron 37/42 + electron-browser-shell + IdentityManager + WorkspaceManager + FingerprintEngine + AccountVault + Cloud Sync**. Todo el código vive en módulos chicos y bien separados. El plan tiene **10 etapas**, cada una útil por sí sola.
+OZ Browser es un clon-mejor de Ghost Browser, vendido como SaaS más barato, **enfocado en gestión masiva de cuentas de redes sociales en MacBooks Apple Silicon**. El stack es **Electron 37/42 + electron-browser-shell + IdentityManager + WorkspaceManager + FingerprintEngine + AccountVault + Cloud Sync**. Todo el código vive en módulos chicos y bien separados. El plan tiene **10 etapas**, cada una útil por sí sola.
 
 **Lo que vamos a hacer mejor que Ghost** (nuestros diferenciadores reales, no hype):
 1. **Account Vault + auto-fill + anti-logout + Excel import/export** ← Ghost no tiene nada de esto, es nuestro #1 moat
@@ -169,7 +228,30 @@ oz-marketing/                        # Repo separado (Vercel)
 
 ## 2. Etapas reorganizadas
 
-> **Cambio importante respecto al plan v1:** divido la Etapa 1 en bloques más finos y reordenados según dependencias reales descubiertas con la implementación. Cada bloque entrega valor por sí solo.
+> **v3 reordering:** Etapa 1 dividida en sub-etapas 1A (núcleo, MVP usable) y 1B (calidad/diferenciadores). El **Account Vault sube de Bloque 1.10 a Bloque 1.5** porque es el CORE del producto y todo lo demás existe para servirlo. Order de ejecución optimizado por dependencias reales.
+
+### Orden de ejecución recomendado
+
+```
+SUB-ETAPA 1A — NÚCLEO USABLE (MVP para Jose y oficina)
+│
+├─ 1.1 Foundation                         ✅ HECHO
+├─ 1.2 Identity Manager + Lazy Tabs       🚧 ~70% (cierre cosas pendientes primero)
+├─ 1.3 Workspace Manager                  ⏳
+├─ 1.4 Proxy Manager (CRUD básico)        ⏳
+├─ 1.5 ⭐ Account Vault (CORE)            ⏳ ← era 1.10, sube a 1.5
+│       Excel I/O · auto-fill · anti-logout
+├─ 1.6 Time Machine + Backup              ⏳ ← era 1.8
+└─ 1.7 Tab Context Menu                   ⏳ ← era 1.6
+
+SUB-ETAPA 1B — CALIDAD Y DIFERENCIADORES
+│
+├─ 1.8 FingerprintEngine "Ghost+"         ⏳ ← era 1.5
+├─ 1.9 Settings UI + Bookmarks/Downloads/History  ⏳ ← era 1.7
+└─ 1.10 Polish + Extensions multi-identity + M-series perf optimizations  ⏳
+
+ETAPA 2+ — UX, distribución, comercial
+```
 
 ### ✅ ETAPA 0 — Validación técnica (HECHA, 2026-05-09)
 - Electron + partition isolation + proxy auth con Oxylabs ✅
@@ -390,15 +472,23 @@ Vault = {
 
 11. **Per-account proxy chip** — visual indicator del país de la IP por la que la cuenta está logoneada. Si proxy cambia y geo no match → warning.
 
-#### 🆕 Bloque 1.9 — Polish + bug fixes + extensions support en partitions
+#### 🆕 Bloque 1.10 — Polish + Extensions multi-identity + M-series performance
 - Extensions de Chrome Web Store funcionando en TODAS las identities (no solo Default)
   - Múltiples instancias de ElectronChromeExtensions, una por session
-  - O un único service worker que se inyecta en todas
 - Fix del bug de tab duplicada al arranque
 - Drag-and-drop reorder
 - Loading states bonitos
-- First-run onboarding (3 pantallas explicando Identities, Workspaces, Proxies)
+- First-run onboarding (3 pantallas explicando Identities, Workspaces, Proxies, Vault)
 - Hotkey panel customizable
+- **Performance pass específico Apple Silicon:**
+  - Tab discarding daemon (idle > 30 min → unmaterialize)
+  - Memory pressure handler (auto-discard cuando > 80% RAM)
+  - Performance modes (Light / Balanced / Power) — auto-detect según RAM
+  - Cache eviction caps por partition
+  - Verify chrome://gpu Metal/VideoToolbox green
+  - Battery optimization (throttle background tasks on battery)
+  - Universal binary verificado nativo en arm64 (sin Rosetta)
+- Benchmarks objetivo cumplidos (ver §0.5)
 
 ### ETAPA 2 — UX competitiva
 - Tab visual con stripe del color de identity (ya está)
@@ -556,7 +646,7 @@ Con sólo Claude (yo) implementando + Jose dirigiendo:
 | 7 | cloud sync E2E | ~12h | 6-8 |
 | 8 | Windows + Linux | ~8h | 4-6 |
 
-**Total realista a producto vendible (Etapas 0–6):** ~120 horas mías + ~$110 de costos directos.
+**Total realista a producto vendible (Etapas 0–6):** ~135 horas mías + ~$110 de costos directos.
 
 A 1-2 sesiones por día = ~3 meses calendario.
 
