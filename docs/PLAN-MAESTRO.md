@@ -111,6 +111,7 @@ OZ Browser es un clon-mejor de Ghost Browser, vendido como SaaS más barato, **e
 13. **Cap de 25 Temporary Identities por workspace REMOVIDO** (Ghost lo tiene hardcodeado a 25 colores)
 14. **Time Machine** — snapshot diario automático del estado completo, retention configurable, restore a cualquier versión anterior con un click. Antes de cualquier operación destructiva (OVERWRITE, bulk delete, restore) snapshot forzado. Ghost no tiene nada parecido.
 15. **Workflow colaborativo Excel** — exporta → manda a alguien para que organice/limpie/agregue → recibe corregido → OVERWRITE en OZ → queda exacto como te lo devolvió. Sin Ghost.
+16. **Office Edition con Dropbox + Admin Dashboard** — sync backend Dropbox (cero infra cost para oficina), activity tracking opt-in (bandwidth/tiempo/accounts/productividad), dashboard con métricas por empleado. Ghost no tiene nada de admin/team.
 
 ---
 
@@ -527,13 +528,32 @@ Vault = {
 - Email transaccional (Resend)
 - SEO básico
 
-### ETAPA 7 — Cloud Sync E2E
-- `sync-client.js`: encripta antes de subir (passcode-derived AES-GCM key)
-- Schema en Supabase: `synced_identities`, `synced_workspaces`, `synced_proxies` con `version` para conflict resolution
-- Vector clocks o last-write-wins
-- Multi-device login
-- Cloud backup automático (snapshot diario)
-- **Mejor que Ghost**: incluye autofill passwords + localStorage
+### ETAPA 7 — Cloud Sync E2E (backend pluggable)
+- `sync-client.js` con backends pluggables: **Cloud OZ (Supabase)** / **Dropbox** / **S3 self-hosted** / **Off**.
+- Encrypta client-side antes de subir (passcode-derived AES-GCM key).
+- Schema unificado: `synced_identities`, `synced_workspaces`, `synced_proxies`, `synced_vault`, `activity` con `version`.
+- Conflict resolution: last-write-wins → vector clocks v2.
+- Multi-device login.
+- Cloud backup automático (snapshot diario).
+- **Mejor que Ghost**: incluye autofill passwords + localStorage que Ghost excluye desde 2018.
+
+### ETAPA 7-OFFICE — Dropbox backend para tu oficina
+- Cliente con `@dropbox/sdk`. OAuth flow.
+- Per-user folder `/Apps/OZ Browser/<email>/` con vault.enc, identities/workspaces/proxies/settings JSON, snapshots/, activity/.
+- Activity logs en plaintext (para admin dashboard) — vault sigue cifrado E2E.
+- Cero infra cost. Backup nativo via Dropbox sync del SO.
+- Auditable por admin de la oficina (carpeta team).
+
+### ETAPA 7.5 — Admin Dashboard (Office Edition)
+- Web app Next.js (Vercel free) o Mac app Electron — lee folders del Dropbox de la oficina.
+- Vistas:
+  - **Overview por usuario:** bandwidth total, tiempo trabajado, # accounts activas, distribución por plataforma, estado online/offline.
+  - **Drill-down por usuario:** heatmap actividad, top proxies/accounts, sesiones, crashes.
+  - **Por proxy provider:** bandwidth vs cap, costo proyectado.
+  - **Alerts:** bandwidth anormal, cuenta logoneada en múltiples Macs (sospechoso), crashes.
+  - **Export CSV/Excel** para contabilidad.
+- Auth solo admin (Jose) — verifica con Dropbox OAuth scope `members.read`.
+- Privacy: opt-in explícito en cliente, transparencia con empleados.
 
 ### ETAPA 8 — Windows + Linux
 - Cross-platform build pipeline
