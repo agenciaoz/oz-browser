@@ -26,7 +26,18 @@ const { Vault } = require('./account-vault')
 const { AntiLogout } = require('./anti-logout')
 const { BackupManager } = require('./backup-manager')
 const { BookmarkManager } = require('./bookmark-manager')
+const { ProxyManager } = require('./proxy-manager')
+const { ProxyAssignment } = require('./proxy-assignment')
+const { ProxyHealth } = require('./proxy-health')
 const { setupMenu } = require('./menu')
+
+let _Notification = null
+function getNotification() {
+  if (_Notification) return _Notification
+  // Lazy require to avoid pulling Notification before app is ready in tests.
+  _Notification = require('electron').Notification
+  return _Notification
+}
 const { TabbedBrowserWindow } = require('./window-manager')
 const { registerIpcHandlers } = require('./ipc-handlers')
 const {
@@ -47,6 +58,9 @@ class Browser {
   workspaceManager = null
   accountVault = null
   bookmarkManager = null
+  proxyManager = null
+  proxyAssignment = null
+  proxyHealth = null
   webuiExtensionId = null
 
   constructor() {
@@ -97,6 +111,16 @@ class Browser {
       if (this._backupCronTimer) {
         clearInterval(this._backupCronTimer)
         this._backupCronTimer = null
+      }
+      // 1.8c: Stop the proxy health daemon.
+      if (this.proxyHealth) {
+        try {
+          this.proxyHealth.stopDaemon()
+        } catch (err) {
+          log.warn('browser', 'proxyHealth.stopDaemon failed', {
+            message: err.message,
+          })
+        }
       }
       if (this.mcpServer) {
         e.preventDefault()
@@ -245,6 +269,93 @@ class Browser {
     this.bookmarkManager = new BookmarkManager()
     log.info('browser', 'BookmarkManager loaded', {
       bookmarksCount: this.bookmarkManager.list().length,
+    })
+
+    // 1.8a/1.8b: Proxy Manager + Assignment — proxies live unencrypted (auth
+    // creds are already plaintext in URLs / setProxy rules). Per-identity and
+    // per-workspace assignments resolved with hierarchy Identity > Workspace
+    // > defaultStrategy. Per-tab proxy not supported in v1 (ADR 0017).
+    this.proxyManager = new ProxyManager()
+    this.proxyAssignment = new ProxyAssignment({ proxyManager: this.proxyManager })
+    log.info('browser', 'ProxyManager + ProxyAssignment loaded', {
+      proxiesCount: this.proxyManager.list().length,
+    })
+
+    // 1.8b: hook the proxy resolution into IdentityManager so any newly
+    // created session immediately gets its proxy applied (no restart needed
+    // for first-launch identities). Late binding via setter keeps
+    // IdentityManager unaware of ProxyManager (loose coupling).
+    const { toProxyRulesString } = require('./proxy-assignment')
+    this.identityManager.setProxyResolutionHook((identityId, session) => {
+      const proxy = this.proxyAssignment.resolve({ identityId })
+      const rules = proxy ? toProxyRulesString(proxy) : 'direct://'
+      session
+        .setProxy({ proxyRules: rules })
+        .then(() =>
+          log.debug('browser', 'session proxy applied on create', {
+            identityId,
+            proxyId: proxy && proxy.id,
+            rules,
+          }),
+        )
+        .catch((err) =>
+          log.error('browser', 'session.setProxy failed on create', {
+            identityId,
+            message: err.message,
+          }),
+        )
+    })
+
+    // 1.8c: Health daemon — tests assignable proxies every 30 min,
+    // auto-disables after 3 fails. Notification on auto-disable.
+    this.proxyHealth = new ProxyHealth({
+      proxyManager: this.proxyManager,
+      broadcast: (channel) => this.broadcastToWebUI(channel),
+      notify: (title, body) => {
+        try {
+          const N = getNotification()
+          if (N && N.isSupported && N.isSupported()) {
+            new N({ title, body }).show()
+          }
+        } catch (err) {
+          log.warn('browser', 'proxy health notification failed', {
+            message: err.message,
+          })
+        }
+      },
+    })
+    this.proxyHealth.startDaemon()
+    log.info('browser', 'ProxyHealth daemon started (30 min interval)')
+
+    // app.on('login') handler — when a proxy challenges with HTTP 407, look up
+    // which proxy is currently bound to the requesting webContents' session
+    // and provide its credentials. ADR 0004: HTTPS proxies preferred (the
+    // login event fires reliably for them; SOCKS5 auth is in-band so this
+    // event doesn't fire there).
+    app.on('login', (event, webContents, _request, authInfo, callback) => {
+      if (!authInfo || !authInfo.isProxy) return // We only handle proxy auth
+      try {
+        const session = webContents && webContents.session
+        if (!session) return
+        const identityId = this.identityManager.identityIdForSession(session)
+        // Resolve which proxy this identity is using (incl. workspace context).
+        const win = this.windows.find((w) =>
+          w.tabs?.tabList?.some((t) => t.identityId === identityId),
+        )
+        const workspaceId = win && win.workspaceId
+        const proxy = this.proxyAssignment.resolve({ identityId, workspaceId })
+        if (!proxy || !proxy.username) return
+        event.preventDefault()
+        log.info('browser', 'proxy login challenge → providing creds', {
+          host: authInfo.host,
+          port: authInfo.port,
+          identityId,
+          proxyId: proxy.id,
+        })
+        callback(proxy.username, proxy.password || '')
+      } catch (err) {
+        log.error('browser', 'proxy login handler crashed', { message: err.message })
+      }
     })
 
     registerIpcHandlers(this)

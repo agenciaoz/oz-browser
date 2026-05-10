@@ -321,6 +321,21 @@ class IdentityManager {
     }
 
     this.sessionCache.set(id, ses)
+
+    // 1.8b: apply the identity's resolved proxy (from ProxyAssignment) to the
+    // session as soon as it's created. Optional — only fires if the host has
+    // wired this hook via setProxyResolutionHook(). Keeps identity-manager
+    // unaware of ProxyManager's existence (loose coupling).
+    if (this._proxyResolutionHook) {
+      try {
+        this._proxyResolutionHook(id, ses)
+      } catch (err) {
+        log.warn('identity-manager', 'proxy resolution hook failed', {
+          id,
+          message: err.message,
+        })
+      }
+    }
     log.debug('identity-manager', 'session resolved', {
       id,
       cached: false,
@@ -335,6 +350,21 @@ class IdentityManager {
   resolve(id) {
     const ident = this.get(id) || this.getDefault()
     return { identity: ident, session: this.getSession(ident.id) }
+  }
+
+  /**
+   * 1.8b: register a hook called after each session creation so the host can
+   * apply per-identity proxy settings without IdentityManager knowing about
+   * ProxyManager. Pass `null` to clear.
+   *
+   * Signature: `(identityId, session) => void` — the host typically calls
+   * proxyAssignment.resolve(...) and session.setProxy(...).
+   */
+  setProxyResolutionHook(fn) {
+    this._proxyResolutionHook = fn
+    log.info('identity-manager', 'proxy resolution hook installed', {
+      installed: typeof fn === 'function',
+    })
   }
 
   /**

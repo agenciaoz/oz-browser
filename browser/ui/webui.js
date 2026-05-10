@@ -11,9 +11,12 @@
   const wsSwitcher = window.OZ.WorkspaceSwitcher
     ? new window.OZ.WorkspaceSwitcher()
     : null
+  // 1.8d: Proxy Manager modal — instantiate so the sidebar button wire works.
+  const proxyManagerUI = window.OZ.ProxyManagerUI ? new window.OZ.ProxyManagerUI() : null
   window.tabstrip = tabstrip
   window.ozsidebar = sidebar
   window.ozWsSwitcher = wsSwitcher
+  window.ozProxyManagerUI = proxyManagerUI
   ;(async () => {
     await tabstrip.init()
     await sidebar.init()

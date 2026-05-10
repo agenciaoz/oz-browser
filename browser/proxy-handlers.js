@@ -1,0 +1,317 @@
+// OZ Browser — Proxy domain handlers (1.8a).
+//
+// Qué hace: handler map puro consumido por IPC (oz:proxies:*) y MCP
+// (oz.proxies.*). Mismo patrón que identity/workspace/tab handlers.
+//
+// Doc: docs/modules/proxy-handlers.md
+// ADR: docs/architecture/0017-proxy-model.md
+//
+// Exports: buildProxyHandlers(browser) -> Record<string, fn>
+
+const fs = require('fs')
+const log = require('./logger')
+const { toProxyRulesString } = require('./proxy-assignment')
+const { parseCsv, encodeCsv } = require('./proxy-csv')
+const { listProviders, expandProvider } = require('./proxy-providers')
+
+function buildProxyHandlers(browser) {
+  const pm = () => browser.proxyManager
+  const pa = () => browser.proxyAssignment
+
+  return {
+    list() {
+      if (!pm()) return []
+      return pm().list()
+    },
+
+    listAssignable() {
+      if (!pm()) return []
+      return pm().listAssignable()
+    },
+
+    get(id) {
+      if (!pm()) return null
+      return pm().get(id)
+    },
+
+    create(opts) {
+      if (!pm()) return { __error: { code: 'NO_PROXY_MANAGER' } }
+      const r = pm().create(opts || {})
+      if (r && !r.__error) browser.broadcastToWebUI('oz:proxies:changed')
+      return r
+    },
+
+    update(id, patch) {
+      if (!pm()) return null
+      const r = pm().update(id, patch || {})
+      if (r) browser.broadcastToWebUI('oz:proxies:changed')
+      return r
+    },
+
+    remove(id) {
+      if (!pm()) return false
+      const ok = pm().remove(id)
+      if (ok) {
+        // Cascade: clean up any assignment pointing to this proxy.
+        if (pa()) pa().clearByProxyId(id)
+        browser.broadcastToWebUI('oz:proxies:changed')
+      }
+      return ok
+    },
+
+    // -------------------- assignment (1.8b) ---------------------------------
+
+    /**
+     * Assign a proxy to an identity. value can be a proxyId, 'auto-random',
+     * 'auto-round-robin', or null (clears the assignment so the resolver
+     * falls back to workspace/default).
+     */
+    assignToIdentity(identityId, value) {
+      if (!pa()) return false
+      const ok = pa().assignToIdentity(identityId, value)
+      if (ok) {
+        applyAssignmentsToIdentity(browser, identityId)
+        browser.broadcastToWebUI('oz:proxies:changed')
+      }
+      return ok
+    },
+
+    /**
+     * Assign a proxy to a workspace. Same value semantics.
+     */
+    assignToWorkspace(workspaceId, value) {
+      if (!pa()) return false
+      const ok = pa().assignToWorkspace(workspaceId, value)
+      if (ok) {
+        // Apply to every window currently on this workspace.
+        for (const win of browser.windows || []) {
+          if (win.workspaceId === workspaceId) {
+            const focused = win.tabs && win.tabs.selected
+            if (focused) applyAssignmentsToIdentity(browser, focused.identityId)
+          }
+        }
+        browser.broadcastToWebUI('oz:proxies:changed')
+      }
+      return ok
+    },
+
+    setDefaultStrategy(strategy) {
+      if (!pa()) return false
+      const ok = pa().setDefaultStrategy(strategy)
+      if (ok) browser.broadcastToWebUI('oz:proxies:changed')
+      return ok
+    },
+
+    /** Snapshot of all current bindings (for UI / MCP inspection). */
+    listAssignments() {
+      if (!pa()) return null
+      return pa().snapshot()
+    },
+
+    /**
+     * Resolve which proxy the given identity (and optionally workspace)
+     * would use right now. Returns the concrete proxy object or null.
+     */
+    resolveForIdentity(identityId, workspaceId) {
+      if (!pa()) return null
+      return pa().resolve({ identityId, workspaceId })
+    },
+
+    // -------------------- health (1.8c) -------------------------------------
+
+    /** Test a single proxy. Returns {ok, latencyMs, reason?, autoDisabled?}. */
+    async testConnectivity(proxyId) {
+      if (!browser.proxyHealth) return { ok: false, reason: 'no-proxy-health' }
+      const r = await browser.proxyHealth.testOne(proxyId)
+      browser.broadcastToWebUI('oz:proxies:changed')
+      return r
+    },
+
+    /** Test all assignable proxies in parallel. Returns array of results. */
+    async testAll(opts) {
+      if (!browser.proxyHealth) return []
+      const r = await browser.proxyHealth.testAll(opts)
+      browser.broadcastToWebUI('oz:proxies:changed')
+      return r
+    },
+
+    // -------------------- CSV import / export (1.8d) -----------------------
+
+    /**
+     * Parse CSV content and bulk-add. Returns
+     *   { ok, parsedCount, addedCount, errors? }
+     * Errors are per-row (skipped rows during parse + invalid rows during
+     * create). Does NOT block on partial errors — adds what it can.
+     */
+    importCsvContent(content) {
+      const parsed = parseCsv(content)
+      if (!parsed.ok) {
+        return { ok: false, reason: parsed.reason, message: parsed.message }
+      }
+      const added = pm() ? pm().bulkAdd(parsed.items) : []
+      browser.broadcastToWebUI('oz:proxies:changed')
+      log.info('proxy-handlers', 'importCsvContent', {
+        parsed: parsed.items.length,
+        added: added.length,
+      })
+      return { ok: true, parsedCount: parsed.items.length, addedCount: added.length }
+    },
+
+    importCsvFromFile(filePath) {
+      let content
+      try {
+        content = fs.readFileSync(filePath, 'utf-8')
+      } catch (err) {
+        return { ok: false, reason: 'read-failed', message: err.message }
+      }
+      return this.importCsvContent(content)
+    },
+
+    exportCsvContent() {
+      if (!pm()) return ''
+      return encodeCsv(pm().list())
+    },
+
+    exportCsvToFile(filePath) {
+      try {
+        fs.writeFileSync(filePath, this.exportCsvContent(), 'utf-8')
+      } catch (err) {
+        return { ok: false, reason: 'write-failed', message: err.message }
+      }
+      return { ok: true, filePath }
+    },
+
+    // -------------------- Providers (1.8d) ---------------------------------
+
+    /** List provider templates (id, label, status, fields). */
+    listProviders() {
+      return listProviders()
+    },
+
+    /**
+     * Expand a provider into N proxy specs and add them to the manager.
+     * Returns { ok, addedCount } or { __error }.
+     */
+    expandProvider(providerId, opts) {
+      const r = expandProvider(providerId, opts || {})
+      if (r.__error) return r
+      const added = pm() ? pm().bulkAdd(r.items) : []
+      browser.broadcastToWebUI('oz:proxies:changed')
+      log.info('proxy-handlers', 'expandProvider added', {
+        providerId,
+        addedCount: added.length,
+      })
+      return { ok: true, providerId, addedCount: added.length }
+    },
+
+    /**
+     * Toggle isActive flag for the given proxy. Auto-disabled proxies (after
+     * 3 health failures) require an explicit re-enable: setting isActive=true
+     * also clears isDisabled so the user can manually recover.
+     */
+    setActive(id, isActive) {
+      if (!pm()) return null
+      const patch = { isActive: !!isActive }
+      if (isActive) patch.isDisabled = false
+      const r = pm().update(id, patch)
+      if (r) browser.broadcastToWebUI('oz:proxies:changed')
+      log.info('proxy-handlers', 'setActive', { id, isActive: !!isActive })
+      return r
+    },
+
+    /**
+     * Auto-Assign one proxy via the requested strategy. Returns the proxy or
+     * null if the assignable pool is empty. Does NOT mutate state — the
+     * caller decides whether to persist the assignment via assignTo*.
+     */
+    autoAssign(strategy = 'random') {
+      if (!pm()) return null
+      const proxy = pm().autoAssign(strategy)
+      log.info('proxy-handlers', 'autoAssign', {
+        strategy,
+        pickedId: proxy && proxy.id,
+      })
+      return proxy
+    },
+
+    /** Bulk add (used by CSV import in 1.8d). */
+    bulkAdd(items) {
+      if (!pm()) return []
+      const out = pm().bulkAdd(items || [])
+      if (out.length > 0) browser.broadcastToWebUI('oz:proxies:changed')
+      log.info('proxy-handlers', 'bulkAdd', {
+        requested: (items || []).length,
+        added: out.length,
+      })
+      return out
+    },
+  }
+}
+
+/**
+ * Apply the resolved proxy (or clear it) to the live session for an identity.
+ * Called after assignment changes so navigation immediately picks up the new
+ * proxy without restart. We DO this from the handler — not from the resolver
+ * itself — to keep proxy-assignment.js pure and easy to test.
+ *
+ * Workspace context is best-effort: if we can find ANY focused window using
+ * this identity, we use that workspaceId for the resolution; otherwise we
+ * pass undefined so only the identity assignment applies.
+ */
+function applyAssignmentsToIdentity(browser, identityId) {
+  const im = browser.identityManager
+  const pa = browser.proxyAssignment
+  if (!im || !pa) return false
+  const session = im.getSession(identityId)
+  if (!session) return false
+
+  let workspaceId
+  for (const win of browser.windows || []) {
+    if (
+      win.tabs &&
+      win.tabs.tabList &&
+      win.tabs.tabList.some((t) => t.identityId === identityId)
+    ) {
+      workspaceId = win.workspaceId
+      break
+    }
+  }
+
+  const proxy = pa.resolve({ identityId, workspaceId })
+  if (!proxy) {
+    // Clear any prior proxy: 'direct://' tells Chrome to bypass entirely.
+    session
+      .setProxy({ proxyRules: 'direct://' })
+      .then(() => {
+        log.info('proxy-handlers', 'cleared proxy for identity', { identityId })
+      })
+      .catch((err) => {
+        log.error('proxy-handlers', 'clear setProxy failed', {
+          identityId,
+          message: err.message,
+        })
+      })
+    return true
+  }
+
+  const proxyRules = toProxyRulesString(proxy)
+  session
+    .setProxy({ proxyRules })
+    .then(() => {
+      log.info('proxy-handlers', 'applied proxy to identity session', {
+        identityId,
+        proxyId: proxy.id,
+        rules: proxyRules,
+      })
+    })
+    .catch((err) => {
+      log.error('proxy-handlers', 'setProxy failed', {
+        identityId,
+        proxyId: proxy.id,
+        message: err.message,
+      })
+    })
+  return true
+}
+
+module.exports = { buildProxyHandlers, applyAssignmentsToIdentity }

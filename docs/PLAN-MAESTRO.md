@@ -171,7 +171,7 @@ SUB-ETAPA 1A — NÚCLEO USABLE (MVP para Jose y oficina)
 
 SUB-ETAPA 1B — CALIDAD Y DIFERENCIADORES
 │
-├─ 1.8  Proxy Manager                          ⏳ ← era 1.4 (sube de prio en 1B porque depende de Vault para anti-logout-with-proxy)
+├─ 1.8  Proxy Manager                          ✅ HECHO (5 sub-fases, 908 tests, ADR 0017)
 ├─ 1.9  FingerprintEngine "Ghost+"             ⏳ ← era 1.5
 └─ 1.10 Settings UI + Bookmarks/Downloads/History + Polish + Extensions multi-identity + M-series perf  ⏳
 

@@ -492,7 +492,7 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     // extract them from the preload.js source so we don't drift.
     const found = new Set()
     const re =
-      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine|bookmarks|cookies):[a-zA-Z]+)'/g
+      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine|bookmarks|cookies|proxies):[a-zA-Z]+)'/g
     let m
     while ((m = re.exec(preload)) !== null) found.add(m[1])
 
@@ -511,6 +511,8 @@ console.log(`Test userData: ${TEST_USERDATA}`)
       'oz:excel:pickImportPath', // 1.5f UI-only file dialog wrapper
       'oz:cookies:pickExportPath', // 1.7c UI-only file dialog wrapper
       'oz:cookies:pickImportPath', // 1.7c UI-only file dialog wrapper
+      'oz:proxies:pickCsvImportPath', // 1.8d UI-only
+      'oz:proxies:pickCsvExportPath', // 1.8d UI-only
     ])
 
     for (const channel of found) {

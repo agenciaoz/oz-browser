@@ -1277,6 +1277,186 @@
       .tm-footer .tm-spacer {
         flex: 1;
       }
+
+      /*----- PROXY MANAGER (1.8d) -----*/
+
+      #oz-pm-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin: 4px 8px 0 8px;
+        padding: 7px 10px;
+        background: rgba(91, 141, 239, 0.08);
+        border: 1px solid rgba(91, 141, 239, 0.22);
+        border-radius: 6px;
+        color: #5b8def;
+        font: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #oz-pm-button:hover {
+        background: rgba(91, 141, 239, 0.16);
+      }
+      #oz-pm-button .pm-count {
+        opacity: 0.7;
+        font-weight: 500;
+      }
+
+      .pm-toolbar {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .pm-toolbar button,
+      .pm-toolbar select {
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 5px;
+        color: var(--text-color);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .pm-toolbar button:hover {
+        background: rgba(91, 141, 239, 0.18);
+      }
+      .pm-toolbar .pm-spacer {
+        flex: 1;
+      }
+
+      .pm-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+      .pm-table th,
+      .pm-table td {
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        text-align: left;
+        vertical-align: middle;
+      }
+      .pm-table th {
+        font-weight: 600;
+        color: var(--text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .pm-row.disabled {
+        opacity: 0.5;
+      }
+      .pm-status {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 9px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .pm-status.ok {
+        background: rgba(54, 179, 126, 0.18);
+        color: #36b37e;
+      }
+      .pm-status.fail {
+        background: rgba(255, 86, 48, 0.18);
+        color: #ff5630;
+      }
+      .pm-status.untested {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-muted);
+      }
+      .pm-status.disabled {
+        background: rgba(255, 86, 48, 0.18);
+        color: #ff5630;
+      }
+      .pm-actions button {
+        margin-right: 4px;
+        padding: 3px 8px;
+        font-size: 11px;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 4px;
+        color: var(--text-color);
+        cursor: pointer;
+      }
+      .pm-actions button:hover {
+        background: rgba(91, 141, 239, 0.14);
+      }
+      .pm-actions button.danger:hover {
+        background: rgba(255, 86, 48, 0.18);
+        color: #ff5630;
+      }
+      .pm-empty {
+        padding: 36px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      .pm-section-title {
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        margin: 14px 0 6px 0;
+      }
+      .pm-form {
+        display: grid;
+        grid-template-columns: 130px 1fr;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .pm-form label {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .pm-form input,
+      .pm-form select {
+        padding: 5px 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 4px;
+        color: var(--text-color);
+        font: inherit;
+        font-size: 12px;
+      }
+      .pm-form .pm-form-actions {
+        grid-column: 1 / -1;
+        display: flex;
+        gap: 8px;
+        justify-content: flex-end;
+      }
+
+      .pm-providers {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 8px;
+      }
+      .pm-provider-card {
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        cursor: pointer;
+      }
+      .pm-provider-card:hover {
+        border-color: rgba(91, 141, 239, 0.35);
+      }
+      .pm-provider-card.coming-soon {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .pm-provider-card .pm-provider-status {
+        font-size: 10px;
+        text-transform: uppercase;
+        color: var(--text-muted);
+      }
     </style>
   </head>
   <body>
@@ -1336,6 +1516,10 @@
         <button id="oz-tm-button" type="button">
           <span>⏱ Time Machine</span>
           <span class="tm-count" id="oz-tm-count"></span>
+        </button>
+        <button id="oz-pm-button" type="button">
+          <span>🌐 Proxies</span>
+          <span class="pm-count" id="oz-pm-count"></span>
         </button>
         <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
         <div class="header">Identities</div>
@@ -1665,6 +1849,106 @@
       </div>
     </div>
 
+    <!-- Proxy Manager modal — managed by proxy-manager.js (1.8d) -->
+    <div class="oz-modal" id="oz-pm-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-pm-title"
+      >
+        <header>
+          <h2 id="oz-pm-title">🌐 Proxy Manager</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <div class="oz-modal-error" id="oz-pm-error" hidden></div>
+
+        <section id="oz-pm-list-view">
+          <div class="pm-toolbar">
+            <button type="button" id="oz-pm-add-btn">＋ Add proxy</button>
+            <button type="button" id="oz-pm-import-btn">📥 Import CSV</button>
+            <button type="button" id="oz-pm-export-btn">📤 Export CSV</button>
+            <button type="button" id="oz-pm-providers-btn">🔌 Providers…</button>
+            <button type="button" id="oz-pm-test-all-btn">⚡ Test all</button>
+            <span class="pm-spacer"></span>
+            <span id="oz-pm-summary" style="font-size: 11px; color: var(--text-muted)"
+              >0 proxies</span
+            >
+          </div>
+          <table class="pm-table" id="oz-pm-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Protocol</th>
+                <th>Host:Port</th>
+                <th>User</th>
+                <th>Status</th>
+                <th>Latency</th>
+                <th>Bandwidth</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="oz-pm-tbody"></tbody>
+          </table>
+          <div class="pm-empty" id="oz-pm-empty">
+            No proxies yet. Add one manually, import a CSV, or expand a provider template.
+          </div>
+        </section>
+
+        <section id="oz-pm-editor-view" hidden>
+          <h3 id="oz-pm-editor-title" style="margin-top: 0">Add proxy</h3>
+          <form class="pm-form" id="oz-pm-form" autocomplete="off">
+            <label for="oz-pm-form-name">Name</label>
+            <input type="text" id="oz-pm-form-name" placeholder="(auto from host:port)" />
+            <label for="oz-pm-form-protocol">Protocol</label>
+            <select id="oz-pm-form-protocol">
+              <option value="https">HTTPS</option>
+              <option value="http">HTTP</option>
+              <option value="socks5">SOCKS5</option>
+            </select>
+            <label for="oz-pm-form-host">Host *</label>
+            <input
+              type="text"
+              id="oz-pm-form-host"
+              required
+              placeholder="us-pr.oxylabs.io"
+            />
+            <label for="oz-pm-form-port">Port *</label>
+            <input
+              type="number"
+              id="oz-pm-form-port"
+              required
+              min="1"
+              max="65535"
+              placeholder="10001"
+            />
+            <label for="oz-pm-form-username">Username</label>
+            <input type="text" id="oz-pm-form-username" placeholder="optional" />
+            <label for="oz-pm-form-password">Password</label>
+            <input type="password" id="oz-pm-form-password" placeholder="optional" />
+            <label for="oz-pm-form-country">Country code</label>
+            <input type="text" id="oz-pm-form-country" placeholder="US" maxlength="2" />
+            <div class="pm-form-actions">
+              <button type="button" id="oz-pm-form-cancel">Cancel</button>
+              <button type="submit" id="oz-pm-form-save">Save</button>
+            </div>
+          </form>
+        </section>
+
+        <section id="oz-pm-providers-view" hidden>
+          <h3 style="margin-top: 0">Provider templates</h3>
+          <div class="pm-providers" id="oz-pm-providers"></div>
+          <div id="oz-pm-provider-form-wrap"></div>
+          <div class="pm-form-actions" style="margin-top: 12px">
+            <button type="button" id="oz-pm-providers-back">← Back to list</button>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
     <script src="./identity-editor.js"></script>
@@ -1673,6 +1957,7 @@
     <script src="./account-manager-render.js"></script>
     <script src="./account-manager.js"></script>
     <script src="./time-machine.js"></script>
+    <script src="./proxy-manager.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

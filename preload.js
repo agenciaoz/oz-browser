@@ -200,6 +200,50 @@ if (isWebUI) {
         ipcRenderer.invoke('oz:cookies:pickExportPath', identityId, format),
       pickImportPath: (format) => ipcRenderer.invoke('oz:cookies:pickImportPath', format),
     },
+    proxies: {
+      list: () => ipcRenderer.invoke('oz:proxies:list'),
+      listAssignable: () => ipcRenderer.invoke('oz:proxies:listAssignable'),
+      get: (id) => ipcRenderer.invoke('oz:proxies:get', id),
+      create: (opts) => ipcRenderer.invoke('oz:proxies:create', opts),
+      update: (id, patch) => ipcRenderer.invoke('oz:proxies:update', id, patch),
+      remove: (id) => ipcRenderer.invoke('oz:proxies:remove', id),
+      setActive: (id, isActive) =>
+        ipcRenderer.invoke('oz:proxies:setActive', id, isActive),
+      autoAssign: (strategy) => ipcRenderer.invoke('oz:proxies:autoAssign', strategy),
+      bulkAdd: (items) => ipcRenderer.invoke('oz:proxies:bulkAdd', items),
+      // Assignment
+      assignToIdentity: (identityId, value) =>
+        ipcRenderer.invoke('oz:proxies:assignToIdentity', identityId, value),
+      assignToWorkspace: (workspaceId, value) =>
+        ipcRenderer.invoke('oz:proxies:assignToWorkspace', workspaceId, value),
+      setDefaultStrategy: (strategy) =>
+        ipcRenderer.invoke('oz:proxies:setDefaultStrategy', strategy),
+      listAssignments: () => ipcRenderer.invoke('oz:proxies:listAssignments'),
+      resolveForIdentity: (identityId, workspaceId) =>
+        ipcRenderer.invoke('oz:proxies:resolveForIdentity', identityId, workspaceId),
+      // Health (1.8c)
+      testConnectivity: (proxyId) =>
+        ipcRenderer.invoke('oz:proxies:testConnectivity', proxyId),
+      testAll: (opts) => ipcRenderer.invoke('oz:proxies:testAll', opts),
+      // CSV + Providers (1.8d)
+      importCsvContent: (content) =>
+        ipcRenderer.invoke('oz:proxies:importCsvContent', content),
+      importCsvFromFile: (filePath) =>
+        ipcRenderer.invoke('oz:proxies:importCsvFromFile', filePath),
+      exportCsvContent: () => ipcRenderer.invoke('oz:proxies:exportCsvContent'),
+      exportCsvToFile: (filePath) =>
+        ipcRenderer.invoke('oz:proxies:exportCsvToFile', filePath),
+      listProviders: () => ipcRenderer.invoke('oz:proxies:listProviders'),
+      expandProvider: (providerId, opts) =>
+        ipcRenderer.invoke('oz:proxies:expandProvider', providerId, opts),
+      pickCsvImportPath: () => ipcRenderer.invoke('oz:proxies:pickCsvImportPath'),
+      pickCsvExportPath: () => ipcRenderer.invoke('oz:proxies:pickCsvExportPath'),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:proxies:changed', listener)
+        return () => ipcRenderer.off('oz:proxies:changed', listener)
+      },
+    },
     nav: {
       back: () => ipcRenderer.invoke('oz:nav:back'),
       forward: () => ipcRenderer.invoke('oz:nav:forward'),
