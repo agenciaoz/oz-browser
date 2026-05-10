@@ -233,6 +233,60 @@
         { disabled: workspace.isFrozen },
       )
       addBtn('Duplicate', () => this.handleDuplicateWorkspace(workspace))
+
+      // Quick Tabs mode submenu (1.4e).
+      const QT_LABELS = {
+        'on-click': 'Lazy (on click) — default',
+        'load-all': 'Load all on switch',
+        'one-by-one': 'Load one by one',
+        'on-click-confirm': 'Lazy + confirm before load',
+      }
+      const qtBtn = document.createElement('button')
+      const currentMode = workspace.quickTabsMode || 'on-click'
+      qtBtn.textContent = `Quick Tabs: ${QT_LABELS[currentMode] || currentMode} ▸`
+      if (workspace.isFrozen) qtBtn.setAttribute('disabled', '')
+      qtBtn.addEventListener('click', (ev) => {
+        ev.stopPropagation()
+        if (workspace.isFrozen) return
+        const sub = document.createElement('div')
+        sub.className = 'ctx-menu ctx-submenu'
+        sub.style.left = `${e.clientX + 200}px`
+        sub.style.top = `${e.clientY + 60}px`
+        for (const mode of Object.keys(QT_LABELS)) {
+          const item = document.createElement('button')
+          item.textContent = QT_LABELS[mode] + (mode === currentMode ? ' ✓' : '')
+          item.addEventListener('click', async () => {
+            menu.remove()
+            sub.remove()
+            // Warn when enabling 'load-all' on a workspace with many tabs —
+            // it'll spike RAM at switch time. Threshold matches the constant
+            // exported from window-workspace.js (LOAD_ALL_THRESHOLD = 10).
+            const tabsCount = (workspace.tabSpecs && workspace.tabSpecs.length) || 0
+            if (mode === 'load-all' && tabsCount > 10) {
+              const ok = confirm(
+                `"${workspace.name}" has ${tabsCount} tabs. Load all on switch will materialize ALL of them at once — RAM may spike. Proceed?`,
+              )
+              if (!ok) return
+            }
+            await safe(
+              window.oz.workspaces.update(workspace.id, { quickTabsMode: mode }),
+              'workspaces.update.quickTabsMode',
+            )
+          })
+          sub.appendChild(item)
+        }
+        document.body.appendChild(sub)
+        const closeSub = (e2) => {
+          if (!sub.contains(e2.target) && !menu.contains(e2.target)) {
+            sub.remove()
+            menu.remove()
+            document.removeEventListener('click', closeSub, true)
+          }
+        }
+        setTimeout(() => document.addEventListener('click', closeSub, true), 0)
+      })
+      menu.appendChild(qtBtn)
+
       addBtn(workspace.isFrozen ? 'Unfreeze' : 'Freeze', () =>
         this.handleFreezeToggle(workspace),
       )

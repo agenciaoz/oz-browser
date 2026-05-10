@@ -148,13 +148,28 @@ function snapshotWindowToWorkspace(window, browser, workspaceId) {
 }
 
 /**
- * Cargar las tabs del workspace activo de la ventana, creando instancias lazy
- * (no materializadas). Selecciona activeTabId o la primera. Si tabSpecs está
- * vacío, crea una newtab fresh (caso first-run o WS recién creado).
+ * Cargar las tabs del workspace activo de la ventana. Comportamiento según
+ * `ws.quickTabsMode` (1.4e — Quick Tabs 4 modos):
  *
- * Idempotente: no asume que window.tabs esté vacío (caller puede haber dejado
- * basura), pero el caso normal es justo después de destruir todas las tabs.
+ *   - 'on-click' (default) — todas lazy; solo activeTabId se materializa al
+ *     ser seleccionada (vía window.tabs.select). Mínima RAM.
+ *   - 'load-all' — materializa todas inmediatamente. Costo: RAM × N tabs.
+ *     Si N > LOAD_ALL_THRESHOLD (10), el caller debería confirmar primero
+ *     vía UI (este módulo no abre prompts; el switcher UI hace el confirm).
+ *   - 'one-by-one' — materializa secuencial con delay STAGGERED_DELAY_MS
+ *     entre cada una. Buena para conexiones lentas o ahorrar pico de RAM.
+ *   - 'on-click-confirm' — solo lazy; cuando user clickea una tab, la UI
+ *     debe pedir confirmación antes de materializar. Implementación de la
+ *     confirmación vive en el sidebar/tabstrip (este módulo no abre prompts).
+ *
+ * Si tabSpecs está vacío (first-run o WS recién creado), crea una newtab fresh
+ * eager.
+ *
+ * Idempotente: no asume que window.tabs esté vacío.
  */
+const LOAD_ALL_THRESHOLD = 10
+const STAGGERED_DELAY_MS = 250
+
 function hydrateWorkspace({ window, browser, options = {} }) {
   const wm = browser.workspaceManager
   if (!wm || !window.workspaceId) return
@@ -162,6 +177,7 @@ function hydrateWorkspace({ window, browser, options = {} }) {
   if (!ws) return
 
   const specs = ws.tabSpecs || []
+  const mode = ws.quickTabsMode || 'on-click'
   const newtabUrl =
     (browser.urls && browser.urls.newtab) || options.newtabUrl || 'about:blank'
 
@@ -200,6 +216,47 @@ function hydrateWorkspace({ window, browser, options = {} }) {
   if (targetId && typeof window.tabs.select === 'function') {
     window.tabs.select(targetId)
   }
+
+  // Apply quick-tabs mode (after select so the active tab is already materialized).
+  if (mode === 'load-all') {
+    // Materialize remaining tabs eagerly. Caller (UI) should have confirmed
+    // already if specs.length > LOAD_ALL_THRESHOLD.
+    for (const spec of specs) {
+      if (spec.id === targetId) continue
+      const t = window.tabs.get(spec.id)
+      if (t && typeof t.materialize === 'function' && !t.materialized) {
+        t.materialize()
+      }
+    }
+    log.info('window-workspace', 'load-all hydrate complete', {
+      windowId: window.id,
+      workspaceId: ws.id,
+      tabsMaterialized: specs.length,
+    })
+  } else if (mode === 'one-by-one') {
+    // Stagger materialization with setTimeout.
+    let i = 0
+    const queue = specs.filter((s) => s.id !== targetId)
+    const next = () => {
+      if (i >= queue.length) return
+      const spec = queue[i++]
+      const t = window.tabs.get(spec.id)
+      if (t && typeof t.materialize === 'function' && !t.materialized) {
+        t.materialize()
+      }
+      setTimeout(next, STAGGERED_DELAY_MS)
+    }
+    if (queue.length > 0) setTimeout(next, STAGGERED_DELAY_MS)
+    log.info('window-workspace', 'one-by-one hydrate scheduled', {
+      windowId: window.id,
+      workspaceId: ws.id,
+      queueLength: queue.length,
+      delayMs: STAGGERED_DELAY_MS,
+    })
+  }
+  // 'on-click' and 'on-click-confirm' are pure lazy — nothing more to do here.
+  // The 'on-click-confirm' UX is implemented in the sidebar (intercept click
+  // on lazy tab → confirm → then call select).
 }
 
 /**
@@ -223,4 +280,8 @@ module.exports = {
   snapshotWindowToWorkspace,
   releaseOnDestroy,
   findWindowOwning,
+  // Exposed so the UI (workspace-switcher) can warn the user before switching
+  // a workspace that holds many tabs into 'load-all' mode.
+  LOAD_ALL_THRESHOLD,
+  STAGGERED_DELAY_MS,
 }

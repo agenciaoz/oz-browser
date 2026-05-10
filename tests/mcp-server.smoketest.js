@@ -487,21 +487,23 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     const preloadPath = path.resolve(__dirname, '../preload.js')
     const preload = fs.readFileSync(preloadPath, 'utf-8')
 
-    // Channels the preload bridge invokes for the identities + tabs domain.
-    // We extract them from the preload.js source so we don't drift.
+    // Channels the preload bridge invokes for the identities + tabs + workspaces
+    // domain. We extract them from the preload.js source so we don't drift.
     const found = new Set()
-    const re = /ipcRenderer\.invoke\('(oz:(identities|tabs):[a-zA-Z]+)'/g
+    const re = /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces):[a-zA-Z]+)'/g
     let m
     while ((m = re.exec(preload)) !== null) found.add(m[1])
 
     // Map IPC channel → expected MCP tool name. Some channels are exempt
-    // (e.g. legacy rename/setColor wrappers — covered by oz.identities.update
-    // which is the canonical version).
+    // (e.g. legacy rename/setColor wrappers — covered by *.update which is
+    // the canonical version).
     const exempt = new Set([
       'oz:identities:rename', // wrapper of oz.identities.update
       'oz:identities:setColor', // wrapper of oz.identities.update
       'oz:tabs:getIdentity', // info available via oz.tabs.list
       'oz:tabs:bulkCreateLazy', // power-user, reduce v1 surface
+      'oz:workspaces:rename', // wrapper of oz.workspaces.update
+      'oz:workspaces:setColor', // wrapper of oz.workspaces.update
     ])
 
     for (const channel of found) {

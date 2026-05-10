@@ -20,10 +20,11 @@
  * @returns {Array<Tool>}
  */
 function buildToolCatalog(browser) {
-  // identity-handlers.js and tab-handlers.js export pure maps wired into
-  // browser.handlers in ipc-handlers.js → registerIpcHandlers.
+  // identity-handlers.js, tab-handlers.js, workspace-handlers.js export pure
+  // maps wired into browser.handlers in ipc-handlers.js → registerIpcHandlers.
   const identities = () => browser.handlers && browser.handlers.identities
   const tabs = () => browser.handlers && browser.handlers.tabs
+  const workspaces = () => browser.handlers && browser.handlers.workspaces
 
   return [
     // -------------------- identities --------------------
@@ -188,6 +189,173 @@ function buildToolCatalog(browser) {
       },
       call: ({ tabId, targetWorkspaceId }) =>
         tabs().moveToWorkspace(tabId, targetWorkspaceId),
+    },
+
+    // -------------------- workspaces (1.4-WS) --------------------
+    {
+      name: 'oz.workspaces.list',
+      description:
+        'List all workspaces (including archived and frozen). Each workspace includes id, name, color, isDefault, isArchived, isFrozen, quickTabsMode, createdAt, updatedAt, tabSpecs, activeTabId.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      call: () => workspaces().list(),
+    },
+    {
+      name: 'oz.workspaces.listActive',
+      description:
+        'List only non-archived workspaces. This is what the UI shows by default.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      call: () => workspaces().listActive(),
+    },
+    {
+      name: 'oz.workspaces.get',
+      description: 'Get a single workspace by id. Returns workspace object or null.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => workspaces().get(id),
+    },
+    {
+      name: 'oz.workspaces.getActive',
+      description:
+        'Get the workspace id active in the focused window (or in the window referenced by windowId if provided). Returns workspaceId string or null.',
+      inputSchema: {
+        type: 'object',
+        properties: { windowId: { type: 'number' } },
+        additionalProperties: false,
+      },
+      call: ({ windowId } = {}) => workspaces().getActive(windowId),
+    },
+    {
+      name: 'oz.workspaces.setActive',
+      description:
+        'Switch the focused window (or referenced window) to the given workspace. Returns {ok, workspaceId, ...} where ok=false carries reason: not-found / already-open / no-window. ADR 0015 lock exclusivo: 1 ventana = 1 workspace.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          workspaceId: { type: 'string' },
+          windowId: { type: 'number' },
+        },
+        required: ['workspaceId'],
+        additionalProperties: false,
+      },
+      call: ({ workspaceId, windowId }) => workspaces().setActive(workspaceId, windowId),
+    },
+    {
+      name: 'oz.workspaces.create',
+      description:
+        'Create a new workspace. Color auto-picked if omitted. quickTabsMode is one of load-all, one-by-one, on-click (default), on-click-confirm.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          name: { type: 'string' },
+          color: { type: 'string' },
+          quickTabsMode: {
+            type: 'string',
+            enum: ['load-all', 'one-by-one', 'on-click', 'on-click-confirm'],
+          },
+        },
+        additionalProperties: false,
+      },
+      call: (args = {}) => workspaces().create(args),
+    },
+    {
+      name: 'oz.workspaces.update',
+      description:
+        'Update workspace fields. Whitelisted: name, color, quickTabsMode. Frozen workspaces reject updates (returns null).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          patch: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              color: { type: 'string' },
+              quickTabsMode: {
+                type: 'string',
+                enum: ['load-all', 'one-by-one', 'on-click', 'on-click-confirm'],
+              },
+            },
+            additionalProperties: false,
+          },
+        },
+        required: ['id', 'patch'],
+        additionalProperties: false,
+      },
+      call: ({ id, patch }) => workspaces().update(id, patch),
+    },
+    {
+      name: 'oz.workspaces.duplicate',
+      description:
+        'Deep clone a workspace with fresh tab spec ids. The duplicate is never default/archived/frozen and gets name suffixed " (copy)".',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => workspaces().duplicate(id),
+    },
+    {
+      name: 'oz.workspaces.archive',
+      description:
+        'Archive a workspace (hides from listActive but preserves data). Default workspace is protected — returns false if attempted.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => workspaces().archive(id),
+    },
+    {
+      name: 'oz.workspaces.restore',
+      description: 'Unarchive a workspace.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => workspaces().restore(id),
+    },
+    {
+      name: 'oz.workspaces.freeze',
+      description:
+        'Freeze a workspace — blocks user CRUD (update returns null) but runtime navigation still works. Snapshot path (setTabSpecs) also bypasses freeze.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => workspaces().freeze(id),
+    },
+    {
+      name: 'oz.workspaces.unfreeze',
+      description: 'Unfreeze a workspace — restores CRUD permissions.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => workspaces().unfreeze(id),
+    },
+    {
+      name: 'oz.workspaces.remove',
+      description:
+        'Delete a workspace by id. Default workspace is protected — returns false if attempted. If the workspace was active in some window, that window auto-falls-back to Default before the removal.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => workspaces().remove(id),
     },
 
     // -------------------- system metrics --------------------
