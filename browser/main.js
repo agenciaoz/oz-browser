@@ -37,6 +37,7 @@ const { TabDiscardDaemon } = require('./tab-discard-daemon')
 const { setupAutoUpdate } = require('./auto-update')
 const { setupMenu } = require('./menu')
 const { wireIdentityWorkspaceSync } = require('./identity-workspace-sync')
+const { installProtocolHandler } = require('./protocol-handler')
 
 let _Notification = null
 function getNotification() {
@@ -244,6 +245,12 @@ class Browser {
 
   async init() {
     log.info('browser', 'Browser.init() starting')
+
+    // B-1: register the oz:// protocol scheme + listeners. Done as the very
+    // first init step so that any URL queued by the OS during cold-start
+    // (macOS open-url) lands once the dispatchers are registered later by
+    // individual features (Dropbox auth, Supabase auth, team invites, etc).
+    installProtocolHandler(this)
 
     initSession(this)
     registerPreload(this.session)

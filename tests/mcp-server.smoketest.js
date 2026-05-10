@@ -507,6 +507,8 @@ console.log(`Test userData: ${TEST_USERDATA}`)
       'oz:tabs:getIdentity', // info available via oz.tabs.list
       'oz:tabs:bulkCreateLazy', // power-user, reduce v1 surface
       'oz:tabs:contextMenu', // 1.7d UI-only — pops native menu via Menu.popup
+      'oz:identities:contextMenu', // HX4 UI-only — native ctx menu sidebar
+      'oz:workspaces:contextMenu', // HX4 UI-only — native ctx menu sidebar
       'oz:workspaces:rename', // wrapper of oz.workspaces.update
       'oz:workspaces:setColor', // wrapper of oz.workspaces.update
       'oz:excel:pickExportPath', // 1.5f UI-only file dialog wrapper

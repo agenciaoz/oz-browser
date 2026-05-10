@@ -48,6 +48,7 @@ module.exports = [
         clearInterval: 'readonly',
         queueMicrotask: 'readonly',
         URL: 'readonly',
+        URLSearchParams: 'readonly',
         // Browser globals (para classic scripts del WebUI extension)
         window: 'readonly',
         document: 'readonly',
