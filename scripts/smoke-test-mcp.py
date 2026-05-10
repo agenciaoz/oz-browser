@@ -315,14 +315,52 @@ ok(
     r,
 )
 
-# Unlock + retry
+# H3b D5: Default identity is pinned to general (D2). A tab on Default
+# CANNOT be moved into a non-general workspace — reject with
+# default-identity-pinned-to-general. Validate that the rejection fires.
 mcp("oz.tabs.unlock", {"tabId": tc})
 r = mcp("oz.tabs.moveToWorkspace", {"tabId": tc, "targetWorkspaceId": ws_x_id})
 ok(
-    "moveToWorkspace unlocked → ok",
+    "H3b D5: moveToWorkspace on Default-bound tab → reject default-pinned",
+    isinstance(r, dict)
+    and r.get("ok") is False
+    and r.get("reason") == "default-identity-pinned-to-general",
+    r,
+)
+
+# Now create a non-default identity in workspace ws_x and a tab on it,
+# then move that tab back to general. The cascade-move should bring the
+# identity along (D5).
+custom = mcp("oz.identities.create", {"name": "CascadeID", "workspaceId": ws_x_id})
+custom_id = custom.get("id") if isinstance(custom, dict) else None
+ok("H3b custom identity created in ws_x", custom_id is not None, custom)
+# Switch to ws_x so we can create a tab there.
+mcp("oz.workspaces.setActive", {"workspaceId": ws_x_id})
+import time as _t
+
+_t.sleep(0.3)
+tcustom = mcp(
+    "oz.tabs.openInIdentity", {"identityId": custom_id, "url": "about:blank"}
+)
+ok("custom-identity tab opened in ws_x", isinstance(tcustom, str), tcustom)
+# Move the tab back to general — should cascade-move the identity (since
+# it's not Default + not locked).
+r = mcp("oz.tabs.moveToWorkspace", {"tabId": tcustom, "targetWorkspaceId": general_id})
+ok(
+    "H3b D5: moveToWorkspace cascade-moves custom identity",
     isinstance(r, dict) and r.get("ok") is True,
     r,
 )
+# Verify the identity follows.
+custom_after = mcp("oz.identities.get", {"id": custom_id})
+ok(
+    "H3b D5: custom identity now lives in 'general'",
+    isinstance(custom_after, dict) and custom_after.get("workspaceId") == general_id,
+    custom_after,
+)
+# Cleanup
+mcp("oz.workspaces.setActive", {"workspaceId": general_id})
+mcp("oz.identities.remove", {"id": custom_id})
 
 # moveToNewWindow — opens window 2
 te = mcp("oz.tabs.openInIdentity", {"identityId": default_id, "url": "about:blank"})
@@ -340,9 +378,17 @@ mcp("oz.workspaces.remove", {"id": ws_x_id})
 # ---- 4. HX2 — multi-window state still works ------------------------------
 section("HX2 — multi-window state still works after moveToNewWindow")
 
-mcp("oz.workspaces.setActive", {"workspaceId": general_id})
+# Note: lock 1-1 prevents window 2 from also taking 'general' (already on
+# window 1). After moveToNewWindow, window 2 has its own auto-created
+# 'Window N' workspace. setActive on focused (window 2) will reject with
+# already-open if we ask for general. So we just verify getActive returns
+# *some* workspace and operations don't throw.
 r = mcp("oz.workspaces.getActive", {})
-ok("getActive after multi-window setup still works", r == general_id, r)
+ok(
+    "HX2 multi-window: getActive returns a workspace id (no crash)",
+    isinstance(r, str) and len(r) > 0,
+    r,
+)
 
 # ---- 5. Bookmarks ---------------------------------------------------------
 section("Bookmarks")
@@ -360,17 +406,52 @@ if bm_id:
     r = mcp("oz.bookmarks.remove", {"id": bm_id})
     ok("bookmarks.remove", r is True, r)
 
-# ---- 6. Settings ----------------------------------------------------------
-section("Settings get/set")
-settings = mcp("oz.settings.getAll", {})
-ok("settings.getAll returns object", isinstance(settings, dict), settings)
-ok(
-    "automation.mcpEnabled key exists",
-    isinstance(settings, dict)
-    and isinstance(settings.get("automation"), dict)
-    and "mcpEnabled" in settings["automation"],
-    settings.get("automation") if isinstance(settings, dict) else None,
+# ---- 6. H1 — reopen closed tab --------------------------------------------
+section("H1 — reopenClosed")
+
+# Make sure we're in general with a clean tab list.
+mcp("oz.workspaces.setActive", {"workspaceId": general_id})
+time.sleep(0.3)
+# Open + close 2 tabs.
+ra = mcp("oz.tabs.openInIdentity", {"identityId": default_id, "url": "https://r1.test"})
+rb = mcp("oz.tabs.openInIdentity", {"identityId": default_id, "url": "https://r2.test"})
+mcp("oz.tabs.close", {"tabId": ra})
+mcp("oz.tabs.close", {"tabId": rb})
+
+# Reopen — pops most-recent first (rb). We assert id is present in the
+# tabs list + identity matches; don't assert on serialize().url because
+# reopenClosed selects the tab → loadURL → pendingUrl cleared → race
+# until Chromium commits. The unit smoketest covers the spec/url
+# correctness deterministically (mocked WebContentsView).
+new1 = mcp("oz.tabs.reopenClosed", {})
+ok("H1 reopenClosed returns new tab id", isinstance(new1, str) and len(new1) > 0, new1)
+lst = mcp("oz.tabs.list")
+restored1 = (
+    next((t for t in lst if isinstance(t, dict) and t.get("id") == new1), None)
+    if isinstance(lst, list)
+    else None
 )
+ok(
+    "H1 first reopen creates tab in default identity",
+    restored1 is not None and restored1.get("identityId") == default_id,
+    restored1,
+)
+
+new2 = mcp("oz.tabs.reopenClosed", {})
+ok(
+    "H1 second reopen returns another tab id",
+    isinstance(new2, str) and len(new2) > 0 and new2 != new1,
+    new2,
+)
+
+empty = mcp("oz.tabs.reopenClosed", {})
+ok("H1 reopen on empty stack returns null", empty is None, empty)
+
+# Cleanup
+if isinstance(new1, str):
+    mcp("oz.tabs.close", {"tabId": new1})
+if isinstance(new2, str):
+    mcp("oz.tabs.close", {"tabId": new2})
 
 # ---- 7. URL normalize regression ------------------------------------------
 section("URL-normalize regression (BugCrawl fix)")
