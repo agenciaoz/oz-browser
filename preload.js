@@ -146,6 +146,23 @@ if (isWebUI) {
       pickExportPath: () => ipcRenderer.invoke('oz:excel:pickExportPath'),
       pickImportPath: () => ipcRenderer.invoke('oz:excel:pickImportPath'),
     },
+    timemachine: {
+      create: (opts) => ipcRenderer.invoke('oz:timemachine:create', opts),
+      list: () => ipcRenderer.invoke('oz:timemachine:list'),
+      restore: (id) => ipcRenderer.invoke('oz:timemachine:restore', id),
+      remove: (id) => ipcRenderer.invoke('oz:timemachine:remove', id),
+      applyRetention: (opts) => ipcRenderer.invoke('oz:timemachine:applyRetention', opts),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:timemachine:changed', listener)
+        return () => ipcRenderer.off('oz:timemachine:changed', listener)
+      },
+      onRestoreCompleted(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:timemachine:restore-completed', listener)
+        return () => ipcRenderer.off('oz:timemachine:restore-completed', listener)
+      },
+    },
     nav: {
       back: () => ipcRenderer.invoke('oz:nav:back'),
       forward: () => ipcRenderer.invoke('oz:nav:forward'),

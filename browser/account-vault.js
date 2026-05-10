@@ -86,6 +86,20 @@ class Vault {
   }
 
   /**
+   * Returns the raw 32-byte master key buffer if unlocked, null otherwise.
+   * Used by `backup-manager.js` (1.6) to encrypt .ozbackup files with the
+   * same key — the user's Keychain is the single point of recovery for both
+   * vault and backups.
+   *
+   * Do NOT log, serialize, or copy outside main process. The returned Buffer
+   * is the actual internal key — mutating it breaks decryption. Treat as
+   * borrowed handle, not owned.
+   */
+  getMasterKey() {
+    return this._unlocked ? this._key : null
+  }
+
+  /**
    * Unlock the vault. First call ever auto-generates the master key + creates
    * an empty vault file. Subsequent calls read the key from Keychain and
    * decrypt the existing blob.

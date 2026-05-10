@@ -18,6 +18,7 @@ const { buildTabHandlers } = require('./tab-handlers')
 const { buildWorkspaceHandlers } = require('./workspace-handlers')
 const { buildVaultHandlers, buildAccountHandlers } = require('./account-handlers')
 const { buildExcelHandlers } = require('./excel-handlers')
+const { buildBackupHandlers } = require('./backup-handlers')
 
 function registerIpcHandlers(browser) {
   // Domain handlers — shared with MCP server. Build once per browser instance.
@@ -28,6 +29,7 @@ function registerIpcHandlers(browser) {
     vault: buildVaultHandlers(browser),
     accounts: buildAccountHandlers(browser),
     excel: buildExcelHandlers(browser),
+    timemachine: buildBackupHandlers(browser),
   }
 
   registerLogHandlers(browser)
@@ -37,6 +39,7 @@ function registerIpcHandlers(browser) {
   registerVaultHandlersIPC(browser)
   registerAccountHandlersIPC(browser)
   registerExcelHandlersIPC(browser)
+  registerBackupHandlersIPC(browser)
   registerNavHandlers(browser)
   registerUiHandlers(browser)
 
@@ -276,6 +279,17 @@ function registerExcelHandlersIPC(browser) {
     }
     return { filePath: result.filePaths[0] }
   })
+}
+
+// ----- Time Machine (1.6b) --------------------------------------------------
+
+function registerBackupHandlersIPC(browser) {
+  const h = browser.handlers.timemachine
+  ipcMain.handle('oz:timemachine:create', (_e, opts) => h.create(opts))
+  ipcMain.handle('oz:timemachine:list', () => h.list())
+  ipcMain.handle('oz:timemachine:restore', (_e, id) => h.restore(id))
+  ipcMain.handle('oz:timemachine:remove', (_e, id) => h.remove(id))
+  ipcMain.handle('oz:timemachine:applyRetention', (_e, opts) => h.applyRetention(opts))
 }
 
 // ----- Tabs ↔ Identity binding & sidebar API --------------------------------

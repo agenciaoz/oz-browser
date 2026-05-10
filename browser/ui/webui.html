@@ -1096,6 +1096,187 @@
       .am-import-mode .am-mode-danger {
         color: var(--danger);
       }
+
+      /*----- TIME MACHINE MODAL (1.6c) -----*/
+
+      #oz-tm-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin: 4px 8px 0 8px;
+        padding: 7px 10px;
+        background: rgba(54, 179, 126, 0.08);
+        border: 1px solid rgba(54, 179, 126, 0.22);
+        border-radius: 6px;
+        color: #36b37e;
+        font: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #oz-tm-button:hover {
+        background: rgba(54, 179, 126, 0.16);
+      }
+      #oz-tm-button .tm-count {
+        opacity: 0.7;
+        font-weight: 500;
+      }
+
+      .tm-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+      .tm-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 auto;
+        flex-wrap: wrap;
+      }
+      .tm-toolbar .tm-spacer {
+        flex: 1;
+      }
+      .tm-toolbar button {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-color);
+        padding: 6px 11px;
+        border-radius: 5px;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .tm-toolbar button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .tm-toolbar .tm-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        font-weight: 600;
+      }
+      .tm-toolbar .tm-primary:hover {
+        background: #5a7be0;
+      }
+
+      .tm-list-wrap {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+      }
+      .tm-row {
+        display: grid;
+        grid-template-columns: 22px 1fr 110px 90px 90px 26px;
+        gap: 10px;
+        align-items: center;
+        padding: 8px 10px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        font-size: 12px;
+      }
+      .tm-row.header {
+        background: rgba(0, 0, 0, 0.15);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        font-weight: 600;
+        position: sticky;
+        top: 0;
+      }
+      .tm-row:not(.header):hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .tm-icon {
+        font-size: 14px;
+        opacity: 0.7;
+      }
+      .tm-label {
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tm-label small {
+        display: block;
+        color: var(--text-muted);
+        font-size: 10.5px;
+        font-weight: 400;
+        text-transform: none;
+        letter-spacing: normal;
+      }
+      .tm-when,
+      .tm-size,
+      .tm-reason {
+        color: var(--text-muted);
+        white-space: nowrap;
+        font-size: 11.5px;
+      }
+      .tm-reason {
+        display: inline-block;
+        padding: 1px 6px;
+        border-radius: 4px;
+        background: rgba(255, 255, 255, 0.05);
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+        color: var(--text-color);
+      }
+      .tm-reason.daily-3am {
+        background: rgba(108, 142, 239, 0.15);
+        color: var(--accent);
+      }
+      .tm-reason.pre-overwrite-total,
+      .tm-reason.pre-restore {
+        background: rgba(255, 171, 0, 0.18);
+        color: #ffab00;
+      }
+      .tm-reason.pre-quit {
+        background: rgba(144, 144, 160, 0.15);
+      }
+      .tm-actions {
+        display: flex;
+        gap: 4px;
+        justify-content: flex-end;
+      }
+      .tm-actions button {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 13px;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .tm-actions button:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-color);
+      }
+      .tm-actions button.danger:hover {
+        color: var(--danger);
+      }
+      .tm-empty {
+        padding: 30px 12px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .tm-footer {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 11px;
+        color: var(--text-muted);
+        flex: 0 0 auto;
+      }
+      .tm-footer .tm-spacer {
+        flex: 1;
+      }
     </style>
   </head>
   <body>
@@ -1151,6 +1332,10 @@
         <button id="oz-accounts-button" type="button" data-vault="unknown">
           <span class="vault-status-dot"></span>
           <span>🔐 Accounts</span>
+        </button>
+        <button id="oz-tm-button" type="button">
+          <span>⏱ Time Machine</span>
+          <span class="tm-count" id="oz-tm-count"></span>
         </button>
         <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
         <div class="header">Identities</div>
@@ -1419,6 +1604,67 @@
       </div>
     </div>
 
+    <!-- Time Machine modal — managed by time-machine.js (1.6c) -->
+    <div class="oz-modal" id="oz-tm-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-tm-title"
+      >
+        <header>
+          <h2 id="oz-tm-title">⏱ Time Machine</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <div class="oz-modal-error" id="oz-tm-error" hidden></div>
+
+        <section class="tm-section" id="oz-tm-locked-view" hidden>
+          <div class="am-lock">
+            <div class="am-lock-icon">🔐</div>
+            <h3>Vault locked</h3>
+            <p>
+              Time Machine snapshots are encrypted with your vault master key. Unlock the
+              vault to view, create or restore snapshots.
+            </p>
+            <button type="button" id="oz-tm-unlock-btn">Unlock vault</button>
+          </div>
+        </section>
+
+        <section class="tm-section" id="oz-tm-list-view" hidden>
+          <div class="tm-toolbar">
+            <button type="button" class="tm-primary" id="oz-tm-snapshot-now">
+              ⏱ Take snapshot now
+            </button>
+            <span class="tm-spacer"></span>
+            <button type="button" id="oz-tm-retention-btn">Run retention</button>
+          </div>
+          <div class="tm-list-wrap">
+            <div class="tm-row header">
+              <div></div>
+              <div>Label</div>
+              <div>Reason</div>
+              <div>When</div>
+              <div>Size</div>
+              <div></div>
+            </div>
+            <div id="oz-tm-list"></div>
+            <div class="tm-empty" id="oz-tm-empty" hidden>
+              No snapshots yet. Pre-destructive snapshots are created automatically before
+              risky operations.
+            </div>
+          </div>
+          <div class="tm-footer">
+            <span id="oz-tm-summary">0 snapshots</span>
+            <span class="tm-spacer"></span>
+            <span>Shortcut: ⌘⇧B</span>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
     <script src="./identity-editor.js"></script>
@@ -1426,6 +1672,7 @@
     <script src="./sidebar.js"></script>
     <script src="./account-manager-render.js"></script>
     <script src="./account-manager.js"></script>
+    <script src="./time-machine.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

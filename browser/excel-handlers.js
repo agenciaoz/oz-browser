@@ -194,10 +194,32 @@ function buildExcelHandlers(browser) {
       }))
 
       let finalAccounts
+      let preDestructiveSnapshotId = null
       if (mode === 'OVERWRITE_TOTAL') {
+        // 1.6: snapshot automático ANTES de OVERWRITE_TOTAL — el user puede
+        // revertir desde Time Machine si el Excel resultaba estar mal. Si el
+        // BackupManager no está disponible (e.g. tests sin browser completo),
+        // continuamos con un warn — no bloqueamos el import.
+        if (browser.backupManager && browser.accountVault?.isUnlocked) {
+          try {
+            const snap = browser.backupManager.createSnapshot({
+              reason: 'pre-overwrite-total',
+              label: `Pre-OVERWRITE Excel ${new Date().toISOString().slice(0, 19)}`,
+            })
+            preDestructiveSnapshotId = snap.id
+            log.info('excel-handlers', 'pre-overwrite snapshot created', {
+              snapshotId: snap.id,
+            })
+          } catch (err) {
+            log.warn('excel-handlers', 'pre-overwrite snapshot FAILED — proceeding', {
+              message: err.message,
+            })
+          }
+        }
         finalAccounts = newAccounts
         log.warn('excel-handlers', 'OVERWRITE_TOTAL — vault REPLACED', {
           rowsImported: newAccounts.length,
+          preDestructiveSnapshotId,
         })
       } else if (mode === 'PERMANENT_MERGE') {
         // Merge by (identityId, site, username) match.
@@ -245,6 +267,7 @@ function buildExcelHandlers(browser) {
         identitiesCreated,
         workspacesCreated,
         dedicatedWorkspaceId,
+        preDestructiveSnapshotId, // 1.6: rollback path for OVERWRITE_TOTAL
       }
     },
   }

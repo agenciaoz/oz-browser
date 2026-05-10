@@ -24,6 +24,7 @@ const { IdentityManager } = require('./identity-manager')
 const { WorkspaceManager } = require('./workspace-manager')
 const { Vault } = require('./account-vault')
 const { AntiLogout } = require('./anti-logout')
+const { BackupManager } = require('./backup-manager')
 const { setupMenu } = require('./menu')
 const { TabbedBrowserWindow } = require('./window-manager')
 const { registerIpcHandlers } = require('./ipc-handlers')
@@ -70,6 +71,17 @@ class Browser {
           })
         }
       }
+      // 1.6: pre-quit snapshot — solo si vault está unlocked (no podemos
+      // forzar Keychain prompt al apagar, sería intrusivo). Si está locked,
+      // skip silently. El user ya tiene snapshots de pre-destructive +
+      // daily + manual cubriendo el caso normal.
+      if (this.accountVault && this.accountVault.isUnlocked && this.backupManager) {
+        try {
+          this.backupManager.createSnapshot({ reason: 'pre-quit' })
+        } catch (err) {
+          log.warn('browser', 'pre-quit snapshot skipped', { message: err.message })
+        }
+      }
       // 1.5b: lock vault on quit so the master key buffer is wiped before
       // the process tears down. The Keychain entry is untouched.
       if (this.accountVault && this.accountVault.isUnlocked) {
@@ -78,6 +90,11 @@ class Browser {
         } catch (err) {
           log.error('browser', 'accountVault.lock failed', { message: err.message })
         }
+      }
+      // Stop the daily snapshot timer.
+      if (this._backupCronTimer) {
+        clearInterval(this._backupCronTimer)
+        this._backupCronTimer = null
       }
       if (this.mcpServer) {
         e.preventDefault()
@@ -122,6 +139,47 @@ class Browser {
     return window ? this.getWindowFromBrowserWindow(window) : null
   }
 
+  /**
+   * 1.6b: daily snapshot cron. Checks every 60 minutes whether the local
+   * hour is 3 (3am-3:59am window) AND we haven't snapshotted today already.
+   * If both true and vault is unlocked, takes a 'daily-3am' snapshot +
+   * runs retention. If vault is locked at 3am, skips silently (we don't
+   * force Keychain prompts in the background).
+   *
+   * Trade-offs vs a real cron: if OZ is closed at 3am the snapshot is
+   * skipped that day; the next 3am attempt picks it up. For a v1 that's
+   * acceptable — pre-quit + manual + pre-destructive cover the common
+   * cases. A "daily-on-launch-if-stale" enhancement can come later.
+   */
+  _installBackupCron() {
+    const HOUR_MS = 60 * 60 * 1000
+    let lastSnapshotDate = null // 'YYYY-MM-DD' — tracked to avoid duplicates
+    const tick = () => {
+      try {
+        const now = new Date()
+        const today = now.toISOString().slice(0, 10)
+        if (now.getHours() !== 3) return // not in the 3am window
+        if (lastSnapshotDate === today) return // already done today
+        if (!this.accountVault || !this.accountVault.isUnlocked) {
+          log.debug('browser', 'daily snapshot skipped — vault locked')
+          return
+        }
+        this.backupManager.createSnapshot({
+          reason: 'daily-3am',
+          label: `Daily ${today}`,
+        })
+        this.backupManager.applyRetention()
+        lastSnapshotDate = today
+        this.broadcastToWebUI('oz:timemachine:changed')
+      } catch (err) {
+        log.error('browser', 'daily snapshot cron failed', { message: err.message })
+      }
+    }
+    this._backupCronTimer = setInterval(tick, HOUR_MS)
+    // Also run once at boot so testing / manual-launch-after-3am still gets one
+    setTimeout(tick, 5000)
+  }
+
   async init() {
     log.info('browser', 'Browser.init() starting')
 
@@ -163,6 +221,20 @@ class Browser {
     this.antiLogout.install()
     log.info('browser', 'AntiLogout installed', {
       identitiesHooked: this.identityManager.list().length,
+    })
+
+    // 1.6: Time Machine — snapshots cifrados con la master key del Vault.
+    // El BackupManager se instancia siempre (no necesita unlock) pero crear
+    // un snapshot SÍ requiere vault unlocked porque cifra con la master key.
+    this.backupManager = new BackupManager({
+      userDataDir: app.getPath('userData'),
+      vault: this.accountVault,
+      appVersion: app.getVersion(),
+    })
+    this._installBackupCron()
+    log.info('browser', 'BackupManager loaded', {
+      snapshotsDir: this.backupManager.snapshotsDir,
+      existingCount: this.backupManager.listSnapshots().length,
     })
 
     registerIpcHandlers(this)

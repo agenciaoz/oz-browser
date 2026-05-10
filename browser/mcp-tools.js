@@ -34,6 +34,7 @@ function buildToolCatalog(browser) {
   const vault = () => browser.handlers && browser.handlers.vault
   const accounts = () => browser.handlers && browser.handlers.accounts
   const excel = () => browser.handlers && browser.handlers.excel
+  const timemachine = () => browser.handlers && browser.handlers.timemachine
 
   return [
     // -------------------- identities --------------------
@@ -367,8 +368,8 @@ function buildToolCatalog(browser) {
       call: ({ id }) => workspaces().remove(id),
     },
 
-    // -------------------- vault + accounts + excel (1.5b/e, extracted) --------------------
-    ...buildVaultAccountsTools({ vault, accounts, excel }),
+    // -------------------- vault + accounts + excel + timemachine (1.5b/e + 1.6, extracted) --------------------
+    ...buildVaultAccountsTools({ vault, accounts, excel, timemachine }),
 
     // -------------------- system metrics --------------------
     {

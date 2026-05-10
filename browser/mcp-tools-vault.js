@@ -12,7 +12,7 @@
  *   the handler maps. Wrapping in functions defers the dereferencing so the
  *   catalog can be built before the handler maps are wired (init order tolerance).
  */
-function buildVaultAccountsTools({ vault, accounts, excel }) {
+function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
   return [
     // -------------------- vault (1.5b — secrets gate) --------------------
     {
@@ -210,6 +210,74 @@ function buildVaultAccountsTools({ vault, accounts, excel }) {
         additionalProperties: false,
       },
       call: ({ filePath, mode }) => excel().importFromFile(filePath, mode),
+    },
+
+    // -------------------- time machine (1.6) --------------------
+    {
+      name: 'oz.timemachine.create',
+      description:
+        'Create a Time Machine snapshot. Vault must be unlocked (snapshots are encrypted with the master key). Reasons: manual / pre-quit / pre-overwrite-total / daily-3am / pre-restore. Returns {ok, id, header}.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          label: { type: 'string', description: 'Human-readable label' },
+          reason: {
+            type: 'string',
+            enum: [
+              'manual',
+              'pre-quit',
+              'pre-overwrite-total',
+              'daily-3am',
+              'pre-restore',
+            ],
+          },
+        },
+        additionalProperties: false,
+      },
+      call: (opts = {}) => timemachine().create(opts),
+    },
+    {
+      name: 'oz.timemachine.list',
+      description:
+        'List all snapshot metadata, newest first. Cheap (no decrypt — only reads headers). Returns array of {id, label, reason, createdAt, sizeBytes, fileCount, ...}.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      call: () => timemachine().list(),
+    },
+    {
+      name: 'oz.timemachine.restore',
+      description:
+        'Restore a snapshot by id. Vault must be unlocked. ALWAYS auto-creates a pre-restore snapshot first (rollback path). After restore, vault is locked + an event fires; UI must instruct user to restart the app for identities/workspaces to reload from disk. Returns {ok, restoredCount, preRestoreId, requiresRestart}.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => timemachine().restore(id),
+    },
+    {
+      name: 'oz.timemachine.remove',
+      description: 'Permanently delete a snapshot file. Returns {ok, deleted: bool}.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => timemachine().remove(id),
+    },
+    {
+      name: 'oz.timemachine.applyRetention',
+      description:
+        'Run the retention policy now: keep all snapshots from the last N days (default 30) + 1 per ISO week forever for older. Returns {ok, deletedCount, deletedIds}.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          keepDailyDays: { type: 'integer', minimum: 1, maximum: 365 },
+        },
+        additionalProperties: false,
+      },
+      call: (opts = {}) => timemachine().applyRetention(opts),
     },
   ]
 }

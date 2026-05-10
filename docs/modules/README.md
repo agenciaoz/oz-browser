@@ -29,6 +29,8 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `anti-logout.js` 🆕        | ~230 | [anti-logout.md](anti-logout.md)               |
 | `excel-io.js` 🆕           | ~200 | [excel-io.md](excel-io.md)                     |
 | `excel-handlers.js` 🆕     | ~258 | [excel-handlers.md](excel-handlers.md)         |
+| `backup-manager.js` 🆕     | ~452 | [backup-manager.md](backup-manager.md)         |
+| `backup-handlers.js` 🆕    | ~165 | [backup-handlers.md](backup-handlers.md)       |
 | `tabs.js`                  | 344  | [tabs.md](tabs.md)                             |
 | `logger.js`                | 111  | [logger.md](logger.md)                         |
 | `error-handler.js`         | 141  | [error-handler.md](error-handler.md)           |
@@ -49,6 +51,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `workspace-switcher.js` 🆕     | ~290 | [ui-workspace-switcher.md](ui-workspace-switcher.md) |
 | `account-manager.js` 🆕        | ~440 | [ui-account-manager.md](ui-account-manager.md)       |
 | `account-manager-render.js` 🆕 | ~125 | (split helper, mismo doc)                            |
+| `time-machine.js` 🆕           | ~310 | [ui-time-machine.md](ui-time-machine.md)             |
 
 ## Preload (preload.js — root)
 
@@ -73,6 +76,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `tests/site-templates.smoketest.js` 🆕    | ~210 | header inline                                                |
 | `tests/anti-logout.smoketest.js` 🆕       | ~430 | header inline                                                |
 | `tests/excel-io.smoketest.js` 🆕          | ~290 | header inline                                                |
+| `tests/backup-manager.smoketest.js` 🆕    | ~280 | header inline                                                |
 
 ## Pendientes (placeholders, se llenan al implementarse)
 
@@ -90,7 +94,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 - ~~`account-vault.js` ⭐ (Bloque 1.5)~~ ✅ creado en 1.5a
 - `excel-io.js` (Bloque 1.5)
 - `site-templates.js` (Bloque 1.5)
-- `backup-manager.js` (Bloque 1.6)
+- ~~`backup-manager.js` (Bloque 1.6)~~ ✅ creado en 1.6a
 - `tab-context-menu.js` (Bloque 1.7)
 - `proxy-manager.js` (Bloque 1.8)
 - `fingerprint-engine.js` (Bloque 1.9)
