@@ -36,6 +36,7 @@ const { HistoryManager } = require('./history-manager')
 const { TabDiscardDaemon } = require('./tab-discard-daemon')
 const { setupAutoUpdate } = require('./auto-update')
 const { setupMenu } = require('./menu')
+const { wireIdentityWorkspaceSync } = require('./identity-workspace-sync')
 
 let _Notification = null
 function getNotification() {
@@ -261,6 +262,10 @@ class Browser {
       workspacesCount: this.workspaceManager.list().length,
       defaultId: this.workspaceManager.getDefault().id,
     })
+
+    // H3a: wire the Identity ↔ Workspace sync hooks (delegated to
+    // identity-workspace-sync.js for clarity + LOC budget).
+    wireIdentityWorkspaceSync(this)
 
     // 1.5b: instantiate Vault but do NOT auto-unlock at boot. UX choice:
     // first Keychain access prompts user permission on macOS — we want that

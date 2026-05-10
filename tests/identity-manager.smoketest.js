@@ -399,6 +399,165 @@ section('H2 locked persists across reload')
   ok('reload still rejects remove', im2.remove(a.id) === false)
 }
 
+// 14. H3a — Identity.workspaceId field + listByWorkspace + sync hook
+section('H3a Identity.workspaceId + listByWorkspace + sync hook')
+{
+  const { IdentityManager } = freshIM({ OZ_TIER: 'paid' })
+  const im = new IdentityManager()
+  const def = im.getDefault()
+
+  ok("Default has workspaceId='general'", def.workspaceId === 'general')
+
+  // Track sync hook calls.
+  const syncCalls = []
+  im.setWorkspaceSyncHook((op, identityId, fromWsId, toWsId) => {
+    syncCalls.push({ op, identityId, fromWsId, toWsId })
+  })
+
+  const a = im.create({ name: 'Alpha', workspaceId: 'ws-1' })
+  ok('create with workspaceId persists', a.workspaceId === 'ws-1')
+  ok(
+    "sync hook fired 'add' on create",
+    syncCalls.length === 1 &&
+      syncCalls[0].op === 'add' &&
+      syncCalls[0].identityId === a.id &&
+      syncCalls[0].toWsId === 'ws-1',
+  )
+
+  const b = im.create({ name: 'Beta' })
+  ok("create without workspaceId defaults to 'general'", b.workspaceId === 'general')
+
+  const c = im.create({ name: 'Gamma', workspaceId: 'ws-1' })
+  const list1 = im.listByWorkspace('ws-1')
+  ok(
+    "listByWorkspace('ws-1') returns 2 identities",
+    list1.length === 2 &&
+      list1
+        .map((i) => i.id)
+        .sort()
+        .join(',') === [a.id, c.id].sort().join(','),
+  )
+  ok(
+    "listByWorkspace('general') has Default + Beta",
+    im.listByWorkspace('general').length === 2,
+  )
+  ok("listByWorkspace('nope') returns []", im.listByWorkspace('nope').length === 0)
+}
+
+// 15. H3a — moveToWorkspace happy path + reject locked + reject Default
+section('H3a moveToWorkspace')
+{
+  const { IdentityManager } = freshIM({ OZ_TIER: 'paid' })
+  const im = new IdentityManager()
+  const def = im.getDefault()
+  const syncCalls = []
+  im.setWorkspaceSyncHook((op, identityId, fromWsId, toWsId) => {
+    syncCalls.push({ op, identityId, fromWsId, toWsId })
+  })
+
+  const a = im.create({ name: 'Movable', workspaceId: 'ws-1' })
+  syncCalls.length = 0
+
+  const r1 = im.moveToWorkspace(a.id, 'ws-2')
+  ok('move ok=true', r1.ok === true && r1.from === 'ws-1' && r1.to === 'ws-2')
+  ok('identity.workspaceId updated', im.get(a.id).workspaceId === 'ws-2')
+  ok(
+    "sync hook fired 'move' from ws-1 to ws-2",
+    syncCalls.length === 1 &&
+      syncCalls[0].op === 'move' &&
+      syncCalls[0].fromWsId === 'ws-1' &&
+      syncCalls[0].toWsId === 'ws-2',
+  )
+
+  // Same-ws move = noop (no sync fire)
+  syncCalls.length = 0
+  const r2 = im.moveToWorkspace(a.id, 'ws-2')
+  ok('noop same workspace', r2.ok === true && r2.noop === true)
+  ok('noop did not fire sync hook', syncCalls.length === 0)
+
+  // Default identity rejects (pinned to general per D2)
+  const r3 = im.moveToWorkspace(def.id, 'ws-1')
+  ok(
+    "Default rejects move with reason='default-pinned-to-general'",
+    r3.ok === false && r3.reason === 'default-pinned-to-general',
+  )
+
+  // Locked identity rejects
+  im.setLocked(a.id, true)
+  const r4 = im.moveToWorkspace(a.id, 'ws-3')
+  ok(
+    "locked rejects with reason='identity-locked'",
+    r4.ok === false && r4.reason === 'identity-locked',
+  )
+
+  // Unknown id
+  const r5 = im.moveToWorkspace('nope', 'ws-3')
+  ok(
+    "unknown id rejects with reason='identity-not-found'",
+    r5.ok === false && r5.reason === 'identity-not-found',
+  )
+}
+
+// 16. H3a — sync hook fires 'remove' on identity removal
+section("H3a sync hook fires 'remove' on remove()")
+{
+  const { IdentityManager } = freshIM({ OZ_TIER: 'paid' })
+  const im = new IdentityManager()
+  const syncCalls = []
+  im.setWorkspaceSyncHook((op, identityId, fromWsId) => {
+    syncCalls.push({ op, identityId, fromWsId })
+  })
+  const a = im.create({ name: 'Removable', workspaceId: 'ws-9' })
+  syncCalls.length = 0
+
+  const removed = im.remove(a.id)
+  ok('remove returns true', removed === true)
+  ok(
+    "sync hook fired 'remove' with fromWsId='ws-9'",
+    syncCalls.length === 1 &&
+      syncCalls[0].op === 'remove' &&
+      syncCalls[0].identityId === a.id &&
+      syncCalls[0].fromWsId === 'ws-9',
+  )
+}
+
+// 17. H3a — defensive backfill of legacy identities without workspaceId
+section('H3a defensive backfill on _load')
+{
+  const { IdentityManager } = freshIM({ OZ_TIER: 'paid' })
+  // Write legacy-shaped identities.json (no workspaceId field) to disk.
+  const fp = path.join(TEST_USERDATA, 'identities.json')
+  fs.writeFileSync(
+    fp,
+    JSON.stringify([
+      {
+        id: 'default',
+        name: 'Default',
+        color: '#8a8a8a',
+        fingerprintSeed: 'a',
+        createdAt: 1,
+        isDefault: true,
+        // no workspaceId, no locked
+      },
+      {
+        id: 'legacy-1',
+        name: 'Legacy',
+        color: '#ff0000',
+        fingerprintSeed: 'b',
+        createdAt: 2,
+        // no workspaceId
+      },
+    ]),
+  )
+  const im = new IdentityManager()
+  const list = im.list()
+  ok(
+    "legacy identities backfilled to workspaceId='general'",
+    list.every((i) => i.workspaceId === 'general'),
+  )
+  ok('legacy data persisted', list.length === 2)
+}
+
 // ---------- Cleanup ----------------------------------------------------------
 
 Module._load = originalLoad

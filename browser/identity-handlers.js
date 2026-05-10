@@ -46,7 +46,18 @@ function buildIdentityHandlers(browser) {
 
     create(opts) {
       try {
-        const ident = im().create(opts || {})
+        // H3a: every identity belongs to exactly one workspace. Default is
+        // the focused window's workspaceId — matches the user's mental
+        // model ("create a new identity here, in the workspace I'm in").
+        // The caller (UI) can override by passing opts.workspaceId
+        // explicitly. Falls back to 'general' if no focused window.
+        const passedWs = opts && opts.workspaceId
+        let resolvedWs = passedWs
+        if (!resolvedWs) {
+          const focused = browser.getFocusedWindow ? browser.getFocusedWindow() : null
+          resolvedWs = (focused && focused.workspaceId) || 'general'
+        }
+        const ident = im().create({ ...(opts || {}), workspaceId: resolvedWs })
         // 1.5d: hook anti-logout cookie listener for the new identity session.
         if (
           browser.antiLogout &&
@@ -59,7 +70,13 @@ function buildIdentityHandlers(browser) {
           }
         }
         browser.broadcastToWebUI('oz:identities:changed')
-        log.info('identity-handlers', 'create ok', { id: ident.id, name: ident.name })
+        // H3a: workspace list is also affected — its identityIds[] changed.
+        browser.broadcastToWebUI('oz:workspaces:changed')
+        log.info('identity-handlers', 'create ok', {
+          id: ident.id,
+          name: ident.name,
+          workspaceId: ident.workspaceId,
+        })
         return ident
       } catch (err) {
         if (err && err.code === 'IDENTITY_CAP_REACHED') {
@@ -78,6 +95,27 @@ function buildIdentityHandlers(browser) {
         }
         throw err
       }
+    },
+
+    /**
+     * H3a — list identities scoped to a workspace.
+     */
+    listByWorkspace(workspaceId) {
+      return im().listByWorkspace(workspaceId)
+    },
+
+    /**
+     * H3a — move identity to another workspace. Default identity rejects
+     * (pinned to 'general'), locked identities reject. Returns
+     * { ok, id, from, to } or { ok: false, reason }.
+     */
+    moveToWorkspace(id, targetWorkspaceId) {
+      const result = im().moveToWorkspace(id, targetWorkspaceId)
+      if (result && result.ok) {
+        browser.broadcastToWebUI('oz:identities:changed')
+        browser.broadcastToWebUI('oz:workspaces:changed')
+      }
+      return result
     },
 
     rename(id, name) {

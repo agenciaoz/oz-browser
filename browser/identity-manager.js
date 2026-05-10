@@ -110,6 +110,28 @@ class IdentityManager {
         createdAt: now(),
         isDefault: true,
         locked: false,
+        // H3a: every identity belongs to exactly one workspace. Default lives
+        // in 'general' (ADR 0023 D2).
+        workspaceId: 'general',
+      })
+      this._save()
+    }
+
+    // H3a: defensive backfill — legacy data without workspaceId resolves to
+    // 'general'. This avoids needing an explicit migration step (Jose
+    // authorized wipe fresh on H3a kickoff). The defensive path stays for
+    // any future edge case where pre-H3a JSON sneaks back in.
+    let backfilled = 0
+    for (const ident of this.identities) {
+      if (!ident.workspaceId) {
+        ident.workspaceId = 'general'
+        backfilled += 1
+      }
+    }
+    if (backfilled > 0) {
+      log.warn('identity-manager', 'backfilled identities without workspaceId', {
+        count: backfilled,
+        defaultedTo: 'general',
       })
       this._save()
     }
@@ -138,7 +160,7 @@ class IdentityManager {
     return this.identities.find((i) => i.isDefault) || this.identities[0]
   }
 
-  create({ name = 'New Identity', color, userAgent } = {}) {
+  create({ name = 'New Identity', color, userAgent, workspaceId } = {}) {
     if (!IS_PAID_TIER) {
       // Default identity counts towards the cap intentionally — Free tier
       // gets 1 Default + up to (MAX-1) custom = 3 total.
@@ -169,14 +191,23 @@ class IdentityManager {
       // remove() and clearBrowsingData() reject when locked — rename, color
       // and UA edits stay allowed (Jose-confirmed scope: "sólo destructivo").
       locked: false,
+      // H3a: every identity belongs to exactly 1 workspace. Caller (handler)
+      // typically passes the focused window's workspaceId; defaults to
+      // 'general' if missing — the host (Browser) is responsible for routing
+      // identities to the right workspace by the time they reach create().
+      workspaceId: workspaceId || 'general',
     }
     this.identities.push(identity)
     this._save()
     log.info('identity-manager', 'identity created', {
       id: identity.id,
       name: identity.name,
+      workspaceId: identity.workspaceId,
       total: this.identities.length,
     })
+    // H3a: notify the host so it can sync workspace.identityIds[]. Loose
+    // coupling — IdentityManager doesn't know about WorkspaceManager.
+    this._fireWorkspaceSync('add', identity.id, null, identity.workspaceId)
     return { ...identity }
   }
 
@@ -262,11 +293,90 @@ class IdentityManager {
       })
       return false
     }
+    const wsId = ident.workspaceId
     this.identities = this.identities.filter((i) => i.id !== id)
     this.sessionCache.delete(id)
     this._save()
+    // H3a: notify the host to remove this id from workspace.identityIds[].
+    this._fireWorkspaceSync('remove', id, wsId, null)
     // NOTE: partition data on disk is NOT cleared here — leave for Bloque 1.6.
     return true
+  }
+
+  // ---------- H3a: per-workspace identity scoping ----------
+
+  /**
+   * H3a — list identities belonging to a workspace. Returns array (possibly
+   * empty). Default identity is returned only when wsId === 'general'.
+   */
+  listByWorkspace(wsId) {
+    return this.identities.filter((i) => i.workspaceId === wsId).map((i) => ({ ...i }))
+  }
+
+  /**
+   * H3a — move an identity to a different workspace. Locked identities
+   * reject. Default identity is pinned to 'general' (ADR 0023 D2) and rejects
+   * any move. Returns updated identity or { ok: false, reason }.
+   */
+  moveToWorkspace(id, targetWorkspaceId) {
+    const ident = this.identities.find((i) => i.id === id)
+    if (!ident) return { ok: false, reason: 'identity-not-found', id }
+    if (ident.isDefault) {
+      log.warn('identity-manager', 'refusing to move default identity', {
+        id,
+        targetWorkspaceId,
+      })
+      return { ok: false, reason: 'default-pinned-to-general', id }
+    }
+    if (ident.locked) {
+      log.warn('identity-manager', 'refusing to move locked identity', {
+        id,
+        targetWorkspaceId,
+      })
+      return { ok: false, reason: 'identity-locked', id }
+    }
+    const fromWorkspaceId = ident.workspaceId
+    if (fromWorkspaceId === targetWorkspaceId) {
+      return { ok: true, noop: true, id, workspaceId: targetWorkspaceId }
+    }
+    ident.workspaceId = targetWorkspaceId
+    this._save()
+    log.info('identity-manager', 'identity moved to workspace', {
+      id,
+      from: fromWorkspaceId,
+      to: targetWorkspaceId,
+    })
+    // H3a: notify host to update both source + target workspace.identityIds[].
+    this._fireWorkspaceSync('move', id, fromWorkspaceId, targetWorkspaceId)
+    return { ok: true, id, from: fromWorkspaceId, to: targetWorkspaceId }
+  }
+
+  /**
+   * H3a — register a hook called after every identity create / remove / move
+   * so the host (Browser) can sync workspace.identityIds[]. Loose coupling —
+   * IdentityManager knows nothing about WorkspaceManager. Hook signature:
+   *   (op: 'add'|'remove'|'move', identityId, fromWsId|null, toWsId|null)
+   * Pass null to clear. Single hook (replaces) — additional sync sites should
+   * route through the host.
+   */
+  setWorkspaceSyncHook(fn) {
+    this._workspaceSyncHook = typeof fn === 'function' ? fn : null
+    log.info('identity-manager', 'workspace sync hook installed', {
+      installed: !!this._workspaceSyncHook,
+    })
+  }
+
+  _fireWorkspaceSync(op, identityId, fromWsId, toWsId) {
+    if (!this._workspaceSyncHook) return
+    try {
+      this._workspaceSyncHook(op, identityId, fromWsId, toWsId)
+    } catch (err) {
+      log.warn('identity-manager', 'workspace sync hook failed', {
+        op,
+        identityId,
+        message: err.message,
+      })
+    }
   }
 
   /**

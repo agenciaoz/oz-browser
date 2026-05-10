@@ -84,6 +84,24 @@ class WorkspaceManager {
       this.workspaces.unshift(this._buildDefault())
       this._saveNow()
     }
+
+    // H3a: defensive backfill — legacy data without identityIds[] resolves to
+    // []. Avoids needing an explicit migration step. The host (Browser)
+    // recomputes identityIds[] from IdentityManager at boot for accuracy
+    // (this just guarantees the field exists).
+    let backfilled = 0
+    for (const ws of this.workspaces) {
+      if (!Array.isArray(ws.identityIds)) {
+        ws.identityIds = []
+        backfilled += 1
+      }
+    }
+    if (backfilled > 0) {
+      log.warn('workspace-manager', 'backfilled workspaces without identityIds', {
+        count: backfilled,
+      })
+      this._saveNow()
+    }
   }
 
   _buildDefault() {
@@ -100,6 +118,8 @@ class WorkspaceManager {
       updatedAt: t,
       tabSpecs: [],
       activeTabId: null,
+      // H3a: identities belonging to this workspace (ADR 0023 D1).
+      identityIds: [],
     }
   }
 
@@ -142,7 +162,11 @@ class WorkspaceManager {
   // ---------- CRUD ----------
 
   list() {
-    return this.workspaces.map((w) => ({ ...w, tabSpecs: [...w.tabSpecs] }))
+    return this.workspaces.map((w) => ({
+      ...w,
+      tabSpecs: [...w.tabSpecs],
+      identityIds: [...(w.identityIds || [])],
+    }))
   }
 
   /** Workspaces that are not archived. UI lists these by default. */
@@ -152,7 +176,9 @@ class WorkspaceManager {
 
   get(id) {
     const w = this.workspaces.find((x) => x.id === id)
-    return w ? { ...w, tabSpecs: [...w.tabSpecs] } : null
+    return w
+      ? { ...w, tabSpecs: [...w.tabSpecs], identityIds: [...(w.identityIds || [])] }
+      : null
   }
 
   /** Internal mutable handle — used by patch helpers. Not for export. */
@@ -186,6 +212,8 @@ class WorkspaceManager {
       updatedAt: t,
       tabSpecs: [],
       activeTabId: null,
+      // H3a: identities belonging to this workspace (ADR 0023 D1).
+      identityIds: [],
     }
     this.workspaces.push(ws)
     this._save()
@@ -194,7 +222,7 @@ class WorkspaceManager {
       name: ws.name,
       total: this.workspaces.length,
     })
-    return { ...ws, tabSpecs: [] }
+    return { ...ws, tabSpecs: [], identityIds: [] }
   }
 
   /**
@@ -260,6 +288,10 @@ class WorkspaceManager {
       updatedAt: t,
       activeTabId: null,
       tabSpecs: src.tabSpecs.map((ts) => ({ ...ts, id: uuid() })),
+      // H3a: duplicate is a fresh workspace — identities aren't copied
+      // (D1 says 1 identity = 1 workspace; copying would violate that).
+      // Caller can move identities in via the UI / API later.
+      identityIds: [],
     }
     this.workspaces.push(copy)
     this._save()
@@ -268,7 +300,7 @@ class WorkspaceManager {
       to: copy.id,
       tabsCopied: copy.tabSpecs.length,
     })
-    return { ...copy, tabSpecs: [...copy.tabSpecs] }
+    return { ...copy, tabSpecs: [...copy.tabSpecs], identityIds: [] }
   }
 
   archive(id) {
@@ -315,17 +347,121 @@ class WorkspaceManager {
     return true
   }
 
-  remove(id) {
+  /**
+   * H3a — D7: workspace remove with identities inside.
+   *
+   * Default behavior: rejects if the workspace has identities, returning
+   * `{ ok: false, reason: 'has-identities', count: N, lockedCount: K }`.
+   * The caller (UI) shows a dialog: "This will move N identities to Default.
+   * Continue?" — when confirmed, the caller passes `{ cascade: true }`.
+   *
+   * With `cascade: true`: any locked identity blocks the whole remove
+   * (`{ ok: false, reason: 'has-locked-identities', lockedCount }`). Otherwise
+   * the host (Browser) cascade-moves all identities to 'general' via
+   * IdentityManager.moveToWorkspace, then this method removes the empty ws.
+   * The cascade is invoked through the workspaceCascadeHook so this manager
+   * doesn't need to know about IdentityManager.
+   *
+   * Returns `true` (legacy boolean for backward compat with the simple
+   * `false` rejection cases like Default protection) OR a structured
+   * result object when D7 logic kicks in. Callers checking `=== true` keep
+   * working when there are no identities. New callers can also `=== false`
+   * for legacy reject paths or check `r.ok === false` for D7 reasons.
+   */
+  remove(id, options = {}) {
     const ws = this._getRaw(id)
     if (!ws) return false
     if (ws.isDefault) {
       log.warn('workspace-manager', 'refusing to remove default workspace', { id })
       return false
     }
+    const identityIds = Array.isArray(ws.identityIds) ? [...ws.identityIds] : []
+    if (identityIds.length > 0) {
+      // The host installs a hook that returns { lockedCount, identities[] }
+      // for the given workspace. Without the hook we can't know which are
+      // locked, so we conservatively reject without cascade.
+      const cascade = !!options.cascade
+      const probe = this._workspaceCascadeProbe
+        ? this._workspaceCascadeProbe(id, identityIds)
+        : { lockedCount: 0, movableCount: identityIds.length }
+      if (!cascade) {
+        return {
+          ok: false,
+          reason: 'has-identities',
+          id,
+          count: identityIds.length,
+          lockedCount: probe.lockedCount || 0,
+        }
+      }
+      if (probe.lockedCount > 0) {
+        return {
+          ok: false,
+          reason: 'has-locked-identities',
+          id,
+          lockedCount: probe.lockedCount,
+        }
+      }
+      // Run cascade: host moves all identities to 'general' synchronously.
+      if (this._workspaceCascadeRun) {
+        this._workspaceCascadeRun(id, identityIds, DEFAULT_WORKSPACE_ID)
+      }
+    }
     this.workspaces = this.workspaces.filter((w) => w.id !== id)
     this._save()
-    log.info('workspace-manager', 'workspace removed', { id })
+    log.info('workspace-manager', 'workspace removed', {
+      id,
+      cascadedIdentities: identityIds.length,
+    })
     return true
+  }
+
+  // ---------- H3a: identityIds[] sync helpers ----------
+
+  /** H3a — append identityId to workspace.identityIds[] (idempotent). */
+  addIdentity(id, identityId) {
+    const ws = this._getRaw(id)
+    if (!ws) return false
+    if (!Array.isArray(ws.identityIds)) ws.identityIds = []
+    if (!ws.identityIds.includes(identityId)) {
+      ws.identityIds.push(identityId)
+      ws.updatedAt = now()
+      this._save()
+    }
+    return true
+  }
+
+  /** H3a — remove identityId from workspace.identityIds[] (idempotent). */
+  removeIdentity(id, identityId) {
+    const ws = this._getRaw(id)
+    if (!ws) return false
+    if (!Array.isArray(ws.identityIds)) {
+      ws.identityIds = []
+      return true
+    }
+    const before = ws.identityIds.length
+    ws.identityIds = ws.identityIds.filter((iid) => iid !== identityId)
+    if (ws.identityIds.length !== before) {
+      ws.updatedAt = now()
+      this._save()
+    }
+    return true
+  }
+
+  /**
+   * H3a — register hooks the host calls during workspace.remove() with
+   * D7 cascade. Loose coupling — WorkspaceManager doesn't know about
+   * IdentityManager.
+   *
+   *   probe(wsId, identityIds[]) -> { lockedCount, movableCount }
+   *   run(wsId, identityIds[], destWorkspaceId) -> void  (moves identities)
+   */
+  setWorkspaceCascadeHooks({ probe, run }) {
+    this._workspaceCascadeProbe = typeof probe === 'function' ? probe : null
+    this._workspaceCascadeRun = typeof run === 'function' ? run : null
+    log.info('workspace-manager', 'cascade hooks installed', {
+      probeInstalled: !!this._workspaceCascadeProbe,
+      runInstalled: !!this._workspaceCascadeRun,
+    })
   }
 
   // ---------- tabSpecs management ----------
