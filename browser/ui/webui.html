@@ -285,6 +285,12 @@
       .workspace-pill.frozen .workspace-name {
         color: var(--text-muted);
       }
+      .workspace-pill.drop-target {
+        background: rgba(108, 142, 239, 0.35);
+        border-color: var(--accent);
+        box-shadow: 0 0 0 2px rgba(108, 142, 239, 0.4);
+        transform: scale(1.05);
+      }
       .workspace-chip {
         width: 8px;
         height: 8px;
@@ -504,6 +510,16 @@
       }
       .oz-tab .oz-close:hover {
         color: var(--text-color);
+      }
+      .oz-tab.dragging {
+        opacity: 0.4;
+      }
+      .ctx-submenu {
+        z-index: 10000;
+      }
+      .ctx-menu button[disabled] {
+        opacity: 0.4;
+        cursor: not-allowed;
       }
 
       #oz-content {

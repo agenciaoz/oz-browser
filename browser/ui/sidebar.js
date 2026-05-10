@@ -326,8 +326,18 @@
     renderTabItem(tab, identity) {
       const el = document.createElement('div')
       el.className = 'oz-tab'
+      el.dataset.tabId = tab.id
       if (!tab.isLoaded) el.classList.add('lazy')
       if (tab.id === this.activeOzTabId) el.classList.add('active')
+
+      // 1.4d: HTML5 drag-drop — tab is the source.
+      el.draggable = true
+      el.addEventListener('dragstart', (ev) => {
+        ev.dataTransfer.setData('application/oz-tab-id', tab.id)
+        ev.dataTransfer.effectAllowed = 'move'
+        el.classList.add('dragging')
+      })
+      el.addEventListener('dragend', () => el.classList.remove('dragging'))
 
       const fav = document.createElement('span')
       fav.className = 'oz-favicon'
@@ -356,7 +366,93 @@
       el.appendChild(close)
 
       el.addEventListener('click', () => this.handleSelectTab(tab.id))
+      // 1.4d: right-click → ctx menu with "Move to workspace…" submenu.
+      el.addEventListener('contextmenu', (ev) => this.showTabContextMenu(ev, tab))
       return el
+    }
+
+    // 1.4d: tab context menu with "Move to workspace…" submenu.
+    async showTabContextMenu(ev, tab) {
+      ev.preventDefault()
+      ev.stopPropagation()
+      const existing = document.querySelector('.ctx-menu')
+      if (existing) existing.remove()
+      const menu = document.createElement('div')
+      menu.className = 'ctx-menu'
+      menu.style.left = `${ev.clientX}px`
+      menu.style.top = `${ev.clientY}px`
+
+      // Fetch workspaces to populate "Move to" submenu.
+      const all = window.oz.workspaces ? await window.oz.workspaces.list() : []
+      const currentWsId = window.oz.workspaces
+        ? await window.oz.workspaces.getActive()
+        : null
+      const movableTargets = all.filter((w) => w.id !== currentWsId && !w.isArchived)
+
+      const moveBtn = document.createElement('button')
+      moveBtn.textContent =
+        movableTargets.length > 0
+          ? `Move to workspace… (${movableTargets.length})`
+          : 'Move to workspace… (none available)'
+      if (movableTargets.length === 0) moveBtn.setAttribute('disabled', '')
+      moveBtn.addEventListener('click', (e) => {
+        e.stopPropagation()
+        if (movableTargets.length === 0) return
+        // Build inline submenu next to the parent menu.
+        const sub = document.createElement('div')
+        sub.className = 'ctx-menu ctx-submenu'
+        sub.style.left = `${ev.clientX + 200}px`
+        sub.style.top = `${ev.clientY}px`
+        for (const ws of movableTargets) {
+          const item = document.createElement('button')
+          const lock = ws.isFrozen ? '🔒 ' : ''
+          item.textContent = `${lock}${ws.name}`
+          item.addEventListener('click', async () => {
+            menu.remove()
+            sub.remove()
+            const result = await safe(
+              window.oz.tabs.moveToWorkspace(tab.id, ws.id),
+              'tabs.moveToWorkspace',
+            )
+            if (result && result.ok === false) {
+              alert(`Move failed: ${result.reason}`)
+            }
+          })
+          sub.appendChild(item)
+        }
+        document.body.appendChild(sub)
+        const closeSub = (e2) => {
+          if (!sub.contains(e2.target) && !menu.contains(e2.target)) {
+            sub.remove()
+            menu.remove()
+            document.removeEventListener('click', closeSub, true)
+          }
+        }
+        setTimeout(() => document.addEventListener('click', closeSub, true), 0)
+      })
+      menu.appendChild(moveBtn)
+
+      const closeBtn = document.createElement('button')
+      closeBtn.className = 'danger'
+      closeBtn.textContent = 'Close tab'
+      closeBtn.addEventListener('click', () => {
+        menu.remove()
+        this.handleCloseTab(tab.id)
+      })
+      menu.appendChild(closeBtn)
+
+      document.body.appendChild(menu)
+      setTimeout(() => {
+        const close = (e) => {
+          if (!menu.contains(e.target)) {
+            const sub = document.querySelector('.ctx-submenu')
+            if (sub && sub.contains(e.target)) return
+            menu.remove()
+            document.removeEventListener('click', close, true)
+          }
+        }
+        document.addEventListener('click', close, true)
+      }, 0)
     }
   }
 

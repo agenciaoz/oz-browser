@@ -57,6 +57,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `tests/mcp-server.smoketest.js` ✨        | ~330 | header inline                                                |
 | `tests/workspace-manager.smoketest.js` 🆕 | ~270 | header inline                                                |
 | `tests/window-workspace.smoketest.js` 🆕  | ~330 | header inline                                                |
+| `tests/move-to-workspace.smoketest.js` 🆕 | ~250 | header inline                                                |
 
 ## Pendientes (placeholders, se llenan al implementarse)
 

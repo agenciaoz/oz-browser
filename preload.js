@@ -94,6 +94,8 @@ if (isWebUI) {
       close: (tabId) => ipcRenderer.invoke('oz:tabs:close', tabId),
       bulkCreateLazy: (count, identityId, urlTemplate) =>
         ipcRenderer.invoke('oz:tabs:bulkCreateLazy', count, identityId, urlTemplate),
+      moveToWorkspace: (tabId, targetWorkspaceId) =>
+        ipcRenderer.invoke('oz:tabs:moveToWorkspace', tabId, targetWorkspaceId),
 
       onUpdated(cb) {
         const listener = (_e, info) => cb(info)

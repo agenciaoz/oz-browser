@@ -173,6 +173,22 @@ function buildToolCatalog(browser) {
       },
       call: ({ tabId }) => tabs().close(tabId),
     },
+    {
+      name: 'oz.tabs.moveToWorkspace',
+      description:
+        'Move a tab to another workspace (1.4d). If the target workspace is currently active in some window, the tab is recreated lazy there. Otherwise the tab spec is appended to the target workspace storage and the live tab is destroyed in the source. Returns {ok, tabId, from, to} or {ok:false, reason} where reason is one of: target-not-found, target-archived, tab-not-found, no-workspace-manager, cannot-serialize-tab.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          tabId: { type: 'string' },
+          targetWorkspaceId: { type: 'string' },
+        },
+        required: ['tabId', 'targetWorkspaceId'],
+        additionalProperties: false,
+      },
+      call: ({ tabId, targetWorkspaceId }) =>
+        tabs().moveToWorkspace(tabId, targetWorkspaceId),
+    },
 
     // -------------------- system metrics --------------------
     {

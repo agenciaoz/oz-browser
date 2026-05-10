@@ -158,6 +158,9 @@ function registerTabHandlersIPC(browser) {
   ipcMain.handle('oz:tabs:bulkCreateLazy', (_e, count, identityId, urlTemplate) =>
     h.bulkCreateLazy(count, identityId, urlTemplate),
   )
+  ipcMain.handle('oz:tabs:moveToWorkspace', (_e, tabId, targetWorkspaceId) =>
+    h.moveToWorkspace(tabId, targetWorkspaceId),
+  )
 }
 
 // ----- Navigation controls (operate on focused tab) -------------------------

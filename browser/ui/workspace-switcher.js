@@ -318,6 +318,33 @@
         this.handleRenameWorkspace(ws, pill)
       })
 
+      // 1.4d: drop zone — accept tab drags from sidebar to move them to this WS.
+      // Active WS is excluded (no point moving to current); archived WS rejects too.
+      const isDropTarget = ws.id !== this.activeWorkspaceId && !ws.isArchived
+      if (isDropTarget) {
+        pill.addEventListener('dragover', (ev) => {
+          if (ev.dataTransfer.types.includes('application/oz-tab-id')) {
+            ev.preventDefault()
+            ev.dataTransfer.dropEffect = 'move'
+            pill.classList.add('drop-target')
+          }
+        })
+        pill.addEventListener('dragleave', () => pill.classList.remove('drop-target'))
+        pill.addEventListener('drop', async (ev) => {
+          ev.preventDefault()
+          pill.classList.remove('drop-target')
+          const tabId = ev.dataTransfer.getData('application/oz-tab-id')
+          if (!tabId) return
+          const result = await safe(
+            window.oz.tabs.moveToWorkspace(tabId, ws.id),
+            'tabs.moveToWorkspace',
+          )
+          if (result && result.ok === false) {
+            alert(`Move failed: ${result.reason}`)
+          }
+        })
+      }
+
       return pill
     }
   }
