@@ -16,6 +16,17 @@ const crypto = require('crypto')
 const { app, session } = require('electron')
 const log = require('./logger')
 
+// 1.5c: content script preload for auto-fill / auto-save. Resolved at runtime
+// (in dev under electron-forge webpack, __dirname = .webpack/main, so we hop
+// up to the project root and into browser/preload-content.js).
+const CONTENT_PRELOAD_PATH = (() => {
+  try {
+    return require.resolve('./preload-content')
+  } catch (_e) {
+    return path.resolve(__dirname, '..', 'browser', 'preload-content.js')
+  }
+})()
+
 const DEFAULT_COLORS = [
   '#5b8def',
   '#ff7a45',
@@ -271,6 +282,23 @@ class IdentityManager {
       }
     }
 
+    // 1.5c: register content script preload for auto-fill / auto-save.
+    // The preload doesn't know identityId — main resolves it via
+    // identityIdForSession(event.sender.session) on each IPC call. This way
+    // a compromised renderer cannot impersonate another identity.
+    try {
+      ses.setPreloads([CONTENT_PRELOAD_PATH])
+      log.debug('identity-manager', 'content preload registered', {
+        id,
+        path: CONTENT_PRELOAD_PATH,
+      })
+    } catch (err) {
+      log.warn('identity-manager', 'setPreloads failed', {
+        id,
+        message: err.message,
+      })
+    }
+
     this.sessionCache.set(id, ses)
     log.debug('identity-manager', 'session resolved', {
       id,
@@ -286,6 +314,24 @@ class IdentityManager {
   resolve(id) {
     const ident = this.get(id) || this.getDefault()
     return { identity: ident, session: this.getSession(ident.id) }
+  }
+
+  /**
+   * Reverse lookup: given an Electron Session object, return the identity id
+   * it belongs to (or null if it doesn't match any cached session). Used by
+   * 1.5c IPC handlers to deduce identityId from event.sender.session — this
+   * way the renderer cannot impersonate a different identity by passing a
+   * fake identityId arg.
+   */
+  identityIdForSession(sessionObj) {
+    if (!sessionObj) return null
+    for (const [id, cached] of this.sessionCache) {
+      if (cached === sessionObj) return id
+    }
+    // defaultSession may not be in cache yet — check explicitly.
+    const def = this.getDefault()
+    if (def && session.defaultSession === sessionObj) return def.id
+    return null
   }
 }
 

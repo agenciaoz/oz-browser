@@ -174,6 +174,20 @@ function registerAccountHandlersIPC(browser) {
   ipcMain.handle('oz:accounts:update', (_e, id, patch) => h.update(id, patch))
   ipcMain.handle('oz:accounts:remove', (_e, id) => h.remove(id))
   ipcMain.handle('oz:accounts:setAll', (_e, accounts) => h.setAll(accounts))
+  // 1.5c: auto-fill / auto-save primitives. The identityId is resolved from
+  // event.sender.session (NOT trusted from renderer args) — this prevents a
+  // compromised renderer from asking for credentials of another identity.
+  ipcMain.handle('oz:accounts:getCredentialsForSite', (event, site, identityIdArg) => {
+    const identityId =
+      browser.identityManager.identityIdForSession(event.sender.session) || identityIdArg // fall back to arg for WebUI/MCP callers (no isolated session)
+    return h.getCredentialsForSite(site, identityId)
+  })
+  ipcMain.handle('oz:accounts:proposeAutoSave', (event, opts = {}) => {
+    const identityId =
+      browser.identityManager.identityIdForSession(event.sender.session) ||
+      opts.identityId
+    return h.proposeAutoSave({ ...opts, identityId })
+  })
 }
 
 // ----- Tabs ↔ Identity binding & sidebar API --------------------------------

@@ -140,6 +140,39 @@ function buildVaultAccountsTools({ vault, accounts }) {
       },
       call: ({ accounts: arr }) => accounts().setAll(arr),
     },
+    {
+      name: 'oz.accounts.getCredentialsForSite',
+      description:
+        'Auto-fill primitive (1.5c). Returns {accountId, username, password, totpSecret} for the given site canonical id and identityId. Picks most recent if multiple. Returns null if no match. Vault-gated.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          site: { type: 'string', description: 'canonical site id (e.g. "x.com")' },
+          identityId: { type: 'string' },
+        },
+        required: ['site', 'identityId'],
+        additionalProperties: false,
+      },
+      call: ({ site, identityId }) => accounts().getCredentialsForSite(site, identityId),
+    },
+    {
+      name: 'oz.accounts.proposeAutoSave',
+      description:
+        'Auto-save primitive (1.5c). Called by content script when login form is submitted. Broadcasts oz:autofill:propose-save to UI which shows dialog. Returns {ok, action: "create"|"update", existingAccountId?}.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          site: { type: 'string' },
+          username: { type: 'string' },
+          password: { type: 'string' },
+          identityId: { type: 'string' },
+          workspaceId: { type: 'string' },
+        },
+        required: ['site', 'username', 'password', 'identityId'],
+        additionalProperties: false,
+      },
+      call: (opts = {}) => accounts().proposeAutoSave(opts),
+    },
   ]
 }
 

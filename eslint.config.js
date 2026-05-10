@@ -109,6 +109,22 @@ module.exports = [
     },
   },
 
+  // 1.5c: preload-content.js corre como preload de session.setPreloads()
+  // en cada renderer process de tabs de identities. Tiene acceso al DOM real
+  // (MutationObserver, Event, etc.) y al require('electron').
+  {
+    files: ['browser/preload-content.js'],
+    languageOptions: {
+      sourceType: 'commonjs',
+      globals: {
+        MutationObserver: 'readonly',
+        Event: 'readonly',
+        HTMLElement: 'readonly',
+        Element: 'readonly',
+      },
+    },
+  },
+
   // Scripts CLI standalone — pueden usar console libremente.
   {
     files: ['scripts/**/*.js'],

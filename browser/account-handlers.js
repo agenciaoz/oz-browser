@@ -274,6 +274,95 @@ function buildAccountHandlers(browser) {
     },
 
     /**
+     * Auto-fill primitive (1.5c). Returns the credentials needed to fill a
+     * login page given the site canonical id and the active identity. Picks
+     * the first matching account (most recent if multiple, by lastLoginAt
+     * desc). Returns null if no account matches.
+     *
+     * Output shape:
+     *   { username, password, totpSecret, accountId } or null
+     *
+     * The content script preload (preload-content.js) calls this via IPC
+     * when a known login page is detected. Vault gate applies — returns
+     * { __error: { code: 'LOCKED' } } if vault is locked.
+     */
+    getCredentialsForSite(site, identityId) {
+      const vault = requireUnlocked()
+      if (!vault) return lockedError()
+      if (!site || !identityId) {
+        return {
+          __error: { code: 'BAD_ARG', message: 'site and identityId are required' },
+        }
+      }
+      const matches = vault
+        .getAccounts()
+        .filter(
+          (a) =>
+            a.identityId === identityId && a.site === site && a.status !== 'inactive',
+        )
+        .sort((a, b) => (b.lastLoginAt || 0) - (a.lastLoginAt || 0))
+      if (matches.length === 0) return null
+      const a = matches[0]
+      return {
+        accountId: a.id,
+        username: a.username,
+        password: a.password,
+        totpSecret: a.totpSecret,
+      }
+    },
+
+    /**
+     * Auto-save primitive (1.5c). Called by content script when it detects a
+     * form submit on a login page. Returns the proposal back to the caller —
+     * the actual user-facing dialog ("Save credentials for Identity X?") is
+     * handled by main.js (auto-save dialog). After user confirms, the dialog
+     * calls accounts.create() directly.
+     *
+     * This handler is intentionally a no-op pass-through so the dialog logic
+     * lives in one place (main.js / auto-save-dialog.js, 1.5c). We keep it
+     * here so the IPC contract and MCP tool surface are uniform.
+     */
+    proposeAutoSave({ site, username, password, identityId, workspaceId } = {}) {
+      const vault = requireUnlocked()
+      if (!vault) return lockedError()
+      if (!site || !username || !password || !identityId) {
+        return {
+          __error: {
+            code: 'BAD_ARG',
+            message: 'site, username, password, identityId are required',
+          },
+        }
+      }
+      // Check if an account for the same (identityId, site, username) already
+      // exists — if so, propose UPDATE instead of CREATE.
+      const existing = vault
+        .getAccounts()
+        .find(
+          (a) =>
+            a.identityId === identityId && a.site === site && a.username === username,
+        )
+      log.info('account-handlers', 'proposeAutoSave', {
+        site,
+        identityId,
+        existingId: existing && existing.id,
+        action: existing ? 'update' : 'create',
+      })
+      browser.broadcastToWebUI('oz:autofill:propose-save', {
+        site,
+        username,
+        identityId,
+        workspaceId: workspaceId || null,
+        existingAccountId: existing ? existing.id : null,
+        action: existing ? 'update' : 'create',
+      })
+      return {
+        ok: true,
+        action: existing ? 'update' : 'create',
+        existingAccountId: existing ? existing.id : null,
+      }
+    },
+
+    /**
      * Bulk replace — used by Excel import (1.5e). Replaces all accounts.
      * Caller is responsible for snapshot to Time Machine before calling
      * if invoked in OVERWRITE TOTAL mode.

@@ -122,11 +122,20 @@ if (isWebUI) {
       update: (id, patch) => ipcRenderer.invoke('oz:accounts:update', id, patch),
       remove: (id) => ipcRenderer.invoke('oz:accounts:remove', id),
       setAll: (accounts) => ipcRenderer.invoke('oz:accounts:setAll', accounts),
+      // 1.5c auto-fill / auto-save primitives
+      getCredentialsForSite: (site, identityId) =>
+        ipcRenderer.invoke('oz:accounts:getCredentialsForSite', site, identityId),
+      proposeAutoSave: (opts) => ipcRenderer.invoke('oz:accounts:proposeAutoSave', opts),
 
       onChanged(cb) {
         const listener = () => cb()
         ipcRenderer.on('oz:accounts:changed', listener)
         return () => ipcRenderer.off('oz:accounts:changed', listener)
+      },
+      onProposeAutoSave(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:autofill:propose-save', listener)
+        return () => ipcRenderer.off('oz:autofill:propose-save', listener)
       },
     },
     nav: {
