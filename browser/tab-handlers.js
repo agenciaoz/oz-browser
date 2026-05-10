@@ -9,6 +9,7 @@
 // IPC: ninguno directo (los registra ipc-handlers.js).
 
 const log = require('./logger')
+const { normalizeOmniboxInput } = require('./url-normalize')
 
 function buildTabHandlers(browser) {
   return {
@@ -36,9 +37,14 @@ function buildTabHandlers(browser) {
         log.warn('tab-handlers', 'openInIdentity: no focused window')
         return null
       }
+      // Hotfix BugCrawl: MCP/programmatic callers pueden pasar URL sin
+      // scheme. Normalizar antes de tabs.create para que webContents.loadURL
+      // no falle con ERR_INVALID_ARGUMENT silente al materializar.
+      // about:blank y URLs sin valor pasan as-is via la ruta SCHEME_RE.
+      const normalizedUrl = url ? normalizeOmniboxInput(url) || url : url
       const tab = win.tabs.create({
         identityId,
-        url,
+        url: normalizedUrl,
         source: 'tab-handlers.openInIdentity',
       })
       browser.broadcastToWebUI('oz:tabs:updated', {
@@ -82,7 +88,10 @@ function buildTabHandlers(browser) {
       const win = browser.getFocusedWindow()
       if (!win) return 0
       for (let i = 0; i < count; i++) {
-        const url = urlTemplate ? urlTemplate.replace('{i}', String(i)) : 'about:blank'
+        const rawUrl = urlTemplate ? urlTemplate.replace('{i}', String(i)) : 'about:blank'
+        // Hotfix BugCrawl: normalizar tras el template substitution.
+        const url =
+          rawUrl === 'about:blank' ? rawUrl : normalizeOmniboxInput(rawUrl) || rawUrl
         win.tabs.create({
           identityId,
           url,

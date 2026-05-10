@@ -164,7 +164,20 @@ class AntiLogout {
     // Removed path — detect logout. Cause 'expired' or 'expired-overwrite'
     // happens for the cookies WE extend, so skip those (loop guard).
     // 'explicit' is when site/JS explicitly clears (logout button).
+    //
+    // Hotfix BugCrawl: 'overwrite' ALSO se dispara por NUESTRA propia
+    // operación de extension (session.cookies.set en _extendCookieExpiry
+    // emite changed→removed con cause='overwrite' por la cookie vieja, antes
+    // de emitir changed→added por la nueva). Sin guard, marcábamos TODAS
+    // las cuentas como `needs_relogin` cada hora → spam de notifications.
+    // Skip si el key está en _lastExtended con timestamp <2s atrás.
     if (removed && (cause === 'explicit' || cause === 'overwrite')) {
+      const key = `${identityId}:${cookie.name}@${cookie.domain}`
+      const lastExtended = this._lastExtended.get(key) || 0
+      const SELF_EXTEND_WINDOW_MS = 2000
+      if (Date.now() - lastExtended < SELF_EXTEND_WINDOW_MS) {
+        return // self-triggered, NOT a real logout
+      }
       this._maybeFlagNeedsRelogin(identityId, cookie)
     }
   }

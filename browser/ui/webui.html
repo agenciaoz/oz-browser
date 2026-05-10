@@ -558,7 +558,14 @@
 
       /*----- IDENTITY EDITOR MODAL -----*/
 
-      .oz-modal[hidden] {
+      /* Hotfix BugCrawl post-1A: el atributo HTML `hidden` aplica `display:
+         none` por default, pero CUALQUIER regla CSS `display: ...` lo
+         override. Esto rompió onboarding (3 screens superpuestas), time
+         machine (locked + list views ambas visibles), settings (6 secciones
+         renderean simultáneamente). Regla global con !important hace que
+         `[hidden]` sea ground truth, todas las definiciones específicas con
+         `display:` solo aplican cuando NO hay [hidden]. */
+      [hidden] {
         display: none !important;
       }
       .oz-modal {
@@ -579,6 +586,13 @@
         position: relative;
         width: 420px;
         max-width: calc(100% - 32px);
+        /* Hotfix BugCrawl post-1A: si el contenido era más alto que el
+           viewport, los botones footer (Next/Skip/Save) quedaban cortados
+           sin scroll. Cap altura al viewport y permitir scroll vertical
+           interno. Aplica a TODOS los modals (identity editor, onboarding,
+           settings, account-manager, time-machine, browsing-data, etc.). */
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
         background: var(--bg-elevated);
         border-radius: 10px;
         box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);

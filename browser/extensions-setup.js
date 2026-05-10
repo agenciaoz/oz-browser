@@ -178,19 +178,37 @@ function setupWebContentsCreatedHandler(browser) {
           outlivesOpener: true,
           createWindow: ({ webContents: guest, webPreferences }) => {
             const win = browser.getWindowFromWebContents(webContents)
+            // Hotfix BugCrawl: race entre user-close y window.open call →
+            // win puede ser null. Sin guard, win.tabs.create lanza TypeError
+            // que mata el window.open silente y deja `guest` colgado.
+            if (!win || !win.tabs) {
+              log.warn('wc', 'window.open: no parent window/tabs for opener', {
+                url: details.url,
+                opener: webContents.getURL ? webContents.getURL() : null,
+              })
+              return null
+            }
             log.info('wc', 'window.open → new tab', {
               disposition: details.disposition,
               url: details.url,
               opener: webContents.getURL(),
             })
-            const tab = win.tabs.create({
-              webContents: guest,
-              webPreferences,
-              identityId: browser.activeIdentityId,
-              url: details.url,
-              source: `windowOpen[${details.disposition}]`,
-            })
-            return tab.webContents
+            try {
+              const tab = win.tabs.create({
+                webContents: guest,
+                webPreferences,
+                identityId: browser.activeIdentityId,
+                url: details.url,
+                source: `windowOpen[${details.disposition}]`,
+              })
+              return tab.webContents
+            } catch (err) {
+              log.error('wc', 'window.open: tabs.create threw', {
+                message: err.message,
+                url: details.url,
+              })
+              return null
+            }
           },
         }
       }

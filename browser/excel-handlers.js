@@ -196,24 +196,46 @@ function buildExcelHandlers(browser) {
       let finalAccounts
       let preDestructiveSnapshotId = null
       if (mode === 'OVERWRITE_TOTAL') {
-        // 1.6: snapshot automático ANTES de OVERWRITE_TOTAL — el user puede
-        // revertir desde Time Machine si el Excel resultaba estar mal. Si el
-        // BackupManager no está disponible (e.g. tests sin browser completo),
-        // continuamos con un warn — no bloqueamos el import.
-        if (browser.backupManager && browser.accountVault?.isUnlocked) {
-          try {
-            const snap = browser.backupManager.createSnapshot({
-              reason: 'pre-overwrite-total',
-              label: `Pre-OVERWRITE Excel ${new Date().toISOString().slice(0, 19)}`,
-            })
-            preDestructiveSnapshotId = snap.id
-            log.info('excel-handlers', 'pre-overwrite snapshot created', {
-              snapshotId: snap.id,
-            })
-          } catch (err) {
-            log.warn('excel-handlers', 'pre-overwrite snapshot FAILED — proceeding', {
-              message: err.message,
-            })
+        // Hotfix BugCrawl: ABORT si snapshot falla en vez de proceder
+        // destructive sin posibilidad de revert. Mismo patrón que
+        // backup-handlers.restore (que aborta con PRE_RESTORE_FAILED).
+        // Sin BackupManager o vault locked → tampoco podemos hacer snapshot
+        // → tampoco aceptamos OVERWRITE (caller debe pre-conditions).
+        if (!browser.backupManager) {
+          return {
+            __error: {
+              code: 'PRE_OVERWRITE_FAILED',
+              message:
+                'BackupManager not available — refusing destructive OVERWRITE_TOTAL without snapshot capability',
+            },
+          }
+        }
+        if (!browser.accountVault?.isUnlocked) {
+          return {
+            __error: {
+              code: 'VAULT_LOCKED',
+              message: 'Vault must be unlocked to capture pre-OVERWRITE snapshot',
+            },
+          }
+        }
+        try {
+          const snap = browser.backupManager.createSnapshot({
+            reason: 'pre-overwrite-total',
+            label: `Pre-OVERWRITE Excel ${new Date().toISOString().slice(0, 19)}`,
+          })
+          preDestructiveSnapshotId = snap.id
+          log.info('excel-handlers', 'pre-overwrite snapshot created', {
+            snapshotId: snap.id,
+          })
+        } catch (err) {
+          log.error('excel-handlers', 'pre-overwrite snapshot FAILED — ABORTING', {
+            message: err.message,
+          })
+          return {
+            __error: {
+              code: 'PRE_OVERWRITE_FAILED',
+              message: `Cannot capture pre-overwrite snapshot: ${err.message}. Refusing to proceed with destructive OVERWRITE_TOTAL.`,
+            },
           }
         }
         finalAccounts = newAccounts

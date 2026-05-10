@@ -510,7 +510,13 @@ function registerNavHandlers(browser) {
   ipcMain.handle('oz:nav:loadURL', (_e, url) => {
     const t = focusedTab()
     if (!t) return false
-    t.loadURL(url)
+    // Normalize defensive: aunque tabstrip.js ya normaliza antes de invocar,
+    // MCP / programmatic callers pueden pasar URL sin scheme. Sin esto,
+    // webContents.loadURL('x.com') falla con ERR_INVALID_ARGUMENT silente.
+    const { normalizeOmniboxInput } = require('./url-normalize')
+    const normalized = normalizeOmniboxInput(url)
+    if (!normalized) return false
+    t.loadURL(normalized)
     return true
   })
 }

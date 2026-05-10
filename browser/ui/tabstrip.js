@@ -39,8 +39,22 @@
       )
       this.$.url.addEventListener('keypress', (ev) => {
         if (ev.code === 'Enter') {
-          const url = this.$.url.value.trim()
-          if (url) safe(window.oz.nav.loadURL(url), 'nav.loadURL')
+          const raw = this.$.url.value.trim()
+          if (!raw) return
+          // Normalize URL aquí (renderer): sin esto, "x.com" → ERR_INVALID_ARGUMENT
+          // silente en webContents.loadURL. Mantenelo en sync con
+          // browser/url-normalize.js (mismo regex) — los tests del backend
+          // (tests/url-normalize.smoketest.js, 29/29) cubren la lógica.
+          const SCHEME_RE =
+            /^(https?|ftp|file|chrome|chrome-extension|about|view-source|data|mailto|tel|javascript):/i
+          const DOMAIN_LIKE_RE =
+            /^([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}(:\d+)?(\/[^\s]*)?(\?[^\s]*)?$|^localhost(:\d+)?(\/[^\s]*)?(\?[^\s]*)?$|^\d{1,3}(\.\d{1,3}){3}(:\d+)?(\/[^\s]*)?(\?[^\s]*)?$/i
+          let url
+          if (SCHEME_RE.test(raw)) url = raw
+          else if (DOMAIN_LIKE_RE.test(raw)) url = 'https://' + raw
+          else url = 'https://www.google.com/search?q=' + encodeURIComponent(raw)
+          this.$.url.value = url // refleja la URL navegable post-Enter
+          safe(window.oz.nav.loadURL(url), 'nav.loadURL')
         }
       })
 
