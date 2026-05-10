@@ -334,9 +334,13 @@ Este es un cheat-sheet ejecutable. Cada regla tiene **por qué** + **cómo aplic
 **Por qué:** auth + Postgres + Edge Functions + Storage en un solo provider, free tier generoso.
 **Alternativas:** Pocketbase (self-hosted), Firebase (Google lock-in), AWS Amplify (más complejo).
 
-### I7. Stripe para billing
+### I7. PayPal o Stripe para billing
 
-**Por qué:** developer-friendly, customer portal built-in, hooks para gateo de features.
+**Por qué Stripe:** developer-friendly, customer portal built-in, hooks para gateo de features, SCA gating automático.
+**Por qué PayPal:** cuenta business ya disponible (low-friction onboarding), buena cobertura LATAM/menos KYC en regiones donde Stripe no opera, fees similares.
+**Cómo elegir:** Stripe es default si tenés cuenta operativa en una región Stripe-compatible. PayPal si Stripe no aplica o si ya tenés PayPal Business para reducir time-to-first-charge.
+**Trade-off PayPal:** API de subscriptions menos madura que Stripe Billing, self-service portal hospedado por PayPal (menos personalizable). Migración futura es viable — wrapper `billing-client.js` abstrae el provider.
+**Patrón común a ambos:** checkout abre con `shell.openExternal(approveUrl)`, NO en BrowserWindow embebida (ambos rompen TOS / OAuth en iframe). Loop se cierra con deep link `app://billing/{success,cancel}` ruteado por path en el handler global de protocolo.
 
 ### I8. Vercel para marketing site
 

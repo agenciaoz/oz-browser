@@ -28,7 +28,7 @@ graph TD
     E2 --> E3[Etapa 3<br/>Sign + auto-update<br/>$99 Apple Dev]
 
     E3 --> E4[Etapa 4<br/>Backend Supabase<br/>auth + entitlements]
-    E4 --> E5[Etapa 5<br/>Stripe billing<br/>self-service cancel]
+    E4 --> E5[Etapa 5<br/>PayPal billing<br/>self-service portal]
     E5 --> E6[Etapa 6<br/>Marketing site<br/>Vercel + dominio $12]
 
     E4 --> E7[Etapa 7<br/>Cloud Sync E2E<br/>Supabase backend]
@@ -115,7 +115,7 @@ Estas decisiones afectan cada módulo del proyecto y NO tienen que repetirse en 
 ### Seguridad
 
 - Master password nunca toca disco en plaintext.
-- Tokens (Stripe, Supabase, Dropbox) en env vars o macOS Keychain.
+- Tokens (PayPal, Supabase, Dropbox) en env vars o macOS Keychain.
 - Logs nunca contienen passwords/tokens (filter automático).
 - Updates firmados (Etapa 3 onwards).
 

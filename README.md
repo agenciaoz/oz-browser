@@ -36,7 +36,7 @@ Built on Electron 37 + [`samuelmaddock/electron-browser-shell`](https://github.c
 | **Etapa 2** — UX competitiva + candidatos C-11..C-15 (headless, Ghost importer, demo mode, recipes, health) | ⏳                    |
 | **Etapa 3** — Distribución firmada (electron-forge + update-electron-app, REQUIERE notarización)            | ⏳ ($99 Apple Dev)    |
 | **Etapa 4** — Backend SaaS: auth + entitlements (Supabase + deep link OAuth `oz://auth/callback`)           | ⏳                    |
-| **Etapa 5** — Billing Stripe (`shell.openExternal` para Checkout) + self-service cancel                     | ⏳                    |
+| **Etapa 5** — Billing PayPal (`shell.openExternal` al approve URL) + self-service portal nativo PayPal      | ⏳                    |
 | **Etapa 6** — Marketing site + signup                                                                       | ⏳ ($12 dominio)      |
 | **Etapa 7** — Cloud Sync E2E (Supabase / Dropbox PKCE / S3 self-hosted, pluggable)                          | ⏳                    |
 | **Etapa 8** — Windows + Linux                                                                               | ⏳ ($50-150 cert Win) |

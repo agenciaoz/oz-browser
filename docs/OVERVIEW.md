@@ -73,7 +73,7 @@ Navegador Chromium-based para **manejar 50+ cuentas de redes sociales al mismo t
 ⏳ Etapa 2  — UX competitiva + candidatos C-11..C-15 (headless mode, Ghost importer, demo mode, MCP recipes, health endpoint)
 ⏳ Etapa 3  — Distribución firmada + auto-update ($99 Apple Dev)
 ⏳ Etapa 4  — Backend SaaS auth + entitlements (Supabase)
-⏳ Etapa 5  — Stripe billing + self-service cancel
+⏳ Etapa 5  — PayPal billing + self-service portal (nativo PayPal)
 ⏳ Etapa 6  — Marketing site
 ⏳ Etapa 7  — Cloud Sync E2E (Supabase) — para SaaS público
 ⏳ Etapa 7-OFFICE — Dropbox como sync backend para tu oficina
@@ -128,7 +128,7 @@ oz-browser/
 │  ├─ logger.js            ✅ rotación
 │  ├─ error-handler.js     ✅ popup mailto:Jose
 │  ├─ auth-client.js          Supabase auth
-│  ├─ billing-client.js       Stripe
+│  ├─ billing-client.js       PayPal Subscriptions API (@paypal/paypal-server-sdk)
 │  ├─ sync-client.js          backend pluggable: Cloud/Dropbox/S3
 │  ├─ auto-update.js          electron-updater
 │  └─ ui/                     RENDERER (browser chrome)
