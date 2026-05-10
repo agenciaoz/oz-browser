@@ -70,10 +70,10 @@ Si `location.protocol === 'chrome-extension:'` (WebUI chrome), el preload no hac
 
 ## IPC channels usados
 
-| Canal                                    | Dirección       | Descripción                                                |
-| ---------------------------------------- | --------------- | ---------------------------------------------------------- |
-| `oz:accounts:getCredentialsForSite`      | preload → main  | Pedir credentials para auto-fill. main resuelve identityId del sender.session. |
-| `oz:accounts:proposeAutoSave`            | preload → main  | Proponer save al user via dialog. main resuelve identityId del sender.session. |
+| Canal                               | Dirección      | Descripción                                                                    |
+| ----------------------------------- | -------------- | ------------------------------------------------------------------------------ |
+| `oz:accounts:getCredentialsForSite` | preload → main | Pedir credentials para auto-fill. main resuelve identityId del sender.session. |
+| `oz:accounts:proposeAutoSave`       | preload → main | Proponer save al user via dialog. main resuelve identityId del sender.session. |
 
 ## Tests
 

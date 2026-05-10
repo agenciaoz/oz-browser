@@ -10,18 +10,18 @@ Cataloga 10 plataformas de redes sociales con los selectores CSS y patterns URL 
 
 ## 10 plataformas v1
 
-| id           | name                  | hosts                                                            | flow         |
-| ------------ | --------------------- | ---------------------------------------------------------------- | ------------ |
-| `x`          | X / Twitter           | x.com, twitter.com, mobile.twitter.com                           | two-step     |
-| `instagram`  | Instagram             | instagram.com                                                    | one-step     |
-| `facebook`   | Facebook              | facebook.com, m.facebook.com                                     | one-step     |
-| `tiktok`     | TikTok                | tiktok.com                                                       | one-step     |
-| `linkedin`   | LinkedIn              | linkedin.com                                                     | one-step     |
-| `google`     | Google (YouTube)      | accounts.google.com                                              | two-step     |
-| `reddit`     | Reddit                | reddit.com, old.reddit.com, new.reddit.com                       | one-step     |
-| `threads`    | Threads               | threads.net                                                      | one-step     |
-| `telegram`   | Telegram Web          | web.telegram.org                                                 | phone-only   |
-| `discord`    | Discord               | discord.com, discordapp.com                                      | one-step     |
+| id          | name             | hosts                                      | flow       |
+| ----------- | ---------------- | ------------------------------------------ | ---------- |
+| `x`         | X / Twitter      | x.com, twitter.com, mobile.twitter.com     | two-step   |
+| `instagram` | Instagram        | instagram.com                              | one-step   |
+| `facebook`  | Facebook         | facebook.com, m.facebook.com               | one-step   |
+| `tiktok`    | TikTok           | tiktok.com                                 | one-step   |
+| `linkedin`  | LinkedIn         | linkedin.com                               | one-step   |
+| `google`    | Google (YouTube) | accounts.google.com                        | two-step   |
+| `reddit`    | Reddit           | reddit.com, old.reddit.com, new.reddit.com | one-step   |
+| `threads`   | Threads          | threads.net                                | one-step   |
+| `telegram`  | Telegram Web     | web.telegram.org                           | phone-only |
+| `discord`   | Discord          | discord.com, discordapp.com                | one-step   |
 
 ## Estructura de un template
 

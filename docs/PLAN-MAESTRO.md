@@ -462,6 +462,8 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 - **C-14 Recipes (macros MCP)** — secuencia de tool MCP guardada como receta YAML/JSON. "Login en X con identity 5 → posteo → screenshot → cerrar". Diferenciador único vs Ghost. ~6h.
 - **C-15 Health endpoint** (`/health` del HTTP server del MCP) — `{ status, identities, tabs, memoryMB, uptime }`. Útil para Admin Dashboard sin tocar Dropbox. ~30 min sobre 1.3-MCP.
 - **C-16 Telemetría + remote config para soporte (idea de Jose 2026-05-09)** — sincroniza periódicamente la config de cada usuario (identities/workspaces metadata + last error log + version + flags + crash dumps) al Dropbox de la oficina (mismo backend que Etapa 7-OFFICE — un solo storage). Habilita: (a) cuando un user reporta un bug Jose ve la config exacta sin pedírsela, (b) Admin puede pushear un cambio de config remoto (`remote-config.json` lee al boot, override flags/feature switches/forced-update). Privacy: opt-in fuerte, banner claro, granular (config sí, contenido del vault NO). ~6-8h. Bloque sugerido: post-Etapa 7-OFFICE (depende del Dropbox sync ya implementado). Diferenciador para venta a oficinas/equipos.
+- **C-17 Update channels (beta / dev release tracks)** — Settings → Updates → Receive beta releases. El user opta-in a un channel beta para recibir updates pre-release antes que el resto. Yo (Jose / agente) puedo testear nuevas versiones en mi propia Mac con channel=beta antes de promote a stable. Implementación: `update-electron-app` soporta `updateInterval` y `repo` parametrizables; los channels beta/dev son tags pre-release en GitHub Releases (`v1.2.3-beta.1`). ~2h sobre Etapa 3 ya cerrada. Útil si vamos a tener users externos antes de v1 estable.
+- **C-18 Auto-rollback de updates rotos (idea de Jose 2026-05-09 noche)** — si la nueva version crashea durante init (ej: 3 crashes consecutivos al boot dentro de 1 minuto), OZ detecta y auto-rollback al binary anterior. Storage: mantener el DMG anterior en `~/Library/Application Support/OZ Browser/updates/previous.dmg` por 7 días. Crash detection via `app.relaunch()` con env flag `OZ_RECOVERY=1` que carga UI mínima ofreciendo "Rollback to v1.2.2". ~4-6h sobre Etapa 3. Defensa de UX si nunca queremos que un usuario quede stuck con una version rota.
 
 ### 🆕 Mini-bloque "Electron upgrade" — pre-Etapa 3 (~2-4h, decidido 2026-05-09 noche)
 
@@ -498,6 +500,21 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 5. `@electron-forge/publisher-github` para release pipeline.
 6. CI/CD con GitHub Actions (release pipeline encima del 1.3.5-CI). Build job firmado SOLO en tag `v*.*.*` para no quemar minutos.
 7. DMG con installer pulido + branding OZ (Forge maker `dmg` ya lo genera; pulir layout).
+
+**UX del auto-update (1-click confirmado por Jose 2026-05-09 noche):**
+
+Cómo el user ve el update en su Mac, sin acción de su parte excepto 1 click final:
+
+1. **Background check** — `update-electron-app` chequea cada 1 hora a GitHub Releases. Si hay nueva version, **descarga el DMG en background** (transparent, sin notificación).
+2. **Banner suave** cuando el download está listo: aparece en el topbar de OZ una pill verde discreta "🟢 Update v1.2.3 ready · Restart". Sin modal disruptivo.
+3. **1-click "Restart now"** — user clickea, OZ se cierra graceful (snapshot de tabs + flush vault), instala el update, vuelve a abrir con la nueva version. Tabs y workspaces preservados (workspaces.json + identities.json + vault.enc en disk).
+4. **Postpone OK** — si el user ignora el banner, sigue trabajando normal. El próximo restart (manual o automático) aplica la update sin preguntar.
+5. **Notas de release** — al primer arranque post-update, modal "What's new in v1.2.3" con changelog. Skippable.
+6. **Forced critical updates** — para parches de seguridad (rare): flag `critical: true` en el manifest del release fuerza el restart en el próximo idle (>5 min sin actividad). Notification antes con countdown.
+
+**Channels v1:** solo `stable`. Channels `beta` / `dev` son C-XX futuro (Settings → Updates → Receive beta releases).
+
+**Rollback (no en v1):** si una version rompe algo crítico, rollback manual: download DMG anterior de GitHub Releases + reinstalar. Auto-rollback es C-XX futuro (~3h sobre `update-electron-app`).
 
 ### ETAPA 4 — Backend SaaS: auth + entitlements
 
@@ -643,6 +660,8 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 41. MCP recipes (C-14)
 42. Health endpoint (C-15)
 43. Telemetría + remote config para soporte vía Dropbox (C-16, idea Jose 2026-05-09)
+44. Update channels (beta / dev release tracks) (C-17, idea Jose 2026-05-09)
+45. Auto-rollback de updates rotos (C-18, idea Jose 2026-05-09)
 
 ---
 
