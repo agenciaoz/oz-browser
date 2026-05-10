@@ -7,13 +7,12 @@
 // El catálogo principal lo importa y lo concatena a su array de tools.
 
 /**
- * Build vault + accounts MCP tool descriptors.
- * @param {object} deps - { vault, accounts } — getter functions returning the
- *   handler maps (browser.handlers.vault / browser.handlers.accounts). Wrapping
- *   in functions defers the dereferencing so the catalog can be built before
- *   the handler maps are wired (init order tolerance).
+ * Build vault + accounts + excel MCP tool descriptors.
+ * @param {object} deps - { vault, accounts, excel } — getter functions returning
+ *   the handler maps. Wrapping in functions defers the dereferencing so the
+ *   catalog can be built before the handler maps are wired (init order tolerance).
  */
-function buildVaultAccountsTools({ vault, accounts }) {
+function buildVaultAccountsTools({ vault, accounts, excel }) {
   return [
     // -------------------- vault (1.5b — secrets gate) --------------------
     {
@@ -172,6 +171,45 @@ function buildVaultAccountsTools({ vault, accounts }) {
         additionalProperties: false,
       },
       call: (opts = {}) => accounts().proposeAutoSave(opts),
+    },
+
+    // -------------------- excel I/O (1.5e) --------------------
+    {
+      name: 'oz.excel.exportToFile',
+      description:
+        'Export all vault accounts to .xlsx file. Columns: Workspace, Identity, Site, Username, Password, 2FA Secret, Last Login, Status, Cookies Count, Last IP, Notes. Vault-gated. Returns {ok, filePath, rows}.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          filePath: { type: 'string', description: 'Absolute path to .xlsx output' },
+        },
+        required: ['filePath'],
+        additionalProperties: false,
+      },
+      call: ({ filePath }) => excel().exportToFile(filePath),
+    },
+    {
+      name: 'oz.excel.importFromFile',
+      description:
+        'Import accounts from .xlsx with mode selection. Modes: PERMANENT_MERGE (update by identity+site+username, add rest), EPHEMERAL_SESSION (parse only, no persist — caller handles in-memory), NEW_WORKSPACE (creates dedicated workspace, all rows go there), OVERWRITE_TOTAL (REPLACE entire vault — caller MUST snapshot Time Machine first). Bulk identity/workspace creation: missing names get auto-created. Returns {ok, mode, importedCount, identitiesCreated, workspacesCreated, ...}.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          filePath: { type: 'string' },
+          mode: {
+            type: 'string',
+            enum: [
+              'PERMANENT_MERGE',
+              'EPHEMERAL_SESSION',
+              'NEW_WORKSPACE',
+              'OVERWRITE_TOTAL',
+            ],
+          },
+        },
+        required: ['filePath', 'mode'],
+        additionalProperties: false,
+      },
+      call: ({ filePath, mode }) => excel().importFromFile(filePath, mode),
     },
   ]
 }

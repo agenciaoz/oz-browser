@@ -138,6 +138,11 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:autofill:propose-save', listener)
       },
     },
+    excel: {
+      exportToFile: (filePath) => ipcRenderer.invoke('oz:excel:exportToFile', filePath),
+      importFromFile: (filePath, mode) =>
+        ipcRenderer.invoke('oz:excel:importFromFile', filePath, mode),
+    },
     nav: {
       back: () => ipcRenderer.invoke('oz:nav:back'),
       forward: () => ipcRenderer.invoke('oz:nav:forward'),

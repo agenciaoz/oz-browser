@@ -17,6 +17,7 @@ const { buildIdentityHandlers } = require('./identity-handlers')
 const { buildTabHandlers } = require('./tab-handlers')
 const { buildWorkspaceHandlers } = require('./workspace-handlers')
 const { buildVaultHandlers, buildAccountHandlers } = require('./account-handlers')
+const { buildExcelHandlers } = require('./excel-handlers')
 
 function registerIpcHandlers(browser) {
   // Domain handlers — shared with MCP server. Build once per browser instance.
@@ -26,6 +27,7 @@ function registerIpcHandlers(browser) {
     workspaces: buildWorkspaceHandlers(browser),
     vault: buildVaultHandlers(browser),
     accounts: buildAccountHandlers(browser),
+    excel: buildExcelHandlers(browser),
   }
 
   registerLogHandlers(browser)
@@ -34,6 +36,7 @@ function registerIpcHandlers(browser) {
   registerWorkspaceHandlersIPC(browser)
   registerVaultHandlersIPC(browser)
   registerAccountHandlersIPC(browser)
+  registerExcelHandlersIPC(browser)
   registerNavHandlers(browser)
   registerUiHandlers(browser)
 
@@ -188,6 +191,17 @@ function registerAccountHandlersIPC(browser) {
       opts.identityId
     return h.proposeAutoSave({ ...opts, identityId })
   })
+}
+
+// ----- Excel I/O (1.5e) -----------------------------------------------------
+
+function registerExcelHandlersIPC(browser) {
+  const h = browser.handlers.excel
+
+  ipcMain.handle('oz:excel:exportToFile', (_e, filePath) => h.exportToFile(filePath))
+  ipcMain.handle('oz:excel:importFromFile', (_e, filePath, mode) =>
+    h.importFromFile(filePath, mode),
+  )
 }
 
 // ----- Tabs ↔ Identity binding & sidebar API --------------------------------

@@ -27,6 +27,8 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `site-templates.js` 🆕     | ~220 | [site-templates.md](site-templates.md)         |
 | `preload-content.js` 🆕    | ~190 | [preload-content.md](preload-content.md)       |
 | `anti-logout.js` 🆕        | ~230 | [anti-logout.md](anti-logout.md)               |
+| `excel-io.js` 🆕           | ~200 | [excel-io.md](excel-io.md)                     |
+| `excel-handlers.js` 🆕     | ~258 | [excel-handlers.md](excel-handlers.md)         |
 | `tabs.js`                  | 344  | [tabs.md](tabs.md)                             |
 | `logger.js`                | 111  | [logger.md](logger.md)                         |
 | `error-handler.js`         | 141  | [error-handler.md](error-handler.md)           |
@@ -68,6 +70,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `tests/account-handlers.smoketest.js` 🆕  | ~430 | header inline                                                |
 | `tests/site-templates.smoketest.js` 🆕    | ~210 | header inline                                                |
 | `tests/anti-logout.smoketest.js` 🆕       | ~430 | header inline                                                |
+| `tests/excel-io.smoketest.js` 🆕          | ~290 | header inline                                                |
 
 ## Pendientes (placeholders, se llenan al implementarse)
 

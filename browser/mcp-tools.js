@@ -33,6 +33,7 @@ function buildToolCatalog(browser) {
   const workspaces = () => browser.handlers && browser.handlers.workspaces
   const vault = () => browser.handlers && browser.handlers.vault
   const accounts = () => browser.handlers && browser.handlers.accounts
+  const excel = () => browser.handlers && browser.handlers.excel
 
   return [
     // -------------------- identities --------------------
@@ -366,8 +367,8 @@ function buildToolCatalog(browser) {
       call: ({ id }) => workspaces().remove(id),
     },
 
-    // -------------------- vault + accounts (1.5b, extracted) --------------------
-    ...buildVaultAccountsTools({ vault, accounts }),
+    // -------------------- vault + accounts + excel (1.5b/e, extracted) --------------------
+    ...buildVaultAccountsTools({ vault, accounts, excel }),
 
     // -------------------- system metrics --------------------
     {

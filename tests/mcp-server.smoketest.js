@@ -492,7 +492,7 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     // so we don't drift.
     const found = new Set()
     const re =
-      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts):[a-zA-Z]+)'/g
+      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel):[a-zA-Z]+)'/g
     let m
     while ((m = re.exec(preload)) !== null) found.add(m[1])
 
