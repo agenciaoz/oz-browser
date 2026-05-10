@@ -530,19 +530,31 @@ Cómo el user ve el update en su Mac, sin acción de su parte excepto 1 click fi
 - Feature gating runtime: si plan = Free → cap 3 identities, sin GPC; Basic → ilimitado, sin GPC; Pro → ilimitado + GPC; Team → + sync admin
 - Server-side validation + offline grace period
 
-### ETAPA 5 — Billing con Stripe
+### ETAPA 5 — Billing con PayPal
 
-- Stripe products: Free / Basic ($12-15) / Pro ($29-35) / Team ($15/seat)
-- **Checkout abre con `shell.openExternal(url)`, NO BrowserWindow.** Stripe Checkout tiene CSP estricto que bloquea ser embebido en webview/BrowserWindow de Electron — sale error "refused to display in a frame". Patrón estándar:
+> **Nota de diseño (2026-05-10):** se reemplazó Stripe por PayPal por decisión del fundador (Jose). Razones: cuenta PayPal Business ya disponible, onboarding más rápido en LATAM, sin requisitos KYC adicionales para empezar. Trade-offs aceptados: API de subscriptions menos madura que Stripe Billing, sin SCA gating automático, fees ~2.9% + $0.30 (similar a Stripe en la mayoría de regiones), self-service portal más limitado (PayPal hospedado vs Stripe Customer Portal personalizable). Migración futura a Stripe queda como opción si crece volumen.
+
+- PayPal products via **PayPal Subscriptions API** (Catalog Products + Subscription Plans):
+  - Free / Basic ($12-15/mes) / Pro ($29-35/mes) / Team ($15/seat/mes)
+  - Cada plan se crea una vez vía API (`POST /v1/billing/plans`) y se referencia por `plan_id`.
+- **Checkout abre con `shell.openExternal(url)`, NO BrowserWindow.** PayPal aprueba con su propio flujo hospedado en `paypal.com/checkoutnow` — embeberlo en BrowserWindow viola sus TOS y rompe el flow OAuth. Patrón:
   ```js
-  const { url } = await stripe.checkout.sessions.create({ ... })
-  shell.openExternal(url)   // abre en Safari/Chrome del usuario
+  const subscription = await paypal.subscriptions.create({
+    plan_id,
+    application_context: {
+      return_url: 'oz://billing/success',
+      cancel_url: 'oz://billing/cancel',
+    },
+  })
+  const approveUrl = subscription.links.find((l) => l.rel === 'approve').href
+  shell.openExternal(approveUrl) // abre en Safari/Chrome del usuario
   ```
-  El loop se cierra con deep link `oz://billing/success?session_id=...` que rutea por path en el handler global de protocolo (mismo `setAsDefaultProtocolClient('oz')` registrado en Etapa 4 para Supabase OAuth — un solo handler, dispatch por path).
-- Self-service portal: upgrade, downgrade, cancel, refund window — **diferenciador clave** vs Ghost (`stripe.billingPortal.sessions.create`, también con `shell.openExternal`).
-- Webhooks → Supabase Edge Functions, validados con `stripe.webhooks.constructEvent` (no agregar deps extra de validación).
-- Trial de 7 días para Pro.
-- Promo codes para early adopters.
+  El loop se cierra con deep link `oz://billing/success?subscription_id=...` que rutea por path en el handler global de protocolo (mismo `setAsDefaultProtocolClient('oz')` registrado en Etapa 4 para Supabase OAuth — un solo handler, dispatch por path).
+- **Self-service portal:** PayPal redirige al portal nativo del usuario en paypal.com (vista "Automatic Payments" / "Pagos automáticos") via `shell.openExternal('https://www.paypal.com/myaccount/autopay/')`. No es tan personalizable como Stripe Customer Portal pero cubre cancelar / pausar / actualizar método de pago. Cancelaciones desde la app (UX premium) se hacen vía `POST /v1/billing/subscriptions/{id}/cancel` server-side.
+- **Webhooks** → Supabase Edge Functions, validados con `crypto.verify` contra el cert público de PayPal (`POST /v1/notifications/verify-webhook-signature` o validación local con cert cacheado). Eventos a manejar: `BILLING.SUBSCRIPTION.ACTIVATED`, `BILLING.SUBSCRIPTION.CANCELLED`, `BILLING.SUBSCRIPTION.SUSPENDED`, `PAYMENT.SALE.COMPLETED`, `PAYMENT.SALE.REFUNDED`.
+- **Trial de 7 días para Pro:** PayPal soporta trials nativos en Subscription Plans con `trial_pricing` block.
+- **Promo codes:** PayPal NO tiene cupones nativos en Subscriptions API → implementar como descuento aplicado a la creación del plan (crear plan_id alternativo con precio reducido, asignar por código en cliente). Limitación documentada para v1.
+- **SDK recomendado:** `@paypal/paypal-server-sdk` (oficial, Node 18+) en Supabase Edge Functions; cliente OZ solo abre URL + escucha deep link, no firma nada.
 
 ### ETAPA 6 — Marketing site + signup
 
@@ -717,7 +729,7 @@ Con sólo Claude (yo) implementando + Jose dirigiendo:
 | 2           | UX competitiva + candidatos C-11..C-15 según appetite                         | ~8-15h               | 4-7                   |
 | 3           | distribución                                                                  | ~5h                  | 3 (depende Apple Dev) |
 | 4           | auth backend                                                                  | ~10h                 | 5-7                   |
-| 5           | Stripe billing                                                                | ~6h                  | 3-5                   |
+| 5           | PayPal billing                                                                | ~6h                  | 3-5                   |
 | 6           | marketing site                                                                | ~6h                  | 3-4                   |
 | 7           | cloud sync E2E                                                                | ~12h                 | 6-8                   |
 | 8           | Windows + Linux                                                               | ~8h                  | 4-6                   |

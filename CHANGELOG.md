@@ -8,7 +8,7 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
-- ⏳ **SUB-ETAPA 1A CORE COMPLETADA** — siguiente: Sub-Etapa 1B (Etapa 3 empaquetar + Apple notarization, Etapa 4 Supabase auth, Etapa 5 Stripe billing). Sub-bloque 1.10.5 UI Browsing Data opcional pre-Etapa 3.
+- ⏳ **SUB-ETAPA 1A CORE COMPLETADA** — siguiente: Sub-Etapa 1B (Etapa 3 empaquetar + Apple notarization, Etapa 4 Supabase auth, **Etapa 5 PayPal billing** [cambiado de Stripe → PayPal el 2026-05-10 por decisión del fundador; ver PLAN-MAESTRO §ETAPA 5 para trade-offs]). Sub-bloque 1.10.5 UI Browsing Data opcional pre-Etapa 3.
 
 ## Histórico
 
