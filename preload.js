@@ -103,6 +103,32 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:tabs:updated', listener)
       },
     },
+    vault: {
+      status: () => ipcRenderer.invoke('oz:vault:status'),
+      unlock: () => ipcRenderer.invoke('oz:vault:unlock'),
+      lock: () => ipcRenderer.invoke('oz:vault:lock'),
+      destroy: () => ipcRenderer.invoke('oz:vault:destroy'),
+
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:vault:changed', listener)
+        return () => ipcRenderer.off('oz:vault:changed', listener)
+      },
+    },
+    accounts: {
+      list: (filter) => ipcRenderer.invoke('oz:accounts:list', filter),
+      get: (id) => ipcRenderer.invoke('oz:accounts:get', id),
+      create: (opts) => ipcRenderer.invoke('oz:accounts:create', opts),
+      update: (id, patch) => ipcRenderer.invoke('oz:accounts:update', id, patch),
+      remove: (id) => ipcRenderer.invoke('oz:accounts:remove', id),
+      setAll: (accounts) => ipcRenderer.invoke('oz:accounts:setAll', accounts),
+
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:accounts:changed', listener)
+        return () => ipcRenderer.off('oz:accounts:changed', listener)
+      },
+    },
     nav: {
       back: () => ipcRenderer.invoke('oz:nav:back'),
       forward: () => ipcRenderer.invoke('oz:nav:forward'),

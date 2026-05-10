@@ -11,6 +11,11 @@
 //
 // Doc: docs/modules/mcp-tools.md
 // ADR: docs/architecture/0012-oz-mcp-server.md
+//
+// Domain split (1.5b): vault + accounts tools live in mcp-tools-vault.js to
+// keep this file <500 LOC (ADR 0005). They get spread into the array below.
+
+const { buildVaultAccountsTools } = require('./mcp-tools-vault')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -20,11 +25,14 @@
  * @returns {Array<Tool>}
  */
 function buildToolCatalog(browser) {
-  // identity-handlers.js, tab-handlers.js, workspace-handlers.js export pure
-  // maps wired into browser.handlers in ipc-handlers.js → registerIpcHandlers.
+  // identity-handlers.js, tab-handlers.js, workspace-handlers.js,
+  // account-handlers.js export pure maps wired into browser.handlers in
+  // ipc-handlers.js → registerIpcHandlers.
   const identities = () => browser.handlers && browser.handlers.identities
   const tabs = () => browser.handlers && browser.handlers.tabs
   const workspaces = () => browser.handlers && browser.handlers.workspaces
+  const vault = () => browser.handlers && browser.handlers.vault
+  const accounts = () => browser.handlers && browser.handlers.accounts
 
   return [
     // -------------------- identities --------------------
@@ -357,6 +365,9 @@ function buildToolCatalog(browser) {
       },
       call: ({ id }) => workspaces().remove(id),
     },
+
+    // -------------------- vault + accounts (1.5b, extracted) --------------------
+    ...buildVaultAccountsTools({ vault, accounts }),
 
     // -------------------- system metrics --------------------
     {

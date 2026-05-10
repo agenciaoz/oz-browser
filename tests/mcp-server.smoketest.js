@@ -488,9 +488,11 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     const preload = fs.readFileSync(preloadPath, 'utf-8')
 
     // Channels the preload bridge invokes for the identities + tabs + workspaces
-    // domain. We extract them from the preload.js source so we don't drift.
+    // + vault + accounts domains. We extract them from the preload.js source
+    // so we don't drift.
     const found = new Set()
-    const re = /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces):[a-zA-Z]+)'/g
+    const re =
+      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts):[a-zA-Z]+)'/g
     let m
     while ((m = re.exec(preload)) !== null) found.add(m[1])
 

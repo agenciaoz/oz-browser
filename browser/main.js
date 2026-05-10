@@ -22,6 +22,7 @@ setupErrorHandlers()
 
 const { IdentityManager } = require('./identity-manager')
 const { WorkspaceManager } = require('./workspace-manager')
+const { Vault } = require('./account-vault')
 const { setupMenu } = require('./menu')
 const { TabbedBrowserWindow } = require('./window-manager')
 const { registerIpcHandlers } = require('./ipc-handlers')
@@ -41,6 +42,7 @@ class Browser {
   activeIdentityId = null
   identityManager = null
   workspaceManager = null
+  accountVault = null
   webuiExtensionId = null
 
   constructor() {
@@ -65,6 +67,15 @@ class Browser {
           log.error('browser', 'workspaceManager.flush failed', {
             message: err.message,
           })
+        }
+      }
+      // 1.5b: lock vault on quit so the master key buffer is wiped before
+      // the process tears down. The Keychain entry is untouched.
+      if (this.accountVault && this.accountVault.isUnlocked) {
+        try {
+          this.accountVault.lock()
+        } catch (err) {
+          log.error('browser', 'accountVault.lock failed', { message: err.message })
         }
       }
       if (this.mcpServer) {
@@ -130,6 +141,14 @@ class Browser {
       workspacesCount: this.workspaceManager.list().length,
       defaultId: this.workspaceManager.getDefault().id,
     })
+
+    // 1.5b: instantiate Vault but do NOT auto-unlock at boot. UX choice:
+    // first Keychain access prompts user permission on macOS — we want that
+    // prompt to happen when the user explicitly opens Account Manager, not
+    // silently at every cold start. The vault.unlock() call is triggered by
+    // the user via UI or by auto-fill (1.5c) when login page is detected.
+    this.accountVault = new Vault()
+    log.info('browser', 'Account Vault instantiated (locked, lazy unlock)')
 
     registerIpcHandlers(this)
     setupMenu(this)

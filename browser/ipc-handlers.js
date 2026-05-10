@@ -16,6 +16,7 @@ const { showErrorDialog } = require('./error-handler')
 const { buildIdentityHandlers } = require('./identity-handlers')
 const { buildTabHandlers } = require('./tab-handlers')
 const { buildWorkspaceHandlers } = require('./workspace-handlers')
+const { buildVaultHandlers, buildAccountHandlers } = require('./account-handlers')
 
 function registerIpcHandlers(browser) {
   // Domain handlers — shared with MCP server. Build once per browser instance.
@@ -23,12 +24,16 @@ function registerIpcHandlers(browser) {
     identities: buildIdentityHandlers(browser),
     tabs: buildTabHandlers(browser),
     workspaces: buildWorkspaceHandlers(browser),
+    vault: buildVaultHandlers(browser),
+    accounts: buildAccountHandlers(browser),
   }
 
   registerLogHandlers(browser)
   registerIdentityHandlersIPC(browser)
   registerTabHandlersIPC(browser)
   registerWorkspaceHandlersIPC(browser)
+  registerVaultHandlersIPC(browser)
+  registerAccountHandlersIPC(browser)
   registerNavHandlers(browser)
   registerUiHandlers(browser)
 
@@ -141,6 +146,34 @@ function registerWorkspaceHandlersIPC(browser) {
   ipcMain.handle('oz:workspaces:freeze', (_e, id) => h.freeze(id))
   ipcMain.handle('oz:workspaces:unfreeze', (_e, id) => h.unfreeze(id))
   ipcMain.handle('oz:workspaces:remove', (_e, id) => h.remove(id))
+}
+
+// ----- Vault (1.5b) ---------------------------------------------------------
+// Master key access + lock/unlock control. Account CRUD lives in
+// registerAccountHandlersIPC below.
+
+function registerVaultHandlersIPC(browser) {
+  const h = browser.handlers.vault
+
+  ipcMain.handle('oz:vault:status', () => h.status())
+  ipcMain.handle('oz:vault:unlock', () => h.unlock())
+  ipcMain.handle('oz:vault:lock', () => h.lock())
+  ipcMain.handle('oz:vault:destroy', () => h.destroy())
+}
+
+// ----- Accounts (1.5b) ------------------------------------------------------
+// CRUD over the encrypted vault. All handlers return { __error: { code: 'LOCKED' } }
+// if the vault is not unlocked — caller must unlock first via oz:vault:unlock.
+
+function registerAccountHandlersIPC(browser) {
+  const h = browser.handlers.accounts
+
+  ipcMain.handle('oz:accounts:list', (_e, filter) => h.list(filter))
+  ipcMain.handle('oz:accounts:get', (_e, id) => h.get(id))
+  ipcMain.handle('oz:accounts:create', (_e, opts) => h.create(opts))
+  ipcMain.handle('oz:accounts:update', (_e, id, patch) => h.update(id, patch))
+  ipcMain.handle('oz:accounts:remove', (_e, id) => h.remove(id))
+  ipcMain.handle('oz:accounts:setAll', (_e, accounts) => h.setAll(accounts))
 }
 
 // ----- Tabs ↔ Identity binding & sidebar API --------------------------------
