@@ -14,9 +14,14 @@ module.exports = {
   // native binding under node_modules/@napi-rs/<scope>-<platform>-<arch>/.
   // Marking them external keeps a regular require() in the bundle, which
   // resolves against node_modules at runtime as expected.
+  //
+  // Etapa 3a (2026-05-10): exceljs SÍ se bundlea (es pure JS, sin .node).
+  // Removerlo de externals nos saca el require() del bundle y evita tener que
+  // copiar exceljs+sus 30 transitive deps al packaged app/node_modules.
+  // Solo @napi-rs/keyring queda external (tiene .node binding nativo) y se
+  // copia explícitamente vía scripts/forge-copy-externals.js.
   externals: {
     '@napi-rs/keyring': 'commonjs2 @napi-rs/keyring',
-    exceljs: 'commonjs2 exceljs',
   },
   plugins: [
     new CopyWebpackPlugin({
