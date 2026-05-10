@@ -33,6 +33,11 @@ class Tab extends EventEmitter {
     this.title = opts.title || 'New Tab'
     this.favicon = opts.favicon || null
     this.pinned = !!opts.pinned // 1.4b: persisted in tabSpecs; UI in 1.7
+    // H2: lock = "no me cierres por accidente". Persisted in tabSpecs. The
+    // close handler rejects with reason='tab-locked'; closeOthers/closeToRight
+    // skip locked tabs (just like pinned). Lock does NOT block navigation,
+    // pin/mute, or duplication — it only protects against destruction.
+    this.locked = !!opts.locked
     this.window = parentWindow
     this.identityManager = identityManager
     // 1.10d: timestamps for the discard daemon. createdAt is also used as
@@ -271,6 +276,7 @@ class Tab extends EventEmitter {
       title: this.title,
       favicon: this.favicon,
       pinned: this.pinned,
+      locked: this.locked,
       isLoaded: this.materialized,
       webContentsId: this.webContentsId,
     }
@@ -288,6 +294,7 @@ class Tab extends EventEmitter {
       title: this.title,
       favicon: this.favicon,
       pinned: this.pinned,
+      locked: this.locked,
     }
   }
 }
@@ -345,6 +352,7 @@ class Tabs extends EventEmitter {
       title: opts.title,
       favicon: opts.favicon,
       pinned: opts.pinned,
+      locked: opts.locked,
       webContents: opts.webContents,
       wcvOpts: opts.webPreferences ? { webPreferences: opts.webPreferences } : null,
     })

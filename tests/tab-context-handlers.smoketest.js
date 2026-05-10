@@ -95,6 +95,7 @@ class FakeTab {
     this.title = opts.title || 'New Tab'
     this.favicon = opts.favicon || null
     this.pinned = !!opts.pinned
+    this.locked = !!opts.locked
     this.materialized = opts.materialize !== undefined ? !!opts.materialize : true
     this.destroyed = false
     this.reloadCount = 0
@@ -122,6 +123,7 @@ class FakeTab {
       title: this.title,
       favicon: this.favicon,
       pinned: this.pinned,
+      locked: this.locked,
     }
   }
   serialize() {
@@ -483,6 +485,95 @@ section('closeToRight: closes only those after, preserves pinned')
   ok('r1 closed', !win.tabs.get('r1'))
   ok('r2 (pinned) survived', !!win.tabs.get('r2'))
   ok('r3 closed', !win.tabs.get('r3'))
+}
+
+// 12. lock / unlock (H2)
+section('H2 lock / unlock: toggles + persists tabSpec')
+{
+  const { browser, handlers, wm } = freshSetup()
+  const win = makeFakeWindow(wm.getDefault().id)
+  browser.windows.push(win)
+  win.tabs.create({ id: 't', identityId: 'default', url: 'https://x.com' })
+  win.tabs.select('t')
+
+  const r1 = handlers.lock('t')
+  ok('lock ok', r1.ok === true)
+  ok('locked === true', r1.locked === true)
+  ok('tab.locked === true', win.tabs.get('t').locked === true)
+  // Persisted into workspace tabSpecs.
+  const ws = wm.getDefault()
+  ok(
+    'tabSpec persisted with locked=true',
+    ws.tabSpecs[0] && ws.tabSpecs[0].locked === true,
+  )
+
+  const r2 = handlers.unlock('t')
+  ok('unlock ok', r2.ok === true)
+  ok('tab.locked === false', win.tabs.get('t').locked === false)
+  ok('tabSpec persisted with locked=false', wm.getDefault().tabSpecs[0].locked === false)
+
+  const r3 = handlers.lock('does-not-exist')
+  ok('lock not-found → ok:false', r3.ok === false)
+  ok('reason tab-not-found', r3.reason === 'tab-not-found')
+}
+
+// 13. closeOthers + closeToRight skip locked (H2)
+section('H2 closeOthers / closeToRight: locked tabs preserved + reported')
+{
+  const { browser, handlers, wm } = freshSetup()
+  const win = makeFakeWindow(wm.getDefault().id)
+  browser.windows.push(win)
+  win.tabs.create({ id: 'a' })
+  win.tabs.create({ id: 'lock1', locked: true })
+  win.tabs.create({ id: 'keep' })
+  win.tabs.create({ id: 'lock2', locked: true })
+  win.tabs.create({ id: 'd' })
+
+  const r = handlers.closeOthers('keep')
+  ok(
+    'closeOthers closedCount=2 skippedLocked=2',
+    r.closedCount === 2 && r.skippedLocked === 2,
+  )
+  ok('lock1 + lock2 survived', !!win.tabs.get('lock1') && !!win.tabs.get('lock2'))
+  ok('a + d closed', !win.tabs.get('a') && !win.tabs.get('d'))
+
+  const win2 = makeFakeWindow(wm.getDefault().id)
+  browser.windows.push(win2)
+  win2.tabs.create({ id: 'left' })
+  win2.tabs.create({ id: 'anchor2' })
+  win2.tabs.create({ id: 'rlock', locked: true })
+  win2.tabs.create({ id: 'r1' })
+  win2.tabs.create({ id: 'r2' })
+
+  const r2 = handlers.closeToRight('anchor2')
+  ok(
+    'closeToRight closedCount=2 skippedLocked=1',
+    r2.closedCount === 2 && r2.skippedLocked === 1,
+  )
+  ok(
+    'left + anchor2 + rlock survived',
+    !!win2.tabs.get('left') && !!win2.tabs.get('anchor2') && !!win2.tabs.get('rlock'),
+  )
+  ok('r1 + r2 closed', !win2.tabs.get('r1') && !win2.tabs.get('r2'))
+}
+
+// 14. moveToNewWindow rejects locked tab (H2)
+section('H2 moveToNewWindow: locked tab rejected')
+{
+  const { browser, handlers, wm } = freshSetup()
+  const win = makeFakeWindow(wm.getDefault().id)
+  browser.windows.push(win)
+  win.tabs.create({ id: 'cantmove', locked: true, identityId: 'default' })
+
+  const r = handlers.moveToNewWindow('cantmove')
+  ok('move rejected', r.ok === false)
+  ok('reason tab-locked', r.reason === 'tab-locked')
+  ok('source tab still alive', !!win.tabs.get('cantmove'))
+  // No new window/workspace created.
+  ok(
+    'no Window N workspace created',
+    !wm.list().some((ws) => ws.name && ws.name.startsWith('Window ')),
+  )
 }
 
 // ---------- Cleanup ---------------------------------------------------------

@@ -352,6 +352,53 @@ section('Persistencia identities.json')
   ok('Persist B.color persistido', bReloaded && bReloaded.color === '#deadbe')
 }
 
+// 12. H2 — setLocked + remove rejects locked
+section('H2 setLocked: toggle persists + remove blocked when locked')
+{
+  const { IdentityManager } = freshIM({ OZ_TIER: 'paid' })
+  const im = new IdentityManager()
+  const a = im.create({ name: 'Locked A' })
+
+  // create() default: not locked
+  ok('new identity not locked by default', a.locked === false)
+
+  // setLocked toggle
+  const r1 = im.setLocked(a.id, true)
+  ok('setLocked(true) returns identity', r1 && r1.id === a.id)
+  ok('setLocked(true) sets locked=true', r1.locked === true)
+  ok('list() reflects locked=true', im.get(a.id).locked === true)
+
+  // remove blocked
+  const removed = im.remove(a.id)
+  ok('remove(locked) returns false', removed === false)
+  ok('locked identity still present', im.get(a.id) !== null)
+
+  // Unlock + remove
+  const r2 = im.setLocked(a.id, false)
+  ok('setLocked(false) sets locked=false', r2.locked === false)
+  const removed2 = im.remove(a.id)
+  ok('remove(unlocked) returns true', removed2 === true)
+  ok('identity gone', im.get(a.id) === null)
+
+  // setLocked on unknown id returns null
+  ok('setLocked(unknown) returns null', im.setLocked('nope', true) === null)
+}
+
+// 13. H2 — locked persists across reload
+section('H2 locked persists across reload')
+{
+  const { IdentityManager } = freshIM({ OZ_TIER: 'paid' })
+  const im1 = new IdentityManager()
+  const a = im1.create({ name: 'Vault Owner' })
+  im1.setLocked(a.id, true)
+
+  const im2 = new IdentityManager()
+  const reloaded = im2.get(a.id)
+  ok('reloaded identity exists', !!reloaded)
+  ok('reloaded.locked === true', reloaded.locked === true)
+  ok('reload still rejects remove', im2.remove(a.id) === false)
+}
+
 // ---------- Cleanup ----------------------------------------------------------
 
 Module._load = originalLoad

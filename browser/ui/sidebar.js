@@ -190,6 +190,14 @@
         alert('Cannot delete the Default identity.')
         return
       }
+      // H2: locked identities reject remove on the backend too — this is the
+      // friendly UX surface. Asks the user to unlock first instead of trying.
+      if (identity.locked) {
+        alert(
+          `Identity "${identity.name}" is locked. Right-click → Unlock identity first to delete it.`,
+        )
+        return
+      }
       if (
         !confirm(
           `Delete identity "${identity.name}"?\n\n` +
@@ -199,6 +207,11 @@
       )
         return
       safe(window.oz.identities.remove(identity.id), 'identities.remove')
+    }
+
+    handleToggleLockIdentity(identity) {
+      const next = !identity.locked
+      safe(window.oz.identities.setLocked(identity.id, next), 'identities.setLocked')
     }
 
     showContextMenu(e, identity) {
@@ -230,10 +243,23 @@
       })
       menu.appendChild(editBtn)
 
+      // H2: lock toggle. Available for all identities (including Default —
+      // locking Default also blocks clearBrowsingData on it).
+      const lockBtn = document.createElement('button')
+      lockBtn.textContent = identity.locked ? 'Unlock identity' : 'Lock identity'
+      lockBtn.addEventListener('click', () => {
+        menu.remove()
+        this.handleToggleLockIdentity(identity)
+      })
+      menu.appendChild(lockBtn)
+
       if (!identity.isDefault) {
         const delBtn = document.createElement('button')
         delBtn.className = 'danger'
-        delBtn.textContent = 'Delete identity'
+        delBtn.textContent = identity.locked
+          ? 'Delete identity (locked)'
+          : 'Delete identity'
+        delBtn.disabled = !!identity.locked
         delBtn.addEventListener('click', () => {
           menu.remove()
           this.handleDeleteIdentity(identity)
@@ -294,7 +320,8 @@
 
       const name = document.createElement('span')
       name.className = 'identity-name'
-      name.textContent = identity.name
+      // H2: prepend lock indicator if locked. Single span, no extra DOM.
+      name.textContent = identity.locked ? `\u{1F512} ${identity.name}` : identity.name
       row.appendChild(name)
 
       // Tab count badge — total tabs of this identity (lazy + materialized).
@@ -355,15 +382,22 @@
 
       const title = document.createElement('span')
       title.className = 'oz-title'
-      title.textContent = tab.title || tab.url || 'New Tab'
+      // H2: prepend lock indicator if locked.
+      const baseTitle = tab.title || tab.url || 'New Tab'
+      title.textContent = tab.locked ? `\u{1F512} ${baseTitle}` : baseTitle
       title.title = tab.url || ''
       el.appendChild(title)
 
-      const close = document.createElement('button')
-      close.className = 'oz-close'
-      close.textContent = '✕'
-      close.addEventListener('click', (e) => this.handleCloseTab(tab.id, e))
-      el.appendChild(close)
+      // H2: hide the close button when locked. Same affordance as tabstrip —
+      // visually communicates "you can't close me by accident". The handler
+      // also rejects, but hiding is the primary signal.
+      if (!tab.locked) {
+        const close = document.createElement('button')
+        close.className = 'oz-close'
+        close.textContent = '✕'
+        close.addEventListener('click', (e) => this.handleCloseTab(tab.id, e))
+        el.appendChild(close)
+      }
 
       el.addEventListener('click', () => this.handleSelectTab(tab.id))
       // 1.4d: right-click → ctx menu with "Move to workspace…" submenu.

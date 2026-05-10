@@ -44,6 +44,9 @@ if (isWebUI) {
       setColor: (id, color) => ipcRenderer.invoke('oz:identities:setColor', id, color),
       update: (id, patch) => ipcRenderer.invoke('oz:identities:update', id, patch),
       remove: (id) => ipcRenderer.invoke('oz:identities:remove', id),
+      // H2: lock = blocks remove + clearBrowsingData. Returns the updated identity.
+      setLocked: (id, locked) =>
+        ipcRenderer.invoke('oz:identities:setLocked', id, locked),
 
       onChanged(cb) {
         const listener = () => cb()
@@ -106,6 +109,10 @@ if (isWebUI) {
       duplicate: (tabId) => ipcRenderer.invoke('oz:tabs:duplicate', tabId),
       pin: (tabId) => ipcRenderer.invoke('oz:tabs:pin', tabId),
       unpin: (tabId) => ipcRenderer.invoke('oz:tabs:unpin', tabId),
+      // H2: lock/unlock — close + moveToWorkspace + moveToNewWindow reject;
+      // closeOthers/closeToRight skip (just like pinned).
+      lock: (tabId) => ipcRenderer.invoke('oz:tabs:lock', tabId),
+      unlock: (tabId) => ipcRenderer.invoke('oz:tabs:unlock', tabId),
       mute: (tabId) => ipcRenderer.invoke('oz:tabs:mute', tabId),
       unmute: (tabId) => ipcRenderer.invoke('oz:tabs:unmute', tabId),
 

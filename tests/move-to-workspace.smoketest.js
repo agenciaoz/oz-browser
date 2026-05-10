@@ -81,6 +81,7 @@ class FakeTab {
     this.title = opts.title || 'New Tab'
     this.favicon = opts.favicon || null
     this.pinned = !!opts.pinned
+    this.locked = !!opts.locked
     this.materialized = !!opts.materialize
     this.destroyed = false
   }
@@ -92,6 +93,7 @@ class FakeTab {
       title: this.title,
       favicon: this.favicon,
       pinned: this.pinned,
+      locked: this.locked,
     }
   }
   serialize() {
@@ -298,6 +300,40 @@ section('moveToWorkspace: target frozen → permitido (runtime, no CRUD)')
   ok('ok === true (frozen permite move)', r.ok === true)
   ok('spec persistido en A.tabSpecs', wm.get(a.id).tabSpecs.length === 1)
   ok('A sigue frozen', wm.get(a.id).isFrozen === true)
+}
+
+// 8. H2 — moveToWorkspace rejects locked tab
+section('H2 moveToWorkspace: locked tab rejected → reason="tab-locked"')
+{
+  const { wm, browser, handlers } = freshSetup()
+  const win = makeFakeWindow(wm.getDefault().id)
+  browser.windows.push(win)
+  win.tabs.create({ id: 'locktab', url: 'https://x.com', locked: true })
+  const dest = wm.create({ name: 'Dest' })
+
+  const r = handlers.moveToWorkspace('locktab', dest.id)
+  ok('ok === false', r.ok === false)
+  ok('reason === tab-locked', r.reason === 'tab-locked')
+  ok('source tab still alive', !!win.tabs.get('locktab'))
+  ok('dest workspace unchanged', wm.get(dest.id).tabSpecs.length === 0)
+}
+
+// 9. H2 — close handler rejects locked tab
+section('H2 close: locked tab returns false (no destroy)')
+{
+  const { browser, handlers } = freshSetup()
+  const win = makeFakeWindow(browser.workspaceManager.getDefault().id)
+  browser.windows.push(win)
+  win.tabs.create({ id: 'cantclose', locked: true })
+  win.tabs.create({ id: 'normaltab' })
+
+  const rLocked = handlers.close('cantclose')
+  ok('close(locked) returns false', rLocked === false)
+  ok('locked tab still alive', !!win.tabs.get('cantclose'))
+
+  const rOk = handlers.close('normaltab')
+  ok('close(unlocked) returns true', rOk === true)
+  ok('unlocked tab destroyed', !win.tabs.get('normaltab'))
 }
 
 // ---------- Cleanup ---------------------------------------------------------

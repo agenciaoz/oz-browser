@@ -132,7 +132,7 @@ function buildToolCatalog(browser) {
     {
       name: 'oz.identities.remove',
       description:
-        'Delete an identity by id. Default identity is protected — returns false if attempted.',
+        'Delete an identity by id. Default identity is protected — returns false if attempted. H2: locked identities are also protected; unlock first via oz.identities.setLocked.',
       inputSchema: {
         type: 'object',
         properties: { id: { type: 'string' } },
@@ -140,6 +140,21 @@ function buildToolCatalog(browser) {
         additionalProperties: false,
       },
       call: ({ id }) => identities().remove(id),
+    },
+    {
+      name: 'oz.identities.setLocked',
+      description:
+        'H2: toggle Identity.locked. Locked identities reject remove + clearBrowsingData but still accept rename, color and userAgent edits. Returns the updated identity, or null if id not found.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          locked: { type: 'boolean' },
+        },
+        required: ['id', 'locked'],
+        additionalProperties: false,
+      },
+      call: ({ id, locked }) => identities().setLocked(id, locked),
     },
 
     // -------------------- tabs --------------------

@@ -232,6 +232,12 @@ function buildTabContextHandlers(browser) {
       const found = findOwning(tabId)
       if (!found) return { ok: false, reason: 'tab-not-found', tabId }
       if (!wm()) return { ok: false, reason: 'no-workspace-manager' }
+      // H2: locked tabs cannot be moved (would destroy the live tab in the
+      // source window — equivalent to closing it).
+      if (found.tab.locked) {
+        log.warn('tab-context', 'moveToNewWindow blocked: tab is locked', { tabId })
+        return { ok: false, reason: 'tab-locked', tabId }
+      }
       // Pick a name not yet used.
       const existing = wm().list()
       let n = 2
@@ -281,6 +287,17 @@ function buildTabContextHandlers(browser) {
       return setPinned(tabId, false)
     },
 
+    // ---------- Lock / Unlock (H2) ----------
+    // Lock = "no me cierres por accidente". Persisted in tabSpecs (same path
+    // as pin). Locked tabs reject close + moveToWorkspace; closeOthers and
+    // closeToRight silently skip them. Pin/mute/duplicate/reload still work.
+    lock(tabId) {
+      return setLocked(tabId, true)
+    },
+    unlock(tabId) {
+      return setLocked(tabId, false)
+    },
+
     // ---------- Mute / Unmute ----------
 
     mute(tabId) {
@@ -294,14 +311,15 @@ function buildTabContextHandlers(browser) {
 
     /**
      * Close every tab in the same window EXCEPT tabId. Pinned tabs are
-     * preserved (Chrome convention). Returns count closed.
+     * preserved (Chrome convention). H2: locked tabs are also preserved.
+     * Returns count closed + count skipped due to lock/pin.
      */
     closeOthers(tabId) {
       const found = findOwning(tabId)
       if (!found) return { ok: false, reason: 'tab-not-found', tabId }
-      const toClose = found.win.tabs.tabList
-        .filter((t) => t.id !== tabId && !t.pinned)
-        .map((t) => t.id)
+      const others = found.win.tabs.tabList.filter((t) => t.id !== tabId)
+      const toClose = others.filter((t) => !t.pinned && !t.locked).map((t) => t.id)
+      const skippedLocked = others.filter((t) => t.locked).length
       for (const id of toClose) {
         found.win.tabs.remove(id)
         browser.broadcastToWebUI('oz:tabs:updated', { kind: 'removed', tabId: id })
@@ -309,14 +327,15 @@ function buildTabContextHandlers(browser) {
       log.info('tab-context', 'closeOthers ok', {
         keptTabId: tabId,
         closedCount: toClose.length,
+        skippedLocked,
         windowId: found.win.id,
       })
-      return { ok: true, tabId, closedCount: toClose.length }
+      return { ok: true, tabId, closedCount: toClose.length, skippedLocked }
     },
 
     /**
      * Close every tab to the right of tabId in the same window's tabList order.
-     * Pinned tabs are preserved.
+     * Pinned and locked (H2) tabs are preserved.
      */
     closeToRight(tabId) {
       const found = findOwning(tabId)
@@ -324,10 +343,9 @@ function buildTabContextHandlers(browser) {
       const list = found.win.tabs.tabList
       const idx = list.findIndex((t) => t.id === tabId)
       if (idx < 0) return { ok: false, reason: 'tab-not-found', tabId }
-      const toClose = list
-        .slice(idx + 1)
-        .filter((t) => !t.pinned)
-        .map((t) => t.id)
+      const right = list.slice(idx + 1)
+      const toClose = right.filter((t) => !t.pinned && !t.locked).map((t) => t.id)
+      const skippedLocked = right.filter((t) => t.locked).length
       for (const id of toClose) {
         found.win.tabs.remove(id)
         browser.broadcastToWebUI('oz:tabs:updated', { kind: 'removed', tabId: id })
@@ -335,9 +353,10 @@ function buildTabContextHandlers(browser) {
       log.info('tab-context', 'closeToRight ok', {
         anchorTabId: tabId,
         closedCount: toClose.length,
+        skippedLocked,
         windowId: found.win.id,
       })
-      return { ok: true, tabId, closedCount: toClose.length }
+      return { ok: true, tabId, closedCount: toClose.length, skippedLocked }
     },
   }
 
@@ -364,6 +383,28 @@ function buildTabContextHandlers(browser) {
       windowId: found.win.id,
     })
     return { ok: true, tabId, pinned: !!pinned }
+  }
+
+  function setLocked(tabId, locked) {
+    const found = findOwning(tabId)
+    if (!found) return { ok: false, reason: 'tab-not-found', tabId }
+    found.tab.locked = !!locked
+    // Persist to the owning window's workspace immediately (same path as pin).
+    if (wm() && found.win.workspaceId) {
+      const specs = found.win.tabs.toSpecs ? found.win.tabs.toSpecs() : []
+      const activeId = found.win.tabs.selected ? found.win.tabs.selected.id : null
+      wm().setTabSpecs(found.win.workspaceId, specs, activeId)
+    }
+    browser.broadcastToWebUI('oz:tabs:updated', {
+      kind: 'updated',
+      tabId,
+      tab: { ...found.tab.serialize(), windowId: found.win.id },
+    })
+    log.info('tab-context', locked ? 'lock ok' : 'unlock ok', {
+      tabId,
+      windowId: found.win.id,
+    })
+    return { ok: true, tabId, locked: !!locked }
   }
 
   function setMuted(tabId, muted) {

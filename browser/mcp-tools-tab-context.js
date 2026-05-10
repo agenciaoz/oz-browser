@@ -124,6 +124,29 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
       call: ({ tabId }) => tabs().unpin(tabId),
     },
     {
+      name: 'oz.tabs.lock',
+      description:
+        "Lock a tab — close + moveToWorkspace + moveToNewWindow reject with reason='tab-locked'. closeOthers/closeToRight silently skip locked tabs (just like pinned). Pin/mute/duplicate/reload still work. Persists into the workspace tabSpecs.",
+      inputSchema: {
+        type: 'object',
+        properties: { tabId: { type: 'string' } },
+        required: ['tabId'],
+        additionalProperties: false,
+      },
+      call: ({ tabId }) => tabs().lock(tabId),
+    },
+    {
+      name: 'oz.tabs.unlock',
+      description: 'Unlock a tab. Allows close / move again.',
+      inputSchema: {
+        type: 'object',
+        properties: { tabId: { type: 'string' } },
+        required: ['tabId'],
+        additionalProperties: false,
+      },
+      call: ({ tabId }) => tabs().unlock(tabId),
+    },
+    {
       name: 'oz.tabs.mute',
       description:
         'Mute the audio of a tab (webContents.setAudioMuted(true)). Lazy tabs noop.',

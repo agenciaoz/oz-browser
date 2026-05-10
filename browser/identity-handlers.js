@@ -99,6 +99,16 @@ function buildIdentityHandlers(browser) {
     },
 
     remove(id) {
+      // H2: pre-check the lock so we don't reset activeIdentityId to Default
+      // when the remove is going to be rejected anyway.
+      const ident = im().get(id)
+      if (ident && ident.locked) {
+        log.warn('identity-handlers', 'remove blocked: identity is locked', {
+          id,
+          name: ident.name,
+        })
+        return false
+      }
       if (browser.activeIdentityId === id) {
         browser.activeIdentityId = im().getDefault().id
         browser.broadcastToWebUI('oz:identities:active-changed', browser.activeIdentityId)
@@ -107,6 +117,19 @@ function buildIdentityHandlers(browser) {
       if (ok) browser.broadcastToWebUI('oz:identities:changed')
       log.info('identity-handlers', 'remove', { id, ok })
       return ok
+    },
+
+    /**
+     * H2: toggle Identity.locked. Locked identities reject remove +
+     * clearBrowsingData but still accept rename, color and UA edits — Jose
+     * confirmed scope ("sólo destructivo") on the H2 kickoff.
+     */
+    setLocked(id, locked) {
+      const ident = im().setLocked(id, !!locked)
+      if (!ident) return null
+      browser.broadcastToWebUI('oz:identities:changed')
+      log.info('identity-handlers', 'setLocked', { id, locked: !!locked })
+      return ident
     },
 
     /**
@@ -136,6 +159,15 @@ function buildIdentityHandlers(browser) {
           identityId,
         })
         return { ok: false, reason: 'identity-not-found', identityId }
+      }
+      // H2: locked identities reject destructive cleanup. The user must unlock
+      // first. Pairs with remove() which rejects the same way.
+      if (ident.locked) {
+        log.warn('identity-handlers', 'clearBrowsingData blocked: identity is locked', {
+          identityId,
+          name: ident.name,
+        })
+        return { ok: false, reason: 'identity-locked', identityId }
       }
       const validScopes = ['cookies', 'storage', 'both']
       if (!validScopes.includes(scope)) {

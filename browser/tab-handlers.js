@@ -73,7 +73,17 @@ function buildTabHandlers(browser) {
 
     close(tabId) {
       for (const win of browser.windows) {
-        if (win.tabs.get(tabId)) {
+        const tab = win.tabs.get(tabId)
+        if (tab) {
+          // H2: locked tabs reject close. Caller (UI close button, Cmd+W,
+          // closeOthers/closeToRight, MCP) must unlock first.
+          if (tab.locked) {
+            log.warn('tab-handlers', 'close blocked: tab is locked', {
+              tabId,
+              windowId: win.id,
+            })
+            return false
+          }
           win.tabs.remove(tabId)
           browser.broadcastToWebUI('oz:tabs:updated', { kind: 'removed', tabId })
           log.info('tab-handlers', 'close ok', { tabId, windowId: win.id })
@@ -155,6 +165,16 @@ function buildTabHandlers(browser) {
       if (!sourceWin || !sourceTab) {
         log.warn('tab-handlers', 'moveToWorkspace: tab not found', { tabId })
         return { ok: false, reason: 'tab-not-found', tabId }
+      }
+
+      // H2: locked tabs cannot be moved (would silently destroy the live tab
+      // in the source window — equivalent to closing it).
+      if (sourceTab.locked) {
+        log.warn('tab-handlers', 'moveToWorkspace blocked: tab is locked', {
+          tabId,
+          targetWorkspaceId,
+        })
+        return { ok: false, reason: 'tab-locked', tabId, targetWorkspaceId }
       }
 
       // Already in target workspace — noop.

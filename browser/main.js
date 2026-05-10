@@ -506,8 +506,15 @@ class Browser {
 
     this.createInitialWindow()
 
-    // Start MCP server if env-enabled. Off by default — see ADR 0012.
-    if (process.env.OZ_MCP_ENABLED === '1' || process.env.OZ_MCP_ENABLED === 'true') {
+    // Start MCP server if env-enabled OR the user toggled it on in Settings.
+    // Off by default — see ADR 0012. H2 wired the settings-manager fallback
+    // (HX0 found it missing — `automation.mcpEnabled` had no effect at boot).
+    const mcpFromEnv =
+      process.env.OZ_MCP_ENABLED === '1' || process.env.OZ_MCP_ENABLED === 'true'
+    const automationSection =
+      this.settingsManager && this.settingsManager.get('automation')
+    const mcpFromSettings = !!(automationSection && automationSection.mcpEnabled)
+    if (mcpFromEnv || mcpFromSettings) {
       try {
         this.mcpServer = new MCPServer(this)
         await this.mcpServer.start()

@@ -168,10 +168,18 @@
       })
 
       const closeBtn = node.querySelector('.close')
-      closeBtn.addEventListener('click', (ev) => {
-        ev.stopPropagation()
-        safe(window.oz.tabs.close(tab.id), 'tabs.close')
-      })
+      // H2: locked tabs hide the close button (visually communicates "you
+      // can't close me by accident"). The handler also rejects, but hiding
+      // the button is the primary affordance.
+      if (tab.locked) {
+        closeBtn.style.display = 'none'
+      } else {
+        closeBtn.style.display = ''
+        closeBtn.addEventListener('click', (ev) => {
+          ev.stopPropagation()
+          safe(window.oz.tabs.close(tab.id), 'tabs.close')
+        })
+      }
 
       const fav = node.querySelector('.favicon')
       if (tab.favicon) {
@@ -179,7 +187,14 @@
         fav.classList.add('loaded')
       }
 
-      node.querySelector('.title').textContent = tab.title || 'New Tab'
+      // H2: prepend lock indicator to the title text (no extra DOM node — the
+      // template's `.title` span already renders text content). Pinned tabs
+      // already collapse to favicon-only, so the indicator only shows on
+      // unpinned-locked tabs which is the common case.
+      const titleText = tab.title || 'New Tab'
+      node.querySelector('.title').textContent = tab.locked
+        ? `\u{1F512} ${titleText}`
+        : titleText
       node.querySelector('.audio').disabled = true
       return node
     }

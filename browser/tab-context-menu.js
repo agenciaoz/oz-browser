@@ -123,8 +123,9 @@ function buildTabContextMenu({ browser, tabId }) {
         }))
       : [{ label: '(no other identities)', enabled: false }]
 
-  // ---------- pinned / muted state for toggles --------------------------
+  // ---------- pinned / locked / muted state for toggles ------------------
   const isPinned = !!targetTab.pinned
+  const isLocked = !!targetTab.locked
   const isMuted =
     targetTab.materialized &&
     targetTab.webContents &&
@@ -148,11 +149,15 @@ function buildTabContextMenu({ browser, tabId }) {
     { label: 'Create a New Tab', submenu: newTabSubmenu },
     { type: 'separator' },
     {
-      label: 'Move to Workspace…',
+      // H2: locked tabs reject move. Disable the submenu so the user knows
+      // why instead of clicking and silently failing.
+      label: isLocked ? 'Move to Workspace… (locked)' : 'Move to Workspace…',
+      enabled: !isLocked,
       submenu: moveWsSubmenu,
     },
     {
-      label: 'Move Tab to New Window',
+      label: isLocked ? 'Move Tab to New Window (locked)' : 'Move Tab to New Window',
+      enabled: !isLocked,
       click: () => h.moveToNewWindow(tabId),
     },
     { type: 'separator' },
@@ -176,9 +181,15 @@ function buildTabContextMenu({ browser, tabId }) {
       click: () => h.refreshAllInIdentity(targetTab.identityId),
     },
     // 1.7b: Clear Browsing Data submenu — Cookies / Storage / Both.
+    // H2: locked identities reject clearBrowsingData. Disable the whole
+    // submenu so the user knows why instead of all 3 options silently
+    // failing.
     {
-      label: `Clear This Identity Browsing Data… (${tabIdentityName})`,
-      enabled: !!identitiesH,
+      label:
+        tabIdentity && tabIdentity.locked
+          ? `Clear This Identity Browsing Data… (${tabIdentityName} — locked)`
+          : `Clear This Identity Browsing Data… (${tabIdentityName})`,
+      enabled: !!identitiesH && !(tabIdentity && tabIdentity.locked),
       submenu: [
         {
           label: 'Cookies only',
@@ -230,6 +241,12 @@ function buildTabContextMenu({ browser, tabId }) {
       click: () => (isPinned ? h.unpin(tabId) : h.pin(tabId)),
     },
     {
+      // H2: Lock blocks close + move. Pin keeps a tab visible across new tabs;
+      // Lock prevents accidental destruction. Two distinct concepts.
+      label: isLocked ? 'Unlock Tab' : 'Lock Tab',
+      click: () => (isLocked ? h.unlock(tabId) : h.lock(tabId)),
+    },
+    {
       label: isMuted ? 'Unmute Site' : 'Mute Site',
       enabled: targetTab.materialized,
       click: () => (isMuted ? h.unmute(tabId) : h.mute(tabId)),
@@ -241,7 +258,12 @@ function buildTabContextMenu({ browser, tabId }) {
       click: () => bookmarksH && bookmarksH.addFromTab(tabId),
     },
     { type: 'separator' },
-    { label: 'Close Tab', accelerator: 'CmdOrCtrl+W', click: () => h.close(tabId) },
+    {
+      label: isLocked ? 'Close Tab (locked)' : 'Close Tab',
+      accelerator: 'CmdOrCtrl+W',
+      enabled: !isLocked,
+      click: () => h.close(tabId),
+    },
     { label: 'Close Other Tabs', click: () => h.closeOthers(tabId) },
     { label: 'Close Tabs to the Right', click: () => h.closeToRight(tabId) },
   ]

@@ -153,6 +153,8 @@ function registerIdentityHandlersIPC(browser) {
   ipcMain.handle('oz:identities:setColor', (_e, id, color) => h.setColor(id, color))
   ipcMain.handle('oz:identities:update', (_e, id, patch) => h.update(id, patch))
   ipcMain.handle('oz:identities:remove', (_e, id) => h.remove(id))
+  // H2: lock toggle for identities. Locked = blocks remove + clearBrowsingData.
+  ipcMain.handle('oz:identities:setLocked', (_e, id, locked) => h.setLocked(id, locked))
   // 1.7b
   ipcMain.handle('oz:identities:clearBrowsingData', (_e, id, scope) =>
     h.clearBrowsingData(id, scope),
@@ -438,6 +440,8 @@ function registerTabHandlersIPC(browser) {
   ipcMain.handle('oz:tabs:moveToNewWindow', (_e, tabId) => h.moveToNewWindow(tabId))
   ipcMain.handle('oz:tabs:pin', (_e, tabId) => h.pin(tabId))
   ipcMain.handle('oz:tabs:unpin', (_e, tabId) => h.unpin(tabId))
+  ipcMain.handle('oz:tabs:lock', (_e, tabId) => h.lock(tabId))
+  ipcMain.handle('oz:tabs:unlock', (_e, tabId) => h.unlock(tabId))
   ipcMain.handle('oz:tabs:mute', (_e, tabId) => h.mute(tabId))
   ipcMain.handle('oz:tabs:unmute', (_e, tabId) => h.unmute(tabId))
   ipcMain.handle('oz:tabs:closeOthers', (_e, tabId) => h.closeOthers(tabId))

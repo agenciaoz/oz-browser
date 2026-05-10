@@ -109,6 +109,7 @@ class IdentityManager {
         fingerprintSeed: uuid(),
         createdAt: now(),
         isDefault: true,
+        locked: false,
       })
       this._save()
     }
@@ -164,6 +165,10 @@ class IdentityManager {
       fingerprintSeed: uuid(),
       createdAt: now(),
       userAgent: userAgent || null,
+      // H2: lock = "no me borres por accidente". Defaults to false. Only
+      // remove() and clearBrowsingData() reject when locked — rename, color
+      // and UA edits stay allowed (Jose-confirmed scope: "sólo destructivo").
+      locked: false,
     }
     this.identities.push(identity)
     this._save()
@@ -249,11 +254,37 @@ class IdentityManager {
       console.warn('[identity-manager] refusing to remove default identity')
       return false
     }
+    // H2: locked identities reject remove. Caller must unlock first.
+    if (ident.locked) {
+      log.warn('identity-manager', 'refusing to remove locked identity', {
+        id,
+        name: ident.name,
+      })
+      return false
+    }
     this.identities = this.identities.filter((i) => i.id !== id)
     this.sessionCache.delete(id)
     this._save()
     // NOTE: partition data on disk is NOT cleared here — leave for Bloque 1.6.
     return true
+  }
+
+  /**
+   * H2: toggle the lock flag on an identity. Idempotent. Default identity may
+   * be locked too (it's already non-removable, but locking also blocks
+   * clearBrowsingData on it). Returns the updated identity or null.
+   */
+  setLocked(id, locked) {
+    const ident = this.identities.find((i) => i.id === id)
+    if (!ident) return null
+    ident.locked = !!locked
+    this._save()
+    log.info('identity-manager', 'identity lock toggled', {
+      id,
+      name: ident.name,
+      locked: !!locked,
+    })
+    return { ...ident }
   }
 
   // ---------- sessions ----------
