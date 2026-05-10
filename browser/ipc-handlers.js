@@ -420,6 +420,8 @@ function registerTabHandlersIPC(browser) {
   )
   ipcMain.handle('oz:tabs:select', (_e, tabId) => h.select(tabId))
   ipcMain.handle('oz:tabs:close', (_e, tabId) => h.close(tabId))
+  // H1 — Cmd+Shift+T equivalent.
+  ipcMain.handle('oz:tabs:reopenClosed', () => h.reopenClosed())
   ipcMain.handle('oz:tabs:bulkCreateLazy', (_e, count, identityId, urlTemplate) =>
     h.bulkCreateLazy(count, identityId, urlTemplate),
   )

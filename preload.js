@@ -103,6 +103,10 @@ if (isWebUI) {
         ipcRenderer.invoke('oz:tabs:openInIdentity', identityId, url),
       select: (tabId) => ipcRenderer.invoke('oz:tabs:select', tabId),
       close: (tabId) => ipcRenderer.invoke('oz:tabs:close', tabId),
+      // H1 — Cmd+Shift+T binding lives in the native menu (browser/menu.js)
+      // but we expose this here so the renderer can also trigger it via
+      // keyboard shortcut interception or the Edit menu.
+      reopenClosed: () => ipcRenderer.invoke('oz:tabs:reopenClosed'),
       bulkCreateLazy: (count, identityId, urlTemplate) =>
         ipcRenderer.invoke('oz:tabs:bulkCreateLazy', count, identityId, urlTemplate),
       moveToWorkspace: (tabId, targetWorkspaceId) =>

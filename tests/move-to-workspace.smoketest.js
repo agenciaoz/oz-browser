@@ -105,6 +105,15 @@ class FakeTabs {
   constructor() {
     this.tabList = []
     this.selected = null
+    this.closedTabsStack = []
+  }
+  pushClosed(spec) {
+    if (!spec || !spec.id) return
+    this.closedTabsStack.push({ ...spec, closedAt: Date.now() })
+    while (this.closedTabsStack.length > 25) this.closedTabsStack.shift()
+  }
+  popClosed() {
+    return this.closedTabsStack.length ? this.closedTabsStack.pop() : null
   }
   create(opts) {
     const t = new FakeTab(opts)
@@ -334,6 +343,96 @@ section('H2 close: locked tab returns false (no destroy)')
   const rOk = handlers.close('normaltab')
   ok('close(unlocked) returns true', rOk === true)
   ok('unlocked tab destroyed', !win.tabs.get('normaltab'))
+}
+
+// 10. H1 — close pushes spec to closedTabsStack
+section('H1 close: pushes spec to closedTabsStack')
+{
+  const { browser, handlers } = freshSetup()
+  const win = makeFakeWindow(browser.workspaceManager.getDefault().id)
+  browser.windows.push(win)
+  win.tabs.create({
+    id: 'doomed',
+    identityId: 'default',
+    url: 'https://x.com',
+    title: 'X',
+  })
+
+  ok('initial stack empty', win.tabs.closedTabsStack.length === 0)
+  const r = handlers.close('doomed')
+  ok('close ok', r === true)
+  ok('stack has 1 entry', win.tabs.closedTabsStack.length === 1)
+  ok(
+    'stack entry preserves identity + url',
+    win.tabs.closedTabsStack[0].identityId === 'default' &&
+      win.tabs.closedTabsStack[0].url === 'https://x.com',
+  )
+}
+
+// 11. H1 — close on locked tab does NOT push (rejected before remove)
+section('H1 close locked: stack untouched')
+{
+  const { browser, handlers } = freshSetup()
+  const win = makeFakeWindow(browser.workspaceManager.getDefault().id)
+  browser.windows.push(win)
+  win.tabs.create({ id: 'locked', identityId: 'default', locked: true })
+
+  const r = handlers.close('locked')
+  ok('close on locked returns false', r === false)
+  ok('stack still empty', win.tabs.closedTabsStack.length === 0)
+}
+
+// 12. H1 — reopenClosed pops + recreates tab
+section('H1 reopenClosed: pops + recreates lazy tab')
+{
+  const { browser, handlers } = freshSetup()
+  const win = makeFakeWindow(browser.workspaceManager.getDefault().id)
+  browser.windows.push(win)
+  // Stub createWindow + getFocusedWindow already exist via makeFakeBrowser
+  // (the move-to-workspace test browser has them).
+  win.tabs.create({ id: 'a', identityId: 'default', url: 'https://a.com', title: 'A' })
+  win.tabs.create({ id: 'b', identityId: 'default', url: 'https://b.com', title: 'B' })
+  handlers.close('a')
+  handlers.close('b')
+  ok('stack has 2 entries', win.tabs.closedTabsStack.length === 2)
+
+  // Reopen pops the most-recent first.
+  const newId1 = handlers.reopenClosed()
+  ok('reopen returns new id', typeof newId1 === 'string' && newId1.length > 0)
+  ok(
+    'newest restored first (B)',
+    win.tabs.tabList.find((t) => t.id === newId1).url === 'https://b.com',
+  )
+  ok('stack has 1 entry left', win.tabs.closedTabsStack.length === 1)
+
+  const newId2 = handlers.reopenClosed()
+  ok(
+    'next reopen restores A',
+    win.tabs.tabList.find((t) => t.id === newId2).url === 'https://a.com',
+  )
+  ok('stack empty', win.tabs.closedTabsStack.length === 0)
+
+  const noMore = handlers.reopenClosed()
+  ok('reopen on empty stack returns null', noMore === null)
+}
+
+// 13. H1 — stack cap (FIFO eviction at 25)
+section('H1 closedTabsStack cap: 25 entries max, FIFO eviction')
+{
+  const { browser, handlers } = freshSetup()
+  const win = makeFakeWindow(browser.workspaceManager.getDefault().id)
+  browser.windows.push(win)
+  for (let i = 0; i < 30; i++) {
+    win.tabs.create({ id: `t-${i}`, identityId: 'default', url: `https://${i}.com` })
+    handlers.close(`t-${i}`)
+  }
+  ok('stack capped at 25', win.tabs.closedTabsStack.length === 25)
+  // FIFO: oldest (t-0..t-4) evicted, newest (t-29) on top.
+  ok('top of stack is t-29', win.tabs.closedTabsStack[24].id === 't-29')
+  ok(
+    'bottom of stack is t-5 (5..29 = 25 entries)',
+    win.tabs.closedTabsStack[0].id === 't-5',
+  )
 }
 
 // ---------- Cleanup ---------------------------------------------------------

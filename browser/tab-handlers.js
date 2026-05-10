@@ -84,7 +84,15 @@ function buildTabHandlers(browser) {
             })
             return false
           }
+          // H1: snapshot the tab spec BEFORE remove() destroys it. Push to
+          // the closed-tabs stack ONLY for user-initiated closes (this
+          // handler) — NOT for workspace-switch destroys. The audit caught
+          // that hooking inside Tabs.remove() would also capture the snapshot
+          // path (every workspace switch destroys all tabs via remove() in a
+          // loop), filling the stack with stale tabs.
+          const spec = tab.toSpec ? tab.toSpec() : null
           win.tabs.remove(tabId)
+          if (spec) win.tabs.pushClosed(spec)
           browser.broadcastToWebUI('oz:tabs:updated', { kind: 'removed', tabId })
           log.info('tab-handlers', 'close ok', { tabId, windowId: win.id })
           return true
@@ -92,6 +100,51 @@ function buildTabHandlers(browser) {
       }
       log.warn('tab-handlers', 'close: tabId not found', { tabId })
       return false
+    },
+
+    /**
+     * H1 — reopen the most recently closed tab in the focused window. Pops
+     * from that window's closedTabsStack and re-creates a lazy tab. Returns
+     * the new tab id, or null if the stack is empty / no focused window.
+     *
+     * Stack is per-window — closing tabs in window A does NOT populate
+     * window B's reopen stack. This matches Chrome's behavior + sidesteps
+     * the cross-window confusion of "which window did this tab come from".
+     */
+    reopenClosed() {
+      const win = browser.getFocusedWindow()
+      if (!win) {
+        log.warn('tab-handlers', 'reopenClosed: no focused window')
+        return null
+      }
+      const spec = win.tabs.popClosed ? win.tabs.popClosed() : null
+      if (!spec) {
+        log.info('tab-handlers', 'reopenClosed: stack empty')
+        return null
+      }
+      // Restore unlocked + unpinned by default — locks/pins are intentional
+      // user state we don't preserve through close→reopen. URL + identity
+      // are what we care about; the rest is fresh.
+      const tab = win.tabs.create({
+        identityId: spec.identityId,
+        url: spec.url || 'about:blank',
+        title: spec.title,
+        favicon: spec.favicon,
+        source: 'tab-handlers.reopenClosed',
+      })
+      if (typeof win.tabs.select === 'function') win.tabs.select(tab.id)
+      browser.broadcastToWebUI('oz:tabs:updated', {
+        kind: 'created',
+        tab: { ...tab.serialize(), windowId: win.id },
+      })
+      log.info('tab-handlers', 'reopenClosed ok', {
+        newTabId: tab.id,
+        identityId: spec.identityId,
+        url: spec.url,
+        windowId: win.id,
+        stackRemaining: win.tabs.closedTabsStack ? win.tabs.closedTabsStack.length : 0,
+      })
+      return tab.id
     },
 
     bulkCreateLazy(count, identityId, urlTemplate) {

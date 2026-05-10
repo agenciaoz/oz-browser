@@ -194,6 +194,13 @@ function buildToolCatalog(browser) {
       call: () => tabs().list(),
     },
     {
+      name: 'oz.tabs.reopenClosed',
+      description:
+        'H1 — reopen the most recently closed tab in the focused window. Stack is per-window, capped at 25 entries (FIFO eviction). Returns the new tab id, or null if the stack is empty / no focused window. Locked + pinned state is NOT restored — only identityId + url + title + favicon. Closes triggered by workspace switch (the snapshot path) do NOT populate the stack — only user-initiated closes via oz.tabs.close.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      call: () => tabs().reopenClosed(),
+    },
+    {
       name: 'oz.tabs.openInIdentity',
       description:
         'Open a new tab bound to the given identity, navigating to url. Returns the new tab id (null if no focused window).',

@@ -67,6 +67,17 @@ const setupMenu = (browser) => {
     if (focused.pinned) tabsH().unpin(focused.id)
     else tabsH().pin(focused.id)
   }
+  // H1 — reopen most recently closed tab in focused window.
+  const reopenClosed = () => {
+    if (tabsH()) tabsH().reopenClosed()
+  }
+  // H2 — toggle lock on focused tab.
+  const toggleLockFocused = () => {
+    const focused = browser.getFocusedWindow()?.getFocusedTab()
+    if (!focused || !tabsH()) return
+    if (focused.locked) tabsH().unlock(focused.id)
+    else tabsH().lock(focused.id)
+  }
 
   const template = [
     ...(isMac ? [{ role: 'appMenu' }] : []),
@@ -132,6 +143,12 @@ const setupMenu = (browser) => {
           accelerator: 'Alt+N',
           click: newIdentity,
         },
+        {
+          // H1 — Chrome-style "reopen closed tab" shortcut.
+          label: 'Reopen Closed Tab',
+          accelerator: 'Shift+CmdOrCtrl+T',
+          click: reopenClosed,
+        },
         { type: 'separator' },
         {
           label: 'Duplicate Tab',
@@ -147,6 +164,12 @@ const setupMenu = (browser) => {
           label: 'Pin / Unpin Tab',
           accelerator: 'Alt+P',
           click: togglePinFocused,
+        },
+        {
+          // H2 — lock toggle (no Chrome equivalent; Alt+L is free).
+          label: 'Lock / Unlock Tab',
+          accelerator: 'Alt+L',
+          click: toggleLockFocused,
         },
         { type: 'separator' },
         {

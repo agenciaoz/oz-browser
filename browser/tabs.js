@@ -299,16 +299,52 @@ class Tab extends EventEmitter {
   }
 }
 
+/**
+ * H1 — closed-tab stack. Cap to keep memory bounded; FIFO eviction once full.
+ * Per-window: stored on Tabs instance, lifecycle ends with Tabs.destroy.
+ */
+const CLOSED_TABS_STACK_CAP = 25
+
 class Tabs extends EventEmitter {
   /** Ordered list of all tabs (lazy + materialized). */
   tabList = []
   /** Currently active tab (always materialized while selected). */
   selected = null
+  /**
+   * H1 — closed-tab stack for Cmd+Shift+T (reopenClosed). Push happens at
+   * the user-initiated `tab-handlers.close` boundary, NOT at Tabs.remove
+   * (audit caught: Tabs.remove fires on every workspace switch as part of
+   * the snapshot/destroy loop, which would fill the stack with tabs from
+   * the OLD workspace and Cmd+Shift+T would resurrect them in the NEW one).
+   */
+  closedTabsStack = []
 
   constructor(browserWindow, identityManager = null) {
     super()
     this.window = browserWindow
     this.identityManager = identityManager
+  }
+
+  /**
+   * H1 — record a closed tab onto the stack. Caller is responsible for
+   * filtering out non-user-initiated closes (workspace switch, identity
+   * delete cascade, etc).
+   */
+  pushClosed(spec) {
+    if (!spec || !spec.id) return
+    this.closedTabsStack.push({ ...spec, closedAt: Date.now() })
+    while (this.closedTabsStack.length > CLOSED_TABS_STACK_CAP) {
+      this.closedTabsStack.shift()
+    }
+  }
+
+  /**
+   * H1 — pop the most recently closed tab spec. Returns the spec or null.
+   * The caller is responsible for invoking `create()` with it.
+   */
+  popClosed() {
+    if (this.closedTabsStack.length === 0) return null
+    return this.closedTabsStack.pop()
   }
 
   destroy() {
