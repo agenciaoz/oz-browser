@@ -34,7 +34,9 @@ Built on Electron 37 + [`samuelmaddock/electron-browser-shell`](https://github.c
 | **Bloque 1.9** — FingerprintEngine "Ghost+" (pasa Pixelscan/CreepJS)                                        | ⏳                    |
 | **Bloque 1.10** — Settings UI completa + Bookmarks/Downloads/History + Polish + Extensions multi-identity   | ⏳                    |
 | **Etapa 2** — UX competitiva + candidatos C-11..C-15 (headless, Ghost importer, demo mode, recipes, health) | ⏳                    |
-| **Etapa 3** — Distribución firmada (electron-forge + update-electron-app, REQUIERE notarización)            | ⏳ ($99 Apple Dev)    |
+| **Etapa 3a** — Package + .dmg unsigned (electron-forge pipeline validado)                                   | ✅ 2026-05-10         |
+| **Etapa 3d** — Auto-update wiring (`update-electron-app` + Cloudflare R2, runtime bloqueado por 3b/3c)      | ✅ 2026-05-10         |
+| **Etapa 3b/3c/3e** — Sign + notarize + CI release workflow                                                  | ⏳ ($99 Apple Dev)    |
 | **Etapa 4** — Backend SaaS: auth + entitlements (Supabase + deep link OAuth `oz://auth/callback`)           | ⏳                    |
 | **Etapa 5** — Billing PayPal (`shell.openExternal` al approve URL) + self-service portal nativo PayPal      | ⏳                    |
 | **Etapa 6** — Marketing site + signup                                                                       | ⏳ ($12 dominio)      |

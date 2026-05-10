@@ -492,13 +492,13 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 
 **Estado (2026-05-10):** Etapa 3 dividida en 5 sub-bloques. **3a ✅ cerrado**, 3b/3c/3d/3e bloqueados ~2d hasta Apple Dev account.
 
-| Sub-bloque                     | Status        | Qué hace                                                      | Bloqueado por                        |
-| ------------------------------ | ------------- | ------------------------------------------------------------- | ------------------------------------ |
-| **3a** Package + .dmg unsigned | ✅ 2026-05-10 | Empaquetar .app + generar .dmg para drag-to-install local     | —                                    |
-| **3b** Code sign               | ⏳ ~2d        | Firmar .app con Developer ID Application cert                 | Apple Dev account ($99)              |
-| **3c** Notarization            | ⏳ ~2d        | Subir .app a Apple para notarización + stapler                | 3b                                   |
-| **3d** Auto-update wiring      | ⏳            | `update-electron-app` + GitHub Releases como CDN              | 3c (sin notarizar falla en silencio) |
-| **3e** CI release workflow     | ⏳            | `.github/workflows/release.yml` con tag-trigger build firmado | 3b/3c (secrets en GitHub)            |
+| Sub-bloque                     | Status        | Qué hace                                                                                   | Bloqueado por                |
+| ------------------------------ | ------------- | ------------------------------------------------------------------------------------------ | ---------------------------- |
+| **3a** Package + .dmg unsigned | ✅ 2026-05-10 | Empaquetar .app + generar .dmg para drag-to-install local                                  | —                            |
+| **3b** Code sign               | ⏳ ~2d        | Firmar .app con Developer ID Application cert                                              | Apple Dev account ($99)      |
+| **3c** Notarization            | ⏳ ~2d        | Subir .app a Apple para notarización + stapler                                             | 3b                           |
+| **3d** Auto-update wiring      | ✅ 2026-05-10 | `update-electron-app` + Cloudflare R2 (StaticStorage). Wiring code-only, runtime bloqueado | — (runtime: 3b+3c+R2 bucket) |
+| **3e** CI release workflow     | ⏳            | `.github/workflows/release.yml` con tag-trigger build firmado + upload a R2                | 3b/3c + R2 bucket setup      |
 
 **3a entregables (cerrado):**
 
@@ -509,6 +509,19 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 - Detalle: ADR 0020 + `docs/history/17-bloque-etapa-3a-resultado.md`.
 
 **3a gotcha documentado:** `npm rebuild` es paso obligatorio antes del primer `npm run make` porque `appdmg` (dep transitiva del maker-dmg) trae `macos-alias` + `fs-xattr` con native bindings que necesitan compilarse contra el Node actual. Sin rebuild, el make explota con "Cannot find module './build/Release/volume.node'". El bug viene de Jose teniendo `NODE_ENV=production` exportado en su shell, que hace que npm skipee compilación de bindings de devDeps.
+
+**3d entregables (cerrado):**
+
+- `browser/auto-update.js` (~150 LOC) — wrapper de `updateElectronApp()` con 5 skip conditions explícitas (not-packaged / disabled / non-darwin / no-base-url / non-HTTPS), logger adapter al `oz-browser.log`, try/catch (browser nunca crashea por updater). Defaults: `updateInterval: '1 hour'`, `notifyUser: true` (dialog nativo OS).
+- Wire en `browser/main.js` post-managers, antes de `resolveReady()`.
+- 14/14 tests offline en `tests/auto-update.smoketest.js`.
+- ADR 0021 + `docs/modules/auto-update.md` (incluye setup R2 paso a paso) + `docs/history/18-bloque-etapa-3d-resultado.md`.
+
+**3d decisión de canal:** Cloudflare R2 + `UpdateSourceType.StaticStorage` sobre default `update.electronjs.org` (que requiere repo público — el nuestro es privado). Free tier R2: 10GB storage + 1M requests/mes, sobra. S3-compatible API, sin lock-in. Setup operacional del bucket (~30 min, 7 steps) queda para Jose post-Apple-Dev — wireamos `OZ_UPDATE_BASE_URL` env var con WARN-skip explícito si no está set.
+
+**3d decisión de UI:** native OS dialog (default `notifyUser: true` del lib) sobre custom topbar banner. ~5 LOC vs ~80 LOC, look standard Electron, suficiente v1. Branded banner anotado como **C-XX upgrade post-launch** (no es C-17 ni C-18 que son channels y rollback respectivamente — TBD número final cuando se priorice).
+
+**3d runtime BLOQUEADO** por Etapas 3b (firma) + 3c (notarización). Sin notarización Apple, `update-electron-app` falla en silencio en macOS Catalina+ — Squirrel.Mac no acepta el binary descargado. **NO probar 3d hasta que 3b/3c estén cerrados.** El wiring queda completo para que apenas pague Apple Dev + arme R2 bucket, los users empiecen a recibir updates sin tocar más código.
 
 **Confirmación toolchain (decidido 2026-05-09 noche):** estamos en **electron-forge** (`@electron-forge/cli` + makers en package.json). NO en electron-builder. Esto define el path de auto-update:
 

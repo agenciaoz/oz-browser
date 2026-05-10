@@ -34,6 +34,7 @@ const { SettingsManager } = require('./settings-manager')
 const { DownloadManager } = require('./download-manager')
 const { HistoryManager } = require('./history-manager')
 const { TabDiscardDaemon } = require('./tab-discard-daemon')
+const { setupAutoUpdate } = require('./auto-update')
 const { setupMenu } = require('./menu')
 
 let _Notification = null
@@ -523,6 +524,14 @@ class Browser {
         this.mcpServer = null
       }
     }
+
+    // Etapa 3d: wire auto-update. Skipea con WARN si no estamos packaged
+    // (dev mode), si platform != darwin, o si OZ_UPDATE_BASE_URL no está
+    // seteado. NO crashea el browser bajo ninguna circunstancia. Runtime
+    // real bloqueado por Etapas 3b (firma) + 3c (notarización) — ver
+    // ADR 0021. Aún así llamamos siempre porque el WARN deja rastro útil
+    // en logs de "intenté pero falté X".
+    setupAutoUpdate({ logger: log })
 
     this.resolveReady()
     log.info('browser', 'Browser.init() done — initial window created')
