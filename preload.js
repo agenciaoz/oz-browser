@@ -228,6 +228,8 @@ if (isWebUI) {
       // CSV + Providers (1.8d)
       importCsvContent: (content) =>
         ipcRenderer.invoke('oz:proxies:importCsvContent', content),
+      // Resolved on each call below; preload also exposes a `fingerprint`
+      // namespace for direct access (1.9e).
       importCsvFromFile: (filePath) =>
         ipcRenderer.invoke('oz:proxies:importCsvFromFile', filePath),
       exportCsvContent: () => ipcRenderer.invoke('oz:proxies:exportCsvContent'),
@@ -242,6 +244,21 @@ if (isWebUI) {
         const listener = () => cb()
         ipcRenderer.on('oz:proxies:changed', listener)
         return () => ipcRenderer.off('oz:proxies:changed', listener)
+      },
+    },
+    fingerprint: {
+      get: (identityId) => ipcRenderer.invoke('oz:fingerprint:get', identityId),
+      regenerate: (identityId, newSeed) =>
+        ipcRenderer.invoke('oz:fingerprint:regenerate', identityId, newSeed),
+      applyGeoSuggestion: (identityId, suggestion) =>
+        ipcRenderer.invoke('oz:fingerprint:applyGeoSuggestion', identityId, suggestion),
+      resolveCountry: (countryCode) =>
+        ipcRenderer.invoke('oz:fingerprint:resolveCountry', countryCode),
+      remove: (identityId) => ipcRenderer.invoke('oz:fingerprint:remove', identityId),
+      onChanged(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:fingerprint:changed', listener)
+        return () => ipcRenderer.off('oz:fingerprint:changed', listener)
       },
     },
     nav: {

@@ -24,6 +24,7 @@ const { buildBackupHandlers } = require('./backup-handlers')
 const { buildBookmarkHandlers } = require('./bookmark-handlers')
 const { buildCookieHandlers } = require('./cookies-handlers')
 const { buildProxyHandlers } = require('./proxy-handlers')
+const { buildFingerprintHandlers } = require('./fingerprint-handlers')
 
 function registerIpcHandlers(browser) {
   // Domain handlers — shared with MCP server. Build once per browser instance.
@@ -41,6 +42,7 @@ function registerIpcHandlers(browser) {
     bookmarks: buildBookmarkHandlers(browser),
     cookies: buildCookieHandlers(browser),
     proxies: buildProxyHandlers(browser),
+    fingerprint: buildFingerprintHandlers(browser),
   }
 
   registerLogHandlers(browser)
@@ -54,6 +56,7 @@ function registerIpcHandlers(browser) {
   registerBookmarkHandlersIPC(browser)
   registerCookieHandlersIPC(browser)
   registerProxyHandlersIPC(browser)
+  registerFingerprintHandlersIPC(browser)
   registerNavHandlers(browser)
   registerUiHandlers(browser)
 
@@ -238,6 +241,23 @@ function registerProxyHandlersIPC(browser) {
     if (result.canceled || !result.filePath) return { canceled: true }
     return { filePath: result.filePath }
   })
+}
+
+// ----- Fingerprint (1.9) ----------------------------------------------------
+
+function registerFingerprintHandlersIPC(browser) {
+  const h = browser.handlers.fingerprint
+  ipcMain.handle('oz:fingerprint:get', (_e, identityId) => h.get(identityId))
+  ipcMain.handle('oz:fingerprint:regenerate', (_e, identityId, newSeed) =>
+    h.regenerate(identityId, newSeed),
+  )
+  ipcMain.handle('oz:fingerprint:applyGeoSuggestion', (_e, identityId, suggestion) =>
+    h.applyGeoSuggestion(identityId, suggestion),
+  )
+  ipcMain.handle('oz:fingerprint:resolveCountry', (_e, countryCode) =>
+    h.resolveCountry(countryCode),
+  )
+  ipcMain.handle('oz:fingerprint:remove', (_e, identityId) => h.remove(identityId))
 }
 
 // ----- Cookies I/O (1.7c) ---------------------------------------------------

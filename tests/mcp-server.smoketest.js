@@ -492,7 +492,7 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     // extract them from the preload.js source so we don't drift.
     const found = new Set()
     const re =
-      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine|bookmarks|cookies|proxies):[a-zA-Z]+)'/g
+      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine|bookmarks|cookies|proxies|fingerprint):[a-zA-Z]+)'/g
     let m
     while ((m = re.exec(preload)) !== null) found.add(m[1])
 

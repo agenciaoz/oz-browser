@@ -18,6 +18,7 @@
 const { buildVaultAccountsTools } = require('./mcp-tools-vault')
 const { buildTabContextTools } = require('./mcp-tools-tab-context')
 const { buildProxyTools } = require('./mcp-tools-proxies')
+const { buildFingerprintTools } = require('./mcp-tools-fingerprint')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -40,6 +41,7 @@ function buildToolCatalog(browser) {
   const bookmarks = () => browser.handlers && browser.handlers.bookmarks
   const cookies = () => browser.handlers && browser.handlers.cookies
   const proxies = () => browser.handlers && browser.handlers.proxies
+  const fingerprint = () => browser.handlers && browser.handlers.fingerprint
 
   return [
     // -------------------- identities --------------------
@@ -381,6 +383,9 @@ function buildToolCatalog(browser) {
 
     // -------------------- proxies (1.8, extracted) --------------------
     ...buildProxyTools({ proxies }),
+
+    // -------------------- fingerprint (1.9, extracted) --------------------
+    ...buildFingerprintTools({ fingerprint }),
 
     // -------------------- system metrics --------------------
     {

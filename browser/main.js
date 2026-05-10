@@ -29,6 +29,7 @@ const { BookmarkManager } = require('./bookmark-manager')
 const { ProxyManager } = require('./proxy-manager')
 const { ProxyAssignment } = require('./proxy-assignment')
 const { ProxyHealth } = require('./proxy-health')
+const { FingerprintEngine } = require('./fingerprint-engine')
 const { setupMenu } = require('./menu')
 
 let _Notification = null
@@ -61,6 +62,7 @@ class Browser {
   proxyManager = null
   proxyAssignment = null
   proxyHealth = null
+  fingerprintEngine = null
   webuiExtensionId = null
 
   constructor() {
@@ -261,6 +263,74 @@ class Browser {
     log.info('browser', 'BackupManager loaded', {
       snapshotsDir: this.backupManager.snapshotsDir,
       existingCount: this.backupManager.listSnapshots().length,
+    })
+
+    // 1.9a: FingerprintEngine — generates per-identity fingerprint profiles
+    // deterministicamente desde identity.fingerprintSeed. Profile is cached
+    // in fingerprints.json (NO regenerates per session — consistency).
+    this.fingerprintEngine = new FingerprintEngine()
+    log.info('browser', 'FingerprintEngine loaded', {
+      cachedProfiles: Object.keys(this.fingerprintEngine.cache).length,
+    })
+
+    // 1.9b: sync IPC handler used by preload-fingerprint.js to fetch the FP
+    // for the current identity. Sync because the preload must apply overrides
+    // BEFORE the page runs its first JS. Local IPC < 1ms, no perf concern.
+    // Resolved via event.sender.session — renderer cannot impersonate other
+    // identity's FP (same anti-spoof pattern as 1.5c).
+    const { ipcMain } = require('electron')
+    ipcMain.on('oz:fingerprint:request', (event) => {
+      try {
+        const identityId = this.identityManager.identityIdForSession(event.sender.session)
+        if (!identityId) {
+          event.returnValue = null
+          return
+        }
+        const ident = this.identityManager.get(identityId)
+        if (!ident) {
+          event.returnValue = null
+          return
+        }
+        const fp = this.fingerprintEngine.getOrCreate(identityId, ident.fingerprintSeed)
+        event.returnValue = fp
+      } catch (err) {
+        log.warn('browser', 'fingerprint sync request failed', { message: err.message })
+        event.returnValue = null
+      }
+    })
+
+    // 1.9b: register session init hook for fingerprint application. Runs
+    // AFTER the 1.8b proxy hook (registration order guaranteed). Two layers:
+    //   (a) session.setUserAgent — defense in depth at network layer.
+    //       Chrome's network stack uses this for fetch headers even if a
+    //       renderer somehow bypasses our preload.
+    //   (b) registerPreloadScript — content-world overrides via webFrame
+    //       executeJavaScript (see preload-fingerprint.js).
+    // Both layers must agree to defeat fingerprinting tools that compare
+    // navigator.userAgent vs request UA (a classic mismatch detection).
+    const fpPreloadPath = require('path').join(
+      app.getAppPath(),
+      'browser',
+      'preload-fingerprint.js',
+    )
+    this.identityManager.addSessionInitHook((identityId, session) => {
+      const ident = this.identityManager.get(identityId)
+      if (!ident) return
+      const fp = this.fingerprintEngine.getOrCreate(identityId, ident.fingerprintSeed)
+      if (fp && fp.ua) {
+        session.setUserAgent(fp.ua, fp.language || 'en-US')
+        log.debug('browser', 'session UA set from FP', {
+          identityId,
+          ua: fp.ua,
+        })
+      }
+      if (typeof session.registerPreloadScript === 'function') {
+        session.registerPreloadScript({
+          type: 'frame',
+          id: 'oz-fingerprint-preload',
+          filePath: fpPreloadPath,
+        })
+      }
     })
 
     // 1.7b: Bookmark Manager — flat list per-identity, unencrypted (URLs/titles

@@ -13,6 +13,7 @@ const log = require('./logger')
 const { toProxyRulesString } = require('./proxy-assignment')
 const { parseCsv, encodeCsv } = require('./proxy-csv')
 const { listProviders, expandProvider } = require('./proxy-providers')
+const { resolveCountry } = require('./country-locale')
 
 function buildProxyHandlers(browser) {
   const pm = () => browser.proxyManager
@@ -65,34 +66,58 @@ function buildProxyHandlers(browser) {
      * Assign a proxy to an identity. value can be a proxyId, 'auto-random',
      * 'auto-round-robin', or null (clears the assignment so the resolver
      * falls back to workspace/default).
+     *
+     * Returns { ok, geoSuggestion? }. If the resolved proxy has a `country`
+     * known to the country-locale table, geoSuggestion contains the
+     * timezone/languages/locale that the caller can apply via
+     * fingerprintHandlers.applyGeoSuggestion(identityId, geoSuggestion). The
+     * UI typically surfaces this as a "Apply locale to identity?" dialog.
      */
     assignToIdentity(identityId, value) {
-      if (!pa()) return false
+      if (!pa()) return { ok: false, reason: 'no-proxy-assignment' }
       const ok = pa().assignToIdentity(identityId, value)
-      if (ok) {
-        applyAssignmentsToIdentity(browser, identityId)
-        browser.broadcastToWebUI('oz:proxies:changed')
+      if (!ok) return { ok: false, reason: 'assign-failed' }
+      applyAssignmentsToIdentity(browser, identityId)
+      browser.broadcastToWebUI('oz:proxies:changed')
+
+      // Look up resolved proxy to surface geoSuggestion (1.9d).
+      const resolved = pa().resolve({ identityId })
+      let geoSuggestion = null
+      if (resolved && resolved.country) {
+        geoSuggestion = resolveCountry(resolved.country)
       }
-      return ok
+      log.info('proxy-handlers', 'assignToIdentity ok', {
+        identityId,
+        value,
+        proxyId: resolved && resolved.id,
+        geoSuggestion: geoSuggestion && geoSuggestion.country,
+      })
+      return { ok: true, identityId, value, geoSuggestion }
     },
 
     /**
-     * Assign a proxy to a workspace. Same value semantics.
+     * Assign a proxy to a workspace. Same value semantics + returns
+     * geoSuggestion if the resolved proxy has a known country (1.9d).
      */
     assignToWorkspace(workspaceId, value) {
-      if (!pa()) return false
+      if (!pa()) return { ok: false, reason: 'no-proxy-assignment' }
       const ok = pa().assignToWorkspace(workspaceId, value)
-      if (ok) {
-        // Apply to every window currently on this workspace.
-        for (const win of browser.windows || []) {
-          if (win.workspaceId === workspaceId) {
-            const focused = win.tabs && win.tabs.selected
-            if (focused) applyAssignmentsToIdentity(browser, focused.identityId)
-          }
+      if (!ok) return { ok: false, reason: 'assign-failed' }
+      // Apply to every window currently on this workspace.
+      for (const win of browser.windows || []) {
+        if (win.workspaceId === workspaceId) {
+          const focused = win.tabs && win.tabs.selected
+          if (focused) applyAssignmentsToIdentity(browser, focused.identityId)
         }
-        browser.broadcastToWebUI('oz:proxies:changed')
       }
-      return ok
+      browser.broadcastToWebUI('oz:proxies:changed')
+
+      const resolved = pa().resolve({ workspaceId })
+      let geoSuggestion = null
+      if (resolved && resolved.country) {
+        geoSuggestion = resolveCountry(resolved.country)
+      }
+      return { ok: true, workspaceId, value, geoSuggestion }
     },
 
     setDefaultStrategy(strategy) {

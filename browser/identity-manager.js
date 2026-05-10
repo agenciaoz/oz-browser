@@ -336,6 +336,22 @@ class IdentityManager {
         })
       }
     }
+
+    // 1.9b: also fire any registered session init hooks (FingerprintEngine
+    // + future cross-cutting setup). Hooks run in registration order. A
+    // throw in one hook does NOT block the rest.
+    if (this._sessionInitHooks && this._sessionInitHooks.length > 0) {
+      for (const hook of this._sessionInitHooks) {
+        try {
+          hook(id, ses)
+        } catch (err) {
+          log.warn('identity-manager', 'session init hook failed', {
+            id,
+            message: err.message,
+          })
+        }
+      }
+    }
     log.debug('identity-manager', 'session resolved', {
       id,
       cached: false,
@@ -359,12 +375,34 @@ class IdentityManager {
    *
    * Signature: `(identityId, session) => void` — the host typically calls
    * proxyAssignment.resolve(...) and session.setProxy(...).
+   *
+   * 1.9b: also used to wire FingerprintEngine. Multiple callers OK — see
+   * addSessionInitHook for the multi-hook variant. setProxyResolutionHook
+   * REPLACES the single hook (legacy behavior); addSessionInitHook APPENDS.
    */
   setProxyResolutionHook(fn) {
     this._proxyResolutionHook = fn
     log.info('identity-manager', 'proxy resolution hook installed', {
       installed: typeof fn === 'function',
     })
+  }
+
+  /**
+   * 1.9b: append a hook that runs after each session creation. Multiple
+   * hooks chain in registration order. Use for cross-cutting per-session
+   * setup (proxy assignment, fingerprint UA, etc) without coupling
+   * IdentityManager to those subsystems.
+   *
+   * Signature: `(identityId, session) => void`
+   */
+  addSessionInitHook(fn) {
+    if (typeof fn !== 'function') return false
+    if (!this._sessionInitHooks) this._sessionInitHooks = []
+    this._sessionInitHooks.push(fn)
+    log.info('identity-manager', 'session init hook appended', {
+      total: this._sessionInitHooks.length,
+    })
+    return true
   }
 
   /**

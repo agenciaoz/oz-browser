@@ -171,8 +171,9 @@ SUB-ETAPA 1A — NÚCLEO USABLE (MVP para Jose y oficina)
 
 SUB-ETAPA 1B — CALIDAD Y DIFERENCIADORES
 │
-├─ 1.8  Proxy Manager                          ✅ HECHO (5 sub-fases, 908 tests, ADR 0017)
-├─ 1.9  FingerprintEngine "Ghost+"             ⏳ ← era 1.5
+├─ 1.8  Proxy Manager                          ✅ HECHO (5 sub-fases, 930 tests, ADR 0017)
+├─ 1.9  FingerprintEngine "Ghost+"             ✅ HECHO (5 sub-fases, 1070 tests, ADR 0018; 11 vectores spoofeados)
+├─ 1.9.5 Pixelscan/CreepJS CI suite            ⏳ ← NUEVO, ~3-4h validation real
 └─ 1.10 Settings UI + Bookmarks/Downloads/History + Polish + Extensions multi-identity + M-series perf  ⏳
 
 ETAPA 2+ — UX, distribución, comercial
