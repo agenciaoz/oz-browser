@@ -490,6 +490,26 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 
 ### ETAPA 3 — Distribución firmada + auto-update
 
+**Estado (2026-05-10):** Etapa 3 dividida en 5 sub-bloques. **3a ✅ cerrado**, 3b/3c/3d/3e bloqueados ~2d hasta Apple Dev account.
+
+| Sub-bloque                     | Status        | Qué hace                                                      | Bloqueado por                        |
+| ------------------------------ | ------------- | ------------------------------------------------------------- | ------------------------------------ |
+| **3a** Package + .dmg unsigned | ✅ 2026-05-10 | Empaquetar .app + generar .dmg para drag-to-install local     | —                                    |
+| **3b** Code sign               | ⏳ ~2d        | Firmar .app con Developer ID Application cert                 | Apple Dev account ($99)              |
+| **3c** Notarization            | ⏳ ~2d        | Subir .app a Apple para notarización + stapler                | 3b                                   |
+| **3d** Auto-update wiring      | ⏳            | `update-electron-app` + GitHub Releases como CDN              | 3c (sin notarizar falla en silencio) |
+| **3e** CI release workflow     | ⏳            | `.github/workflows/release.yml` con tag-trigger build firmado | 3b/3c (secrets en GitHub)            |
+
+**3a entregables (cerrado):**
+
+- `forge.config.js` con makers dmg+zip+squirrel, `appBundleId: com.agenciaoz.oz-browser`, `asar:true`, extraResource `browser/ui` + `preload-fingerprint.js`, plugins webpack + auto-unpack-natives.
+- `webpack.main.config.js` con `@napi-rs/keyring` external (sus .node bindings se rompen post-bundle por createRequire(\_\_filename)). `exceljs` SÍ se bundlea.
+- `scripts/forge-copy-externals.js` afterCopy hook que copia `@napi-rs/keyring` JS wrapper + `keyring-darwin-arm64` native binding al packaged app/node_modules.
+- `out/make/OZ Browser-0.1.0-arm64.dmg` (112MB) + `.zip` (112MB) generados.
+- Detalle: ADR 0020 + `docs/history/17-bloque-etapa-3a-resultado.md`.
+
+**3a gotcha documentado:** `npm rebuild` es paso obligatorio antes del primer `npm run make` porque `appdmg` (dep transitiva del maker-dmg) trae `macos-alias` + `fs-xattr` con native bindings que necesitan compilarse contra el Node actual. Sin rebuild, el make explota con "Cannot find module './build/Release/volume.node'". El bug viene de Jose teniendo `NODE_ENV=production` exportado en su shell, que hace que npm skipee compilación de bindings de devDeps.
+
 **Confirmación toolchain (decidido 2026-05-09 noche):** estamos en **electron-forge** (`@electron-forge/cli` + makers en package.json). NO en electron-builder. Esto define el path de auto-update:
 
 - ✅ `update-electron-app` — wrapper oficial del Electron team encima de `electron-updater`. Compatible con Forge.
