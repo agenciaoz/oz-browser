@@ -79,6 +79,16 @@ const setupMenu = (browser) => {
     else tabsH().lock(focused.id)
   }
 
+  // C-1 — Cmd+K opens the command palette. We target only the focused
+  // window's WebUI (broadcastToWebUI sends to all windows, which would open
+  // the palette in every chrome at once — not what the user wants).
+  const openCommandPalette = () => {
+    const win = browser.getFocusedWindow()
+    if (win && win.webContents && !win.webContents.isDestroyed()) {
+      win.webContents.send('oz:command-palette:open')
+    }
+  }
+
   const template = [
     ...(isMac ? [{ role: 'appMenu' }] : []),
     { role: 'fileMenu' },
@@ -99,7 +109,7 @@ const setupMenu = (browser) => {
           click: () => tabWc().reloadIgnoringCache(),
         },
         {
-          label: 'Toggle Developer Tool asdf',
+          label: 'Toggle Developer Tools',
           accelerator: isMac ? 'Alt+Command+I' : 'Ctrl+Shift+I',
           nonNativeMacOSRole: true,
           click: () => tabWc().toggleDevTools(),
@@ -179,6 +189,19 @@ const setupMenu = (browser) => {
             const t = tab()
             if (t && t.webContents) t.webContents.toggleDevTools()
           },
+        },
+      ],
+    },
+    {
+      // C-1 — Command palette lives in its own top-level menu entry so the
+      // ⌘K shortcut and the menu item stay discoverable. Single item for
+      // now; future quick-actions can join here.
+      label: 'Go',
+      submenu: [
+        {
+          label: 'Command Palette…',
+          accelerator: 'CmdOrCtrl+K',
+          click: openCommandPalette,
         },
       ],
     },

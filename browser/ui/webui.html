@@ -2040,6 +2040,144 @@
         color: var(--text-muted);
         font-size: 13px;
       }
+
+      /* ── Command Palette (C-1) ─────────────────────────────────────────
+         Top-aligned narrow modal mirroring Spotlight / Raycast / VS Code
+         quickopen. Highest z-index so it sits on top of every other modal
+         (a user can fire Cmd+K while the settings modal is open). */
+      .oz-cmdk {
+        align-items: flex-start;
+        padding-top: 12vh;
+        z-index: 11000;
+      }
+      .oz-cmdk-window {
+        position: relative;
+        width: 560px;
+        max-width: calc(100% - 32px);
+        max-height: calc(100vh - 24vh);
+        background: var(--bg-elevated);
+        border-radius: 10px;
+        box-shadow: 0 18px 48px rgba(0, 0, 0, 0.65);
+        display: flex;
+        flex-direction: column;
+        overflow: hidden;
+      }
+      #oz-cmdk-input {
+        background: transparent;
+        border: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--text-color);
+        font: inherit;
+        font-size: 15px;
+        padding: 16px 18px;
+        outline: none;
+        user-select: text;
+      }
+      #oz-cmdk-input::placeholder {
+        color: var(--text-muted);
+      }
+      .cmdk-list {
+        list-style: none;
+        margin: 0;
+        padding: 6px 0;
+        overflow-y: auto;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+      .cmdk-header {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        padding: 8px 18px 4px;
+        font-weight: 600;
+      }
+      .cmdk-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 8px 18px;
+        cursor: default;
+        font-size: 13px;
+        color: var(--text-color);
+      }
+      .cmdk-row.selected {
+        background: var(--accent);
+        color: white;
+      }
+      .cmdk-row.selected .cmdk-subtitle,
+      .cmdk-row.selected .cmdk-hint {
+        color: rgba(255, 255, 255, 0.78);
+      }
+      .cmdk-row mark {
+        background: transparent;
+        color: var(--accent);
+        font-weight: 600;
+      }
+      .cmdk-row.selected mark {
+        color: white;
+        text-decoration: underline;
+      }
+      .cmdk-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+        background: var(--text-muted);
+      }
+      .cmdk-emoji {
+        width: 18px;
+        text-align: center;
+        font-size: 14px;
+        flex: 0 0 auto;
+      }
+      .cmdk-text {
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .cmdk-label {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cmdk-subtitle {
+        font-size: 11px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cmdk-hint {
+        flex: 0 0 auto;
+        color: var(--text-muted);
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .cmdk-empty {
+        padding: 36px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      .cmdk-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 14px;
+        padding: 8px 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--text-muted);
+        font-size: 11px;
+        background: rgba(0, 0, 0, 0.18);
+      }
+      .cmdk-footer kbd {
+        background: rgba(255, 255, 255, 0.08);
+        border-radius: 3px;
+        padding: 1px 5px;
+        margin-right: 3px;
+        font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+        font-size: 10px;
+      }
     </style>
   </head>
   <body>
@@ -2900,6 +3038,36 @@
       </div>
     </div>
 
+    <!-- Command Palette modal (C-1) — Cmd+K. Distinct top-aligned layout
+         (not centered) and narrower than other modals, mirroring VS Code /
+         Raycast / Spotlight. Markup is intentionally minimal — the heavy
+         lifting lives in command-palette.js. -->
+    <div class="oz-modal oz-cmdk" id="oz-cmdk-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-cmdk-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-cmdk-title"
+      >
+        <input
+          type="text"
+          id="oz-cmdk-input"
+          placeholder="Type a command, identity, workspace, or tab title…"
+          autocomplete="off"
+          spellcheck="false"
+          aria-label="Command palette"
+        />
+        <ul id="oz-cmdk-list" class="cmdk-list"></ul>
+        <div id="oz-cmdk-empty" class="cmdk-empty" hidden>No results.</div>
+        <footer class="cmdk-footer">
+          <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+          <span><kbd>⏎</kbd> select</span>
+          <span><kbd>esc</kbd> close</span>
+        </footer>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
     <script src="./identity-editor.js"></script>
@@ -2913,6 +3081,7 @@
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>
     <script src="./browsing-data.js"></script>
+    <script src="./command-palette.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

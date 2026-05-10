@@ -19,6 +19,10 @@
   const onboardingUI = window.OZ.OnboardingUI ? new window.OZ.OnboardingUI() : null
   // 1.10.5: Browsing Data modal (Bookmarks/History/Downloads).
   const browsingDataUI = window.OZ.BrowsingDataUI ? new window.OZ.BrowsingDataUI() : null
+  // C-1: Command Palette (Cmd+K).
+  const commandPaletteUI = window.OZ.CommandPaletteUI
+    ? new window.OZ.CommandPaletteUI()
+    : null
   window.tabstrip = tabstrip
   window.ozsidebar = sidebar
   window.ozWsSwitcher = wsSwitcher
@@ -26,6 +30,7 @@
   window.ozSettingsUI = settingsUI
   window.ozOnboardingUI = onboardingUI
   window.ozBrowsingDataUI = browsingDataUI
+  window.ozCommandPaletteUI = commandPaletteUI
   ;(async () => {
     await tabstrip.init()
     await sidebar.init()

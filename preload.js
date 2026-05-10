@@ -366,5 +366,16 @@ if (isWebUI) {
         ipcRenderer.invoke('oz:log', 'ERROR', source, msg, args),
       reportError: (detail) => ipcRenderer.invoke('oz:report-error', detail),
     },
+    // C-1: Command Palette (Cmd+K). list() returns the full command set built
+    // from the focused window's identities/workspaces/tabs + static actions.
+    // onOpen(cb) fires when the user hits Cmd+K (main broadcasts the event).
+    commands: {
+      list: (opts) => ipcRenderer.invoke('oz:commands:list', opts),
+      onOpen(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:command-palette:open', listener)
+        return () => ipcRenderer.off('oz:command-palette:open', listener)
+      },
+    },
   })
 }

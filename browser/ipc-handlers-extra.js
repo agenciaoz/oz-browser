@@ -12,6 +12,7 @@ function registerExtraIpcHandlers(browser) {
   registerFingerprintHandlersIPC(browser)
   registerSettingsHandlersIPC(browser)
   registerBrowsingDataHandlersIPC(browser)
+  registerCommandPaletteHandlersIPC(browser)
 }
 
 // ----- Proxies (1.8a/1.8b/1.8c/1.8d) ---------------------------------------
@@ -138,6 +139,19 @@ function registerBrowsingDataHandlersIPC(browser) {
   ipcMain.handle('oz:history:remove', (_e, id) => hist.remove(id))
   ipcMain.handle('oz:history:clear', (_e, filter) => hist.clear(filter))
   ipcMain.handle('oz:history:addVisit', (_e, opts) => hist.addVisit(opts))
+}
+
+// ----- Command Palette (C-1) ------------------------------------------------
+
+function registerCommandPaletteHandlersIPC(browser) {
+  const h = browser.handlers.commands
+  ipcMain.handle('oz:commands:list', (event, opts) => {
+    // Resolve focused window id from the renderer's webContents so a window
+    // that lost focus mid-IPC still gets its own list (not another window's).
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const focusedWindowId = win ? win.id : opts && opts.focusedWindowId
+    return h.list({ focusedWindowId })
+  })
 }
 
 module.exports = { registerExtraIpcHandlers }
