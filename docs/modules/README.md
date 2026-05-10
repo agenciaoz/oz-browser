@@ -26,6 +26,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `mcp-tools-vault.js` 🆕    | ~180 | (split de mcp-tools.js, mismo doc)             |
 | `site-templates.js` 🆕     | ~220 | [site-templates.md](site-templates.md)         |
 | `preload-content.js` 🆕    | ~190 | [preload-content.md](preload-content.md)       |
+| `anti-logout.js` 🆕        | ~230 | [anti-logout.md](anti-logout.md)               |
 | `tabs.js`                  | 344  | [tabs.md](tabs.md)                             |
 | `logger.js`                | 111  | [logger.md](logger.md)                         |
 | `error-handler.js`         | 141  | [error-handler.md](error-handler.md)           |
@@ -65,6 +66,8 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `tests/move-to-workspace.smoketest.js` 🆕 | ~250 | header inline                                                |
 | `tests/account-vault.smoketest.js` 🆕     | ~350 | header inline                                                |
 | `tests/account-handlers.smoketest.js` 🆕  | ~430 | header inline                                                |
+| `tests/site-templates.smoketest.js` 🆕    | ~210 | header inline                                                |
+| `tests/anti-logout.smoketest.js` 🆕       | ~430 | header inline                                                |
 
 ## Pendientes (placeholders, se llenan al implementarse)
 

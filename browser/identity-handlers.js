@@ -47,6 +47,17 @@ function buildIdentityHandlers(browser) {
     create(opts) {
       try {
         const ident = im().create(opts || {})
+        // 1.5d: hook anti-logout cookie listener for the new identity session.
+        if (
+          browser.antiLogout &&
+          typeof browser.antiLogout.installForIdentity === 'function'
+        ) {
+          try {
+            browser.antiLogout.installForIdentity(ident.id)
+          } catch (_e) {
+            // best-effort
+          }
+        }
         browser.broadcastToWebUI('oz:identities:changed')
         log.info('identity-handlers', 'create ok', { id: ident.id, name: ident.name })
         return ident

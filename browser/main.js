@@ -23,6 +23,7 @@ setupErrorHandlers()
 const { IdentityManager } = require('./identity-manager')
 const { WorkspaceManager } = require('./workspace-manager')
 const { Vault } = require('./account-vault')
+const { AntiLogout } = require('./anti-logout')
 const { setupMenu } = require('./menu')
 const { TabbedBrowserWindow } = require('./window-manager')
 const { registerIpcHandlers } = require('./ipc-handlers')
@@ -149,6 +150,20 @@ class Browser {
     // the user via UI or by auto-fill (1.5c) when login page is detected.
     this.accountVault = new Vault()
     log.info('browser', 'Account Vault instantiated (locked, lazy unlock)')
+
+    // 1.5d: anti-logout — instala cookie hooks por identity para extender
+    // session cookies de redes sociales a 1 año. Detección de logout via
+    // cookie absence (flag account as needs_relogin + system notification).
+    // Wireado post-IdentityManager para que las identities existentes
+    // queden hookeadas. Identities nuevas se hookean en IdentityManager.create.
+    this.antiLogout = new AntiLogout({
+      identityManager: this.identityManager,
+      accountVault: this.accountVault,
+    })
+    this.antiLogout.install()
+    log.info('browser', 'AntiLogout installed', {
+      identitiesHooked: this.identityManager.list().length,
+    })
 
     registerIpcHandlers(this)
     setupMenu(this)
