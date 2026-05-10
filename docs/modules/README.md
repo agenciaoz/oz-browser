@@ -38,15 +38,17 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 
 ## Renderer / WebUI (browser/ui/)
 
-| Módulo                     | LOC  | Doc                                                  |
-| -------------------------- | ---- | ---------------------------------------------------- |
-| `webui.html`               | ~402 | (markup, sin .md hermano dedicado)                   |
-| `webui.js`                 | 27   | [ui-webui.md](ui-webui.md)                           |
-| `oz-utils.js`              | 41   | [ui-oz-utils.md](ui-oz-utils.md)                     |
-| `tabstrip.js`              | 165  | [ui-tabstrip.md](ui-tabstrip.md)                     |
-| `sidebar.js`               | 352  | [ui-sidebar.md](ui-sidebar.md)                       |
-| `identity-editor.js`       | 183  | [ui-identity-editor.md](ui-identity-editor.md)       |
-| `workspace-switcher.js` 🆕 | ~290 | [ui-workspace-switcher.md](ui-workspace-switcher.md) |
+| Módulo                         | LOC  | Doc                                                  |
+| ------------------------------ | ---- | ---------------------------------------------------- |
+| `webui.html`                   | ~402 | (markup, sin .md hermano dedicado)                   |
+| `webui.js`                     | 27   | [ui-webui.md](ui-webui.md)                           |
+| `oz-utils.js`                  | 41   | [ui-oz-utils.md](ui-oz-utils.md)                     |
+| `tabstrip.js`                  | 165  | [ui-tabstrip.md](ui-tabstrip.md)                     |
+| `sidebar.js`                   | 352  | [ui-sidebar.md](ui-sidebar.md)                       |
+| `identity-editor.js`           | 183  | [ui-identity-editor.md](ui-identity-editor.md)       |
+| `workspace-switcher.js` 🆕     | ~290 | [ui-workspace-switcher.md](ui-workspace-switcher.md) |
+| `account-manager.js` 🆕        | ~440 | [ui-account-manager.md](ui-account-manager.md)       |
+| `account-manager-render.js` 🆕 | ~125 | (split helper, mismo doc)                            |
 
 ## Preload (preload.js — root)
 

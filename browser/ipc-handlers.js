@@ -10,7 +10,7 @@
 // Exports: registerIpcHandlers(browser)
 // IPC channels registrados: ver tabla en docs/modules/ipc-handlers.md
 
-const { ipcMain } = require('electron')
+const { ipcMain, dialog, BrowserWindow } = require('electron')
 const log = require('./logger')
 const { showErrorDialog } = require('./error-handler')
 const { buildIdentityHandlers } = require('./identity-handlers')
@@ -185,11 +185,58 @@ function registerAccountHandlersIPC(browser) {
       browser.identityManager.identityIdForSession(event.sender.session) || identityIdArg // fall back to arg for WebUI/MCP callers (no isolated session)
     return h.getCredentialsForSite(site, identityId)
   })
-  ipcMain.handle('oz:accounts:proposeAutoSave', (event, opts = {}) => {
+  ipcMain.handle('oz:accounts:proposeAutoSave', async (event, opts = {}) => {
     const identityId =
       browser.identityManager.identityIdForSession(event.sender.session) ||
       opts.identityId
-    return h.proposeAutoSave({ ...opts, identityId })
+    const merged = { ...opts, identityId }
+    const proposal = h.proposeAutoSave(merged)
+    if (!proposal || proposal.__error) return proposal
+    // 1.5f: native confirmation dialog. Replicates 1Password/Bitwarden UX —
+    // bloquea hasta que el user decide save/update/discard.
+    const action = proposal.action // 'create' | 'update'
+    const verb = action === 'update' ? 'Update' : 'Save'
+    const win = BrowserWindow.fromWebContents(event.sender) || browser.getFocusedWindow()
+    const r = await dialog.showMessageBox(win, {
+      type: 'question',
+      buttons: [`${verb} password`, 'Not now'],
+      defaultId: 0,
+      cancelId: 1,
+      title: 'OZ Browser — Save credentials?',
+      message: `${verb} the password for "${merged.username}" on ${merged.site}?`,
+      detail:
+        action === 'update'
+          ? 'This will overwrite the existing entry in your vault.'
+          : 'A new account will be added to your encrypted vault.',
+    })
+    if (r.response !== 0) {
+      return { ...proposal, userChoice: 'declined' }
+    }
+    // User confirmed — persist via accounts handler.
+    const acctH = browser.handlers.accounts
+    if (action === 'update' && proposal.existingAccountId) {
+      const upd = await acctH.update(proposal.existingAccountId, {
+        password: merged.password,
+        lastLoginAt: Date.now(),
+        status: 'active',
+      })
+      return { ...proposal, userChoice: 'updated', accountId: upd && upd.id }
+    } else {
+      const created = await acctH.create({
+        identityId,
+        site: merged.site,
+        username: merged.username,
+        password: merged.password,
+        workspaceId: merged.workspaceId || null,
+        status: 'active',
+        lastLoginAt: Date.now(),
+      })
+      return {
+        ...proposal,
+        userChoice: 'created',
+        accountId: created && created.id,
+      }
+    }
   })
 }
 
@@ -202,6 +249,33 @@ function registerExcelHandlersIPC(browser) {
   ipcMain.handle('oz:excel:importFromFile', (_e, filePath, mode) =>
     h.importFromFile(filePath, mode),
   )
+
+  // 1.5f: native file dialog wrappers — renderer cannot use the dialog API
+  // directly (security). Returns { filePath } or { canceled: true }.
+  ipcMain.handle('oz:excel:pickExportPath', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const stamp = new Date().toISOString().slice(0, 10)
+    const result = await dialog.showSaveDialog(win, {
+      title: 'Export accounts to Excel',
+      defaultPath: `oz-accounts-${stamp}.xlsx`,
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+    })
+    if (result.canceled || !result.filePath) return { canceled: true }
+    return { filePath: result.filePath }
+  })
+
+  ipcMain.handle('oz:excel:pickImportPath', async (event) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const result = await dialog.showOpenDialog(win, {
+      title: 'Import accounts from Excel',
+      filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+      properties: ['openFile'],
+    })
+    if (result.canceled || !result.filePaths || !result.filePaths[0]) {
+      return { canceled: true }
+    }
+    return { filePath: result.filePaths[0] }
+  })
 }
 
 // ----- Tabs ↔ Identity binding & sidebar API --------------------------------

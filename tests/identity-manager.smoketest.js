@@ -50,6 +50,7 @@ const fakeElectron = {
       return TEST_USERDATA
     },
     getName: () => 'OZ Browser Test',
+    getAppPath: () => path.resolve(__dirname, '..'), // 1.5f: contentPreloadPath()
     on() {},
     whenReady: () => Promise.resolve(),
   },
@@ -149,16 +150,18 @@ section('_load() auto-crea Default')
   )
 }
 
-// 2. create() respeta cap de 3 (Default + 2 custom)
-section('Cap free tier MAX_IDENTITIES_FREE=3')
+// 2. create() respeta cap SOLO si OZ_TIER=free explícito (1.5f flip).
+section('Cap free tier MAX_IDENTITIES_FREE=3 (OZ_TIER=free opt-in)')
 {
-  const { IdentityManager, IdentityCapError, MAX_IDENTITIES_FREE } = freshIM()
+  const { IdentityManager, IdentityCapError, MAX_IDENTITIES_FREE, _restoreEnv } = freshIM(
+    { OZ_TIER: 'free' },
+  )
   ok('MAX_IDENTITIES_FREE exportado === 3', MAX_IDENTITIES_FREE === 3)
   ok('IdentityCapError exportado', typeof IdentityCapError === 'function')
 
   const im = new IdentityManager()
-  const a = im.create({ name: 'Cliente A' })
-  const b = im.create({ name: 'Cliente B' })
+  im.create({ name: 'Cliente A' })
+  im.create({ name: 'Cliente B' })
   ok('crea hasta llegar a 3 identities', im.list().length === 3)
 
   let threw = null
@@ -168,15 +171,25 @@ section('Cap free tier MAX_IDENTITIES_FREE=3')
     threw = e
   }
   ok(
-    '4ta identity tira IdentityCapError',
+    '4ta identity tira IdentityCapError con OZ_TIER=free',
     threw && threw.code === 'IDENTITY_CAP_REACHED',
     threw ? `code=${threw.code} message=${threw.message.slice(0, 80)}` : 'no throw',
   )
   ok('error tiene current/max correctos', threw && threw.current === 3 && threw.max === 3)
+  _restoreEnv()
 }
 
-// 3. OZ_TIER=paid bypassa cap
-section('OZ_TIER=paid bypassa cap')
+// 3. Default behavior (sin OZ_TIER) = sin cap (1.5f Jose use case = 50+ accounts)
+section('Default sin OZ_TIER === paid (sin cap)')
+{
+  const { IdentityManager } = freshIM()
+  const im = new IdentityManager()
+  for (let i = 0; i < 10; i++) im.create({ name: `Bulk ${i}` })
+  ok('crea 10+ identities sin error sin OZ_TIER set', im.list().length === 11)
+}
+
+// 4. OZ_TIER=paid sigue funcionando (alias explícito)
+section('OZ_TIER=paid bypassa cap (alias explícito)')
 {
   const { IdentityManager, _restoreEnv } = freshIM({ OZ_TIER: 'paid' })
   const im = new IdentityManager()

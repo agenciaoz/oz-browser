@@ -16,16 +16,22 @@ const crypto = require('crypto')
 const { app, session } = require('electron')
 const log = require('./logger')
 
-// 1.5c: content script preload for auto-fill / auto-save. Resolved at runtime
-// (in dev under electron-forge webpack, __dirname = .webpack/main, so we hop
-// up to the project root and into browser/preload-content.js).
-const CONTENT_PRELOAD_PATH = (() => {
-  try {
-    return require.resolve('./preload-content')
-  } catch (_e) {
-    return path.resolve(__dirname, '..', 'browser', 'preload-content.js')
-  }
-})()
+// 1.5c: content script preload for auto-fill / auto-save. Resolved lazily —
+// `app.getAppPath()` is only valid after `app.whenReady()`, so we defer the
+// computation to first session-creation. Under electron-forge webpack the
+// path is `<repo>/.webpack/main/../../browser/preload-content.js`; in a
+// packaged build it lives under the .asar at `app.getAppPath() + /browser/...`.
+let _contentPreloadPath = null
+function contentPreloadPath() {
+  if (_contentPreloadPath) return _contentPreloadPath
+  // 1) under electron-forge dev, __dirname = '<repo>/.webpack/main' (after
+  // bundle), so '..' twice lands at repo root.
+  const fromAppPath = path.join(app.getAppPath(), 'browser', 'preload-content.js')
+  // 2) packaged: same join works (asar root). The webpack-mangled __dirname is
+  // unreliable as a fallback, so trust app.getAppPath().
+  _contentPreloadPath = fromAppPath
+  return _contentPreloadPath
+}
 
 const DEFAULT_COLORS = [
   '#5b8def',
@@ -40,11 +46,15 @@ const DEFAULT_COLORS = [
   '#ff5630',
 ]
 
-// Free-tier cap. Bypass for development/internal builds via env OZ_TIER=paid.
-// When billing arrives (Etapa 5), this is replaced by an entitlement check
-// from auth-client.js. See plan §1 — Bloque 1.2 closing notes.
+// Identity cap. Default behavior in 1.5f: NO CAP (Jose's use case = 50+
+// social media accounts, internal/paid use). Free tier (3 identities) is now
+// OPT-IN via `OZ_TIER=free` — useful for screenshotting the upgrade prompt
+// during marketing or for free-tier dev builds. When billing arrives (Etapa
+// 5), this is replaced by an entitlement check from auth-client.js — the
+// `IS_PAID_TIER` flag stays as the runtime-bypass for power users.
 const MAX_IDENTITIES_FREE = 3
-const IS_PAID_TIER = process.env.OZ_TIER === 'paid'
+const IS_FREE_TIER = process.env.OZ_TIER === 'free'
+const IS_PAID_TIER = !IS_FREE_TIER
 
 class IdentityCapError extends Error {
   constructor(current, max) {
@@ -287,10 +297,21 @@ class IdentityManager {
     // identityIdForSession(event.sender.session) on each IPC call. This way
     // a compromised renderer cannot impersonate another identity.
     try {
-      ses.setPreloads([CONTENT_PRELOAD_PATH])
+      const preloadPath = contentPreloadPath()
+      // Electron 30+: registerPreloadScript is the modern API, setPreloads is
+      // deprecated but still works. Use the new API if available.
+      if (typeof ses.registerPreloadScript === 'function') {
+        ses.registerPreloadScript({
+          type: 'frame',
+          id: 'oz-content-preload',
+          filePath: preloadPath,
+        })
+      } else {
+        ses.setPreloads([preloadPath])
+      }
       log.debug('identity-manager', 'content preload registered', {
         id,
-        path: CONTENT_PRELOAD_PATH,
+        path: preloadPath,
       })
     } catch (err) {
       log.warn('identity-manager', 'setPreloads failed', {

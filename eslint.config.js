@@ -87,6 +87,7 @@ module.exports = [
         prompt: 'readonly',
         HTMLElement: 'readonly',
         Element: 'readonly',
+        Node: 'readonly',
         Event: 'readonly',
         MouseEvent: 'readonly',
         KeyboardEvent: 'readonly',

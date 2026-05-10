@@ -142,6 +142,9 @@ if (isWebUI) {
       exportToFile: (filePath) => ipcRenderer.invoke('oz:excel:exportToFile', filePath),
       importFromFile: (filePath, mode) =>
         ipcRenderer.invoke('oz:excel:importFromFile', filePath, mode),
+      // 1.5f: native file dialogs proxied via main (renderer can't hit dialog API directly)
+      pickExportPath: () => ipcRenderer.invoke('oz:excel:pickExportPath'),
+      pickImportPath: () => ipcRenderer.invoke('oz:excel:pickImportPath'),
     },
     nav: {
       back: () => ipcRenderer.invoke('oz:nav:back'),

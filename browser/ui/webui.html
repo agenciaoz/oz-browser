@@ -735,6 +735,367 @@
         letter-spacing: normal;
         font-weight: 400;
       }
+
+      /*----- ACCOUNT MANAGER MODAL (1.5f) -----*/
+
+      #oz-accounts-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin: 6px 8px 0 8px;
+        padding: 8px 10px;
+        background: rgba(108, 142, 239, 0.1);
+        border: 1px solid rgba(108, 142, 239, 0.25);
+        border-radius: 6px;
+        color: var(--accent);
+        font: inherit;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.02em;
+        cursor: pointer;
+      }
+      #oz-accounts-button:hover {
+        background: rgba(108, 142, 239, 0.18);
+      }
+      #oz-accounts-button .vault-status-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--text-muted);
+        flex: 0 0 auto;
+      }
+      #oz-accounts-button[data-vault='unlocked'] .vault-status-dot {
+        background: #36b37e;
+      }
+      #oz-accounts-button[data-vault='locked'] .vault-status-dot {
+        background: #ffab00;
+      }
+
+      /* Account Manager modal — wider than identity editor */
+      .oz-modal-window.am-window {
+        width: 720px;
+        max-width: calc(100% - 48px);
+        max-height: calc(100% - 64px);
+        padding: 16px 18px 14px;
+        gap: 10px;
+        overflow: hidden;
+      }
+      .am-section {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1 1 auto;
+        min-height: 0;
+      }
+      .am-section[hidden] {
+        display: none;
+      }
+
+      /* Lock view */
+      .am-lock {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 14px;
+        padding: 24px 0 8px;
+      }
+      .am-lock .am-lock-icon {
+        font-size: 40px;
+        opacity: 0.85;
+      }
+      .am-lock h3 {
+        margin: 0;
+        font-size: 14px;
+        font-weight: 600;
+      }
+      .am-lock p {
+        margin: 0;
+        font-size: 12px;
+        color: var(--text-muted);
+        text-align: center;
+        max-width: 380px;
+        line-height: 1.5;
+      }
+      .am-lock button {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 9px 18px;
+        font: inherit;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .am-lock button:hover {
+        background: #5a7be0;
+      }
+      .am-lock-secondary {
+        background: transparent !important;
+        color: var(--danger) !important;
+        font-size: 11px !important;
+        padding: 4px 8px !important;
+      }
+
+      /* Toolbar (search + filters + actions) */
+      .am-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 0 0 auto;
+        flex-wrap: wrap;
+      }
+      .am-toolbar input[type='search'],
+      .am-toolbar select {
+        background: var(--bg-color);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        color: var(--text-color);
+        padding: 6px 8px;
+        font: inherit;
+        font-size: 12px;
+        outline: none;
+        user-select: text;
+      }
+      .am-toolbar input[type='search'] {
+        flex: 1 1 180px;
+        min-width: 140px;
+      }
+      .am-toolbar input[type='search']:focus,
+      .am-toolbar select:focus {
+        border-color: var(--accent);
+      }
+      .am-toolbar select {
+        flex: 0 0 auto;
+      }
+      .am-toolbar .am-spacer {
+        flex: 1 0 8px;
+      }
+      .am-toolbar .am-action-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-color);
+        padding: 6px 10px;
+        border-radius: 5px;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .am-toolbar .am-action-btn:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .am-toolbar .am-primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        font-weight: 600;
+      }
+      .am-toolbar .am-primary:hover {
+        background: #5a7be0;
+      }
+
+      /* Account list */
+      .am-list-wrap {
+        flex: 1 1 auto;
+        min-height: 220px;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+      }
+      .am-list {
+        display: table;
+        width: 100%;
+        border-collapse: collapse;
+      }
+      .am-row {
+        display: table-row;
+        cursor: pointer;
+      }
+      .am-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .am-row .am-cell {
+        display: table-cell;
+        padding: 8px 10px;
+        font-size: 12px;
+        vertical-align: middle;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      }
+      .am-row.header .am-cell {
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        color: var(--text-muted);
+        font-weight: 600;
+        background: rgba(0, 0, 0, 0.15);
+        position: sticky;
+        top: 0;
+      }
+      .am-row.header {
+        cursor: default;
+      }
+      .am-row.header:hover {
+        background: rgba(0, 0, 0, 0.15);
+      }
+      .am-cell-site {
+        font-weight: 600;
+      }
+      .am-cell-username {
+        color: var(--text-muted);
+      }
+      .am-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        padding: 2px 7px;
+        border-radius: 999px;
+        font-size: 10.5px;
+        background: rgba(255, 255, 255, 0.07);
+        color: var(--text-color);
+      }
+      .am-chip-dot {
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        background: var(--text-muted);
+      }
+      .am-status {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 4px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .am-status.active {
+        background: rgba(54, 179, 126, 0.15);
+        color: #36b37e;
+      }
+      .am-status.needs_relogin {
+        background: rgba(255, 171, 0, 0.18);
+        color: #ffab00;
+      }
+      .am-status.inactive {
+        background: rgba(144, 144, 160, 0.15);
+        color: var(--text-muted);
+      }
+      .am-row-actions {
+        display: flex;
+        gap: 4px;
+        justify-content: flex-end;
+      }
+      .am-row-actions button {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 2px 6px;
+        border-radius: 4px;
+      }
+      .am-row-actions button:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-color);
+      }
+      .am-row-actions button.danger:hover {
+        color: var(--danger);
+      }
+      .am-empty {
+        padding: 30px 12px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+
+      .am-footer {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        font-size: 11px;
+        color: var(--text-muted);
+        flex: 0 0 auto;
+      }
+      .am-footer .am-spacer {
+        flex: 1;
+      }
+
+      /* Editor view */
+      .am-editor {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 10px 14px;
+      }
+      .am-editor .am-full {
+        grid-column: 1 / -1;
+      }
+      .am-editor label {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        font-weight: 600;
+      }
+      .am-editor input,
+      .am-editor select,
+      .am-editor textarea {
+        background: var(--bg-color);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        color: var(--text-color);
+        padding: 7px 9px;
+        font: inherit;
+        font-size: 13px;
+        outline: none;
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 400;
+        user-select: text;
+      }
+      .am-editor input:focus,
+      .am-editor select:focus,
+      .am-editor textarea:focus {
+        border-color: var(--accent);
+      }
+      .am-editor textarea {
+        resize: vertical;
+        min-height: 50px;
+      }
+
+      /* Import mode picker */
+      .am-import-mode {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        padding: 6px 0;
+      }
+      .am-import-mode label {
+        display: flex;
+        flex-direction: row;
+        gap: 8px;
+        align-items: flex-start;
+        cursor: pointer;
+        text-transform: none;
+        letter-spacing: normal;
+        font-size: 12px;
+        color: var(--text-color);
+        font-weight: 500;
+      }
+      .am-import-mode label > div {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .am-import-mode small {
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+      .am-import-mode .am-mode-danger {
+        color: var(--danger);
+      }
     </style>
   </head>
   <body>
@@ -787,6 +1148,10 @@
             </button>
           </div>
         </div>
+        <button id="oz-accounts-button" type="button" data-vault="unknown">
+          <span class="vault-status-dot"></span>
+          <span>🔐 Accounts</span>
+        </button>
         <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
         <div class="header">Identities</div>
         <div id="oz-identity-list"></div>
@@ -845,11 +1210,222 @@
       </div>
     </div>
 
+    <!-- Account Manager modal — managed by account-manager.js (1.5f) -->
+    <div class="oz-modal" id="oz-am-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-am-title"
+      >
+        <header>
+          <h2 id="oz-am-title">Account Manager</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <div class="oz-modal-error" id="oz-am-error" hidden></div>
+
+        <!-- View 1: Vault locked -->
+        <section class="am-section am-lock" id="oz-am-lock" hidden>
+          <div class="am-lock-icon">🔐</div>
+          <h3 id="oz-am-lock-title">Vault is locked</h3>
+          <p id="oz-am-lock-desc">
+            Unlock the vault to access your saved accounts. The master key is stored in
+            your macOS Keychain — you may be prompted to allow access.
+          </p>
+          <button type="button" id="oz-am-unlock-btn">Unlock vault</button>
+          <button type="button" class="am-lock-secondary" id="oz-am-destroy-btn">
+            Reset vault…
+          </button>
+        </section>
+
+        <!-- View 2: Account list -->
+        <section class="am-section" id="oz-am-list-view" hidden>
+          <div class="am-toolbar">
+            <input
+              type="search"
+              id="oz-am-search"
+              placeholder="Search site or username…"
+            />
+            <select id="oz-am-filter-identity">
+              <option value="">All identities</option>
+            </select>
+            <select id="oz-am-filter-workspace">
+              <option value="">All workspaces</option>
+            </select>
+            <select id="oz-am-filter-status">
+              <option value="">Any status</option>
+              <option value="active">Active</option>
+              <option value="needs_relogin">Needs re-login</option>
+              <option value="inactive">Inactive</option>
+            </select>
+            <span class="am-spacer"></span>
+            <button type="button" class="am-action-btn" id="oz-am-export-btn">
+              ⬇ Export…
+            </button>
+            <button type="button" class="am-action-btn" id="oz-am-import-btn">
+              ⬆ Import…
+            </button>
+            <button type="button" class="am-action-btn am-primary" id="oz-am-new-btn">
+              ＋ New
+            </button>
+          </div>
+
+          <div class="am-list-wrap">
+            <div class="am-list" id="oz-am-list">
+              <div class="am-row header">
+                <div class="am-cell">Site</div>
+                <div class="am-cell">Username</div>
+                <div class="am-cell">Identity</div>
+                <div class="am-cell">Workspace</div>
+                <div class="am-cell">Status</div>
+                <div class="am-cell"></div>
+              </div>
+            </div>
+            <div class="am-empty" id="oz-am-empty" hidden>
+              No accounts match the current filters.
+            </div>
+          </div>
+
+          <div class="am-footer">
+            <span id="oz-am-counts">0 accounts</span>
+            <span class="am-spacer"></span>
+            <button type="button" class="am-action-btn" id="oz-am-lock-btn">
+              🔒 Lock vault
+            </button>
+          </div>
+        </section>
+
+        <!-- View 3: Editor -->
+        <section class="am-section" id="oz-am-editor-view" hidden>
+          <form id="oz-am-form" class="am-editor">
+            <label class="am-full">
+              Site
+              <input
+                name="site"
+                type="text"
+                required
+                placeholder="e.g. x.com"
+                autocomplete="off"
+              />
+            </label>
+            <label>
+              Username
+              <input name="username" type="text" required autocomplete="off" />
+            </label>
+            <label>
+              Password
+              <input name="password" type="text" required autocomplete="off" />
+            </label>
+            <label>
+              Identity
+              <select name="identityId" required></select>
+            </label>
+            <label>
+              Workspace
+              <select name="workspaceId">
+                <option value="">— None —</option>
+              </select>
+            </label>
+            <label>
+              2FA Secret (optional)
+              <input
+                name="totpSecret"
+                type="text"
+                placeholder="base32 secret"
+                autocomplete="off"
+              />
+            </label>
+            <label>
+              Status
+              <select name="status">
+                <option value="active">Active</option>
+                <option value="needs_relogin">Needs re-login</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </label>
+            <label class="am-full">
+              Notes
+              <textarea name="notes" rows="2"></textarea>
+            </label>
+          </form>
+          <div class="oz-modal-actions">
+            <button type="button" class="oz-btn-cancel" id="oz-am-editor-cancel">
+              Back
+            </button>
+            <button type="button" class="oz-btn-save" id="oz-am-editor-save">Save</button>
+          </div>
+        </section>
+
+        <!-- View 4: Import mode picker -->
+        <section class="am-section" id="oz-am-import-view" hidden>
+          <p style="font-size: 12px; color: var(--text-muted); margin: 0">
+            Importing from <strong id="oz-am-import-filename">file.xlsx</strong>. Choose
+            how to merge into your vault:
+          </p>
+          <div class="am-import-mode">
+            <label>
+              <input type="radio" name="import-mode" value="PERMANENT_MERGE" checked />
+              <div>
+                <strong>Permanent merge</strong>
+                <small>
+                  Update accounts matched by identity+site+username, add the rest.
+                  Identities and workspaces missing in the vault are auto-created.
+                </small>
+              </div>
+            </label>
+            <label>
+              <input type="radio" name="import-mode" value="NEW_WORKSPACE" />
+              <div>
+                <strong>New workspace</strong>
+                <small>
+                  Put all imported accounts into a new dedicated workspace named "Imported
+                  YYYY-MM-DD". Existing data untouched.
+                </small>
+              </div>
+            </label>
+            <label>
+              <input type="radio" name="import-mode" value="EPHEMERAL_SESSION" />
+              <div>
+                <strong>Ephemeral session</strong>
+                <small>
+                  Don't persist anything — only show the parsed rows in this session.
+                  Useful for one-shot logins (external client, etc.).
+                </small>
+              </div>
+            </label>
+            <label>
+              <input type="radio" name="import-mode" value="OVERWRITE_TOTAL" />
+              <div>
+                <strong class="am-mode-danger">⚠ Overwrite total</strong>
+                <small class="am-mode-danger">
+                  REPLACE the entire vault with the file's contents. Make a Time Machine
+                  snapshot first — this is destructive.
+                </small>
+              </div>
+            </label>
+          </div>
+          <div class="oz-modal-actions">
+            <button type="button" class="oz-btn-cancel" id="oz-am-import-cancel">
+              Cancel
+            </button>
+            <button type="button" class="oz-btn-save" id="oz-am-import-confirm">
+              Import
+            </button>
+          </div>
+        </section>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
     <script src="./identity-editor.js"></script>
     <script src="./workspace-switcher.js"></script>
     <script src="./sidebar.js"></script>
+    <script src="./account-manager-render.js"></script>
+    <script src="./account-manager.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

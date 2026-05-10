@@ -41,6 +41,7 @@ const fakeElectron = {
       return TEST_USERDATA
     },
     getName: () => 'OZ Browser MCP Test',
+    getAppPath: () => path.resolve(__dirname, '..'), // 1.5f: contentPreloadPath()
     on() {},
     whenReady: () => Promise.resolve(),
   },
@@ -506,6 +507,8 @@ console.log(`Test userData: ${TEST_USERDATA}`)
       'oz:tabs:bulkCreateLazy', // power-user, reduce v1 surface
       'oz:workspaces:rename', // wrapper of oz.workspaces.update
       'oz:workspaces:setColor', // wrapper of oz.workspaces.update
+      'oz:excel:pickExportPath', // 1.5f UI-only file dialog wrapper
+      'oz:excel:pickImportPath', // 1.5f UI-only file dialog wrapper
     ])
 
     for (const channel of found) {
