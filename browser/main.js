@@ -179,7 +179,11 @@ class Browser {
   }
 
   getFocusedWindow() {
-    return this.windows.find((w) => w.window.isFocused()) || this.windows[0]
+    // Hotfix HX2: defensive — even after the 'closed' splice, there's a
+    // tick where the listener hasn't run yet. Skip any zombie whose
+    // BrowserWindow was destroyed before calling isFocused().
+    const live = this.windows.filter((w) => w.window && !w.window.isDestroyed())
+    return live.find((w) => w.window.isFocused()) || live[0] || null
   }
 
   getWindowFromBrowserWindow(window) {
@@ -573,6 +577,25 @@ class Browser {
       },
     })
     this.windows.push(win)
+
+    // Hotfix HX2: splice the TabbedBrowserWindow OUT of `this.windows` once
+    // the underlying BrowserWindow is fully destroyed. Without this, every
+    // closed window lingered in the array as a zombie with `w.window`
+    // pointing at a destroyed native handle. `getFocusedWindow` iterated
+    // those zombies and called `w.window.isFocused()` → "Object has been
+    // destroyed" thrown synchronously from any IPC handler downstream
+    // (workspaces:getActive, workspaces:setActive after creating a new
+    // workspace, etc). Listen on 'closed' (final, non-cancelable) rather
+    // than 'close' (preventable + already used for the snapshot path in
+    // window-manager.js).
+    win.window.on('closed', () => {
+      const idx = this.windows.indexOf(win)
+      if (idx >= 0) this.windows.splice(idx, 1)
+      log.info('browser', 'window removed from active list', {
+        windowId: win.id,
+        remaining: this.windows.length,
+      })
+    })
 
     if (process.env.SHELL_DEBUG) {
       win.webContents.openDevTools({ mode: 'detach' })
