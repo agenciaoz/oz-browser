@@ -17,12 +17,15 @@
   const settingsUI = window.OZ.SettingsUI ? new window.OZ.SettingsUI() : null
   // 1.10c: First-run onboarding modal.
   const onboardingUI = window.OZ.OnboardingUI ? new window.OZ.OnboardingUI() : null
+  // 1.10.5: Browsing Data modal (Bookmarks/History/Downloads).
+  const browsingDataUI = window.OZ.BrowsingDataUI ? new window.OZ.BrowsingDataUI() : null
   window.tabstrip = tabstrip
   window.ozsidebar = sidebar
   window.ozWsSwitcher = wsSwitcher
   window.ozProxyManagerUI = proxyManagerUI
   window.ozSettingsUI = settingsUI
   window.ozOnboardingUI = onboardingUI
+  window.ozBrowsingDataUI = browsingDataUI
   ;(async () => {
     await tabstrip.init()
     await sidebar.init()

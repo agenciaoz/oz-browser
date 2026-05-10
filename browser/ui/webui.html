@@ -1672,6 +1672,189 @@
       .onb-controls button.primary:hover {
         background: rgba(91, 141, 239, 0.32);
       }
+
+      /*----- BROWSING DATA MODAL (1.10.5) -----*/
+
+      #oz-bd-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin: 4px 8px 0 8px;
+        padding: 7px 10px;
+        background: rgba(255, 171, 0, 0.08);
+        border: 1px solid rgba(255, 171, 0, 0.22);
+        border-radius: 6px;
+        color: #ffc266;
+        font: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #oz-bd-button:hover {
+        background: rgba(255, 171, 0, 0.18);
+      }
+
+      .bd-tabs {
+        display: flex;
+        gap: 4px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        margin-bottom: 12px;
+      }
+      .bd-tab-btn {
+        padding: 8px 14px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: var(--text-muted);
+        font: inherit;
+        font-size: 13px;
+        cursor: pointer;
+      }
+      .bd-tab-btn:hover {
+        color: var(--text-color);
+      }
+      .bd-tab-btn.active {
+        color: #ffc266;
+        border-bottom-color: #ffc266;
+      }
+      .bd-tab-btn .bd-count {
+        opacity: 0.6;
+        font-size: 11px;
+        margin-left: 4px;
+      }
+
+      .bd-toolbar {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .bd-toolbar input[type='search'],
+      .bd-toolbar select {
+        padding: 6px 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 5px;
+        color: var(--text-color);
+        font: inherit;
+        font-size: 12px;
+      }
+      .bd-toolbar input[type='search'] {
+        flex: 1;
+        min-width: 200px;
+      }
+      .bd-toolbar button {
+        padding: 6px 10px;
+        background: rgba(255, 86, 48, 0.08);
+        border: 1px solid rgba(255, 86, 48, 0.28);
+        border-radius: 5px;
+        color: #ff8866;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .bd-toolbar button:hover {
+        background: rgba(255, 86, 48, 0.18);
+      }
+      .bd-toolbar .bd-spacer {
+        flex: 1;
+      }
+
+      .bd-list {
+        max-height: 480px;
+        overflow-y: auto;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+      }
+      .bd-row {
+        display: grid;
+        gap: 12px;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        align-items: center;
+        font-size: 12px;
+      }
+      .bd-row:last-child {
+        border-bottom: none;
+      }
+      .bd-row:hover {
+        background: rgba(255, 255, 255, 0.03);
+      }
+      .bd-row.bookmark {
+        grid-template-columns: 18px 1fr 100px auto;
+      }
+      .bd-row.download {
+        grid-template-columns: 1fr 80px 80px auto;
+      }
+      .bd-row.history {
+        grid-template-columns: 1fr 100px 110px auto;
+      }
+      .bd-row .bd-favicon {
+        width: 14px;
+        height: 14px;
+        background: var(--text-muted);
+        border-radius: 2px;
+      }
+      .bd-row .bd-title {
+        font-weight: 500;
+        cursor: pointer;
+      }
+      .bd-row .bd-title:hover {
+        color: #b58ef5;
+      }
+      .bd-row .bd-url {
+        font-size: 11px;
+        color: var(--text-muted);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      .bd-row .bd-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .bd-row .bd-actions button {
+        padding: 3px 8px;
+        font-size: 11px;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 4px;
+        color: var(--text-color);
+        cursor: pointer;
+      }
+      .bd-row .bd-actions button:hover {
+        background: rgba(255, 86, 48, 0.18);
+        color: #ff5630;
+      }
+      .bd-status {
+        display: inline-block;
+        padding: 1px 7px;
+        border-radius: 9px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+      }
+      .bd-status.completed {
+        background: rgba(54, 179, 126, 0.18);
+        color: #36b37e;
+      }
+      .bd-status.cancelled,
+      .bd-status.interrupted {
+        background: rgba(255, 86, 48, 0.18);
+        color: #ff5630;
+      }
+      .bd-status.progressing {
+        background: rgba(91, 141, 239, 0.18);
+        color: #5b8def;
+      }
+      .bd-empty {
+        padding: 36px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 13px;
+      }
     </style>
   </head>
   <body>
@@ -1738,6 +1921,9 @@
         </button>
         <button id="oz-settings-button" type="button">
           <span>⚙️ Settings</span>
+        </button>
+        <button id="oz-bd-button" type="button">
+          <span>📚 Browsing Data</span>
         </button>
         <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
         <div class="header">Identities</div>
@@ -2448,6 +2634,85 @@
       </div>
     </div>
 
+    <!-- Browsing Data modal — managed by browsing-data.js (1.10.5) -->
+    <div class="oz-modal" id="oz-bd-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-bd-title"
+      >
+        <header>
+          <h2 id="oz-bd-title">📚 Browsing Data</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <div class="oz-modal-error" id="oz-bd-error" hidden></div>
+
+        <div class="bd-tabs" role="tablist">
+          <button class="bd-tab-btn active" data-tab="bookmarks">
+            Bookmarks <span class="bd-count" id="oz-bd-count-bookmarks">0</span>
+          </button>
+          <button class="bd-tab-btn" data-tab="history">
+            History <span class="bd-count" id="oz-bd-count-history">0</span>
+          </button>
+          <button class="bd-tab-btn" data-tab="downloads">
+            Downloads <span class="bd-count" id="oz-bd-count-downloads">0</span>
+          </button>
+        </div>
+
+        <!-- Bookmarks tab -->
+        <section data-tab="bookmarks" id="oz-bd-bookmarks">
+          <div class="bd-toolbar">
+            <input type="search" id="oz-bd-bm-search" placeholder="Search bookmarks…" />
+            <select id="oz-bd-bm-filter-identity">
+              <option value="">All identities</option>
+            </select>
+            <span class="bd-spacer"></span>
+            <button type="button" id="oz-bd-bm-clear">Clear all</button>
+          </div>
+          <div class="bd-list" id="oz-bd-bm-list"></div>
+          <div class="bd-empty" id="oz-bd-bm-empty">No bookmarks yet.</div>
+        </section>
+
+        <!-- History tab -->
+        <section data-tab="history" id="oz-bd-history" hidden>
+          <div class="bd-toolbar">
+            <input type="search" id="oz-bd-hist-search" placeholder="Search history…" />
+            <select id="oz-bd-hist-filter-identity">
+              <option value="">All identities</option>
+            </select>
+            <span class="bd-spacer"></span>
+            <button type="button" id="oz-bd-hist-clear">Clear all</button>
+          </div>
+          <div class="bd-list" id="oz-bd-hist-list"></div>
+          <div class="bd-empty" id="oz-bd-hist-empty">No history yet.</div>
+        </section>
+
+        <!-- Downloads tab -->
+        <section data-tab="downloads" id="oz-bd-downloads" hidden>
+          <div class="bd-toolbar">
+            <select id="oz-bd-dl-filter-identity">
+              <option value="">All identities</option>
+            </select>
+            <select id="oz-bd-dl-filter-state">
+              <option value="">All states</option>
+              <option value="progressing">Progressing</option>
+              <option value="completed">Completed</option>
+              <option value="cancelled">Cancelled</option>
+              <option value="interrupted">Interrupted</option>
+            </select>
+            <span class="bd-spacer"></span>
+            <button type="button" id="oz-bd-dl-clear">Clear all</button>
+          </div>
+          <div class="bd-list" id="oz-bd-dl-list"></div>
+          <div class="bd-empty" id="oz-bd-dl-empty">No downloads yet.</div>
+        </section>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
     <script src="./identity-editor.js"></script>
@@ -2459,6 +2724,7 @@
     <script src="./proxy-manager.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>
+    <script src="./browsing-data.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>
