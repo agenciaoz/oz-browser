@@ -463,6 +463,24 @@ Por cada Identity, generar y persistir un fingerprint coherente derivado de un s
 - **C-15 Health endpoint** (`/health` del HTTP server del MCP) — `{ status, identities, tabs, memoryMB, uptime }`. Útil para Admin Dashboard sin tocar Dropbox. ~30 min sobre 1.3-MCP.
 - **C-16 Telemetría + remote config para soporte (idea de Jose 2026-05-09)** — sincroniza periódicamente la config de cada usuario (identities/workspaces metadata + last error log + version + flags + crash dumps) al Dropbox de la oficina (mismo backend que Etapa 7-OFFICE — un solo storage). Habilita: (a) cuando un user reporta un bug Jose ve la config exacta sin pedírsela, (b) Admin puede pushear un cambio de config remoto (`remote-config.json` lee al boot, override flags/feature switches/forced-update). Privacy: opt-in fuerte, banner claro, granular (config sí, contenido del vault NO). ~6-8h. Bloque sugerido: post-Etapa 7-OFFICE (depende del Dropbox sync ya implementado). Diferenciador para venta a oficinas/equipos.
 
+### 🆕 Mini-bloque "Electron upgrade" — pre-Etapa 3 (~2-4h, decidido 2026-05-09 noche)
+
+**Por qué:** Electron actualmente está en **37.10.3** en el repo. El plan original aspiraba a 42.x pero nunca validamos compat. Mantener 37 funciona durante desarrollo pero antes de empaquetar para distribución (Etapa 3) queremos estar en la última estable de Electron — security + bugfixes + soporte futuro.
+
+**Por qué NO durante Bloque 1.4-WS:** Jose pidió no mezclar el upgrade con el desarrollo del Workspace Manager — un upgrade mayor de Electron puede romper `electron-chrome-extensions`, `electron-chrome-context-menu`, `electron-chrome-web-store`, partition sessions, build de Forge. Mejor commit aislado para rollback fácil.
+
+**Plan del mini-bloque:**
+
+1. `npm install electron@latest --save-dev`
+2. Validar versiones compat de los electron-chrome-\* (puede requerir actualizar a major nuevo).
+3. Smoke tests verde (los 177 actuales).
+4. Visual smoke: abrir OZ, crear identities + workspaces, switchear, verificar Chrome Web Store install funciona, verificar partition sessions aisladas correctamente.
+5. Si rompe algo: pin a la última versión que pase tests.
+6. Commit aislado `chore: upgrade electron to latest stable`.
+7. Update inventario + memoria + versión en SETUP-INVENTORY.txt.
+
+**Cuándo:** después de cerrar Bloque 1.4-WS, antes de empezar 1.5 ⭐Vault.
+
 ### ETAPA 3 — Distribución firmada + auto-update
 
 **Confirmación toolchain (decidido 2026-05-09 noche):** estamos en **electron-forge** (`@electron-forge/cli` + makers en package.json). NO en electron-builder. Esto define el path de auto-update:
