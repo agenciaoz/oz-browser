@@ -25,6 +25,7 @@ const { WorkspaceManager } = require('./workspace-manager')
 const { Vault } = require('./account-vault')
 const { AntiLogout } = require('./anti-logout')
 const { BackupManager } = require('./backup-manager')
+const { BookmarkManager } = require('./bookmark-manager')
 const { setupMenu } = require('./menu')
 const { TabbedBrowserWindow } = require('./window-manager')
 const { registerIpcHandlers } = require('./ipc-handlers')
@@ -45,6 +46,7 @@ class Browser {
   identityManager = null
   workspaceManager = null
   accountVault = null
+  bookmarkManager = null
   webuiExtensionId = null
 
   constructor() {
@@ -235,6 +237,14 @@ class Browser {
     log.info('browser', 'BackupManager loaded', {
       snapshotsDir: this.backupManager.snapshotsDir,
       existingCount: this.backupManager.listSnapshots().length,
+    })
+
+    // 1.7b: Bookmark Manager — flat list per-identity, unencrypted (URLs/titles
+    // are not secret like vault contents). Page UI lands in 1.10; for now the
+    // tab context menu adds entries via addFromTab.
+    this.bookmarkManager = new BookmarkManager()
+    log.info('browser', 'BookmarkManager loaded', {
+      bookmarksCount: this.bookmarkManager.list().length,
     })
 
     registerIpcHandlers(this)

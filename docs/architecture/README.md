@@ -21,11 +21,12 @@ Decisiones arquitectónicas del proyecto, numeradas. Cada cambio que afecta la a
 | 0013 | [CI strategy (GitHub Actions)](0013-ci-strategy.md)                                     | Aceptado                      | 2026-05-09 |
 | 0014 | [Linter mínimo + pre-commit hook](0014-lint-precommit.md)                               | Aceptado                      | 2026-05-09 |
 | 0015 | [Workspace model + ventana 1-1 lock exclusivo](0015-workspace-model.md)                 | Aceptado                      | 2026-05-09 |
+| 0016 | [Tab Context Menu (1.7) — native Menu.popup + handler split](0016-tab-context-menu.md)  | Aceptado                      | 2026-05-10 |
 
 ## Cómo agregar un ADR
 
 1. Copia la plantilla de [`../DOCUMENTATION-RULES.md`](../DOCUMENTATION-RULES.md#plantilla-de-adr)
-2. Numera secuencial (siguiente disponible: 0016)
+2. Numera secuencial (siguiente disponible: 0017)
 3. Estado inicial: "Propuesto"
 4. Cuando se acepta y se ejecuta: cambiar a "Aceptado"
 5. Si después se reemplaza por otro ADR, marcar "Reemplazado por NNNN"

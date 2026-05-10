@@ -108,6 +108,88 @@ function buildIdentityHandlers(browser) {
       log.info('identity-handlers', 'remove', { id, ok })
       return ok
     },
+
+    /**
+     * 1.7b — Clear browsing data for a single identity.
+     *
+     * @param {string} identityId
+     * @param {string} scope - 'cookies' | 'storage' | 'both' (default 'both')
+     *   - 'cookies' wipes cookie jar only.
+     *   - 'storage' wipes localStorage + IndexedDB + WebSQL + ServiceWorkers
+     *     + cache (everything except cookies).
+     *   - 'both' wipes all of the above.
+     *
+     * Note: this does NOT touch the on-disk Partition directory itself —
+     * Electron rewrites the SQLite/leveldb files on next session use. The
+     * Identity row, accounts, bookmarks, and config are all preserved.
+     *
+     * Live tabs of this identity are not destroyed; a `Refresh All in this
+     * Identity` after the clear gives the user a clean slate.
+     *
+     * Returns { ok: true, identityId, scope, clearedStorages } or
+     * { ok: false, reason }.
+     */
+    async clearBrowsingData(identityId, scope = 'both') {
+      const ident = im().get(identityId)
+      if (!ident) {
+        log.warn('identity-handlers', 'clearBrowsingData: identity not found', {
+          identityId,
+        })
+        return { ok: false, reason: 'identity-not-found', identityId }
+      }
+      const validScopes = ['cookies', 'storage', 'both']
+      if (!validScopes.includes(scope)) {
+        return { ok: false, reason: 'invalid-scope', scope }
+      }
+
+      const ses = im().getSession(identityId)
+      const storagesByScope = {
+        cookies: ['cookies'],
+        storage: [
+          'appcache',
+          'filesystem',
+          'indexdb',
+          'localstorage',
+          'shadercache',
+          'websql',
+          'serviceworkers',
+          'cachestorage',
+        ],
+        both: [
+          'appcache',
+          'cookies',
+          'filesystem',
+          'indexdb',
+          'localstorage',
+          'shadercache',
+          'websql',
+          'serviceworkers',
+          'cachestorage',
+        ],
+      }
+      const storages = storagesByScope[scope]
+
+      try {
+        await ses.clearStorageData({ storages })
+        // Also flush the HTTP cache when scope wipes storage (storage|both).
+        if (scope !== 'cookies' && typeof ses.clearCache === 'function') {
+          await ses.clearCache()
+        }
+      } catch (err) {
+        log.error('identity-handlers', 'clearStorageData failed', {
+          identityId,
+          scope,
+          message: err.message,
+        })
+        return { ok: false, reason: 'clear-failed', message: err.message }
+      }
+      log.info('identity-handlers', 'clearBrowsingData ok', {
+        identityId,
+        scope,
+        storages,
+      })
+      return { ok: true, identityId, scope, clearedStorages: storages }
+    },
   }
 }
 

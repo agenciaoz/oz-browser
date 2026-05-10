@@ -163,11 +163,11 @@ SUB-ETAPA 1A — NÚCLEO USABLE (MVP para Jose y oficina)
 ├─ 1.3.5-CI  GitHub Actions + check-loc        ⏳ ← NUEVO, evita regresión
 ├─ 1.3.6-DX  ESLint + pre-commit + checklist   ⏳ ← NUEVO, calidad
 │
-├─ 1.4-WS Workspace Manager                    ⏳ ← era 1.3
-├─ 1.5  ⭐ Account Vault (CORE)                ⏳ ← era 1.10, sube a 1.5
+├─ 1.4-WS Workspace Manager                    ✅ HECHO (5 sub-fases, 220 tests, ADR 0015)
+├─ 1.5  ⭐ Account Vault (CORE)                ✅ HECHO (6 sub-fases, 504 tests, ADRs 0008+0010)
 │       Excel I/O · auto-fill · anti-logout
-├─ 1.6  Time Machine + Backup                  ⏳ ← era 1.8
-└─ 1.7  Tab Context Menu + Cookies/Identity    ⏳ ← era 1.6
+├─ 1.6  Time Machine + Backup                  ✅ HECHO (3 sub-fases, 549 tests, .ozbackup format custom)
+└─ 1.7  Tab Context Menu + Cookies/Identity    ✅ HECHO (4 sub-fases, 750 tests, ADR 0016)
 
 SUB-ETAPA 1B — CALIDAD Y DIFERENCIADORES
 │

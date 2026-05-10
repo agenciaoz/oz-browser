@@ -16,6 +16,7 @@
 // keep this file <500 LOC (ADR 0005). They get spread into the array below.
 
 const { buildVaultAccountsTools } = require('./mcp-tools-vault')
+const { buildTabContextTools } = require('./mcp-tools-tab-context')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -35,6 +36,8 @@ function buildToolCatalog(browser) {
   const accounts = () => browser.handlers && browser.handlers.accounts
   const excel = () => browser.handlers && browser.handlers.excel
   const timemachine = () => browser.handlers && browser.handlers.timemachine
+  const bookmarks = () => browser.handlers && browser.handlers.bookmarks
+  const cookies = () => browser.handlers && browser.handlers.cookies
 
   return [
     // -------------------- identities --------------------
@@ -370,6 +373,9 @@ function buildToolCatalog(browser) {
 
     // -------------------- vault + accounts + excel + timemachine (1.5b/e + 1.6, extracted) --------------------
     ...buildVaultAccountsTools({ vault, accounts, excel, timemachine }),
+
+    // -------------------- tab context + bookmarks + cookies + clear-data (1.7, extracted) --------------------
+    ...buildTabContextTools({ tabs, bookmarks, cookies, identities }),
 
     // -------------------- system metrics --------------------
     {

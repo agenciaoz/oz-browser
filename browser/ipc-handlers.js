@@ -10,26 +10,35 @@
 // Exports: registerIpcHandlers(browser)
 // IPC channels registrados: ver tabla en docs/modules/ipc-handlers.md
 
-const { ipcMain, dialog, BrowserWindow } = require('electron')
+const { ipcMain, dialog, BrowserWindow, Menu } = require('electron')
 const log = require('./logger')
 const { showErrorDialog } = require('./error-handler')
 const { buildIdentityHandlers } = require('./identity-handlers')
 const { buildTabHandlers } = require('./tab-handlers')
+const { buildTabContextHandlers } = require('./tab-context-handlers')
+const { buildTabContextMenu } = require('./tab-context-menu')
 const { buildWorkspaceHandlers } = require('./workspace-handlers')
 const { buildVaultHandlers, buildAccountHandlers } = require('./account-handlers')
 const { buildExcelHandlers } = require('./excel-handlers')
 const { buildBackupHandlers } = require('./backup-handlers')
+const { buildBookmarkHandlers } = require('./bookmark-handlers')
+const { buildCookieHandlers } = require('./cookies-handlers')
 
 function registerIpcHandlers(browser) {
   // Domain handlers — shared with MCP server. Build once per browser instance.
+  // 1.7a: tab handlers split in two files — base CRUD (tab-handlers.js) +
+  // context menu actions (tab-context-handlers.js). Spread into one map so
+  // both consumers (IPC and MCP) see them under `tabs.<name>`.
   browser.handlers = {
     identities: buildIdentityHandlers(browser),
-    tabs: buildTabHandlers(browser),
+    tabs: { ...buildTabHandlers(browser), ...buildTabContextHandlers(browser) },
     workspaces: buildWorkspaceHandlers(browser),
     vault: buildVaultHandlers(browser),
     accounts: buildAccountHandlers(browser),
     excel: buildExcelHandlers(browser),
     timemachine: buildBackupHandlers(browser),
+    bookmarks: buildBookmarkHandlers(browser),
+    cookies: buildCookieHandlers(browser),
   }
 
   registerLogHandlers(browser)
@@ -40,6 +49,8 @@ function registerIpcHandlers(browser) {
   registerAccountHandlersIPC(browser)
   registerExcelHandlersIPC(browser)
   registerBackupHandlersIPC(browser)
+  registerBookmarkHandlersIPC(browser)
+  registerCookieHandlersIPC(browser)
   registerNavHandlers(browser)
   registerUiHandlers(browser)
 
@@ -126,6 +137,88 @@ function registerIdentityHandlersIPC(browser) {
   ipcMain.handle('oz:identities:setColor', (_e, id, color) => h.setColor(id, color))
   ipcMain.handle('oz:identities:update', (_e, id, patch) => h.update(id, patch))
   ipcMain.handle('oz:identities:remove', (_e, id) => h.remove(id))
+  // 1.7b
+  ipcMain.handle('oz:identities:clearBrowsingData', (_e, id, scope) =>
+    h.clearBrowsingData(id, scope),
+  )
+}
+
+// ----- Bookmarks (1.7b) -----------------------------------------------------
+
+function registerBookmarkHandlersIPC(browser) {
+  const h = browser.handlers.bookmarks
+
+  ipcMain.handle('oz:bookmarks:list', (_e, filter) => h.list(filter))
+  ipcMain.handle('oz:bookmarks:get', (_e, id) => h.get(id))
+  ipcMain.handle('oz:bookmarks:add', (_e, opts) => h.add(opts))
+  ipcMain.handle('oz:bookmarks:addFromTab', (_e, tabId) => h.addFromTab(tabId))
+  ipcMain.handle('oz:bookmarks:remove', (_e, id) => h.remove(id))
+}
+
+// ----- Cookies I/O (1.7c) ---------------------------------------------------
+
+function registerCookieHandlersIPC(browser) {
+  const h = browser.handlers.cookies
+  const FORMAT_LABELS = {
+    oz: 'OZ Browser JSON',
+    netscape: 'Netscape cookies.txt',
+    adspower: 'AdsPower JSON',
+    multilogin: 'Multilogin JSON',
+  }
+  const FORMAT_EXT = {
+    oz: 'json',
+    netscape: 'txt',
+    adspower: 'json',
+    multilogin: 'json',
+  }
+
+  ipcMain.handle('oz:cookies:exportContent', (_e, identityId, format) =>
+    h.exportContent(identityId, format),
+  )
+  ipcMain.handle('oz:cookies:exportToFile', (_e, identityId, format, filePath) =>
+    h.exportToFile(identityId, format, filePath),
+  )
+  ipcMain.handle('oz:cookies:importContent', (_e, identityId, format, content) =>
+    h.importContent(identityId, format, content),
+  )
+  ipcMain.handle('oz:cookies:importFromFile', (_e, identityId, format, filePath) =>
+    h.importFromFile(identityId, format, filePath),
+  )
+
+  // Native file dialogs (renderer cannot reach dialog API directly).
+  ipcMain.handle('oz:cookies:pickExportPath', async (event, identityId, format) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const stamp = new Date().toISOString().slice(0, 10)
+    const ident = browser.identityManager && browser.identityManager.get(identityId)
+    const safeName = ((ident && ident.name) || identityId)
+      .replace(/[^a-z0-9-_]+/gi, '-')
+      .toLowerCase()
+    const ext = FORMAT_EXT[format] || 'json'
+    const result = await dialog.showSaveDialog(win, {
+      title: `Export cookies (${FORMAT_LABELS[format] || format})`,
+      defaultPath: `oz-cookies-${safeName}-${format}-${stamp}.${ext}`,
+      filters: [{ name: FORMAT_LABELS[format] || format, extensions: [ext] }],
+    })
+    if (result.canceled || !result.filePath) return { canceled: true }
+    return { filePath: result.filePath }
+  })
+
+  ipcMain.handle('oz:cookies:pickImportPath', async (event, format) => {
+    const win = BrowserWindow.fromWebContents(event.sender)
+    const ext = FORMAT_EXT[format] || 'json'
+    const result = await dialog.showOpenDialog(win, {
+      title: `Import cookies (${FORMAT_LABELS[format] || format})`,
+      filters: [
+        { name: FORMAT_LABELS[format] || format, extensions: [ext] },
+        { name: 'All files', extensions: ['*'] },
+      ],
+      properties: ['openFile'],
+    })
+    if (result.canceled || !result.filePaths || !result.filePaths[0]) {
+      return { canceled: true }
+    }
+    return { filePath: result.filePaths[0] }
+  })
 }
 
 // ----- Workspaces -----------------------------------------------------------
@@ -310,6 +403,54 @@ function registerTabHandlersIPC(browser) {
   ipcMain.handle('oz:tabs:moveToWorkspace', (_e, tabId, targetWorkspaceId) =>
     h.moveToWorkspace(tabId, targetWorkspaceId),
   )
+
+  // 1.7a: tab context menu actions ----------------------------------------
+  ipcMain.handle('oz:tabs:reload', (_e, tabId) => h.reload(tabId))
+  ipcMain.handle('oz:tabs:duplicate', (_e, tabId) => h.duplicate(tabId))
+  ipcMain.handle('oz:tabs:duplicateInTemporary', (_e, tabId) =>
+    h.duplicateInTemporary(tabId),
+  )
+  ipcMain.handle('oz:tabs:duplicateInIdentity', (_e, tabId, identityId) =>
+    h.duplicateInIdentity(tabId, identityId),
+  )
+  ipcMain.handle('oz:tabs:duplicateInNewIdentity', (_e, tabId, name) =>
+    h.duplicateInNewIdentity(tabId, name),
+  )
+  ipcMain.handle('oz:tabs:refreshAllInIdentity', (_e, identityId) =>
+    h.refreshAllInIdentity(identityId),
+  )
+  ipcMain.handle('oz:tabs:moveToNewWindow', (_e, tabId) => h.moveToNewWindow(tabId))
+  ipcMain.handle('oz:tabs:pin', (_e, tabId) => h.pin(tabId))
+  ipcMain.handle('oz:tabs:unpin', (_e, tabId) => h.unpin(tabId))
+  ipcMain.handle('oz:tabs:mute', (_e, tabId) => h.mute(tabId))
+  ipcMain.handle('oz:tabs:unmute', (_e, tabId) => h.unmute(tabId))
+  ipcMain.handle('oz:tabs:closeOthers', (_e, tabId) => h.closeOthers(tabId))
+  ipcMain.handle('oz:tabs:closeToRight', (_e, tabId) => h.closeToRight(tabId))
+
+  // 1.7a: context-menu opener — main builds the native template and pops it
+  // up at the cursor location for the requesting window. Renderer just sends
+  // the tabId; the menu's click handlers run in main, no IPC round-trip per
+  // item. x/y are optional (Electron defaults to current cursor position).
+  ipcMain.handle('oz:tabs:contextMenu', (event, tabId, opts = {}) => {
+    const template = buildTabContextMenu({ browser, tabId })
+    if (!template || template.length === 0) return false
+    const menu = Menu.buildFromTemplate(template)
+    const win = BrowserWindow.fromWebContents(event.sender) || browser.getFocusedWindow()
+    if (!win) return false
+    const popupOpts = {}
+    if (typeof opts.x === 'number' && typeof opts.y === 'number') {
+      popupOpts.x = Math.round(opts.x)
+      popupOpts.y = Math.round(opts.y)
+    }
+    menu.popup({ window: win.window || win, ...popupOpts })
+    log.info('ipc', 'tab context menu popup', {
+      tabId,
+      windowId: (win.window || win).id,
+      x: popupOpts.x,
+      y: popupOpts.y,
+    })
+    return true
+  })
 }
 
 // ----- Navigation controls (operate on focused tab) -------------------------

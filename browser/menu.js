@@ -25,6 +25,49 @@ const setupMenu = (browser) => {
     }
   }
 
+  // 1.7d: keyboard shortcuts for Ghost Browser parity. These call the same
+  // tab-handlers / tab-context-handlers maps the right-click menu uses.
+  const focusedTabId = () => {
+    const t = browser.getFocusedWindow()?.getFocusedTab()
+    return t ? t.id : null
+  }
+  const focusedIdentityId = () => {
+    const t = browser.getFocusedWindow()?.getFocusedTab()
+    return (t && t.identityId) || browser.activeIdentityId
+  }
+  const tabsH = () => browser.handlers && browser.handlers.tabs
+  const idsH = () => browser.handlers && browser.handlers.identities
+
+  const newTabCurrentId = () => {
+    const id = focusedIdentityId()
+    if (id && tabsH()) tabsH().openInIdentity(id, 'about:blank')
+  }
+  const newTabDefault = () => {
+    const def = browser.identityManager?.getDefault()
+    if (def && tabsH()) tabsH().openInIdentity(def.id, 'about:blank')
+  }
+  const newIdentity = () => {
+    if (!idsH()) return
+    const ident = idsH().create({ name: 'New Identity' })
+    if (ident && ident.id && tabsH()) {
+      tabsH().openInIdentity(ident.id, 'about:blank')
+    }
+  }
+  const duplicateFocused = () => {
+    const id = focusedTabId()
+    if (id && tabsH()) tabsH().duplicate(id)
+  }
+  const moveFocusedToNewWindow = () => {
+    const id = focusedTabId()
+    if (id && tabsH()) tabsH().moveToNewWindow(id)
+  }
+  const togglePinFocused = () => {
+    const focused = browser.getFocusedWindow()?.getFocusedTab()
+    if (!focused || !tabsH()) return
+    if (focused.pinned) tabsH().unpin(focused.id)
+    else tabsH().pin(focused.id)
+  }
+
   const template = [
     ...(isMac ? [{ role: 'appMenu' }] : []),
     { role: 'fileMenu' },
@@ -65,6 +108,54 @@ const setupMenu = (browser) => {
           label: 'Take snapshot now',
           accelerator: 'Shift+CmdOrCtrl+B',
           click: manualSnapshot,
+        },
+      ],
+    },
+    // 1.7d: Tab menu — Ghost-parity keyboard shortcuts. The full 16-option
+    // context menu still lives on right-click; this shortlist is for muscle
+    // memory (Cmd+T new tab, Alt+D duplicate, etc).
+    {
+      label: 'Tab',
+      submenu: [
+        {
+          label: 'New Tab (Current Identity)',
+          accelerator: 'CmdOrCtrl+T',
+          click: newTabCurrentId,
+        },
+        {
+          label: 'New Tab in Default Identity',
+          accelerator: 'Alt+G',
+          click: newTabDefault,
+        },
+        {
+          label: 'New Identity + New Tab',
+          accelerator: 'Alt+N',
+          click: newIdentity,
+        },
+        { type: 'separator' },
+        {
+          label: 'Duplicate Tab',
+          accelerator: 'Alt+D',
+          click: duplicateFocused,
+        },
+        {
+          label: 'Move Tab to New Window',
+          accelerator: 'Alt+S',
+          click: moveFocusedToNewWindow,
+        },
+        {
+          label: 'Pin / Unpin Tab',
+          accelerator: 'Alt+P',
+          click: togglePinFocused,
+        },
+        { type: 'separator' },
+        {
+          label: 'Open DevTools',
+          accelerator: 'Shift+CmdOrCtrl+J',
+          click: () => {
+            const t = tab()
+            if (t && t.webContents) t.webContents.toggleDevTools()
+          },
         },
       ],
     },

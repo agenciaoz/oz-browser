@@ -142,6 +142,17 @@
         safe(window.oz.tabs.select(tab.id), 'tabs.select'),
       )
 
+      // 1.7d: right-click → native context menu (same as sidebar — Menu.popup
+      // via main process). One templated menu shared across all click sites.
+      node.addEventListener('contextmenu', (ev) => {
+        ev.preventDefault()
+        if (!window.oz || !window.oz.tabs || !window.oz.tabs.contextMenu) return
+        safe(
+          window.oz.tabs.contextMenu(tab.id, { x: ev.clientX, y: ev.clientY }),
+          'tabs.contextMenu',
+        )
+      })
+
       const closeBtn = node.querySelector('.close')
       closeBtn.addEventListener('click', (ev) => {
         ev.stopPropagation()

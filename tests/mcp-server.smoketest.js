@@ -488,12 +488,11 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     const preloadPath = path.resolve(__dirname, '../preload.js')
     const preload = fs.readFileSync(preloadPath, 'utf-8')
 
-    // Channels the preload bridge invokes for the identities + tabs + workspaces
-    // + vault + accounts domains. We extract them from the preload.js source
-    // so we don't drift.
+    // Channels the preload bridge invokes for all tool-bearing domains. We
+    // extract them from the preload.js source so we don't drift.
     const found = new Set()
     const re =
-      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine):[a-zA-Z]+)'/g
+      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine|bookmarks|cookies):[a-zA-Z]+)'/g
     let m
     while ((m = re.exec(preload)) !== null) found.add(m[1])
 
@@ -505,10 +504,13 @@ console.log(`Test userData: ${TEST_USERDATA}`)
       'oz:identities:setColor', // wrapper of oz.identities.update
       'oz:tabs:getIdentity', // info available via oz.tabs.list
       'oz:tabs:bulkCreateLazy', // power-user, reduce v1 surface
+      'oz:tabs:contextMenu', // 1.7d UI-only — pops native menu via Menu.popup
       'oz:workspaces:rename', // wrapper of oz.workspaces.update
       'oz:workspaces:setColor', // wrapper of oz.workspaces.update
       'oz:excel:pickExportPath', // 1.5f UI-only file dialog wrapper
       'oz:excel:pickImportPath', // 1.5f UI-only file dialog wrapper
+      'oz:cookies:pickExportPath', // 1.7c UI-only file dialog wrapper
+      'oz:cookies:pickImportPath', // 1.7c UI-only file dialog wrapper
     ])
 
     for (const channel of found) {

@@ -96,6 +96,18 @@ if (isWebUI) {
         ipcRenderer.invoke('oz:tabs:bulkCreateLazy', count, identityId, urlTemplate),
       moveToWorkspace: (tabId, targetWorkspaceId) =>
         ipcRenderer.invoke('oz:tabs:moveToWorkspace', tabId, targetWorkspaceId),
+      // 1.7a: pop the native context menu for a tab (delegates to main, which
+      // builds the template via tab-context-menu.js and runs Menu.popup()).
+      contextMenu: (tabId, opts) =>
+        ipcRenderer.invoke('oz:tabs:contextMenu', tabId, opts),
+      // 1.7a: tab actions exposed to renderer (for keyboard shortcuts that
+      // can't go through the menu, e.g. Alt+D in tabstrip while focused).
+      reload: (tabId) => ipcRenderer.invoke('oz:tabs:reload', tabId),
+      duplicate: (tabId) => ipcRenderer.invoke('oz:tabs:duplicate', tabId),
+      pin: (tabId) => ipcRenderer.invoke('oz:tabs:pin', tabId),
+      unpin: (tabId) => ipcRenderer.invoke('oz:tabs:unpin', tabId),
+      mute: (tabId) => ipcRenderer.invoke('oz:tabs:mute', tabId),
+      unmute: (tabId) => ipcRenderer.invoke('oz:tabs:unmute', tabId),
 
       onUpdated(cb) {
         const listener = (_e, info) => cb(info)
@@ -162,6 +174,31 @@ if (isWebUI) {
         ipcRenderer.on('oz:timemachine:restore-completed', listener)
         return () => ipcRenderer.off('oz:timemachine:restore-completed', listener)
       },
+    },
+    bookmarks: {
+      list: (filter) => ipcRenderer.invoke('oz:bookmarks:list', filter),
+      get: (id) => ipcRenderer.invoke('oz:bookmarks:get', id),
+      add: (opts) => ipcRenderer.invoke('oz:bookmarks:add', opts),
+      addFromTab: (tabId) => ipcRenderer.invoke('oz:bookmarks:addFromTab', tabId),
+      remove: (id) => ipcRenderer.invoke('oz:bookmarks:remove', id),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:bookmarks:changed', listener)
+        return () => ipcRenderer.off('oz:bookmarks:changed', listener)
+      },
+    },
+    cookies: {
+      exportContent: (identityId, format) =>
+        ipcRenderer.invoke('oz:cookies:exportContent', identityId, format),
+      exportToFile: (identityId, format, filePath) =>
+        ipcRenderer.invoke('oz:cookies:exportToFile', identityId, format, filePath),
+      importContent: (identityId, format, content) =>
+        ipcRenderer.invoke('oz:cookies:importContent', identityId, format, content),
+      importFromFile: (identityId, format, filePath) =>
+        ipcRenderer.invoke('oz:cookies:importFromFile', identityId, format, filePath),
+      pickExportPath: (identityId, format) =>
+        ipcRenderer.invoke('oz:cookies:pickExportPath', identityId, format),
+      pickImportPath: (format) => ipcRenderer.invoke('oz:cookies:pickImportPath', format),
     },
     nav: {
       back: () => ipcRenderer.invoke('oz:nav:back'),
