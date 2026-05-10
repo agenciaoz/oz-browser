@@ -8,11 +8,16 @@
 ;(function () {
   const tabstrip = new window.OZ.TabStrip()
   const sidebar = new window.OZ.IdentitySidebar()
+  const wsSwitcher = window.OZ.WorkspaceSwitcher
+    ? new window.OZ.WorkspaceSwitcher()
+    : null
   window.tabstrip = tabstrip
   window.ozsidebar = sidebar
+  window.ozWsSwitcher = wsSwitcher
   ;(async () => {
     await tabstrip.init()
     await sidebar.init()
+    if (wsSwitcher) await wsSwitcher.init()
   })().catch((err) => {
     console.error('[oz/webui] boot failed:', err)
     if (window.oz && window.oz.log) {

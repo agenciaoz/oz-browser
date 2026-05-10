@@ -56,6 +56,35 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:identities:active-changed', listener)
       },
     },
+    workspaces: {
+      list: () => ipcRenderer.invoke('oz:workspaces:list'),
+      listActive: () => ipcRenderer.invoke('oz:workspaces:listActive'),
+      get: (id) => ipcRenderer.invoke('oz:workspaces:get', id),
+      getActive: (windowId) => ipcRenderer.invoke('oz:workspaces:getActive', windowId),
+      setActive: (workspaceId, windowId) =>
+        ipcRenderer.invoke('oz:workspaces:setActive', workspaceId, windowId),
+      create: (opts) => ipcRenderer.invoke('oz:workspaces:create', opts),
+      update: (id, patch) => ipcRenderer.invoke('oz:workspaces:update', id, patch),
+      rename: (id, name) => ipcRenderer.invoke('oz:workspaces:rename', id, name),
+      setColor: (id, color) => ipcRenderer.invoke('oz:workspaces:setColor', id, color),
+      duplicate: (id) => ipcRenderer.invoke('oz:workspaces:duplicate', id),
+      archive: (id) => ipcRenderer.invoke('oz:workspaces:archive', id),
+      restore: (id) => ipcRenderer.invoke('oz:workspaces:restore', id),
+      freeze: (id) => ipcRenderer.invoke('oz:workspaces:freeze', id),
+      unfreeze: (id) => ipcRenderer.invoke('oz:workspaces:unfreeze', id),
+      remove: (id) => ipcRenderer.invoke('oz:workspaces:remove', id),
+
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:workspaces:changed', listener)
+        return () => ipcRenderer.off('oz:workspaces:changed', listener)
+      },
+      onActiveChanged(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:workspaces:active-changed', listener)
+        return () => ipcRenderer.off('oz:workspaces:active-changed', listener)
+      },
+    },
     tabs: {
       list: () => ipcRenderer.invoke('oz:tabs:list'),
       getIdentity: (tabId) => ipcRenderer.invoke('oz:tabs:getIdentity', tabId),
