@@ -17,6 +17,8 @@ const { buildIdentityHandlers } = require('./identity-handlers')
 const { buildTabHandlers } = require('./tab-handlers')
 const { buildTabContextHandlers } = require('./tab-context-handlers')
 const { buildTabContextMenu } = require('./tab-context-menu')
+const { buildWorkspaceContextMenu } = require('./workspace-context-menu')
+const { buildIdentityContextMenu } = require('./identity-context-menu')
 const { buildWorkspaceHandlers } = require('./workspace-handlers')
 const { buildVaultHandlers, buildAccountHandlers } = require('./account-handlers')
 const { buildExcelHandlers } = require('./excel-handlers')
@@ -475,6 +477,47 @@ function registerTabHandlersIPC(browser) {
       windowId: (win.window || win).id,
       x: popupOpts.x,
       y: popupOpts.y,
+    })
+    return true
+  })
+
+  // HX4 (H3c hotfix): native context menus for workspace + identity in the
+  // sidebar tree. HTML menus got occluded by WebContentsView overlays (same
+  // problem ADR 0011 solved for tab right-click). Same Menu.popup pattern.
+  ipcMain.handle('oz:workspaces:contextMenu', (event, wsId, opts = {}) => {
+    const template = buildWorkspaceContextMenu({ browser, wsId })
+    if (!template || template.length === 0) return false
+    const menu = Menu.buildFromTemplate(template)
+    const win = BrowserWindow.fromWebContents(event.sender) || browser.getFocusedWindow()
+    if (!win) return false
+    const popupOpts = {}
+    if (typeof opts.x === 'number' && typeof opts.y === 'number') {
+      popupOpts.x = Math.round(opts.x)
+      popupOpts.y = Math.round(opts.y)
+    }
+    menu.popup({ window: win.window || win, ...popupOpts })
+    log.info('ipc', 'workspace context menu popup', {
+      wsId,
+      windowId: (win.window || win).id,
+    })
+    return true
+  })
+
+  ipcMain.handle('oz:identities:contextMenu', (event, identityId, opts = {}) => {
+    const template = buildIdentityContextMenu({ browser, identityId })
+    if (!template || template.length === 0) return false
+    const menu = Menu.buildFromTemplate(template)
+    const win = BrowserWindow.fromWebContents(event.sender) || browser.getFocusedWindow()
+    if (!win) return false
+    const popupOpts = {}
+    if (typeof opts.x === 'number' && typeof opts.y === 'number') {
+      popupOpts.x = Math.round(opts.x)
+      popupOpts.y = Math.round(opts.y)
+    }
+    menu.popup({ window: win.window || win, ...popupOpts })
+    log.info('ipc', 'identity context menu popup', {
+      identityId,
+      windowId: (win.window || win).id,
     })
     return true
   })

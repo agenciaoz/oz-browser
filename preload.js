@@ -52,6 +52,10 @@ if (isWebUI) {
         ipcRenderer.invoke('oz:identities:listByWorkspace', workspaceId),
       moveToWorkspace: (id, targetWorkspaceId) =>
         ipcRenderer.invoke('oz:identities:moveToWorkspace', id, targetWorkspaceId),
+      // HX4: native ctx menu (Menu.popup) — replaces the HTML ctx menu that
+      // got occluded by WebContentsView overlays.
+      contextMenu: (id, opts) =>
+        ipcRenderer.invoke('oz:identities:contextMenu', id, opts),
 
       onChanged(cb) {
         const listener = () => cb()
@@ -84,6 +88,10 @@ if (isWebUI) {
       // (per ADR 0023 D7). Without options, default behavior — reject if ws
       // has identities.
       remove: (id, options) => ipcRenderer.invoke('oz:workspaces:remove', id, options),
+      // HX4: native ctx menu (Menu.popup) for workspace right-click in
+      // sidebar — HTML menus got occluded by WebContentsViews.
+      contextMenu: (id, opts) =>
+        ipcRenderer.invoke('oz:workspaces:contextMenu', id, opts),
 
       onChanged(cb) {
         const listener = () => cb()
@@ -94,6 +102,26 @@ if (isWebUI) {
         const listener = (_e, payload) => cb(payload)
         ipcRenderer.on('oz:workspaces:active-changed', listener)
         return () => ipcRenderer.off('oz:workspaces:active-changed', listener)
+      },
+    },
+    // HX4: sidebar back-channels — the native ctx menu emits these events
+    // when an action requires renderer-side UI (inline rename input, open
+    // identity editor modal, alert on rejection).
+    sidebar: {
+      onRequestRename(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:sidebar:request-rename', listener)
+        return () => ipcRenderer.off('oz:sidebar:request-rename', listener)
+      },
+      onRequestEditIdentity(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:sidebar:request-edit-identity', listener)
+        return () => ipcRenderer.off('oz:sidebar:request-edit-identity', listener)
+      },
+      onRemoveRejected(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:sidebar:remove-rejected', listener)
+        return () => ipcRenderer.off('oz:sidebar:remove-rejected', listener)
       },
     },
     tabs: {

@@ -90,6 +90,11 @@
         this.render()
       })
       window.oz.tabs.onUpdated((info) => this.handleTabEvent(info))
+
+      // HX4 — native ctx menu back-channels (extracted to sidebar-events.js).
+      if (window.OZ.SidebarEvents) {
+        window.OZ.SidebarEvents.wireSidebarBackChannels(this)
+      }
     }
 
     async refresh() {
@@ -277,15 +282,15 @@
       })
     }
 
-    // --- context menus (delegated to sidebar-ctx-menus.js) -------------------
+    // --- context menus (HX4: native Menu.popup, see sidebar-events.js) -----
 
     showWorkspaceContextMenu(e, ws) {
-      const cm = window.OZ.SidebarCtxMenus
-      if (cm) cm.showWorkspaceContextMenu(this, e, ws)
+      const ev = window.OZ.SidebarEvents
+      if (ev) ev.showWorkspaceCtxMenu(e, ws)
     }
     showIdentityContextMenu(e, identity) {
-      const cm = window.OZ.SidebarCtxMenus
-      if (cm) cm.showIdentityContextMenu(this, e, identity)
+      const ev = window.OZ.SidebarEvents
+      if (ev) ev.showIdentityCtxMenu(e, identity)
     }
 
     // --- rendering -------------------------------------------------------------
@@ -293,13 +298,13 @@
     render() {
       if (!this.$root) return
       this.$root.innerHTML = ''
-      const visibleWs = this.workspaces.filter((w) => this.showArchived || !w.isArchived)
-      // Active workspace first, then by createdAt (stable order).
-      visibleWs.sort((a, b) => {
-        if (a.id === this.activeWorkspaceId) return -1
-        if (b.id === this.activeWorkspaceId) return 1
-        return (a.createdAt || 0) - (b.createdAt || 0)
-      })
+      // HX4 follow-up (Jose's feedback): keep workspaces in stable createdAt
+      // order. Active workspace gets a visual highlight (left accent border +
+      // filled background) but the row stays where it is — clicking should
+      // expand / collapse + switch active, never reshuffle the list.
+      const visibleWs = this.workspaces
+        .filter((w) => this.showArchived || !w.isArchived)
+        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
       for (const ws of visibleWs) {
         this.$root.appendChild(this.renderWorkspaceWrapper(ws))
       }
