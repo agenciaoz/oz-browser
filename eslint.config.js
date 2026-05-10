@@ -85,6 +85,7 @@ module.exports = [
         alert: 'readonly',
         confirm: 'readonly',
         prompt: 'readonly',
+        localStorage: 'readonly',
         HTMLElement: 'readonly',
         Element: 'readonly',
         Node: 'readonly',

@@ -351,6 +351,177 @@
         color: var(--text-color);
       }
 
+      /*----- H3c: TREE SIDEBAR (workspaces > identities > tabs) -----*/
+      /* Hide the deprecated pills container — workspace rows now live in
+         the unified tree below. */
+      #oz-workspace-pills {
+        display: none !important;
+      }
+
+      .tree-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 6px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        line-height: 1.3;
+        user-select: none;
+        position: relative;
+      }
+      .tree-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .tree-row.active {
+        background: rgba(108, 142, 239, 0.18);
+      }
+      .tree-row.archived {
+        opacity: 0.45;
+        font-style: italic;
+      }
+      .tree-row.dragging {
+        opacity: 0.4;
+      }
+      .tree-row.drop-target {
+        background: rgba(108, 142, 239, 0.32);
+        outline: 1px solid var(--accent);
+      }
+
+      .tree-chevron {
+        display: inline-block;
+        width: 10px;
+        font-size: 9px;
+        color: var(--text-muted);
+        transition: transform 0.12s;
+        flex: 0 0 10px;
+        text-align: center;
+      }
+      .tree-chevron.expanded {
+        transform: rotate(90deg);
+      }
+
+      .tree-chip {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex: 0 0 8px;
+      }
+
+      .tree-name {
+        flex: 1 1 auto;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .tree-name input {
+        background: var(--bg-color);
+        border: 1px solid var(--accent);
+        border-radius: 3px;
+        color: var(--text-color);
+        font-size: 12px;
+        padding: 0 4px;
+        width: 100%;
+      }
+
+      .tree-count {
+        font-size: 10.5px;
+        color: var(--text-muted);
+        flex: 0 0 auto;
+      }
+      .tree-count.zero {
+        opacity: 0.4;
+      }
+
+      .tree-row .add-tab {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 14px;
+        line-height: 1;
+        cursor: pointer;
+        padding: 0 4px;
+        border-radius: 3px;
+        opacity: 0;
+        transition: opacity 0.12s;
+      }
+      .tree-row:hover .add-tab {
+        opacity: 1;
+      }
+      .tree-row .add-tab:hover {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-color);
+      }
+
+      .tree-row .oz-close {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 11px;
+        cursor: pointer;
+        padding: 0 4px;
+        border-radius: 3px;
+        opacity: 0;
+        transition: opacity 0.12s;
+        flex: 0 0 auto;
+      }
+      .tree-row:hover .oz-close {
+        opacity: 1;
+      }
+      .tree-row .oz-close:hover {
+        background: rgba(255, 80, 80, 0.18);
+        color: #fff;
+      }
+
+      /* Indentation per level */
+      .workspace-row {
+        font-weight: 600;
+        padding-left: 6px;
+      }
+      .workspace-row.active {
+        background: rgba(108, 142, 239, 0.22);
+        border-left: 2px solid var(--accent);
+        padding-left: 4px;
+      }
+      .identity-row {
+        padding-left: 22px;
+        font-weight: 500;
+      }
+      .tab-row {
+        padding-left: 38px;
+        font-size: 11.5px;
+      }
+      .tab-row.lazy {
+        opacity: 0.7;
+      }
+      .tab-row.active {
+        background: rgba(108, 142, 239, 0.16);
+      }
+
+      .tree-children {
+        margin-bottom: 2px;
+      }
+
+      .tree-empty {
+        padding: 3px 6px 3px 36px;
+        font-size: 10.5px;
+        color: var(--text-muted);
+        font-style: italic;
+      }
+
+      .tree-favicon {
+        width: 12px;
+        height: 12px;
+        border-radius: 2px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 12px;
+      }
+      .tree-favicon.lazy {
+        opacity: 0.5;
+      }
+
       #oz-sidebar .new-identity {
         display: flex;
         align-items: center;
@@ -1940,7 +2111,9 @@
           <span>📚 Browsing Data</span>
         </button>
         <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
-        <div class="header">Identities</div>
+        <!-- H3c: header renamed; the list below is now the unified tree
+             (workspaces > identities > tabs). -->
+        <div class="header" id="oz-tree-header">WORKSPACES &amp; IDENTITIES</div>
         <div id="oz-identity-list"></div>
       </aside>
       <div id="oz-content"></div>
@@ -2731,6 +2904,7 @@
     <script src="./tabstrip.js"></script>
     <script src="./identity-editor.js"></script>
     <script src="./workspace-switcher.js"></script>
+    <script src="./sidebar-ctx-menus.js"></script>
     <script src="./sidebar.js"></script>
     <script src="./account-manager-render.js"></script>
     <script src="./account-manager.js"></script>
