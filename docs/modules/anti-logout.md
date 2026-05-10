@@ -31,9 +31,9 @@ Cada entry está duplicada con prefix `.` para matchear el formato típico de `c
 
 ```js
 new AntiLogout({
-  identityManager,           // .list(), .getSession(id)
-  accountVault,              // .isUnlocked, .getAccounts(), .setAccounts(arr)
-  notificationFactory,       // () => Notification class. default: lazy require electron
+  identityManager, // .list(), .getSession(id)
+  accountVault, // .isUnlocked, .getAccounts(), .setAccounts(arr)
+  notificationFactory, // () => Notification class. default: lazy require electron
 })
 ```
 
@@ -41,11 +41,11 @@ El test mockea `FakeSession` con `cookies.on/.removeListener/.set/_emit/_setCall
 
 ## API
 
-| Método                          | Descripción                                                            |
-| ------------------------------- | ---------------------------------------------------------------------- |
-| `install()`                     | Instala hooks para todas las identities cacheadas. Idempotente.        |
-| `installForIdentity(id)`        | Instala hook para 1 identity. Idempotente. Llamado desde `identity-handlers.create`. |
-| `uninstall()`                   | Remueve todos los hooks + clear cooldown map.                          |
+| Método                   | Descripción                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| `install()`              | Instala hooks para todas las identities cacheadas. Idempotente.                      |
+| `installForIdentity(id)` | Instala hook para 1 identity. Idempotente. Llamado desde `identity-handlers.create`. |
+| `uninstall()`            | Remueve todos los hooks + clear cooldown map.                                        |
 
 ## Ciclo de vida
 
@@ -55,23 +55,23 @@ El test mockea `FakeSession` con `cookies.on/.removeListener/.set/_emit/_setCall
 
 ## Comportamiento por escenario
 
-| Escenario                                                | Acción                                                     |
-| -------------------------------------------------------- | ---------------------------------------------------------- |
-| Cookie social + session + cooldown OK                    | Re-set con `expirationDate = now + 365d`                   |
-| Cookie social + session + cooldown ACTIVO (<1h)          | Ignorada (loop guard)                                      |
-| Cookie NO social                                         | Ignorada                                                   |
-| Cookie social + ya tiene expirationDate (no es session)  | Ignorada (no hace falta extender)                          |
-| Cookie social removida + cause='explicit' + vault unlocked + matching account | Account → status='needs_relogin' + notification |
-| Cookie social removida + vault locked                    | Ignorada (no podemos leer accounts)                        |
-| Cookie social removida + sin matching account            | Ignorada                                                   |
-| Cookie social removida + cause='expired' o similar       | Ignorada (probablemente fue WE quien la re-setió)          |
+| Escenario                                                                     | Acción                                            |
+| ----------------------------------------------------------------------------- | ------------------------------------------------- |
+| Cookie social + session + cooldown OK                                         | Re-set con `expirationDate = now + 365d`          |
+| Cookie social + session + cooldown ACTIVO (<1h)                               | Ignorada (loop guard)                             |
+| Cookie NO social                                                              | Ignorada                                          |
+| Cookie social + ya tiene expirationDate (no es session)                       | Ignorada (no hace falta extender)                 |
+| Cookie social removida + cause='explicit' + vault unlocked + matching account | Account → status='needs_relogin' + notification   |
+| Cookie social removida + vault locked                                         | Ignorada (no podemos leer accounts)               |
+| Cookie social removida + sin matching account                                 | Ignorada                                          |
+| Cookie social removida + cause='expired' o similar                            | Ignorada (probablemente fue WE quien la re-setió) |
 
 ## Constantes
 
-| Constante                  | Valor              | Justificación                                          |
-| -------------------------- | ------------------ | ------------------------------------------------------ |
-| `ONE_YEAR_MS`              | 365 × 24 × 60 × 60 × 1000 | Período conservador para "indefinitely"          |
-| `REEXTEND_COOLDOWN_MS`     | 1 hora             | Sites como X reescriben auth_token frecuente — sin esto, storm |
+| Constante              | Valor                     | Justificación                                                  |
+| ---------------------- | ------------------------- | -------------------------------------------------------------- |
+| `ONE_YEAR_MS`          | 365 × 24 × 60 × 60 × 1000 | Período conservador para "indefinitely"                        |
+| `REEXTEND_COOLDOWN_MS` | 1 hora                    | Sites como X reescriben auth_token frecuente — sin esto, storm |
 
 ## Decisiones de seguridad
 
