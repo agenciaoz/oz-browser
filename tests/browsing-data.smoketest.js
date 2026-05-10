@@ -140,8 +140,14 @@ section('download-manager: list filter + remove + clear')
   // sort newest first
   ok('sorted newest first', dm.list()[0].startedAt >= dm.list()[1].startedAt)
 
-  const id = dm.list()[0].id
-  ok('remove ok', dm.remove(id) === true)
+  // Pick a specific id-A download to remove (not by sort order).
+  // Original code used `dm.list()[0].id` which depends on sort-by-startedAt
+  // being deterministic — flaky on fast runners (CI macos-latest) where
+  // all 3 fire() calls land on the same Date.now() millisecond and the
+  // sort tiebreaker is unstable. Removing by explicit id keeps b1.zip
+  // available for the subsequent clear-by-identity assertion.
+  const idAToRemove = dm.list({ identityId: 'id-A' })[0].id
+  ok('remove ok', dm.remove(idAToRemove) === true)
   ok('total now 2', dm.list().length === 2)
   ok('remove unknown', dm.remove('nope') === false)
 
