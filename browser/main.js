@@ -30,6 +30,10 @@ const { ProxyManager } = require('./proxy-manager')
 const { ProxyAssignment } = require('./proxy-assignment')
 const { ProxyHealth } = require('./proxy-health')
 const { FingerprintEngine } = require('./fingerprint-engine')
+const { SettingsManager } = require('./settings-manager')
+const { DownloadManager } = require('./download-manager')
+const { HistoryManager } = require('./history-manager')
+const { TabDiscardDaemon } = require('./tab-discard-daemon')
 const { setupMenu } = require('./menu')
 
 let _Notification = null
@@ -63,6 +67,10 @@ class Browser {
   proxyAssignment = null
   proxyHealth = null
   fingerprintEngine = null
+  settingsManager = null
+  downloadManager = null
+  historyManager = null
+  tabDiscardDaemon = null
   webuiExtensionId = null
 
   constructor() {
@@ -120,6 +128,26 @@ class Browser {
           this.proxyHealth.stopDaemon()
         } catch (err) {
           log.warn('browser', 'proxyHealth.stopDaemon failed', {
+            message: err.message,
+          })
+        }
+      }
+      // 1.10d: Stop the tab discard daemon.
+      if (this.tabDiscardDaemon) {
+        try {
+          this.tabDiscardDaemon.stopDaemon()
+        } catch (err) {
+          log.warn('browser', 'tabDiscardDaemon.stopDaemon failed', {
+            message: err.message,
+          })
+        }
+      }
+      // 1.10b: Flush history (throttled save → ensure last entries persist).
+      if (this.historyManager) {
+        try {
+          this.historyManager.flush()
+        } catch (err) {
+          log.warn('browser', 'historyManager.flush failed', {
             message: err.message,
           })
         }
@@ -265,6 +293,15 @@ class Browser {
       existingCount: this.backupManager.listSnapshots().length,
     })
 
+    // 1.10a: SettingsManager — global user preferences (settings.json) con
+    // schema versionado para futuras migraciones. Cargado temprano para que
+    // otros subsistemas puedan consultarlo (ej. logger.setLevel).
+    this.settingsManager = new SettingsManager()
+    log.info('browser', 'SettingsManager loaded', {
+      version: this.settingsManager.getAll().version,
+      onboarded: this.settingsManager.get('onboarding').completed,
+    })
+
     // 1.9a: FingerprintEngine — generates per-identity fingerprint profiles
     // deterministicamente desde identity.fingerprintSeed. Profile is cached
     // in fingerprints.json (NO regenerates per session — consistency).
@@ -331,6 +368,37 @@ class Browser {
           filePath: fpPreloadPath,
         })
       }
+    })
+
+    // 1.10b: Download + History managers. Both per-identity, persisted in
+    // separate JSON files. DownloadManager hooks every identity session via
+    // a session-init hook; HistoryManager hooks every TabbedBrowserWindow's
+    // tabs via the createWindow path.
+    this.downloadManager = new DownloadManager({
+      broadcast: (channel) => this.broadcastToWebUI(channel),
+    })
+    this.historyManager = new HistoryManager({
+      broadcast: (channel) => this.broadcastToWebUI(channel),
+    })
+
+    // 1.10d: TabDiscardDaemon — Apple Silicon perf pass. Auto-discards
+    // materialized tabs idle >N min (configurable from Settings). The
+    // daemon respects settings.performance.autoTabDiscard at every scan,
+    // so toggling the setting takes effect on the next tick (no restart).
+    this.tabDiscardDaemon = new TabDiscardDaemon({
+      browser: this,
+      settingsManager: this.settingsManager,
+    })
+    this.tabDiscardDaemon.startDaemon()
+    log.info('browser', 'TabDiscardDaemon started (5 min interval)')
+    log.info('browser', 'DownloadManager + HistoryManager loaded', {
+      downloads: this.downloadManager.list().length,
+      historyEntries: this.historyManager.list({ limit: 1 }).length,
+    })
+
+    // Wire DownloadManager to every identity session at creation.
+    this.identityManager.addSessionInitHook((identityId, session) => {
+      this.downloadManager.hookSession(identityId, session)
     })
 
     // 1.7b: Bookmark Manager — flat list per-identity, unencrypted (URLs/titles
@@ -468,6 +536,7 @@ class Browser {
       identityManager: this.identityManager,
       browser: this, // 1.4b: needed for workspace switch logic
       webuiExtensionId: this.webuiExtensionId,
+      historyManager: this.historyManager, // 1.10b: hooked in window-manager._wireTabEvents
       window: {
         width: 1280,
         height: 720,

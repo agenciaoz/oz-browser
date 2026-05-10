@@ -491,6 +491,8 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     // Channels the preload bridge invokes for all tool-bearing domains. We
     // extract them from the preload.js source so we don't drift.
     const found = new Set()
+    // 1.10a: settings NOT included — UI-internal preferences (no agent needs
+    // them via MCP). If we ever expose them, add 'settings' to the regex.
     const re =
       /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine|bookmarks|cookies|proxies|fingerprint):[a-zA-Z]+)'/g
     let m

@@ -13,14 +13,25 @@
     : null
   // 1.8d: Proxy Manager modal — instantiate so the sidebar button wire works.
   const proxyManagerUI = window.OZ.ProxyManagerUI ? new window.OZ.ProxyManagerUI() : null
+  // 1.10a: Settings modal.
+  const settingsUI = window.OZ.SettingsUI ? new window.OZ.SettingsUI() : null
+  // 1.10c: First-run onboarding modal.
+  const onboardingUI = window.OZ.OnboardingUI ? new window.OZ.OnboardingUI() : null
   window.tabstrip = tabstrip
   window.ozsidebar = sidebar
   window.ozWsSwitcher = wsSwitcher
   window.ozProxyManagerUI = proxyManagerUI
+  window.ozSettingsUI = settingsUI
+  window.ozOnboardingUI = onboardingUI
   ;(async () => {
     await tabstrip.init()
     await sidebar.init()
     if (wsSwitcher) await wsSwitcher.init()
+    // 1.10c: trigger onboarding if first run. Must run after sidebar init so
+    // the WebUI is ready to receive setContentVisible IPC properly.
+    if (onboardingUI) {
+      await onboardingUI.maybeOpen()
+    }
   })().catch((err) => {
     console.error('[oz/webui] boot failed:', err)
     if (window.oz && window.oz.log) {

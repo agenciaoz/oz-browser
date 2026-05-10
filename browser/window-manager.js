@@ -25,6 +25,16 @@ class TabbedBrowserWindow {
 
     this.tabs = new Tabs(this.window, this.identityManager)
 
+    // 1.10b: hook history tracking. HistoryManager subscribes to tab-updated
+    // events and dedups + persists URL visits per identity.
+    if (options.historyManager) {
+      try {
+        options.historyManager.hookTabs(this.tabs)
+      } catch (_e) {
+        // best-effort
+      }
+    }
+
     // 1.4b: each window owns exactly one workspace (1-1 lock — ADR 0015).
     // Default to the workspace explicitly requested, or the Default workspace.
     const wm = this.browser && this.browser.workspaceManager

@@ -261,6 +261,40 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:fingerprint:changed', listener)
       },
     },
+    settings: {
+      getAll: () => ipcRenderer.invoke('oz:settings:getAll'),
+      get: (section) => ipcRenderer.invoke('oz:settings:get', section),
+      set: (section, patch) => ipcRenderer.invoke('oz:settings:set', section, patch),
+      resetSection: (section) => ipcRenderer.invoke('oz:settings:resetSection', section),
+      resetAll: () => ipcRenderer.invoke('oz:settings:resetAll'),
+      onChanged(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:settings:changed', listener)
+        return () => ipcRenderer.off('oz:settings:changed', listener)
+      },
+    },
+    downloads: {
+      list: (filter) => ipcRenderer.invoke('oz:downloads:list', filter),
+      get: (id) => ipcRenderer.invoke('oz:downloads:get', id),
+      remove: (id) => ipcRenderer.invoke('oz:downloads:remove', id),
+      clear: (filter) => ipcRenderer.invoke('oz:downloads:clear', filter),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:downloads:changed', listener)
+        return () => ipcRenderer.off('oz:downloads:changed', listener)
+      },
+    },
+    history: {
+      list: (filter) => ipcRenderer.invoke('oz:history:list', filter),
+      remove: (id) => ipcRenderer.invoke('oz:history:remove', id),
+      clear: (filter) => ipcRenderer.invoke('oz:history:clear', filter),
+      addVisit: (opts) => ipcRenderer.invoke('oz:history:addVisit', opts),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:history:changed', listener)
+        return () => ipcRenderer.off('oz:history:changed', listener)
+      },
+    },
     nav: {
       back: () => ipcRenderer.invoke('oz:nav:back'),
       forward: () => ipcRenderer.invoke('oz:nav:forward'),

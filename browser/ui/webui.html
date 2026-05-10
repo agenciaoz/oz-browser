@@ -1457,6 +1457,221 @@
         text-transform: uppercase;
         color: var(--text-muted);
       }
+
+      /*----- SETTINGS MODAL (1.10a) -----*/
+
+      #oz-settings-button {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        margin: 4px 8px 0 8px;
+        padding: 7px 10px;
+        background: rgba(156, 92, 242, 0.08);
+        border: 1px solid rgba(156, 92, 242, 0.22);
+        border-radius: 6px;
+        color: #b58ef5;
+        font: inherit;
+        font-size: 11.5px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      #oz-settings-button:hover {
+        background: rgba(156, 92, 242, 0.16);
+      }
+
+      .stg-layout {
+        display: grid;
+        grid-template-columns: 180px 1fr;
+        gap: 16px;
+        min-height: 380px;
+      }
+      .stg-nav {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        border-right: 1px solid rgba(255, 255, 255, 0.08);
+        padding-right: 8px;
+      }
+      .stg-nav button {
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        padding: 8px 10px;
+        color: var(--text-color);
+        font: inherit;
+        font-size: 12.5px;
+        text-align: left;
+        cursor: pointer;
+      }
+      .stg-nav button:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .stg-nav button.active {
+        background: rgba(156, 92, 242, 0.16);
+        border-color: rgba(156, 92, 242, 0.3);
+        color: #b58ef5;
+      }
+      .stg-section {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .stg-section h3 {
+        margin: 0 0 4px 0;
+        font-size: 14px;
+      }
+      .stg-row {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 12px;
+        align-items: center;
+        padding: 8px 0;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .stg-row:last-child {
+        border-bottom: none;
+      }
+      .stg-row .stg-label {
+        font-size: 13px;
+      }
+      .stg-row .stg-desc {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+      }
+      .stg-row input[type='checkbox'] {
+        width: 18px;
+        height: 18px;
+        cursor: pointer;
+      }
+      .stg-row input[type='number'],
+      .stg-row input[type='text'],
+      .stg-row select {
+        padding: 5px 8px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 4px;
+        color: var(--text-color);
+        font: inherit;
+        font-size: 12px;
+        min-width: 120px;
+      }
+      .stg-row .stg-action-btn {
+        padding: 5px 10px;
+        background: rgba(255, 86, 48, 0.08);
+        border: 1px solid rgba(255, 86, 48, 0.28);
+        border-radius: 4px;
+        color: #ff8866;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .stg-row .stg-action-btn:hover {
+        background: rgba(255, 86, 48, 0.18);
+      }
+      .stg-about {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .stg-about strong {
+        color: var(--text-color);
+        font-size: 13px;
+      }
+
+      /*----- ONBOARDING MODAL (1.10c) -----*/
+
+      #oz-onb-modal .am-window {
+        max-width: 540px;
+      }
+      .onb-screen {
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+        padding: 8px 4px;
+        min-height: 320px;
+      }
+      .onb-emoji {
+        font-size: 56px;
+        text-align: center;
+        line-height: 1;
+        margin-top: 8px;
+      }
+      .onb-screen h2 {
+        text-align: center;
+        font-size: 22px;
+        margin: 0;
+      }
+      .onb-screen .onb-tagline {
+        text-align: center;
+        font-size: 13px;
+        color: var(--text-muted);
+        margin-bottom: 8px;
+      }
+      .onb-screen ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .onb-screen li {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 10px 14px;
+        font-size: 12.5px;
+      }
+      .onb-screen li strong {
+        color: var(--text-color);
+      }
+      .onb-controls {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-top: 16px;
+      }
+      .onb-dots {
+        display: flex;
+        gap: 6px;
+        flex: 1;
+        justify-content: center;
+      }
+      .onb-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .onb-dot.active {
+        background: #b58ef5;
+      }
+      .onb-controls button {
+        padding: 7px 14px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.16);
+        border-radius: 5px;
+        color: var(--text-color);
+        font: inherit;
+        font-size: 12.5px;
+        cursor: pointer;
+      }
+      .onb-controls button.primary {
+        background: rgba(91, 141, 239, 0.2);
+        border-color: rgba(91, 141, 239, 0.5);
+        color: #8eb4ff;
+        font-weight: 600;
+      }
+      .onb-controls button:hover {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .onb-controls button.primary:hover {
+        background: rgba(91, 141, 239, 0.32);
+      }
     </style>
   </head>
   <body>
@@ -1520,6 +1735,9 @@
         <button id="oz-pm-button" type="button">
           <span>🌐 Proxies</span>
           <span class="pm-count" id="oz-pm-count"></span>
+        </button>
+        <button id="oz-settings-button" type="button">
+          <span>⚙️ Settings</span>
         </button>
         <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
         <div class="header">Identities</div>
@@ -1949,6 +2167,287 @@
       </div>
     </div>
 
+    <!-- Settings modal — managed by settings.js (1.10a) -->
+    <div class="oz-modal" id="oz-settings-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-settings-title"
+      >
+        <header>
+          <h2 id="oz-settings-title">⚙️ Settings</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <div class="oz-modal-error" id="oz-settings-error" hidden></div>
+
+        <div class="stg-layout">
+          <nav class="stg-nav" id="oz-settings-nav">
+            <button data-section="general" class="active">General</button>
+            <button data-section="privacy">Privacy</button>
+            <button data-section="automation">Automation</button>
+            <button data-section="backup">Backup</button>
+            <button data-section="performance">Performance</button>
+            <button data-section="about">About</button>
+          </nav>
+
+          <div id="oz-settings-content">
+            <!-- General -->
+            <section class="stg-section" data-section="general">
+              <h3>General</h3>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Developer Mode</div>
+                  <div class="stg-desc">Enables verbose logs and DevTools shortcuts.</div>
+                </div>
+                <input type="checkbox" id="oz-stg-devMode" />
+              </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Free Tier limits</div>
+                  <div class="stg-desc">
+                    Cap identities to 3 (matches Free plan). Useful for marketing
+                    screenshots.
+                  </div>
+                </div>
+                <input type="checkbox" id="oz-stg-freeTier" />
+              </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Log level</div>
+                  <div class="stg-desc">DEBUG is verbose; WARN/ERROR for production.</div>
+                </div>
+                <select id="oz-stg-logLevel">
+                  <option value="DEBUG">DEBUG</option>
+                  <option value="INFO">INFO</option>
+                  <option value="WARN">WARN</option>
+                  <option value="ERROR">ERROR</option>
+                </select>
+              </div>
+            </section>
+
+            <!-- Privacy -->
+            <section class="stg-section" data-section="privacy" hidden>
+              <h3>Privacy</h3>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Auto-clear session storage on quit</div>
+                  <div class="stg-desc">
+                    Wipe localStorage / IndexedDB / cache on exit (cookies preserved for
+                    re-login).
+                  </div>
+                </div>
+                <input type="checkbox" id="oz-stg-autoClearOnQuit" />
+              </div>
+            </section>
+
+            <!-- Automation -->
+            <section class="stg-section" data-section="automation" hidden>
+              <h3>Automation (MCP server)</h3>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Enable MCP server</div>
+                  <div class="stg-desc">
+                    Exposes the OZ MCP API on localhost so external agents can drive the
+                    browser. Off by default for security.
+                  </div>
+                </div>
+                <input type="checkbox" id="oz-stg-mcpEnabled" />
+              </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">MCP port</div>
+                  <div class="stg-desc">Default 9223.</div>
+                </div>
+                <input type="number" id="oz-stg-mcpPort" min="1" max="65535" />
+              </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">MCP bearer token (optional)</div>
+                  <div class="stg-desc">
+                    If set, MCP requests must include this token.
+                  </div>
+                </div>
+                <input type="text" id="oz-stg-mcpToken" placeholder="(none)" />
+              </div>
+            </section>
+
+            <!-- Backup -->
+            <section class="stg-section" data-section="backup" hidden>
+              <h3>Backup &amp; Time Machine</h3>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Daily snapshots</div>
+                  <div class="stg-desc">Run a snapshot every night at 3am.</div>
+                </div>
+                <input type="checkbox" id="oz-stg-dailySnapshot" />
+              </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Retention (days)</div>
+                  <div class="stg-desc">
+                    Keep all daily snapshots for N days; older ones reduce to 1 per ISO
+                    week.
+                  </div>
+                </div>
+                <input type="number" id="oz-stg-retentionDays" min="1" />
+              </div>
+            </section>
+
+            <!-- Performance -->
+            <section class="stg-section" data-section="performance" hidden>
+              <h3>Performance (Apple Silicon)</h3>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Auto-discard idle tabs</div>
+                  <div class="stg-desc">
+                    Free RAM by destroying WebContentsViews of tabs idle for a long time.
+                    Re-materialize on click.
+                  </div>
+                </div>
+                <input type="checkbox" id="oz-stg-autoTabDiscard" />
+              </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Idle minutes before discard</div>
+                  <div class="stg-desc">Minimum minutes a tab must be idle.</div>
+                </div>
+                <input type="number" id="oz-stg-discardIdleMin" min="1" />
+              </div>
+            </section>
+
+            <!-- About -->
+            <section class="stg-section" data-section="about" hidden>
+              <h3>About OZ Browser</h3>
+              <div class="stg-about">
+                <div><strong>Version:</strong> <span id="oz-stg-version">—</span></div>
+                <div>
+                  <strong
+                    >Identities · Workspaces · Vault · Proxies · FingerprintEngine</strong
+                  >
+                </div>
+                <div>
+                  Multi-session Chromium browser based on Electron. Anti-detect via
+                  per-identity fingerprint spoofing (11 vectors).
+                </div>
+                <div style="margin-top: 8px">
+                  <button type="button" id="oz-stg-reset-all" class="stg-action-btn">
+                    Reset ALL settings to defaults
+                  </button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Onboarding modal — managed by onboarding.js (1.10c) -->
+    <div class="oz-modal" id="oz-onb-modal" hidden>
+      <div class="oz-modal-backdrop"></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-onb-title"
+      >
+        <header>
+          <h2 id="oz-onb-title">Welcome to OZ Browser</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            id="oz-onb-skip-x"
+            aria-label="Skip onboarding"
+          >
+            ✕
+          </button>
+        </header>
+
+        <section class="onb-screen" id="oz-onb-1">
+          <div class="onb-emoji">👤</div>
+          <h2>Identities</h2>
+          <p class="onb-tagline">
+            Each identity is a fully isolated browser session — its own cookies, storage,
+            login state, and extensions.
+          </p>
+          <ul>
+            <li>
+              <strong>Default identity</strong> — your main session, ships with Chrome Web
+              Store extensions enabled.
+            </li>
+            <li>
+              <strong>Custom identities</strong> — one per persona / account. Switch from
+              the sidebar; tabs remember which identity they belong to.
+            </li>
+            <li>
+              <strong>Per-identity color stripe</strong> on every tab so you never confuse
+              them.
+            </li>
+          </ul>
+        </section>
+
+        <section class="onb-screen" id="oz-onb-2" hidden>
+          <div class="onb-emoji">🗂️</div>
+          <h2>Workspaces &amp; Vault</h2>
+          <p class="onb-tagline">
+            Workspaces group sessions per project; the encrypted vault stores credentials
+            safely on your Mac.
+          </p>
+          <ul>
+            <li>
+              <strong>Workspaces</strong> — Excel-like grouping. Switch to snapshot the
+              current set of tabs and load a different one.
+            </li>
+            <li>
+              <strong>🔐 Vault</strong> — AES-256-GCM encrypted account store. Master key
+              in Keychain. Auto-fill on login pages.
+            </li>
+            <li>
+              <strong>⏱ Time Machine</strong> — daily encrypted snapshots of your entire
+              setup. Restore any time.
+            </li>
+          </ul>
+        </section>
+
+        <section class="onb-screen" id="oz-onb-3" hidden>
+          <div class="onb-emoji">🌐</div>
+          <h2>Proxies, Fingerprint &amp; Automation</h2>
+          <p class="onb-tagline">
+            Antidetect that goes beyond Ghost Browser: per-identity fingerprint + GeoIP
+            coherence + headless automation.
+          </p>
+          <ul>
+            <li>
+              <strong>🌐 Proxies</strong> — assign per-identity / workspace. Auto-disable
+              on health failure. Oxylabs sticky-session template built-in.
+            </li>
+            <li>
+              <strong>FingerprintEngine "Ghost+"</strong> — 11 vectors spoofed
+              consistently per identity (UA, screen, timezone, canvas, WebGL).
+            </li>
+            <li>
+              <strong>MCP server</strong> — control OZ from any LLM agent. Toggle on in
+              Settings → Automation.
+            </li>
+          </ul>
+        </section>
+
+        <div class="onb-controls">
+          <button type="button" id="oz-onb-skip">Skip</button>
+          <div class="onb-dots">
+            <span class="onb-dot active" data-dot="1"></span>
+            <span class="onb-dot" data-dot="2"></span>
+            <span class="onb-dot" data-dot="3"></span>
+          </div>
+          <button type="button" id="oz-onb-back" hidden>Back</button>
+          <button type="button" id="oz-onb-next" class="primary">Next</button>
+        </div>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
     <script src="./identity-editor.js"></script>
@@ -1958,6 +2457,8 @@
     <script src="./account-manager.js"></script>
     <script src="./time-machine.js"></script>
     <script src="./proxy-manager.js"></script>
+    <script src="./settings.js"></script>
+    <script src="./onboarding.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

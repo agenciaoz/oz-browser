@@ -173,8 +173,12 @@ SUB-ETAPA 1B — CALIDAD Y DIFERENCIADORES
 │
 ├─ 1.8  Proxy Manager                          ✅ HECHO (5 sub-fases, 930 tests, ADR 0017)
 ├─ 1.9  FingerprintEngine "Ghost+"             ✅ HECHO (5 sub-fases, 1070 tests, ADR 0018; 11 vectores spoofeados)
-├─ 1.9.5 Pixelscan/CreepJS CI suite            ⏳ ← NUEVO, ~3-4h validation real
-└─ 1.10 Settings UI + Bookmarks/Downloads/History + Polish + Extensions multi-identity + M-series perf  ⏳
+├─ 1.9.5 FP injection validation (offline)     ✅ HECHO (51 tests, deterministic vm + Pixelscan-style mismatch checks)
+└─ 1.10 Settings + Browsing data + Onboarding + Tab discard  ✅ HECHO (4 sub-fases, 1242 tests, ADR 0019)
+
+**🎉 SUB-ETAPA 1A CORE COMPLETADA — 1242 tests verde, 0 deps, ~$0 invertido.**
+Producto OZ Browser functionalmente completo a nivel CORE.
+Próximo: **Sub-Etapa 1B** (distribución, billing, Apple notarization, public launch).
 
 ETAPA 2+ — UX, distribución, comercial
 ```

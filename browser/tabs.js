@@ -35,6 +35,11 @@ class Tab extends EventEmitter {
     this.pinned = !!opts.pinned // 1.4b: persisted in tabSpecs; UI in 1.7
     this.window = parentWindow
     this.identityManager = identityManager
+    // 1.10d: timestamps for the discard daemon. createdAt is also used as
+    // initial lastSelectedAt so brand-new tabs are NOT discardable until
+    // they age out.
+    this.createdAt = Date.now()
+    this.lastSelectedAt = this.createdAt
 
     // Materialization state
     this.materialized = false
@@ -163,6 +168,46 @@ class Tab extends EventEmitter {
     if (this.materialized) {
       this.webContents.reload()
     }
+  }
+
+  /**
+   * 1.10d: discard the live WebContentsView to free RAM, but keep the tab in
+   * the tabList so it stays visible in the sidebar/tabstrip. Re-selecting it
+   * triggers materialize() which loads pendingUrl fresh.
+   *
+   * Snapshot the current URL into pendingUrl BEFORE destroying so re-load
+   * navigates back to where the user was (not the original opener URL).
+   */
+  discard() {
+    if (!this.materialized) return false
+    if (this.webContents && !this.webContents.isDestroyed()) {
+      const currentUrl = this.webContents.getURL()
+      if (currentUrl) this.pendingUrl = currentUrl
+    }
+    this.hide()
+    if (this.window && this.view) {
+      this.window.contentView.removeChildView(this.view)
+    }
+    if (this.webContents && !this.webContents.isDestroyed()) {
+      if (this.webContents.isDevToolsOpened()) {
+        this.webContents.closeDevTools()
+      }
+      try {
+        this.webContents.destroy()
+      } catch (_e) {
+        // best-effort
+      }
+    }
+    this.webContents = null
+    this.view = null
+    this.materialized = false
+    log.info('tabs', 'tab discarded', {
+      tabId: this.id,
+      identityId: this.identityId,
+      pendingUrl: this.pendingUrl,
+    })
+    this.emit('updated', this.serialize())
+    return true
   }
 
   destroy() {
@@ -353,6 +398,7 @@ class Tabs extends EventEmitter {
     if (!tab) return
     if (this.selected) this.selected.hide()
     tab.show() // materializes if needed
+    tab.lastSelectedAt = Date.now() // 1.10d: timestamp for discard daemon
     this.selected = tab
     this.emit('tab-selected', tab)
   }

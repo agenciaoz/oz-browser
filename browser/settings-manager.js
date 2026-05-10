@@ -1,0 +1,268 @@
+// OZ Browser — Settings Manager (1.10a).
+//
+// Qué hace: persistencia de user preferences globales del browser. Schema
+// versionado para migrations futuras. Validation per-key con whitelist.
+//
+// Doc: docs/modules/settings-manager.md
+// ADR: docs/architecture/0019-settings-model.md
+//
+// Storage: ~/Library/Application Support/<appName>/settings.json
+//
+// Schema v1:
+//   {
+//     version: 1,
+//     general: {
+//       devMode: false,           // logs verbose + DevTools shortcuts
+//       freeTier: false,          // OZ_TIER=free equivalent (limit 3 identities)
+//       logLevel: 'INFO',         // DEBUG | INFO | WARN | ERROR
+//     },
+//     privacy: {
+//       autoClearOnQuit: false,   // wipe session storage at quit (preserve cookies)
+//     },
+//     automation: {
+//       mcpEnabled: false,        // expose MCP server on :9223 (security flag)
+//       mcpPort: 9223,
+//       mcpToken: null,           // optional bearer token
+//     },
+//     backup: {
+//       dailySnapshot: true,      // 1.6 daily-3am cron toggle
+//       retentionDays: 30,        // keep daily snapshots for N days
+//     },
+//     onboarding: {
+//       completed: false,         // first-run onboarding flag (1.10c)
+//       skippedAt: null,
+//     },
+//     performance: {              // 1.10d Apple Silicon perf
+//       autoTabDiscard: true,     // discard idle tabs >30 min
+//       discardIdleMin: 30,
+//     },
+//   }
+
+const fs = require('fs')
+const path = require('path')
+const { app } = require('electron')
+const log = require('./logger')
+
+const SCHEMA_VERSION = 1
+
+const DEFAULTS = Object.freeze({
+  version: SCHEMA_VERSION,
+  general: {
+    devMode: false,
+    freeTier: false,
+    logLevel: 'INFO',
+  },
+  privacy: {
+    autoClearOnQuit: false,
+  },
+  automation: {
+    mcpEnabled: false,
+    mcpPort: 9223,
+    mcpToken: null,
+  },
+  backup: {
+    dailySnapshot: true,
+    retentionDays: 30,
+  },
+  onboarding: {
+    completed: false,
+    skippedAt: null,
+  },
+  performance: {
+    autoTabDiscard: true,
+    discardIdleMin: 30,
+  },
+})
+
+const VALID_LOG_LEVELS = ['DEBUG', 'INFO', 'WARN', 'ERROR']
+
+class SettingsManager {
+  constructor(opts = {}) {
+    this.dataDir = opts.dataDir || app.getPath('userData')
+    this.filePath = path.join(this.dataDir, 'settings.json')
+    this.settings = deepClone(DEFAULTS)
+    this._load()
+  }
+
+  // ---------- persistence ----------
+
+  _load() {
+    try {
+      if (!fs.existsSync(this.filePath)) return
+      const raw = fs.readFileSync(this.filePath, 'utf-8')
+      const parsed = JSON.parse(raw)
+      // Merge with defaults so newly-introduced keys appear without erroring.
+      this.settings = mergeWithDefaults(parsed, DEFAULTS)
+      // Migration hook for future schema bumps.
+      if (this.settings.version !== SCHEMA_VERSION) {
+        log.info('settings-manager', 'migrating settings', {
+          from: this.settings.version,
+          to: SCHEMA_VERSION,
+        })
+        // v1 is the initial version — no migrations yet.
+        this.settings.version = SCHEMA_VERSION
+        this._save()
+      }
+    } catch (err) {
+      console.error('[settings-manager] failed to load settings.json:', err)
+      this.settings = deepClone(DEFAULTS)
+    }
+  }
+
+  _save() {
+    try {
+      fs.mkdirSync(this.dataDir, { recursive: true })
+      fs.writeFileSync(this.filePath, JSON.stringify(this.settings, null, 2), 'utf-8')
+    } catch (err) {
+      console.error('[settings-manager] failed to save settings.json:', err)
+    }
+  }
+
+  // ---------- API ----------
+
+  /** Get the entire settings object (deep copy, safe to mutate). */
+  getAll() {
+    return deepClone(this.settings)
+  }
+
+  /** Get a section: 'general' | 'privacy' | 'automation' | 'backup' | 'onboarding' | 'performance'. */
+  get(section) {
+    if (!this.settings[section]) return null
+    return { ...this.settings[section] }
+  }
+
+  /**
+   * Set a section's keys (partial merge). Validates per-key whitelist.
+   * Returns the updated section object or { __error } on validation failure.
+   */
+  set(section, patch) {
+    if (!this.settings[section]) {
+      return { __error: { code: 'UNKNOWN_SECTION', section } }
+    }
+    const original = { ...this.settings[section] }
+    const next = { ...original }
+    for (const k of Object.keys(patch || {})) {
+      if (!(k in DEFAULTS[section])) {
+        log.warn('settings-manager', 'set: unknown key ignored', { section, key: k })
+        continue
+      }
+      const v = patch[k]
+      const validation = validateKey(section, k, v)
+      if (!validation.ok) {
+        return {
+          __error: {
+            code: 'INVALID_VALUE',
+            section,
+            key: k,
+            value: v,
+            reason: validation.reason,
+          },
+        }
+      }
+      next[k] = v
+    }
+    this.settings[section] = next
+    this._save()
+    log.info('settings-manager', 'section updated', {
+      section,
+      changedKeys: Object.keys(patch || {}).filter((k) => original[k] !== next[k]),
+    })
+    return { ...next }
+  }
+
+  /** Reset a section to defaults. */
+  resetSection(section) {
+    if (!DEFAULTS[section]) {
+      return { __error: { code: 'UNKNOWN_SECTION', section } }
+    }
+    this.settings[section] = deepClone(DEFAULTS[section])
+    this._save()
+    log.info('settings-manager', 'section reset', { section })
+    return { ...this.settings[section] }
+  }
+
+  /** Reset everything. */
+  resetAll() {
+    this.settings = deepClone(DEFAULTS)
+    this._save()
+    log.info('settings-manager', 'all settings reset')
+    return deepClone(this.settings)
+  }
+
+  /**
+   * Convenience: mark onboarding completed (1.10c).
+   */
+  markOnboarded() {
+    this.set('onboarding', { completed: true })
+  }
+
+  /**
+   * Convenience: mark onboarding skipped with timestamp (1.10c).
+   */
+  markOnboardingSkipped() {
+    this.set('onboarding', { completed: true, skippedAt: Date.now() })
+  }
+}
+
+// ---------- helpers ---------------------------------------------------------
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj))
+}
+
+function mergeWithDefaults(loaded, defaults) {
+  const out = deepClone(defaults)
+  for (const section of Object.keys(defaults)) {
+    if (loaded && loaded[section] && typeof loaded[section] === 'object') {
+      out[section] = { ...defaults[section], ...loaded[section] }
+    }
+  }
+  if (loaded && typeof loaded.version === 'number') out.version = loaded.version
+  return out
+}
+
+function validateKey(section, key, value) {
+  // Per-key validation. Returns { ok: true } or { ok: false, reason }.
+  if (key === 'logLevel') {
+    if (typeof value !== 'string' || !VALID_LOG_LEVELS.includes(value)) {
+      return {
+        ok: false,
+        reason: `must be one of ${VALID_LOG_LEVELS.join('/')}`,
+      }
+    }
+  }
+  if (key === 'mcpPort' || key === 'discardIdleMin' || key === 'retentionDays') {
+    if (!Number.isInteger(value) || value < 1) {
+      return { ok: false, reason: 'must be a positive integer' }
+    }
+    if (key === 'mcpPort' && value > 65535) {
+      return { ok: false, reason: 'port must be ≤ 65535' }
+    }
+  }
+  if (
+    key === 'devMode' ||
+    key === 'freeTier' ||
+    key === 'autoClearOnQuit' ||
+    key === 'mcpEnabled' ||
+    key === 'dailySnapshot' ||
+    key === 'completed' ||
+    key === 'autoTabDiscard'
+  ) {
+    if (typeof value !== 'boolean') {
+      return { ok: false, reason: 'must be boolean' }
+    }
+  }
+  if (key === 'mcpToken') {
+    if (value !== null && typeof value !== 'string') {
+      return { ok: false, reason: 'must be string or null' }
+    }
+  }
+  if (key === 'skippedAt') {
+    if (value !== null && (!Number.isInteger(value) || value < 0)) {
+      return { ok: false, reason: 'must be epoch ms or null' }
+    }
+  }
+  return { ok: true }
+}
+
+module.exports = { SettingsManager, DEFAULTS, SCHEMA_VERSION, VALID_LOG_LEVELS }

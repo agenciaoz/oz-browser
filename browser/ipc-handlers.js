@@ -25,6 +25,14 @@ const { buildBookmarkHandlers } = require('./bookmark-handlers')
 const { buildCookieHandlers } = require('./cookies-handlers')
 const { buildProxyHandlers } = require('./proxy-handlers')
 const { buildFingerprintHandlers } = require('./fingerprint-handlers')
+const { buildSettingsHandlers } = require('./settings-handlers')
+const {
+  buildDownloadHandlers,
+  buildHistoryHandlers,
+} = require('./browsing-data-handlers')
+// 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
+// ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
+const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
 
 function registerIpcHandlers(browser) {
   // Domain handlers — shared with MCP server. Build once per browser instance.
@@ -43,6 +51,9 @@ function registerIpcHandlers(browser) {
     cookies: buildCookieHandlers(browser),
     proxies: buildProxyHandlers(browser),
     fingerprint: buildFingerprintHandlers(browser),
+    settings: buildSettingsHandlers(browser),
+    downloads: buildDownloadHandlers(browser),
+    history: buildHistoryHandlers(browser),
   }
 
   registerLogHandlers(browser)
@@ -55,8 +66,7 @@ function registerIpcHandlers(browser) {
   registerBackupHandlersIPC(browser)
   registerBookmarkHandlersIPC(browser)
   registerCookieHandlersIPC(browser)
-  registerProxyHandlersIPC(browser)
-  registerFingerprintHandlersIPC(browser)
+  registerExtraIpcHandlers(browser) // 1.10b: proxies + fingerprint + settings + browsing-data
   registerNavHandlers(browser)
   registerUiHandlers(browser)
 
@@ -159,105 +169,6 @@ function registerBookmarkHandlersIPC(browser) {
   ipcMain.handle('oz:bookmarks:add', (_e, opts) => h.add(opts))
   ipcMain.handle('oz:bookmarks:addFromTab', (_e, tabId) => h.addFromTab(tabId))
   ipcMain.handle('oz:bookmarks:remove', (_e, id) => h.remove(id))
-}
-
-// ----- Proxies (1.8a/1.8b) --------------------------------------------------
-
-function registerProxyHandlersIPC(browser) {
-  const h = browser.handlers.proxies
-
-  ipcMain.handle('oz:proxies:list', () => h.list())
-  ipcMain.handle('oz:proxies:listAssignable', () => h.listAssignable())
-  ipcMain.handle('oz:proxies:get', (_e, id) => h.get(id))
-  ipcMain.handle('oz:proxies:create', (_e, opts) => h.create(opts))
-  ipcMain.handle('oz:proxies:update', (_e, id, patch) => h.update(id, patch))
-  ipcMain.handle('oz:proxies:remove', (_e, id) => h.remove(id))
-  ipcMain.handle('oz:proxies:setActive', (_e, id, isActive) => h.setActive(id, isActive))
-  ipcMain.handle('oz:proxies:autoAssign', (_e, strategy) => h.autoAssign(strategy))
-  ipcMain.handle('oz:proxies:bulkAdd', (_e, items) => h.bulkAdd(items))
-
-  // Assignment (1.8b)
-  ipcMain.handle('oz:proxies:assignToIdentity', (_e, identityId, value) =>
-    h.assignToIdentity(identityId, value),
-  )
-  ipcMain.handle('oz:proxies:assignToWorkspace', (_e, workspaceId, value) =>
-    h.assignToWorkspace(workspaceId, value),
-  )
-  ipcMain.handle('oz:proxies:setDefaultStrategy', (_e, strategy) =>
-    h.setDefaultStrategy(strategy),
-  )
-  ipcMain.handle('oz:proxies:listAssignments', () => h.listAssignments())
-  ipcMain.handle('oz:proxies:resolveForIdentity', (_e, identityId, workspaceId) =>
-    h.resolveForIdentity(identityId, workspaceId),
-  )
-
-  // Health (1.8c)
-  ipcMain.handle('oz:proxies:testConnectivity', (_e, proxyId) =>
-    h.testConnectivity(proxyId),
-  )
-  ipcMain.handle('oz:proxies:testAll', (_e, opts) => h.testAll(opts))
-
-  // CSV + Providers (1.8d)
-  ipcMain.handle('oz:proxies:importCsvContent', (_e, content) =>
-    h.importCsvContent(content),
-  )
-  ipcMain.handle('oz:proxies:importCsvFromFile', (_e, filePath) =>
-    h.importCsvFromFile(filePath),
-  )
-  ipcMain.handle('oz:proxies:exportCsvContent', () => h.exportCsvContent())
-  ipcMain.handle('oz:proxies:exportCsvToFile', (_e, filePath) =>
-    h.exportCsvToFile(filePath),
-  )
-  ipcMain.handle('oz:proxies:listProviders', () => h.listProviders())
-  ipcMain.handle('oz:proxies:expandProvider', (_e, providerId, opts) =>
-    h.expandProvider(providerId, opts),
-  )
-
-  // Native file dialogs for CSV (UI-only — exempted in contract test).
-  ipcMain.handle('oz:proxies:pickCsvImportPath', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const result = await dialog.showOpenDialog(win, {
-      title: 'Import proxies from CSV',
-      filters: [
-        { name: 'CSV', extensions: ['csv'] },
-        { name: 'All files', extensions: ['*'] },
-      ],
-      properties: ['openFile'],
-    })
-    if (result.canceled || !result.filePaths || !result.filePaths[0]) {
-      return { canceled: true }
-    }
-    return { filePath: result.filePaths[0] }
-  })
-
-  ipcMain.handle('oz:proxies:pickCsvExportPath', async (event) => {
-    const win = BrowserWindow.fromWebContents(event.sender)
-    const stamp = new Date().toISOString().slice(0, 10)
-    const result = await dialog.showSaveDialog(win, {
-      title: 'Export proxies to CSV',
-      defaultPath: `oz-proxies-${stamp}.csv`,
-      filters: [{ name: 'CSV', extensions: ['csv'] }],
-    })
-    if (result.canceled || !result.filePath) return { canceled: true }
-    return { filePath: result.filePath }
-  })
-}
-
-// ----- Fingerprint (1.9) ----------------------------------------------------
-
-function registerFingerprintHandlersIPC(browser) {
-  const h = browser.handlers.fingerprint
-  ipcMain.handle('oz:fingerprint:get', (_e, identityId) => h.get(identityId))
-  ipcMain.handle('oz:fingerprint:regenerate', (_e, identityId, newSeed) =>
-    h.regenerate(identityId, newSeed),
-  )
-  ipcMain.handle('oz:fingerprint:applyGeoSuggestion', (_e, identityId, suggestion) =>
-    h.applyGeoSuggestion(identityId, suggestion),
-  )
-  ipcMain.handle('oz:fingerprint:resolveCountry', (_e, countryCode) =>
-    h.resolveCountry(countryCode),
-  )
-  ipcMain.handle('oz:fingerprint:remove', (_e, identityId) => h.remove(identityId))
 }
 
 // ----- Cookies I/O (1.7c) ---------------------------------------------------
