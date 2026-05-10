@@ -21,6 +21,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `extensions-setup.js`      | 226  | [extensions-setup.md](extensions-setup.md)     |
 | `identity-manager.js`      | 270  | [identity-manager.md](identity-manager.md)     |
 | `workspace-manager.js` 🆕  | ~340 | [workspace-manager.md](workspace-manager.md)   |
+| `account-vault.js` 🆕      | ~290 | [account-vault.md](account-vault.md)           |
 | `tabs.js`                  | 344  | [tabs.md](tabs.md)                             |
 | `logger.js`                | 111  | [logger.md](logger.md)                         |
 | `error-handler.js`         | 141  | [error-handler.md](error-handler.md)           |
@@ -58,6 +59,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `tests/workspace-manager.smoketest.js` 🆕 | ~270 | header inline                                                |
 | `tests/window-workspace.smoketest.js` 🆕  | ~330 | header inline                                                |
 | `tests/move-to-workspace.smoketest.js` 🆕 | ~250 | header inline                                                |
+| `tests/account-vault.smoketest.js` 🆕     | ~350 | header inline                                                |
 
 ## Pendientes (placeholders, se llenan al implementarse)
 
@@ -72,7 +74,7 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 ### Bloques siguientes
 
 - ~~`workspace-manager.js` (Bloque 1.4-WS)~~ ✅ creado en 1.4a
-- `account-vault.js` ⭐ (Bloque 1.5)
+- ~~`account-vault.js` ⭐ (Bloque 1.5)~~ ✅ creado en 1.5a
 - `excel-io.js` (Bloque 1.5)
 - `site-templates.js` (Bloque 1.5)
 - `backup-manager.js` (Bloque 1.6)

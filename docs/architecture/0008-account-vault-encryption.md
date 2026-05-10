@@ -1,7 +1,10 @@
 # ADR 0008 — Account Vault: encryption con scrypt + AES-256-GCM + Keychain
 
-**Estado:** Propuesto (a aceptar al inicio de Bloque 1.5) · **Update 2026-05-09 noche** — keytar reemplazado por `@napi-rs/keyring` (mantenido) y xlsx reemplazado por `exceljs` (CVEs sin parchar en xlsx público)
-**Fecha:** 2026-05-09
+**Estado:** Aceptado (Bloque 1.5a) · **Updates 2026-05-09 noche:**
+
+1. keytar reemplazado por `@napi-rs/keyring` (mantenido) y xlsx reemplazado por `exceljs` (CVEs sin parchar en xlsx público).
+2. **Master password approach simplificado a "auto-gen + solo Keychain"** (decisión Jose 2026-05-09 noche): OZ genera 32 bytes random la primera vez y los guarda directamente en Keychain. Sin password humano, sin scrypt KDF. Razón: el scrypt era defensa contra brute-force offline de passwords humanos débiles; con key random de 256 bits de entropía no hay ataque offline viable. Header simplificado: `{version, mode: 'auto', cipher: {...}, ciphertext}`. El modo `passphrase` (con scrypt + password humano del ADR original) queda implementado como código defensivo no expuesto en UI — para usuarios futuros que pidan portabilidad (abrir vault en otra Mac sin acceso al Keychain).
+   **Fecha:** 2026-05-09
 
 ## Contexto
 
