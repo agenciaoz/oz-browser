@@ -182,6 +182,60 @@ function buildTabHandlers(browser) {
         return { ok: true, noop: true, tabId, targetWorkspaceId }
       }
 
+      // H3a (D5): if the tab's identity doesn't live in the target workspace,
+      // cascade-move the identity itself. Per ADR 0023 D5: "Auto-mueve la
+      // identity también, si la identity no está locked. Si está locked →
+      // reject."
+      const im = browser.identityManager
+      if (im && sourceTab.identityId) {
+        const ident = im.get(sourceTab.identityId)
+        if (ident && ident.workspaceId && ident.workspaceId !== targetWorkspaceId) {
+          if (ident.locked) {
+            log.warn('tab-handlers', 'moveToWorkspace blocked: identity locked', {
+              tabId,
+              identityId: ident.id,
+              identityWorkspaceId: ident.workspaceId,
+              targetWorkspaceId,
+            })
+            return {
+              ok: false,
+              reason: 'identity-locked-in-source-workspace',
+              tabId,
+              identityId: ident.id,
+              identityWorkspaceId: ident.workspaceId,
+            }
+          }
+          // Default identity is pinned to general (D2). If the user moves a
+          // tab from Default into another workspace, the cleanest semantics
+          // is to reject — Default cannot follow. Caller can clone the tab
+          // into another identity (Move tab to identity) instead.
+          if (ident.isDefault && targetWorkspaceId !== 'general') {
+            log.warn('tab-handlers', 'moveToWorkspace blocked: Default pinned', {
+              tabId,
+              identityId: ident.id,
+              targetWorkspaceId,
+            })
+            return {
+              ok: false,
+              reason: 'default-identity-pinned-to-general',
+              tabId,
+              identityId: ident.id,
+            }
+          }
+          const moveResult = im.moveToWorkspace(ident.id, targetWorkspaceId)
+          if (moveResult && moveResult.ok === false) {
+            // Forward the underlying reject reason as-is (already typed).
+            return moveResult
+          }
+          log.info('tab-handlers', 'moveToWorkspace cascade-moved identity', {
+            tabId,
+            identityId: ident.id,
+            from: ident.workspaceId,
+            to: targetWorkspaceId,
+          })
+        }
+      }
+
       // 1) Snapshot the tab before destroying it.
       const spec = sourceTab.toSpec ? sourceTab.toSpec() : null
       if (!spec) {

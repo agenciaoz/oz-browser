@@ -153,7 +153,17 @@ function buildWorkspaceHandlers(browser) {
       return ok
     },
 
-    remove(id) {
+    /**
+     * Remove a workspace. With H3a (D7) the underlying manager rejects when
+     * the workspace has identities unless `options.cascade=true` — in which
+     * case identities cascade-move to 'general' (locked identities still
+     * block the operation entirely).
+     *
+     * Returns `true` (legacy boolean) when removed cleanly, `false` for
+     * legacy reject paths (Default workspace), or a structured object
+     * `{ ok: false, reason, ... }` for D7 reject paths.
+     */
+    remove(id, options) {
       // If the workspace being removed is active in any window, fall back to Default.
       const defaultId = wm().getDefault().id
       for (const win of browser.windows) {
@@ -169,10 +179,19 @@ function buildWorkspaceHandlers(browser) {
           })
         }
       }
-      const ok = wm().remove(id)
-      if (ok) browser.broadcastToWebUI('oz:workspaces:changed')
-      log.info('workspace-handlers', 'remove', { id, ok })
-      return ok
+      const result = wm().remove(id, options || {})
+      if (result === true) {
+        browser.broadcastToWebUI('oz:workspaces:changed')
+        // H3a: cascade-move may have re-homed identities → notify too.
+        if (options && options.cascade) {
+          browser.broadcastToWebUI('oz:identities:changed')
+        }
+      }
+      log.info('workspace-handlers', 'remove', {
+        id,
+        result: typeof result === 'object' ? result : { ok: result },
+      })
+      return result
     },
   }
 }

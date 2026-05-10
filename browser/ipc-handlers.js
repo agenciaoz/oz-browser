@@ -155,6 +155,11 @@ function registerIdentityHandlersIPC(browser) {
   ipcMain.handle('oz:identities:remove', (_e, id) => h.remove(id))
   // H2: lock toggle for identities. Locked = blocks remove + clearBrowsingData.
   ipcMain.handle('oz:identities:setLocked', (_e, id, locked) => h.setLocked(id, locked))
+  // H3a: per-workspace identity scoping.
+  ipcMain.handle('oz:identities:listByWorkspace', (_e, wsId) => h.listByWorkspace(wsId))
+  ipcMain.handle('oz:identities:moveToWorkspace', (_e, id, targetWsId) =>
+    h.moveToWorkspace(id, targetWsId),
+  )
   // 1.7b
   ipcMain.handle('oz:identities:clearBrowsingData', (_e, id, scope) =>
     h.clearBrowsingData(id, scope),
@@ -262,7 +267,7 @@ function registerWorkspaceHandlersIPC(browser) {
   ipcMain.handle('oz:workspaces:restore', (_e, id) => h.restore(id))
   ipcMain.handle('oz:workspaces:freeze', (_e, id) => h.freeze(id))
   ipcMain.handle('oz:workspaces:unfreeze', (_e, id) => h.unfreeze(id))
-  ipcMain.handle('oz:workspaces:remove', (_e, id) => h.remove(id))
+  ipcMain.handle('oz:workspaces:remove', (_e, id, options) => h.remove(id, options))
 }
 
 // ----- Vault (1.5b) ---------------------------------------------------------

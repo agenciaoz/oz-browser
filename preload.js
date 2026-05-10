@@ -47,6 +47,11 @@ if (isWebUI) {
       // H2: lock = blocks remove + clearBrowsingData. Returns the updated identity.
       setLocked: (id, locked) =>
         ipcRenderer.invoke('oz:identities:setLocked', id, locked),
+      // H3a: per-workspace identity scoping.
+      listByWorkspace: (workspaceId) =>
+        ipcRenderer.invoke('oz:identities:listByWorkspace', workspaceId),
+      moveToWorkspace: (id, targetWorkspaceId) =>
+        ipcRenderer.invoke('oz:identities:moveToWorkspace', id, targetWorkspaceId),
 
       onChanged(cb) {
         const listener = () => cb()
@@ -75,7 +80,10 @@ if (isWebUI) {
       restore: (id) => ipcRenderer.invoke('oz:workspaces:restore', id),
       freeze: (id) => ipcRenderer.invoke('oz:workspaces:freeze', id),
       unfreeze: (id) => ipcRenderer.invoke('oz:workspaces:unfreeze', id),
-      remove: (id) => ipcRenderer.invoke('oz:workspaces:remove', id),
+      // H3a: options.cascade=true moves identities to 'general' before delete
+      // (per ADR 0023 D7). Without options, default behavior — reject if ws
+      // has identities.
+      remove: (id, options) => ipcRenderer.invoke('oz:workspaces:remove', id, options),
 
       onChanged(cb) {
         const listener = () => cb()

@@ -49,13 +49,22 @@ function buildExcelHandlers(browser) {
     return { identityById, workspaceById }
   }
 
-  function findOrCreateIdentity(name) {
-    const list = im().list()
-    const existing = list.find((i) => i.name === name)
+  // H3a (D6) — identity lookup is now scoped to a workspace. Two identities
+  // with the same name in different workspaces are different identities.
+  // Caller passes the resolved workspaceId; we never default it silently here.
+  function findOrCreateIdentity(name, workspaceId) {
+    if (!workspaceId) {
+      throw new Error(
+        'findOrCreateIdentity requires workspaceId (H3a D6 — identity name is scoped to a workspace)',
+      )
+    }
+    const scoped = im().listByWorkspace(workspaceId)
+    const existing = scoped.find((i) => i.name === name)
     if (existing) return existing.id
-    const created = im().create({ name })
+    const created = im().create({ name, workspaceId })
     log.info('excel-handlers', 'bulk identity created from import', {
       name,
+      workspaceId,
       id: created.id,
     })
     return created.id
@@ -141,16 +150,35 @@ function buildExcelHandlers(browser) {
         }
       }
 
-      // For all other modes we need to resolve identity/workspace names.
-      const identityNameToId = {}
-      const identitiesCreated = []
-      for (const name of parsed.identityNamesNeeded) {
-        const before = im().list().length
-        const id = findOrCreateIdentity(name)
-        identityNameToId[name] = id
-        if (im().list().length > before) identitiesCreated.push(name)
+      // H3a (D6) — for PERMANENT_MERGE / OVERWRITE_TOTAL the Excel rows MUST
+      // carry a workspaceName column so identity lookups can be scoped to the
+      // right workspace (D1: 1 identity = 1 workspace exact). Without the
+      // column we cannot disambiguate two identities sharing a name across
+      // workspaces. Reject early with a clear error so the user fixes the
+      // file rather than silently importing into wrong workspaces.
+      if (mode === 'PERMANENT_MERGE' || mode === 'OVERWRITE_TOTAL') {
+        const missingWs = parsed.rows.filter(
+          (r) => !r.workspaceName || r.workspaceName === '',
+        )
+        if (missingWs.length > 0) {
+          log.warn('excel-handlers', 'import rejected: workspaceName missing', {
+            mode,
+            missingCount: missingWs.length,
+            totalRows: parsed.rows.length,
+          })
+          return {
+            __error: {
+              code: 'WORKSPACE_NAME_REQUIRED',
+              message: `H3a D6: ${mode} requires every row to have a workspaceName. ${missingWs.length}/${parsed.rows.length} rows missing it.`,
+              missingCount: missingWs.length,
+              totalRows: parsed.rows.length,
+            },
+          }
+        }
       }
 
+      // Resolve workspace names FIRST — identity lookups are scoped to a
+      // workspace per D6.
       let dedicatedWorkspaceId = null
       const workspaceNameToId = {}
       const workspacesCreated = []
@@ -170,28 +198,54 @@ function buildExcelHandlers(browser) {
         }
       }
 
-      const newAccounts = parsed.rows.map((row) => ({
-        id: _uuid(),
-        identityId: identityNameToId[row.identityName],
-        workspaceId:
+      // H3a (D6): identity name + workspaceId is the new uniqueness key.
+      // We resolve identities row-by-row using each row's resolved workspace.
+      const identityKeyToId = {}
+      const identitiesCreated = []
+      for (const row of parsed.rows) {
+        const wsForRow =
           mode === 'NEW_WORKSPACE'
             ? dedicatedWorkspaceId
-            : row.workspaceName
-              ? workspaceNameToId[row.workspaceName]
-              : null,
-        site: row.site,
-        username: row.username,
-        password: row.password,
-        totpSecret: row.totpSecret,
-        cookies: null,
-        lastLoginAt: row.lastLoginAt,
-        lastIp: row.lastIp,
-        status: row.status,
-        notes: row.notes,
-        customFields: {},
-        createdAt: Date.now(),
-        updatedAt: Date.now(),
-      }))
+            : workspaceNameToId[row.workspaceName]
+        if (!wsForRow) {
+          // Should not happen given the early reject above + workspace
+          // resolution loop, but defensive.
+          continue
+        }
+        const key = `${wsForRow}::${row.identityName}`
+        if (identityKeyToId[key]) continue
+        const before = im().list().length
+        const id = findOrCreateIdentity(row.identityName, wsForRow)
+        identityKeyToId[key] = id
+        if (im().list().length > before) {
+          identitiesCreated.push(`${row.identityName} (in ${wsForRow})`)
+        }
+      }
+
+      const newAccounts = parsed.rows.map((row) => {
+        const wsForRow =
+          mode === 'NEW_WORKSPACE'
+            ? dedicatedWorkspaceId
+            : workspaceNameToId[row.workspaceName] || null
+        const key = wsForRow ? `${wsForRow}::${row.identityName}` : null
+        return {
+          id: _uuid(),
+          identityId: key ? identityKeyToId[key] : null,
+          workspaceId: wsForRow,
+          site: row.site,
+          username: row.username,
+          password: row.password,
+          totpSecret: row.totpSecret,
+          cookies: null,
+          lastLoginAt: row.lastLoginAt,
+          lastIp: row.lastIp,
+          status: row.status,
+          notes: row.notes,
+          customFields: {},
+          createdAt: Date.now(),
+          updatedAt: Date.now(),
+        }
+      })
 
       let finalAccounts
       let preDestructiveSnapshotId = null

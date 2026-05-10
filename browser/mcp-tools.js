@@ -156,6 +156,34 @@ function buildToolCatalog(browser) {
       },
       call: ({ id, locked }) => identities().setLocked(id, locked),
     },
+    {
+      name: 'oz.identities.listByWorkspace',
+      description:
+        'H3a — list identities scoped to a workspace. Returns array of identities whose workspaceId === provided workspaceId. Default identity only appears under workspaceId="general".',
+      inputSchema: {
+        type: 'object',
+        properties: { workspaceId: { type: 'string' } },
+        required: ['workspaceId'],
+        additionalProperties: false,
+      },
+      call: ({ workspaceId }) => identities().listByWorkspace(workspaceId),
+    },
+    {
+      name: 'oz.identities.moveToWorkspace',
+      description:
+        "H3a — move an identity from its current workspace to another. Default identity rejects (pinned to 'general' per ADR 0023 D2). Locked identities reject. Returns { ok, id, from, to } or { ok: false, reason } where reason can be: identity-not-found, default-pinned-to-general, identity-locked.",
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: { type: 'string' },
+          targetWorkspaceId: { type: 'string' },
+        },
+        required: ['id', 'targetWorkspaceId'],
+        additionalProperties: false,
+      },
+      call: ({ id, targetWorkspaceId }) =>
+        identities().moveToWorkspace(id, targetWorkspaceId),
+    },
 
     // -------------------- tabs --------------------
     {
@@ -380,14 +408,21 @@ function buildToolCatalog(browser) {
     {
       name: 'oz.workspaces.remove',
       description:
-        'Delete a workspace by id. Default workspace is protected — returns false if attempted. If the workspace was active in some window, that window auto-falls-back to Default before the removal.',
+        "Delete a workspace by id. Default workspace ('general') is protected — returns false if attempted. H3a: if the workspace has identities, the default behavior rejects with { ok: false, reason: 'has-identities', count, lockedCount }. Pass options.cascade=true to move all unlocked identities to 'general' before removing the workspace; if any identity is locked, rejects with { ok: false, reason: 'has-locked-identities' } and aborts the cascade.",
       inputSchema: {
         type: 'object',
-        properties: { id: { type: 'string' } },
+        properties: {
+          id: { type: 'string' },
+          options: {
+            type: 'object',
+            properties: { cascade: { type: 'boolean' } },
+            additionalProperties: false,
+          },
+        },
         required: ['id'],
         additionalProperties: false,
       },
-      call: ({ id }) => workspaces().remove(id),
+      call: ({ id, options }) => workspaces().remove(id, options),
     },
 
     // -------------------- vault + accounts + excel + timemachine (1.5b/e + 1.6, extracted) --------------------
