@@ -38,6 +38,7 @@ const { setupAutoUpdate } = require('./auto-update')
 const { setupMenu } = require('./menu')
 const { wireIdentityWorkspaceSync } = require('./identity-workspace-sync')
 const { installProtocolHandler } = require('./protocol-handler')
+const { setupCrashRecovery } = require('./crash-recovery-setup')
 
 let _Notification = null
 function getNotification() {
@@ -75,6 +76,8 @@ class Browser {
   historyManager = null
   tabDiscardDaemon = null
   webuiExtensionId = null
+  crashDetector = null
+  windowSnapshot = null
 
   constructor() {
     this.ready = new Promise((resolve) => (this.resolveReady = resolve))
@@ -151,6 +154,32 @@ class Browser {
           this.historyManager.flush()
         } catch (err) {
           log.warn('browser', 'historyManager.flush failed', {
+            message: err.message,
+          })
+        }
+      }
+      // E2-C-2: capture final window topology + mark clean shutdown. Order
+      // matters: snapshot.flush() FIRST so the on-disk state reflects what
+      // was open right before quit (used by next-boot restore IF this quit
+      // turns out to have been a crash for some reason). markCleanShutdown
+      // LAST so it's the very last thing on disk — anything between init()
+      // and this point that crashes the process will leave the lockfile
+      // behind and trigger crash recovery on next boot.
+      if (this.windowSnapshot) {
+        try {
+          this.windowSnapshot.flush()
+          this.windowSnapshot.stopDaemon()
+        } catch (err) {
+          log.warn('browser', 'windowSnapshot.flush failed', {
+            message: err.message,
+          })
+        }
+      }
+      if (this.crashDetector) {
+        try {
+          this.crashDetector.markCleanShutdown()
+        } catch (err) {
+          log.warn('browser', 'crashDetector.markCleanShutdown failed', {
             message: err.message,
           })
         }
@@ -520,7 +549,15 @@ class Browser {
     await loadExtensions(this)
     log.info('browser', `WebUI extension loaded id=${this.webuiExtensionId}`)
 
-    this.createInitialWindow()
+    // E2-C-2: crash recovery (delegated to crash-recovery-setup.js for LOC
+    // budget). Order: init crash-detector + window-snapshot, prompt restore
+    // if applicable, then start the snapshot daemon AFTER windows exist so
+    // the first tick captures the live state.
+    const { restored } = await setupCrashRecovery(this)
+    if (!restored) {
+      this.createInitialWindow()
+    }
+    this.windowSnapshot.startDaemon()
 
     // Start MCP server if env-enabled OR the user toggled it on in Settings.
     // Off by default — see ADR 0012. H2 wired the settings-manager fallback
@@ -561,6 +598,31 @@ class Browser {
   }
 
   createWindow(options = {}) {
+    // E2-C-2: defaults can be overridden by callers (session-restore passes
+    // x/y/width/height from the persisted snapshot so windows reopen exactly
+    // where they were). Frame, titleBar, webPreferences are always our hardcoded
+    // defaults — the caller can ONLY override geometry-style fields.
+    const defaultWindowOpts = {
+      width: 1280,
+      height: 720,
+      frame: false,
+      titleBarStyle: 'hidden',
+      titleBarOverlay: {
+        height: 31,
+        color: '#1f1f2e',
+        symbolColor: '#ffffff',
+      },
+      webPreferences: {
+        sandbox: true,
+        nodeIntegration: false,
+        enableRemoteModule: false,
+        contextIsolation: true,
+        worldSafeExecuteJavaScript: true,
+      },
+    }
+    const callerWindowOpts = (options && options.window) || {}
+    const mergedWindowOpts = { ...defaultWindowOpts, ...callerWindowOpts }
+
     const win = new TabbedBrowserWindow({
       ...options,
       urls: this.urls,
@@ -569,24 +631,7 @@ class Browser {
       browser: this, // 1.4b: needed for workspace switch logic
       webuiExtensionId: this.webuiExtensionId,
       historyManager: this.historyManager, // 1.10b: hooked in window-manager._wireTabEvents
-      window: {
-        width: 1280,
-        height: 720,
-        frame: false,
-        titleBarStyle: 'hidden',
-        titleBarOverlay: {
-          height: 31,
-          color: '#1f1f2e',
-          symbolColor: '#ffffff',
-        },
-        webPreferences: {
-          sandbox: true,
-          nodeIntegration: false,
-          enableRemoteModule: false,
-          contextIsolation: true,
-          worldSafeExecuteJavaScript: true,
-        },
-      },
+      window: mergedWindowOpts,
     })
     this.windows.push(win)
 
@@ -607,6 +652,18 @@ class Browser {
         windowId: win.id,
         remaining: this.windows.length,
       })
+      // E2-C-2: capture the new (smaller) window topology immediately so a
+      // crash before the next daemon tick (~2s) doesn't restore the closed
+      // window. flush() is dedupe-aware so back-to-back closes write once.
+      if (this.windowSnapshot) {
+        try {
+          this.windowSnapshot.flush()
+        } catch (err) {
+          log.warn('browser', 'windowSnapshot.flush on close failed', {
+            message: err.message,
+          })
+        }
+      }
     })
 
     if (process.env.SHELL_DEBUG) {
