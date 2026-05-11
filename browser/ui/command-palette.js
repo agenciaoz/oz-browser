@@ -276,6 +276,7 @@
           bulkOpener: window.ozBulkOpenerUI,
           identityClone: window.OZ && window.OZ.IdentityClone,
           notifications: window.OZ && window.OZ.Notifications,
+          healthCheck: window.OZ && window.OZ.HealthCheck,
         }
         const ui = modalMap[payload.modal]
         if (ui && typeof ui.open === 'function') ui.open()

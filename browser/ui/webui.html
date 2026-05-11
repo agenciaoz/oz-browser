@@ -2411,6 +2411,184 @@
         border-top: 1px solid rgba(255, 255, 255, 0.06);
       }
 
+      /* ── Anti-Detect Health (C-6) ────────────────────────────────────── */
+      /* Sidebar dot — only shown for yellow/red (green/unknown stay hidden). */
+      .tree-health-dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin: 0 4px;
+        cursor: pointer;
+        flex-shrink: 0;
+      }
+      .tree-health-yellow {
+        background: #f5b342;
+        box-shadow: 0 0 4px rgba(245, 179, 66, 0.6);
+      }
+      .tree-health-red {
+        background: #e85a5a;
+        box-shadow: 0 0 4px rgba(232, 90, 90, 0.6);
+      }
+      .tree-health-green {
+        background: #36b37e;
+      }
+      .tree-health-dot:hover {
+        transform: scale(1.4);
+        transition: transform 0.1s ease;
+      }
+
+      /* Health modal */
+      .oz-health-window {
+        width: 540px;
+        max-width: calc(100% - 32px);
+      }
+      .oz-health-body-wrap {
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .oz-health-src-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .oz-health-src-label-prefix {
+        color: var(--text-muted);
+      }
+      .oz-health-src-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .oz-health-src-label {
+        font-weight: 600;
+        flex: 1;
+      }
+      .oz-health-overall {
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .oz-health-overall-green {
+        background: rgba(54, 179, 126, 0.18);
+        color: #36b37e;
+      }
+      .oz-health-overall-yellow {
+        background: rgba(245, 179, 66, 0.18);
+        color: #f5b342;
+      }
+      .oz-health-overall-red {
+        background: rgba(232, 90, 90, 0.18);
+        color: #e85a5a;
+      }
+      .oz-health-overall-unknown {
+        background: rgba(255, 255, 255, 0.08);
+        color: var(--text-muted);
+      }
+      .oz-health-body {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .oz-health-vector {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 10px 12px;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .oz-health-vector-red {
+        border-color: rgba(232, 90, 90, 0.4);
+      }
+      .oz-health-vector-yellow {
+        border-color: rgba(245, 179, 66, 0.4);
+      }
+      .oz-health-vector-head {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .oz-health-vector-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .oz-health-green {
+        background: #36b37e;
+      }
+      .oz-health-yellow {
+        background: #f5b342;
+      }
+      .oz-health-red {
+        background: #e85a5a;
+      }
+      .oz-health-unknown {
+        background: rgba(255, 255, 255, 0.25);
+      }
+      .oz-health-vector-title {
+        flex: 1;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .oz-health-vector-status {
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .oz-health-status-green {
+        background: rgba(54, 179, 126, 0.15);
+        color: #36b37e;
+      }
+      .oz-health-status-yellow {
+        background: rgba(245, 179, 66, 0.15);
+        color: #f5b342;
+      }
+      .oz-health-status-red {
+        background: rgba(232, 90, 90, 0.15);
+        color: #e85a5a;
+      }
+      .oz-health-status-unknown {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-muted);
+      }
+      .oz-health-vector-summary {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.45;
+      }
+      .oz-health-vector-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 6px;
+      }
+      .oz-btn-small {
+        font-size: 11px;
+        padding: 4px 9px;
+      }
+      .oz-health-footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        padding: 10px 16px 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
       /* ── Bulk Opener modal (C-4) ─────────────────────────────────────── */
       .oz-bo-window {
         width: 620px;
@@ -3665,6 +3843,52 @@
       </div>
     </div>
 
+    <!-- Anti-Detect Health modal (C-6) — 🩺 health dashboard per identity.
+         4 vector rows (IP↔TZ, fingerprint coherence, cookie health, proxy
+         reachability), each with status pill + summary + inline fix button. -->
+    <div class="oz-modal" id="oz-health-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window oz-health-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-health-title"
+      >
+        <header>
+          <h2 id="oz-health-title">🩺 Anti-Detect Health</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            id="oz-health-cancel"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div class="oz-health-body-wrap">
+          <div class="oz-health-src-row">
+            <span class="oz-health-src-label-prefix">Identity:</span>
+            <span class="oz-health-src-dot" id="oz-health-src-dot"></span>
+            <span class="oz-health-src-label" id="oz-health-src-label">—</span>
+            <span class="oz-health-overall" id="oz-health-overall">—</span>
+          </div>
+
+          <div class="oz-modal-error" id="oz-health-error" hidden></div>
+
+          <div class="oz-health-body" id="oz-health-body">
+            <!-- vector rows injected by health-modal.js -->
+          </div>
+        </div>
+
+        <footer class="oz-health-footer">
+          <button type="button" class="oz-btn" id="oz-health-refresh">Re-check</button>
+          <button type="button" class="oz-btn oz-btn-primary" data-close>Close</button>
+        </footer>
+      </div>
+    </div>
+
     <!-- Bulk Opener modal (C-4) — 🎯 Bulk Open. Modal estilo am-window con
          segmented control (From existing / Create new), multi-select de
          identities, count + name/url patterns, target workspace dropdown.
@@ -3792,6 +4016,7 @@
     <script src="./identity-editor.js"></script>
     <script src="./workspace-switcher.js"></script>
     <script src="./sidebar-events.js"></script>
+    <script src="./sidebar-health.js"></script>
     <script src="./sidebar.js"></script>
     <script src="./account-manager-render.js"></script>
     <script src="./account-manager.js"></script>
@@ -3804,6 +4029,7 @@
     <script src="./bulk-opener.js"></script>
     <script src="./identity-clone.js"></script>
     <script src="./notifications.js"></script>
+    <script src="./health-modal.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

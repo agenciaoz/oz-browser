@@ -95,6 +95,14 @@
       if (window.OZ.SidebarEvents) {
         window.OZ.SidebarEvents.wireSidebarBackChannels(this)
       }
+
+      // C-6 — anti-detect health badges. Wired via SidebarHealth helper
+      // (extracted to sidebar-health.js per ADR 0005 LOC budget). The helper
+      // owns the cache + listeners + dot render; sidebar just calls
+      // renderDotInto() during identity row render.
+      if (window.OZ.SidebarHealth) {
+        window.OZ.SidebarHealth.attach(this)
+      }
     }
 
     async refresh() {
@@ -462,6 +470,11 @@
       chip.className = 'tree-chip'
       chip.style.background = identity.color
       row.appendChild(chip)
+
+      // C-6 — anti-detect health dot (extracted to sidebar-health.js).
+      if (window.OZ.SidebarHealth) {
+        window.OZ.SidebarHealth.renderDotInto(row, identity)
+      }
 
       const name = document.createElement('span')
       name.className = 'tree-name'

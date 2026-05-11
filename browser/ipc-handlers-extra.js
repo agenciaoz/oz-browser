@@ -15,6 +15,16 @@ function registerExtraIpcHandlers(browser) {
   registerCommandPaletteHandlersIPC(browser)
   registerBulkOpenerHandlersIPC(browser)
   registerAlertHandlersIPC(browser)
+  registerHealthHandlersIPC(browser)
+}
+
+// ----- Anti-Detect Health (E2-C-6) -----------------------------------------
+
+function registerHealthHandlersIPC(browser) {
+  const h = browser.handlers.health
+  ipcMain.handle('oz:health:get', (_e, identityId) => h.get(identityId))
+  ipcMain.handle('oz:health:list', () => h.list())
+  ipcMain.handle('oz:health:applyFix', (_e, opts) => h.applyFix(opts))
 }
 
 // ----- Alerts (E2-C-5) ------------------------------------------------------

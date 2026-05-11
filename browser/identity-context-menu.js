@@ -56,6 +56,17 @@ function buildIdentityContextMenu({ browser, identityId }) {
       })
     },
   })
+  // C-6 — open Anti-Detect Health modal for this identity. Available on
+  // every identity (incluyendo Default + locked) — el dashboard es read-only
+  // por default; los inline fixes respetan los locks downstream.
+  template.push({
+    label: 'Health check…',
+    click: () => {
+      browser.broadcastToWebUI('oz:sidebar:request-health-check', {
+        id: ident.id,
+      })
+    },
+  })
 
   if (!ident.isDefault) {
     // Move to workspace submenu — list every other non-archived workspace.

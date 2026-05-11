@@ -128,6 +128,12 @@ if (isWebUI) {
         ipcRenderer.on('oz:sidebar:request-clone-identity', listener)
         return () => ipcRenderer.off('oz:sidebar:request-clone-identity', listener)
       },
+      // C-6 — open Health Check modal preset with the requested identityId.
+      onRequestHealthCheck(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:sidebar:request-health-check', listener)
+        return () => ipcRenderer.off('oz:sidebar:request-health-check', listener)
+      },
       onRemoveRejected(cb) {
         const listener = (_e, payload) => cb(payload)
         ipcRenderer.on('oz:sidebar:remove-rejected', listener)
@@ -400,6 +406,20 @@ if (isWebUI) {
         const listener = () => cb()
         ipcRenderer.on('oz:bulk-open:open', listener)
         return () => ipcRenderer.off('oz:bulk-open:open', listener)
+      },
+    },
+    // E2-C-6: anti-detect health dashboard. get/list devuelve health
+    // records; applyFix dispara las acciones inline (re-roll FP, apply geo,
+    // reassign proxy, test proxy, mark cookies relogin). onChanged emite
+    // cuando alguna fix muta el state.
+    health: {
+      get: (identityId) => ipcRenderer.invoke('oz:health:get', identityId),
+      list: () => ipcRenderer.invoke('oz:health:list'),
+      applyFix: (opts) => ipcRenderer.invoke('oz:health:applyFix', opts),
+      onChanged(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:health:changed', listener)
+        return () => ipcRenderer.off('oz:health:changed', listener)
       },
     },
     // E2-C-5: alert log persisted in main. UI calls list/markRead/clear;

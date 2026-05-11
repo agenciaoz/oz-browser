@@ -35,6 +35,7 @@ const {
 const { buildCommandPaletteHandlers } = require('./command-palette-handlers')
 const { buildBulkOpenerHandlers } = require('./bulk-opener-handlers')
 const { buildAlertHandlers } = require('./alert-handlers')
+const { buildHealthHandlers } = require('./anti-detect-health-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
@@ -62,6 +63,7 @@ function registerIpcHandlers(browser) {
     commands: buildCommandPaletteHandlers(browser),
     bulkOpen: buildBulkOpenerHandlers(browser),
     alerts: buildAlertHandlers(browser),
+    health: buildHealthHandlers(browser),
   }
 
   registerLogHandlers(browser)

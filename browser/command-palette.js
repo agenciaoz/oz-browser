@@ -184,6 +184,13 @@ function buildCommands(sources) {
       payload: { action: 'open-modal', modal: 'identityClone' },
     },
     {
+      id: 'action:health-check',
+      label: 'Anti-Detect Health Check…',
+      keywords: 'fingerprint proxy cookie timezone coherence audit safety',
+      emoji: '🩺',
+      payload: { action: 'open-modal', modal: 'healthCheck' },
+    },
+    {
       id: 'action:open-notifications',
       label: 'Notifications',
       keywords: 'alerts log history bell warnings',
