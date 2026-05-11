@@ -67,6 +67,16 @@ function buildIdentityContextMenu({ browser, identityId }) {
       })
     },
   })
+  // C-7 — open Extensions per-identity manager. Disponible para Default
+  // (ahí ves "Always enabled") y custom (con checkboxes editables).
+  template.push({
+    label: 'Manage extensions…',
+    click: () => {
+      browser.broadcastToWebUI('oz:sidebar:request-manage-extensions', {
+        id: ident.id,
+      })
+    },
+  })
 
   if (!ident.isDefault) {
     // Move to workspace submenu — list every other non-archived workspace.

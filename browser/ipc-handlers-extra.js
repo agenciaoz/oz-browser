@@ -16,6 +16,7 @@ function registerExtraIpcHandlers(browser) {
   registerBulkOpenerHandlersIPC(browser)
   registerAlertHandlersIPC(browser)
   registerHealthHandlersIPC(browser)
+  registerExtensionShareHandlersIPC(browser)
 }
 
 // ----- Anti-Detect Health (E2-C-6) -----------------------------------------
@@ -25,6 +26,23 @@ function registerHealthHandlersIPC(browser) {
   ipcMain.handle('oz:health:get', (_e, identityId) => h.get(identityId))
   ipcMain.handle('oz:health:list', () => h.list())
   ipcMain.handle('oz:health:applyFix', (_e, opts) => h.applyFix(opts))
+}
+
+// ----- Extensions per-identity (E2-C-7) ------------------------------------
+
+function registerExtensionShareHandlersIPC(browser) {
+  const h = browser.handlers.extensions
+  ipcMain.handle('oz:extensions:listInstalled', () => h.listInstalled())
+  ipcMain.handle('oz:extensions:listEnabled', (_e, identityId) =>
+    h.listEnabled(identityId),
+  )
+  ipcMain.handle('oz:extensions:report', (_e, identityId) => h.report(identityId))
+  ipcMain.handle('oz:extensions:enable', (_e, identityId, extensionId) =>
+    h.enable(identityId, extensionId),
+  )
+  ipcMain.handle('oz:extensions:disable', (_e, identityId, extensionId) =>
+    h.disable(identityId, extensionId),
+  )
 }
 
 // ----- Alerts (E2-C-5) ------------------------------------------------------

@@ -22,6 +22,7 @@ const { buildFingerprintTools } = require('./mcp-tools-fingerprint')
 const { buildIdentityCloneTools } = require('./mcp-tools-identity-clone')
 const { buildAlertTools } = require('./mcp-tools-alerts')
 const { buildHealthTools } = require('./mcp-tools-health')
+const { buildExtensionTools } = require('./mcp-tools-extensions')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -47,6 +48,7 @@ function buildToolCatalog(browser) {
   const fingerprint = () => browser.handlers && browser.handlers.fingerprint
   const alerts = () => browser.handlers && browser.handlers.alerts
   const health = () => browser.handlers && browser.handlers.health
+  const extensions = () => browser.handlers && browser.handlers.extensions
 
   return [
     // -------------------- identities --------------------
@@ -457,6 +459,9 @@ function buildToolCatalog(browser) {
 
     // E2-C-6: Anti-detect health tools (split per ADR 0005).
     ...buildHealthTools({ health }),
+
+    // E2-C-7: Extension per-identity sharing tools.
+    ...buildExtensionTools({ extensions }),
 
     // -------------------- system metrics --------------------
     {

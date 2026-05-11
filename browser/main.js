@@ -41,6 +41,7 @@ const { installProtocolHandler } = require('./protocol-handler')
 const { setupCrashRecovery } = require('./crash-recovery-setup')
 const { AlertManager } = require('./alert-manager')
 const { buildProxyHealthNotify } = require('./proxy-health-notify')
+const { setupExtensionShare } = require('./extensions-share-setup')
 // E2-C-5: getNotification helper removed — only consumer was the inline
 // proxy-health notify, now extracted to proxy-health-notify.js.
 
@@ -579,6 +580,10 @@ class Browser {
     this.extensions = buildChromeExtensions(this)
     await loadExtensions(this)
     log.info('browser', `WebUI extension loaded id=${this.webuiExtensionId}`)
+
+    // E2-C-7: Per-identity extension sharing. Delegated to setup module per
+    // ADR 0005 (main.js LOC budget).
+    setupExtensionShare(this)
 
     // E2-C-2: crash recovery (delegated to crash-recovery-setup.js for LOC
     // budget). Order: init crash-detector + window-snapshot, prompt restore

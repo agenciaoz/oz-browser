@@ -2589,6 +2589,111 @@
         border-top: 1px solid rgba(255, 255, 255, 0.06);
       }
 
+      /* ── Extensions per-identity modal (C-7) ─────────────────────────── */
+      .oz-ext-window {
+        width: 560px;
+        max-width: calc(100% - 32px);
+      }
+      .oz-ext-body-wrap {
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .oz-ext-identity-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .oz-ext-label {
+        color: var(--text-muted);
+      }
+      #oz-ext-identity-select {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 5px 8px;
+        color: var(--text);
+        font: inherit;
+        font-size: 12.5px;
+      }
+      .oz-ext-empty {
+        color: var(--text-muted);
+        font-size: 12px;
+        line-height: 1.5;
+        padding: 14px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 6px;
+        margin: 0;
+      }
+      .oz-ext-body {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        max-height: 360px;
+        overflow-y: auto;
+      }
+      .oz-ext-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 9px 11px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .oz-ext-info {
+        flex: 1;
+        min-width: 0;
+      }
+      .oz-ext-name {
+        font-size: 13px;
+        font-weight: 600;
+      }
+      .oz-ext-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 2px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .oz-ext-action {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+      }
+      .oz-ext-cb-label {
+        font-size: 11px;
+        color: var(--text-muted);
+        min-width: 50px;
+      }
+      .oz-ext-tag {
+        padding: 3px 9px;
+        border-radius: 10px;
+        font-size: 10px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        background: rgba(54, 179, 126, 0.15);
+        color: #36b37e;
+      }
+      .oz-ext-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 10px 16px 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
       /* ── Bulk Opener modal (C-4) ─────────────────────────────────────── */
       .oz-bo-window {
         width: 620px;
@@ -4120,6 +4225,55 @@
       </div>
     </div>
 
+    <!-- Extensions per-identity modal (C-7) — 🧩. Selector de identity +
+         tabla de Default-installed extensions con checkbox enabled-for-this-
+         identity per row. Default identity muestra "Always enabled" tag. -->
+    <div class="oz-modal" id="oz-ext-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window oz-ext-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-ext-title"
+      >
+        <header>
+          <h2 id="oz-ext-title">🧩 Manage Extensions</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            id="oz-ext-cancel"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div class="oz-ext-body-wrap">
+          <label class="oz-ext-identity-row">
+            <span class="oz-ext-label">Identity:</span>
+            <select id="oz-ext-identity-select"></select>
+          </label>
+
+          <div class="oz-modal-error" id="oz-ext-error" hidden></div>
+
+          <p class="oz-ext-empty" id="oz-ext-empty" hidden>
+            No extensions installed in Default. Open the Chrome Web Store from the Default
+            identity to install one — afterward it will appear here for sharing to other
+            identities.
+          </p>
+
+          <div class="oz-ext-body" id="oz-ext-body">
+            <!-- rows injected by extensions-modal.js -->
+          </div>
+        </div>
+
+        <footer class="oz-ext-footer">
+          <button type="button" class="oz-btn oz-btn-primary" data-close>Done</button>
+        </footer>
+      </div>
+    </div>
+
     <!-- Bulk Opener modal (C-4) — 🎯 Bulk Open. Modal estilo am-window con
          segmented control (From existing / Create new), multi-select de
          identities, count + name/url patterns, target workspace dropdown.
@@ -4261,6 +4415,7 @@
     <script src="./identity-clone.js"></script>
     <script src="./notifications.js"></script>
     <script src="./health-modal.js"></script>
+    <script src="./extensions-modal.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

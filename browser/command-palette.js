@@ -191,6 +191,13 @@ function buildCommands(sources) {
       payload: { action: 'open-modal', modal: 'healthCheck' },
     },
     {
+      id: 'action:manage-extensions',
+      label: 'Manage Extensions for Identity…',
+      keywords: 'chrome web store ublock 1password addon plugin per identity',
+      emoji: '🧩',
+      payload: { action: 'open-modal', modal: 'extensionsManager' },
+    },
+    {
       id: 'action:open-notifications',
       label: 'Notifications',
       keywords: 'alerts log history bell warnings',

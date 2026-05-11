@@ -134,6 +134,12 @@ if (isWebUI) {
         ipcRenderer.on('oz:sidebar:request-health-check', listener)
         return () => ipcRenderer.off('oz:sidebar:request-health-check', listener)
       },
+      // C-7 — open Extensions per-identity modal preset.
+      onRequestManageExt(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:sidebar:request-manage-extensions', listener)
+        return () => ipcRenderer.off('oz:sidebar:request-manage-extensions', listener)
+      },
       onRemoveRejected(cb) {
         const listener = (_e, payload) => cb(payload)
         ipcRenderer.on('oz:sidebar:remove-rejected', listener)
@@ -406,6 +412,25 @@ if (isWebUI) {
         const listener = () => cb()
         ipcRenderer.on('oz:bulk-open:open', listener)
         return () => ipcRenderer.off('oz:bulk-open:open', listener)
+      },
+    },
+    // E2-C-7: extension sharing per identity. listInstalled = todas las
+    // que están en Default. report(id) = matriz default-installed × enabled-
+    // for-this-identity. enable/disable agregan/quitan la extension de la
+    // partition de la identity. onChanged emite cuando muta state.
+    extensions: {
+      listInstalled: () => ipcRenderer.invoke('oz:extensions:listInstalled'),
+      listEnabled: (identityId) =>
+        ipcRenderer.invoke('oz:extensions:listEnabled', identityId),
+      report: (identityId) => ipcRenderer.invoke('oz:extensions:report', identityId),
+      enable: (identityId, extensionId) =>
+        ipcRenderer.invoke('oz:extensions:enable', identityId, extensionId),
+      disable: (identityId, extensionId) =>
+        ipcRenderer.invoke('oz:extensions:disable', identityId, extensionId),
+      onChanged(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:extensions:changed', listener)
+        return () => ipcRenderer.off('oz:extensions:changed', listener)
       },
     },
     // E2-C-6: anti-detect health dashboard. get/list devuelve health
