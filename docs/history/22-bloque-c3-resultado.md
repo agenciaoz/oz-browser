@@ -85,6 +85,7 @@ Entry "Clone identity…" insertada después de "Edit identity…". Disponible p
 Total **65 tests propios del bloque** (1649/1649 verde end-to-end).
 
 `tests/identity-clone.smoketest.js` — 63 cases:
+
 - `resolveCopyName`: basic, collision, strip suffix on clone-of-copy, multi-collision, empty/undefined/null defensive (8 tests).
 - `cloneIdentity` defensive: no identityManager, not-found.
 - `cloneIdentity` basic: fresh fingerprint by default, color/workspace/UA non-inherited.
