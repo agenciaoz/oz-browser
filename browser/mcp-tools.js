@@ -19,6 +19,7 @@ const { buildVaultAccountsTools } = require('./mcp-tools-vault')
 const { buildTabContextTools } = require('./mcp-tools-tab-context')
 const { buildProxyTools } = require('./mcp-tools-proxies')
 const { buildFingerprintTools } = require('./mcp-tools-fingerprint')
+const { buildIdentityCloneTools } = require('./mcp-tools-identity-clone')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -443,6 +444,9 @@ function buildToolCatalog(browser) {
 
     // -------------------- fingerprint (1.9, extracted) --------------------
     ...buildFingerprintTools({ fingerprint }),
+
+    // E2-C-3: Identity clone tools (split per ADR 0005).
+    ...buildIdentityCloneTools({ identities }),
 
     // -------------------- system metrics --------------------
     {

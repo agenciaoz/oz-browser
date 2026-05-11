@@ -56,6 +56,10 @@ if (isWebUI) {
       // got occluded by WebContentsView overlays.
       contextMenu: (id, opts) =>
         ipcRenderer.invoke('oz:identities:contextMenu', id, opts),
+      // C-3 — clone identity with optional inheritance.
+      clone: (srcId, opts) => ipcRenderer.invoke('oz:identities:clone', srcId, opts),
+      previewCloneName: (srcName) =>
+        ipcRenderer.invoke('oz:identities:previewCloneName', srcName),
 
       onChanged(cb) {
         const listener = () => cb()
@@ -117,6 +121,12 @@ if (isWebUI) {
         const listener = (_e, payload) => cb(payload)
         ipcRenderer.on('oz:sidebar:request-edit-identity', listener)
         return () => ipcRenderer.off('oz:sidebar:request-edit-identity', listener)
+      },
+      // C-3 — open Clone Identity modal preset with the requested srcId.
+      onRequestCloneIdentity(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:sidebar:request-clone-identity', listener)
+        return () => ipcRenderer.off('oz:sidebar:request-clone-identity', listener)
       },
       onRemoveRejected(cb) {
         const listener = (_e, payload) => cb(payload)

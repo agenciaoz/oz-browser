@@ -18,6 +18,7 @@
 //     (sin prefijo `oz.identities.` — eso lo agrega mcp-tools.js).
 
 const log = require('./logger')
+const { cloneIdentity, resolveCopyName } = require('./identity-clone')
 
 function buildIdentityHandlers(browser) {
   const im = () => browser.identityManager
@@ -259,6 +260,62 @@ function buildIdentityHandlers(browser) {
         storages,
       })
       return { ok: true, identityId, scope, clearedStorages: storages }
+    },
+
+    /**
+     * C-3 — clone an identity, optionally inheriting fingerprint / proxy / UA.
+     * Returns {ok:true, identity, inherited} or {ok:false, reason, ...}.
+     *
+     * opts shape:
+     *   - srcId: string (required)
+     *   - name?: string (auto-generated "X (copy)" if missing)
+     *   - sameFingerprint?: boolean (default false — fresh seed per safety)
+     *   - sameProxy?: boolean (default true if proxy assigned — same cluster)
+     *   - sameUA?: boolean (default false)
+     */
+    clone(srcId, opts = {}) {
+      const result = cloneIdentity({
+        srcId,
+        opts,
+        identityManager: im(),
+        proxyAssignment: browser.proxyAssignment,
+      })
+      if (result && result.ok) {
+        // 1.5d: hook anti-logout for the new identity session (parity with
+        // create() path above — clone goes through the same lifecycle).
+        if (
+          browser.antiLogout &&
+          typeof browser.antiLogout.installForIdentity === 'function'
+        ) {
+          try {
+            browser.antiLogout.installForIdentity(result.identity.id)
+          } catch (_e) {
+            // best-effort
+          }
+        }
+        browser.broadcastToWebUI('oz:identities:changed')
+        browser.broadcastToWebUI('oz:workspaces:changed')
+        log.info('identity-handlers', 'clone ok', {
+          srcId,
+          newId: result.identity.id,
+          name: result.identity.name,
+          inherited: result.inherited,
+        })
+      } else {
+        log.warn('identity-handlers', 'clone rejected', {
+          srcId,
+          reason: result && result.reason,
+        })
+      }
+      return result
+    },
+
+    /**
+     * C-3 — preview the auto-generated "X (copy N)" name without actually
+     * cloning. Used by the UI to populate the default name input field.
+     */
+    previewCloneName(srcName) {
+      return resolveCopyName(srcName, im().list())
     },
   }
 }

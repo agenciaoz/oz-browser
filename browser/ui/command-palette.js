@@ -274,6 +274,7 @@
           proxyManager: window.ozProxyManagerUI,
           browsingData: window.ozBrowsingDataUI,
           bulkOpener: window.ozBulkOpenerUI,
+          identityClone: window.OZ && window.OZ.IdentityClone,
         }
         const ui = modalMap[payload.modal]
         if (ui && typeof ui.open === 'function') ui.open()

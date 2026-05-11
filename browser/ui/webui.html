@@ -2179,6 +2179,104 @@
         font-size: 10px;
       }
 
+      /* ── Identity Clone modal (C-3) ──────────────────────────────────── */
+      .oz-clone-window {
+        width: 480px;
+        max-width: calc(100% - 32px);
+      }
+      .oz-clone-body {
+        padding: 14px 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .oz-clone-src-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 10px;
+        background: rgba(255, 255, 255, 0.04);
+        border-radius: 6px;
+        font-size: 13px;
+      }
+      .oz-clone-src-label-prefix {
+        color: var(--text-muted);
+      }
+      .oz-clone-src-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        flex-shrink: 0;
+      }
+      .oz-clone-src-label {
+        font-weight: 600;
+      }
+      .oz-clone-field {
+        display: flex;
+        flex-direction: column;
+        gap: 5px;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .oz-clone-field input {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        padding: 7px 9px;
+        color: var(--text);
+        font: inherit;
+        font-size: 13px;
+      }
+      .oz-clone-field input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .oz-clone-options {
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 6px;
+        padding: 10px 12px;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 9px;
+      }
+      .oz-clone-options legend {
+        padding: 0 6px;
+        font-size: 11px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+      }
+      .oz-clone-cb-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 9px;
+        cursor: pointer;
+        font-size: 12.5px;
+        line-height: 1.45;
+      }
+      .oz-clone-cb-row input[type='checkbox'] {
+        margin-top: 2px;
+        flex-shrink: 0;
+      }
+      .oz-clone-cb-row input[type='checkbox']:disabled + .oz-clone-cb-text {
+        opacity: 0.5;
+      }
+      .oz-clone-cb-text strong {
+        font-weight: 600;
+      }
+      .oz-clone-cb-text em {
+        font-style: normal;
+        color: var(--text-muted);
+      }
+      .oz-clone-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 10px 16px 14px;
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+      }
+
       /* ── Bulk Opener modal (C-4) ─────────────────────────────────────── */
       .oz-bo-window {
         width: 620px;
@@ -3291,6 +3389,92 @@
       </div>
     </div>
 
+    <!-- Identity Clone modal (C-3) — duplicate identity with optional
+         inheritance of fingerprint / proxy / UA. Triggered by right-click
+         identity → "Clone identity…" or Cmd+K palette → "Clone Identity…". -->
+    <div class="oz-modal" id="oz-clone-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window oz-clone-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-clone-title"
+      >
+        <header>
+          <h2 id="oz-clone-title">📑 Clone identity</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            id="oz-clone-cancel"
+          >
+            ✕
+          </button>
+        </header>
+
+        <div class="oz-clone-body">
+          <div class="oz-clone-src-row">
+            <span class="oz-clone-src-label-prefix">Cloning from:</span>
+            <span class="oz-clone-src-dot" id="oz-clone-src-dot"></span>
+            <span class="oz-clone-src-label" id="oz-clone-src-label">—</span>
+          </div>
+
+          <label class="oz-clone-field">
+            <span>New name</span>
+            <input
+              type="text"
+              id="oz-clone-name"
+              placeholder="Identity name"
+              autocomplete="off"
+              spellcheck="false"
+            />
+          </label>
+
+          <fieldset class="oz-clone-options">
+            <legend>Inherit from source:</legend>
+            <label class="oz-clone-cb-row">
+              <input type="checkbox" id="oz-clone-cb-fingerprint" />
+              <span class="oz-clone-cb-text">
+                <strong>Same fingerprint</strong>
+                <em>
+                  — clone matches the source's blueprint (UA / screen / timezone). Use for
+                  sub-accounts of the same "person".
+                </em>
+              </span>
+            </label>
+            <label class="oz-clone-cb-row">
+              <input type="checkbox" id="oz-clone-cb-proxy" />
+              <span class="oz-clone-cb-text">
+                <strong>Same proxy</strong>
+                <em id="oz-clone-proxy-hint">
+                  — inherit the proxy assignment of the source.
+                </em>
+              </span>
+            </label>
+            <label class="oz-clone-cb-row">
+              <input type="checkbox" id="oz-clone-cb-ua" />
+              <span class="oz-clone-cb-text">
+                <strong>Same custom User-Agent</strong>
+                <em id="oz-clone-ua-hint">
+                  — copy the UA override (only if source has one).
+                </em>
+              </span>
+            </label>
+          </fieldset>
+
+          <div class="oz-modal-error" id="oz-clone-error" hidden></div>
+        </div>
+
+        <footer class="oz-clone-footer">
+          <button type="button" class="oz-btn" data-close>Cancel</button>
+          <button type="button" class="oz-btn oz-btn-primary" id="oz-clone-submit">
+            Clone
+          </button>
+        </footer>
+      </div>
+    </div>
+
     <!-- Bulk Opener modal (C-4) — 🎯 Bulk Open. Modal estilo am-window con
          segmented control (From existing / Create new), multi-select de
          identities, count + name/url patterns, target workspace dropdown.
@@ -3428,6 +3612,7 @@
     <script src="./browsing-data.js"></script>
     <script src="./command-palette.js"></script>
     <script src="./bulk-opener.js"></script>
+    <script src="./identity-clone.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

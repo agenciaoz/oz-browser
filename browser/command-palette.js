@@ -177,6 +177,13 @@ function buildCommands(sources) {
       payload: { action: 'open-modal', modal: 'bulkOpener' },
     },
     {
+      id: 'action:clone-identity',
+      label: 'Clone Identity…',
+      keywords: 'duplicate copy fingerprint sub-account variant',
+      emoji: '📑',
+      payload: { action: 'open-modal', modal: 'identityClone' },
+    },
+    {
       id: 'action:toggle-devtools',
       label: 'Toggle DevTools',
       hint: '⇧⌘J',

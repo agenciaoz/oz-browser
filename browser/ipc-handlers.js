@@ -170,6 +170,11 @@ function registerIdentityHandlersIPC(browser) {
   ipcMain.handle('oz:identities:clearBrowsingData', (_e, id, scope) =>
     h.clearBrowsingData(id, scope),
   )
+  // C-3 — clone identity with optional inheritance.
+  ipcMain.handle('oz:identities:clone', (_e, srcId, opts) => h.clone(srcId, opts))
+  ipcMain.handle('oz:identities:previewCloneName', (_e, srcName) =>
+    h.previewCloneName(srcName),
+  )
 }
 
 // ----- Bookmarks (1.7b) -----------------------------------------------------

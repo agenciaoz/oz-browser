@@ -160,7 +160,7 @@ class IdentityManager {
     return this.identities.find((i) => i.isDefault) || this.identities[0]
   }
 
-  create({ name = 'New Identity', color, userAgent, workspaceId } = {}) {
+  create({ name = 'New Identity', color, userAgent, workspaceId, fingerprintSeed } = {}) {
     if (!IS_PAID_TIER) {
       // Default identity counts towards the cap intentionally — Free tier
       // gets 1 Default + up to (MAX-1) custom = 3 total.
@@ -184,7 +184,12 @@ class IdentityManager {
       id: uuid(),
       name,
       color: pickedColor,
-      fingerprintSeed: uuid(),
+      // C-3: caller can pass an explicit fingerprintSeed (e.g. identity-clone
+      // when "Same fingerprint" is checked — clones the parent's seed so the
+      // new identity gets the SAME blueprint/UA/screen/timezone via
+      // FingerprintEngine's deterministic SHA256-stream RNG). If omitted, a
+      // fresh uuid() ensures every new identity gets its own perfil.
+      fingerprintSeed: fingerprintSeed || uuid(),
       createdAt: now(),
       userAgent: userAgent || null,
       // H2: lock = "no me borres por accidente". Defaults to false. Only

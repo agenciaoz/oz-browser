@@ -45,6 +45,17 @@ function buildIdentityContextMenu({ browser, identityId }) {
       })
     },
   })
+  // C-3 — open Clone Identity modal preset with this identity's id. Locked
+  // identities CAN be cloned (clone is non-destructive, mirrors create()
+  // semantics — H2 lock only blocks remove + clearBrowsingData).
+  template.push({
+    label: 'Clone identity…',
+    click: () => {
+      browser.broadcastToWebUI('oz:sidebar:request-clone-identity', {
+        id: ident.id,
+      })
+    },
+  })
 
   if (!ident.isDefault) {
     // Move to workspace submenu — list every other non-archived workspace.
