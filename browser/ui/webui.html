@@ -2857,6 +2857,47 @@
       .oz-toolbar-btn:active {
         background: rgba(255, 255, 255, 0.1);
       }
+      /* Custom tooltip — appears instantly on hover, above the button.
+         Positioned above (toolbar is at bottom of sidebar). Uses
+         data-tooltip attr (not title) to avoid the slow native macOS
+         tooltip kicking in 1.5s later as a duplicate. */
+      .oz-toolbar-btn::after {
+        content: attr(data-tooltip);
+        position: absolute;
+        bottom: calc(100% + 8px);
+        left: 50%;
+        transform: translateX(-50%);
+        background: rgba(20, 20, 28, 0.95);
+        color: #fff;
+        padding: 5px 9px;
+        border-radius: 4px;
+        font-size: 11px;
+        font-weight: 500;
+        white-space: nowrap;
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.12s ease 0.15s;
+        z-index: 10000;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      }
+      .oz-toolbar-btn::before {
+        content: '';
+        position: absolute;
+        bottom: calc(100% + 3px);
+        left: 50%;
+        transform: translateX(-50%);
+        border: 5px solid transparent;
+        border-top-color: rgba(20, 20, 28, 0.95);
+        pointer-events: none;
+        opacity: 0;
+        transition: opacity 0.12s ease 0.15s;
+        z-index: 10000;
+      }
+      .oz-toolbar-btn:hover::after,
+      .oz-toolbar-btn:hover::before {
+        opacity: 1;
+      }
       .oz-toolbar-icon {
         font-size: 16px;
         line-height: 1;
@@ -3007,7 +3048,8 @@
             class="oz-toolbar-btn"
             type="button"
             data-vault="unknown"
-            title="Accounts"
+            data-tooltip="Accounts"
+            aria-label="Accounts"
           >
             <span class="vault-status-dot"></span>
             <span class="oz-toolbar-icon">🔐</span>
@@ -3016,12 +3058,19 @@
             id="oz-tm-button"
             class="oz-toolbar-btn"
             type="button"
-            title="Time Machine"
+            data-tooltip="Time Machine"
+            aria-label="Time Machine"
           >
             <span class="oz-toolbar-icon">⏱</span>
             <span class="tm-count toolbar-count" id="oz-tm-count"></span>
           </button>
-          <button id="oz-pm-button" class="oz-toolbar-btn" type="button" title="Proxies">
+          <button
+            id="oz-pm-button"
+            class="oz-toolbar-btn"
+            type="button"
+            data-tooltip="Proxies"
+            aria-label="Proxies"
+          >
             <span class="oz-toolbar-icon">🌐</span>
             <span class="pm-count toolbar-count" id="oz-pm-count"></span>
           </button>
@@ -3029,7 +3078,8 @@
             id="oz-bd-button"
             class="oz-toolbar-btn"
             type="button"
-            title="Browsing Data"
+            data-tooltip="Browsing Data"
+            aria-label="Browsing Data"
           >
             <span class="oz-toolbar-icon">📚</span>
           </button>
@@ -3037,7 +3087,8 @@
             id="oz-bo-button"
             class="oz-toolbar-btn"
             type="button"
-            title="Bulk Open"
+            data-tooltip="Bulk Open"
+            aria-label="Bulk Open"
           >
             <span class="oz-toolbar-icon">🎯</span>
           </button>
@@ -3045,7 +3096,8 @@
             id="oz-health-button"
             class="oz-toolbar-btn"
             type="button"
-            title="Anti-Detect Health"
+            data-tooltip="Anti-Detect Health"
+            aria-label="Anti-Detect Health"
           >
             <span class="oz-toolbar-icon">🩺</span>
           </button>
@@ -3053,7 +3105,8 @@
             id="oz-notif-button"
             class="oz-toolbar-btn"
             type="button"
-            title="Notifications"
+            data-tooltip="Notifications"
+            aria-label="Notifications"
           >
             <span class="oz-toolbar-icon">🔔</span>
             <span class="notif-badge toolbar-badge" id="oz-notif-badge" hidden>0</span>
@@ -3062,7 +3115,8 @@
             id="oz-settings-button"
             class="oz-toolbar-btn"
             type="button"
-            title="Settings"
+            data-tooltip="Settings"
+            aria-label="Settings"
           >
             <span class="oz-toolbar-icon">⚙️</span>
           </button>
