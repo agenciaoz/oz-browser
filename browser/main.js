@@ -39,14 +39,11 @@ const { setupMenu } = require('./menu')
 const { wireIdentityWorkspaceSync } = require('./identity-workspace-sync')
 const { installProtocolHandler } = require('./protocol-handler')
 const { setupCrashRecovery } = require('./crash-recovery-setup')
+const { AlertManager } = require('./alert-manager')
+const { buildProxyHealthNotify } = require('./proxy-health-notify')
+// E2-C-5: getNotification helper removed — only consumer was the inline
+// proxy-health notify, now extracted to proxy-health-notify.js.
 
-let _Notification = null
-function getNotification() {
-  if (_Notification) return _Notification
-  // Lazy require to avoid pulling Notification before app is ready in tests.
-  _Notification = require('electron').Notification
-  return _Notification
-}
 const { TabbedBrowserWindow } = require('./window-manager')
 const { registerIpcHandlers } = require('./ipc-handlers')
 const {
@@ -78,6 +75,7 @@ class Browser {
   webuiExtensionId = null
   crashDetector = null
   windowSnapshot = null
+  alertManager = null
 
   constructor() {
     this.ready = new Promise((resolve) => (this.resolveReady = resolve))
@@ -156,6 +154,14 @@ class Browser {
           log.warn('browser', 'historyManager.flush failed', {
             message: err.message,
           })
+        }
+      }
+      // E2-C-5: flush AlertManager pending throttled save.
+      if (this.alertManager) {
+        try {
+          this.alertManager.flush()
+        } catch (err) {
+          log.warn('browser', 'alertManager.flush failed', { message: err.message })
         }
       }
       // E2-C-2: capture final window topology + mark clean shutdown. Order
@@ -263,6 +269,17 @@ class Browser {
         this.backupManager.applyRetention()
         lastSnapshotDate = today
         this.broadcastToWebUI('oz:timemachine:changed')
+        // E2-C-5: alert log entry (success). No OS notif for daily snapshots
+        // (would be noise) — panel-only.
+        if (this.alertManager) {
+          this.alertManager.add({
+            type: 'snapshot',
+            severity: 'success',
+            title: 'Daily snapshot created',
+            message: `Time Machine snapshot "${today}" saved successfully.`,
+            action: { kind: 'open-modal', payload: { modal: 'timeMachine' } },
+          })
+        }
       } catch (err) {
         log.error('browser', 'daily snapshot cron failed', { message: err.message })
       }
@@ -319,6 +336,9 @@ class Browser {
     this.antiLogout = new AntiLogout({
       identityManager: this.identityManager,
       accountVault: this.accountVault,
+      // E2-C-5: alertManager + settingsManager are wired LATER in init() so
+      // the late-set fields below propagate via property reassignment. AntiLogout
+      // will pick them up at flag time via this.alertManager / this.settingsManager.
     })
     this.antiLogout.install()
     log.info('browser', 'AntiLogout installed', {
@@ -346,6 +366,26 @@ class Browser {
     log.info('browser', 'SettingsManager loaded', {
       version: this.settingsManager.getAll().version,
       onboarded: this.settingsManager.get('onboarding').completed,
+    })
+
+    // E2-C-5: AlertManager — persistent in-app alert log. Loaded BEFORE
+    // anti-logout / proxy-health / backup-manager so those producers can
+    // emit alerts to it from their first tick. Convives con las OS
+    // notifications (settings.notifications.showOSAlert toggle).
+    this.alertManager = new AlertManager({
+      userDataDir: app.getPath('userData'),
+      broadcast: (channel) => this.broadcastToWebUI(channel),
+    })
+    // Late-bind alertManager + settingsManager into AntiLogout (created earlier
+    // before either existed). Property assignment is fine — AntiLogout reads
+    // both lazily inside _onCookieRemoved (no constructor-time wiring needed).
+    if (this.antiLogout) {
+      this.antiLogout.alertManager = this.alertManager
+      this.antiLogout.settingsManager = this.settingsManager
+    }
+    log.info('browser', 'AlertManager loaded', {
+      existingAlerts: this.alertManager.list().length,
+      unread: this.alertManager.unreadCount(),
     })
 
     // 1.9a: FingerprintEngine — generates per-identity fingerprint profiles
@@ -495,18 +535,9 @@ class Browser {
     this.proxyHealth = new ProxyHealth({
       proxyManager: this.proxyManager,
       broadcast: (channel) => this.broadcastToWebUI(channel),
-      notify: (title, body) => {
-        try {
-          const N = getNotification()
-          if (N && N.isSupported && N.isSupported()) {
-            new N({ title, body }).show()
-          }
-        } catch (err) {
-          log.warn('browser', 'proxy health notification failed', {
-            message: err.message,
-          })
-        }
-      },
+      // E2-C-5: notify factory wraps the OS Notification call + alert log
+      // entry. Extracted to keep main.js under 500 LOC (ADR 0005).
+      notify: buildProxyHealthNotify(this),
     })
     this.proxyHealth.startDaemon()
     log.info('browser', 'ProxyHealth daemon started (30 min interval)')

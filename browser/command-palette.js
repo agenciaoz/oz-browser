@@ -184,6 +184,13 @@ function buildCommands(sources) {
       payload: { action: 'open-modal', modal: 'identityClone' },
     },
     {
+      id: 'action:open-notifications',
+      label: 'Notifications',
+      keywords: 'alerts log history bell warnings',
+      emoji: '🔔',
+      payload: { action: 'open-modal', modal: 'notifications' },
+    },
+    {
       id: 'action:toggle-devtools',
       label: 'Toggle DevTools',
       hint: '⇧⌘J',

@@ -2179,6 +2179,140 @@
         font-size: 10px;
       }
 
+      /* ── Notifications (E2-C-5) ──────────────────────────────────────── */
+      #oz-notif-button {
+        position: relative;
+      }
+      .notif-badge {
+        position: absolute;
+        top: 4px;
+        right: 8px;
+        min-width: 18px;
+        height: 18px;
+        padding: 0 5px;
+        background: #e85a5a;
+        color: white;
+        border-radius: 9px;
+        font-size: 10px;
+        font-weight: 700;
+        line-height: 18px;
+        text-align: center;
+      }
+      .oz-notif-window {
+        width: 540px;
+        max-width: calc(100% - 32px);
+        max-height: 75vh;
+        display: flex;
+        flex-direction: column;
+      }
+      .oz-notif-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .oz-btn-small {
+        padding: 4px 10px;
+        font-size: 11px;
+      }
+      .oz-notif-count {
+        margin-left: auto;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .oz-notif-list {
+        overflow-y: auto;
+        max-height: 60vh;
+        padding: 4px 0;
+      }
+      .oz-notif-empty {
+        padding: 24px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 12.5px;
+      }
+      .oz-notif-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        padding: 10px 14px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+        position: relative;
+      }
+      .oz-notif-row.unread {
+        background: rgba(91, 141, 239, 0.06);
+      }
+      .oz-notif-sev {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        margin-top: 6px;
+        flex-shrink: 0;
+      }
+      .oz-notif-sev.urgent {
+        background: #e85a5a;
+      }
+      .oz-notif-sev.success {
+        background: #36b37e;
+      }
+      .oz-notif-sev.info {
+        background: #5b8def;
+      }
+      .oz-notif-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .oz-notif-title {
+        font-weight: 600;
+        font-size: 12.5px;
+        line-height: 1.35;
+      }
+      .oz-notif-msg {
+        font-size: 11.5px;
+        color: var(--text-muted);
+        margin-top: 2px;
+        line-height: 1.4;
+      }
+      .oz-notif-meta {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        font-size: 10px;
+        color: var(--text-muted);
+        margin-top: 4px;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .oz-notif-actions {
+        display: flex;
+        gap: 6px;
+        margin-top: 6px;
+      }
+      .oz-notif-action {
+        background: rgba(91, 141, 239, 0.18);
+        border: 1px solid rgba(91, 141, 239, 0.4);
+        color: var(--text);
+        border-radius: 4px;
+        padding: 3px 8px;
+        font-size: 11px;
+        cursor: pointer;
+      }
+      .oz-notif-action:hover {
+        background: rgba(91, 141, 239, 0.3);
+      }
+      .oz-notif-dismiss {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 14px;
+        padding: 0 4px;
+      }
+      .oz-notif-dismiss:hover {
+        color: var(--text);
+      }
+
       /* ── Identity Clone modal (C-3) ──────────────────────────────────── */
       .oz-clone-window {
         width: 480px;
@@ -2568,6 +2702,10 @@
         </button>
         <button id="oz-bo-button" type="button">
           <span>🎯 Bulk Open</span>
+        </button>
+        <button id="oz-notif-button" type="button">
+          <span>🔔 Notifications</span>
+          <span class="notif-badge" id="oz-notif-badge" hidden>0</span>
         </button>
         <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
         <!-- H3c: header renamed; the list below is now the unified tree
@@ -3023,6 +3161,7 @@
             <button data-section="automation">Automation</button>
             <button data-section="backup">Backup</button>
             <button data-section="performance">Performance</button>
+            <button data-section="notifications">Notifications</button>
             <button data-section="about">About</button>
           </nav>
 
@@ -3148,6 +3287,21 @@
                   <div class="stg-desc">Minimum minutes a tab must be idle.</div>
                 </div>
                 <input type="number" id="oz-stg-discardIdleMin" min="1" />
+              </div>
+            </section>
+
+            <section class="stg-section" data-section="notifications" hidden>
+              <h3>Notifications</h3>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Show OS notifications</div>
+                  <div class="stg-desc">
+                    macOS native banner alerts for urgent events (account needs re-login,
+                    proxy auto-disabled). The in-app 🔔 panel records everything
+                    regardless.
+                  </div>
+                </div>
+                <input type="checkbox" id="oz-stg-showOSAlert" />
               </div>
             </section>
 
@@ -3389,6 +3543,42 @@
       </div>
     </div>
 
+    <!-- Notifications panel modal (E2-C-5) — historical alert log with
+         inline action buttons. Triggered by sidebar 🔔 button or Cmd+K. -->
+    <div class="oz-modal" id="oz-notif-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window oz-notif-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-notif-title"
+      >
+        <header>
+          <h2 id="oz-notif-title">🔔 Notifications</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+
+        <div class="oz-notif-toolbar">
+          <button type="button" class="oz-btn oz-btn-small" id="oz-notif-mark-all">
+            Mark all read
+          </button>
+          <button type="button" class="oz-btn oz-btn-small" id="oz-notif-clear-all">
+            Clear all
+          </button>
+          <span class="oz-notif-count" id="oz-notif-stats"></span>
+        </div>
+
+        <div class="oz-notif-list" id="oz-notif-list" role="list">
+          <p class="oz-notif-empty" id="oz-notif-empty" hidden>
+            No notifications yet. They'll appear here when proxies disable, accounts need
+            re-login, snapshots run, etc.
+          </p>
+        </div>
+      </div>
+    </div>
+
     <!-- Identity Clone modal (C-3) — duplicate identity with optional
          inheritance of fingerprint / proxy / UA. Triggered by right-click
          identity → "Clone identity…" or Cmd+K palette → "Clone Identity…". -->
@@ -3613,6 +3803,7 @@
     <script src="./command-palette.js"></script>
     <script src="./bulk-opener.js"></script>
     <script src="./identity-clone.js"></script>
+    <script src="./notifications.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

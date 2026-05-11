@@ -72,6 +72,11 @@ const DEFAULTS = Object.freeze({
     autoTabDiscard: true,
     discardIdleMin: 30,
   },
+  // E2-C-5: notification preferences. Panel always records alerts; OS-level
+  // alerts (Notification API) controlled by showOSAlert (default true).
+  notifications: {
+    showOSAlert: true,
+  },
 })
 
 const VALID_LOG_LEVELS = ['DEBUG', 'INFO', 'WARN', 'ERROR']
@@ -125,7 +130,7 @@ class SettingsManager {
     return deepClone(this.settings)
   }
 
-  /** Get a section: 'general' | 'privacy' | 'automation' | 'backup' | 'onboarding' | 'performance'. */
+  /** Get a section: 'general' | 'privacy' | 'automation' | 'backup' | 'onboarding' | 'performance' | 'notifications'. */
   get(section) {
     if (!this.settings[section]) return null
     return { ...this.settings[section] }
@@ -246,7 +251,8 @@ function validateKey(section, key, value) {
     key === 'mcpEnabled' ||
     key === 'dailySnapshot' ||
     key === 'completed' ||
-    key === 'autoTabDiscard'
+    key === 'autoTabDiscard' ||
+    key === 'showOSAlert'
   ) {
     if (typeof value !== 'boolean') {
       return { ok: false, reason: 'must be boolean' }

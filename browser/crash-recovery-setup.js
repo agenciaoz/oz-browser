@@ -61,6 +61,16 @@ async function setupCrashRecovery(browser) {
           requested: lastSnapshot.windows.length,
           created: created.length,
         })
+        // E2-C-5: post-restore alert so the user has a record in the panel
+        // even if they dismissed the dialog quickly.
+        if (browser.alertManager && restored) {
+          browser.alertManager.add({
+            type: 'crash-recovery',
+            severity: 'info',
+            title: 'Session restored',
+            message: `Restored ${created.length} window(s) from the last session before the crash.`,
+          })
+        }
       } else {
         // User chose Start Fresh — clear the snapshot so a hypothetical
         // immediate-second-crash doesn't keep restoring the same old state.

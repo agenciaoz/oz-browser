@@ -81,10 +81,20 @@ function isSessionCookie(cookie) {
  *     when called. Default: lazy require('electron').Notification.
  */
 class AntiLogout {
-  constructor({ identityManager, accountVault, notificationFactory } = {}) {
+  constructor({
+    identityManager,
+    accountVault,
+    notificationFactory,
+    alertManager,
+    settingsManager,
+  } = {}) {
     this.identityManager = identityManager
     this.accountVault = accountVault || null
     this.notificationFactory = notificationFactory || _defaultNotification
+    // E2-C-5: optional — wired by main.js. Anti-logout records every flagged
+    // account as an in-app alert so the user has historical context.
+    this.alertManager = alertManager || null
+    this.settingsManager = settingsManager || null
     this._installed = new Map() // identityId → unhook function
     this._lastExtended = new Map() // `${identityId}:${name}@${domain}` → ts
   }
@@ -249,11 +259,42 @@ class AntiLogout {
         cookieName: cookie.name,
         domain: cookie.domain,
       })
-      this._notify(
-        'OZ Browser',
-        `${flagged} account(s) need re-login. Open Account Manager to fix.`,
-      )
+      // E2-C-5: register in-app alert (panel always; OS notif gated by settings).
+      if (this.alertManager) {
+        try {
+          this.alertManager.add({
+            type: 'anti-logout',
+            severity: 'urgent',
+            title: 'Account needs re-login',
+            message: `${flagged} account(s) on ${cookie.domain} need re-login.`,
+            identityId,
+            action: { kind: 'open-modal', payload: { modal: 'accountManager' } },
+          })
+        } catch (_e) {
+          // best-effort
+        }
+      }
+      if (this._osAlertEnabled()) {
+        this._notify(
+          'OZ Browser',
+          `${flagged} account(s) need re-login. Open Account Manager to fix.`,
+        )
+      }
     }
+  }
+
+  /**
+   * E2-C-5 — settings.notifications.showOSAlert gate. Default true.
+   */
+  _osAlertEnabled() {
+    if (!this.settingsManager) return true
+    try {
+      const sect = this.settingsManager.get('notifications')
+      if (sect && typeof sect === 'object' && sect.showOSAlert === false) return false
+    } catch (_e) {
+      // best-effort — if settings doesn't have the section, default to true
+    }
+    return true
   }
 
   _notify(title, body) {

@@ -14,6 +14,20 @@ function registerExtraIpcHandlers(browser) {
   registerBrowsingDataHandlersIPC(browser)
   registerCommandPaletteHandlersIPC(browser)
   registerBulkOpenerHandlersIPC(browser)
+  registerAlertHandlersIPC(browser)
+}
+
+// ----- Alerts (E2-C-5) ------------------------------------------------------
+
+function registerAlertHandlersIPC(browser) {
+  const h = browser.handlers.alerts
+  ipcMain.handle('oz:alerts:list', (_e, opts) => h.list(opts))
+  ipcMain.handle('oz:alerts:add', (_e, opts) => h.add(opts))
+  ipcMain.handle('oz:alerts:markRead', (_e, id) => h.markRead(id))
+  ipcMain.handle('oz:alerts:markAllRead', () => h.markAllRead())
+  ipcMain.handle('oz:alerts:remove', (_e, id) => h.remove(id))
+  ipcMain.handle('oz:alerts:clear', () => h.clear())
+  ipcMain.handle('oz:alerts:unreadCount', () => h.unreadCount())
 }
 
 // ----- Proxies (1.8a/1.8b/1.8c/1.8d) ---------------------------------------

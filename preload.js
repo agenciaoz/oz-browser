@@ -402,5 +402,26 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:bulk-open:open', listener)
       },
     },
+    // E2-C-5: alert log persisted in main. UI calls list/markRead/clear;
+    // main process emits add() (the panel mostly READS, doesn't ADD).
+    alerts: {
+      list: (opts) => ipcRenderer.invoke('oz:alerts:list', opts),
+      add: (opts) => ipcRenderer.invoke('oz:alerts:add', opts),
+      markRead: (id) => ipcRenderer.invoke('oz:alerts:markRead', id),
+      markAllRead: () => ipcRenderer.invoke('oz:alerts:markAllRead'),
+      remove: (id) => ipcRenderer.invoke('oz:alerts:remove', id),
+      clear: () => ipcRenderer.invoke('oz:alerts:clear'),
+      unreadCount: () => ipcRenderer.invoke('oz:alerts:unreadCount'),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:alerts:changed', listener)
+        return () => ipcRenderer.off('oz:alerts:changed', listener)
+      },
+      onOpen(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:notifications:open', listener)
+        return () => ipcRenderer.off('oz:notifications:open', listener)
+      },
+    },
   })
 }

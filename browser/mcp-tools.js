@@ -20,6 +20,7 @@ const { buildTabContextTools } = require('./mcp-tools-tab-context')
 const { buildProxyTools } = require('./mcp-tools-proxies')
 const { buildFingerprintTools } = require('./mcp-tools-fingerprint')
 const { buildIdentityCloneTools } = require('./mcp-tools-identity-clone')
+const { buildAlertTools } = require('./mcp-tools-alerts')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -43,6 +44,7 @@ function buildToolCatalog(browser) {
   const cookies = () => browser.handlers && browser.handlers.cookies
   const proxies = () => browser.handlers && browser.handlers.proxies
   const fingerprint = () => browser.handlers && browser.handlers.fingerprint
+  const alerts = () => browser.handlers && browser.handlers.alerts
 
   return [
     // -------------------- identities --------------------
@@ -447,6 +449,9 @@ function buildToolCatalog(browser) {
 
     // E2-C-3: Identity clone tools (split per ADR 0005).
     ...buildIdentityCloneTools({ identities }),
+
+    // E2-C-5: Alert tools (split per ADR 0005).
+    ...buildAlertTools({ alerts }),
 
     // -------------------- system metrics --------------------
     {

@@ -74,6 +74,13 @@
           key: 'discardIdleMin',
           type: 'int',
         },
+        // E2-C-5: notification settings
+        {
+          id: 'oz-stg-showOSAlert',
+          section: 'notifications',
+          key: 'showOSAlert',
+          type: 'bool',
+        },
       ]
 
       this._saveTimer = null
