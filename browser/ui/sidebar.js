@@ -137,6 +137,23 @@
         this.tabs = this.tabs.filter((x) => x.id !== info.tabId)
       } else if (info.kind === 'selected') {
         this.activeOzTabId = info.tabId
+        // C-7-bis: bidirectional sync — al focus un tab en la tabstrip,
+        // destacar visualmente la identity correspondiente en el sidebar +
+        // auto-expand para que el tab activo sea visible. También sincroniza
+        // el "active identity for new tabs" (Cmd+T) al foco actual.
+        const tab = this.tabs.find((x) => x.id === info.tabId)
+        if (tab && tab.identityId && tab.identityId !== this.activeIdentityId) {
+          this.activeIdentityId = tab.identityId
+          const expandKey = 'id:' + tab.identityId
+          if (!this.expanded[expandKey]) {
+            this.expanded[expandKey] = true
+            saveExpanded(this.expanded)
+          }
+          // Fire-and-forget — el `oz:identities:active-changed` que emita
+          // este setActive va a re-renderizar pero con el mismo state local
+          // que ya seteamos (idempotente, no ciclo infinito).
+          safe(window.oz.identities.setActive(tab.identityId), 'identities.setActive')
+        }
       } else if (info.kind === 'bulk-created') {
         this.refresh()
         return
@@ -211,6 +228,16 @@
 
     handleSelectIdentity(identityId) {
       safe(window.oz.identities.setActive(identityId), 'identities.setActive')
+      // C-7-bis: bidirectional sync — al click una identity, seleccionar
+      // un tab visible de esa identity en la tabstrip (si hay alguno). Si
+      // no tiene tabs vivos, no auto-abre uno (requiere "+" inline o Cmd+T
+      // explícito). Si el tab actualmente focuseado YA es de esta identity,
+      // no se cambia la selección (no rompe scroll/state del tab).
+      const tabsOfId = this.tabs.filter((t) => t.identityId === identityId)
+      if (tabsOfId.length === 0) return
+      const alreadyActive = tabsOfId.find((t) => t.id === this.activeOzTabId)
+      if (alreadyActive) return
+      safe(window.oz.tabs.select(tabsOfId[0].id), 'tabs.select')
     }
 
     handleToggleIdentityExpanded(identityId, ev) {
