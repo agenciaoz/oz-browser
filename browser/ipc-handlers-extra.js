@@ -18,6 +18,23 @@ function registerExtraIpcHandlers(browser) {
   registerHealthHandlersIPC(browser)
   registerExtensionShareHandlersIPC(browser)
   registerCloudBackupHandlersIPC(browser)
+  registerTeamHandlersIPC(browser)
+}
+
+// ----- Team (E-6) -----------------------------------------------------------
+
+function registerTeamHandlersIPC(browser) {
+  const h = browser.handlers.team
+  if (!h) return
+  ipcMain.handle('oz:team:status', () => h.status())
+  ipcMain.handle('oz:team:createTeam', () => h.createTeam())
+  ipcMain.handle('oz:team:generateInvite', (_e, opts) => h.generateInvite(opts))
+  ipcMain.handle('oz:team:acceptInvite', (_e, opts) => h.acceptInvite(opts || {}))
+  ipcMain.handle('oz:team:leaveTeam', () => h.leaveTeam())
+  ipcMain.handle('oz:team:disbandTeam', () => h.disbandTeam())
+  ipcMain.handle('oz:team:listMembers', () => h.listMembers())
+  ipcMain.handle('oz:team:removeMember', (_e, memberId) => h.removeMember(memberId))
+  ipcMain.handle('oz:team:wrapKeyForPendingMembers', () => h.wrapKeyForPendingMembers())
 }
 
 // ----- Cloud Backup (D-1.5) -------------------------------------------------

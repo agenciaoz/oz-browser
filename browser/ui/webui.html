@@ -1698,6 +1698,143 @@
         color: #a3c1ff;
       }
 
+      /*----- TEAM (E-7) -----*/
+
+      .team-banner {
+        background: rgba(91, 141, 239, 0.08);
+        border: 1px solid rgba(91, 141, 239, 0.22);
+        border-radius: 6px;
+        padding: 16px 18px;
+        margin-bottom: 16px;
+      }
+      .team-banner h3 {
+        margin: 0 0 8px 0;
+        font-size: 14px;
+        color: var(--text-color);
+      }
+      .team-banner p {
+        margin: 0 0 12px 0;
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.5;
+      }
+      .team-actions {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .team-actions button,
+      .team-section button {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--text-color);
+        padding: 7px 14px;
+        border-radius: 5px;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+      }
+      .team-actions button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: #fff;
+        font-weight: 600;
+      }
+      .team-actions button.danger,
+      .team-section button.danger {
+        background: rgba(229, 76, 76, 0.1);
+        border-color: rgba(229, 76, 76, 0.3);
+        color: var(--danger);
+      }
+      .team-actions button:hover {
+        filter: brightness(1.12);
+      }
+      .team-join-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .team-join-row input {
+        flex: 1;
+        background: rgba(0, 0, 0, 0.25);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--text-color);
+        padding: 7px 10px;
+        border-radius: 5px;
+        font: inherit;
+        font-size: 12px;
+        font-family: monospace;
+      }
+      .team-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+        font-family: monospace;
+        padding: 4px 12px 12px;
+        word-break: break-all;
+      }
+      .team-section-title {
+        margin: 14px 4px 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .team-member {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        margin-bottom: 6px;
+      }
+      .team-member.me {
+        border-color: rgba(91, 141, 239, 0.4);
+        background: rgba(91, 141, 239, 0.06);
+      }
+      .team-member-id {
+        flex: 1;
+        font-family: monospace;
+        font-size: 12px;
+        color: var(--text-color);
+        word-break: break-all;
+      }
+      .team-member-status {
+        font-size: 11px;
+        color: var(--text-muted);
+        flex: 0 0 auto;
+      }
+      .team-empty {
+        padding: 16px 12px;
+        text-align: center;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .team-invite-display {
+        margin-top: 12px;
+        padding: 10px 12px;
+        background: rgba(0, 0, 0, 0.2);
+        border-radius: 5px;
+      }
+      .team-invite-display input {
+        width: 100%;
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: var(--text-color);
+        padding: 6px 9px;
+        border-radius: 4px;
+        font: inherit;
+        font-size: 11px;
+        font-family: monospace;
+      }
+      .team-invite-display small {
+        display: block;
+        margin-top: 6px;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+
       /*----- PROXY MANAGER (1.8d) -----*/
 
       #oz-pm-button {
@@ -3405,6 +3542,15 @@
             <span class="tm-count toolbar-count" id="oz-tm-count"></span>
           </button>
           <button
+            id="oz-team-button"
+            class="oz-toolbar-btn"
+            type="button"
+            data-tooltip="Team"
+            aria-label="Team"
+          >
+            <span class="oz-toolbar-icon">👥</span>
+          </button>
+          <button
             id="oz-pm-button"
             class="oz-toolbar-btn"
             type="button"
@@ -3845,6 +3991,103 @@
           <div id="oz-cb-devices"></div>
           <div class="cb-empty" id="oz-cb-devices-empty" hidden>
             No devices have uploaded snapshots yet. Take a snapshot to start.
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Team modal — managed by team.js (E-7) -->
+    <div class="oz-modal" id="oz-team-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-team-title"
+      >
+        <header>
+          <h2 id="oz-team-title">👥 Team</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <div class="oz-modal-error" id="oz-team-error" hidden></div>
+
+        <section id="oz-team-not-configured-view" hidden>
+          <div class="team-banner">
+            <h3>Team mode not configured</h3>
+            <p>
+              This OZ build was packaged without the Dropbox app key. Team mode requires
+              Dropbox to be set up first via Cloud Backup.
+            </p>
+          </div>
+        </section>
+
+        <section id="oz-team-standalone-view" hidden>
+          <div class="team-banner">
+            <h3>You're operating in solo mode</h3>
+            <p>
+              Team mode lets you share your OZ vault with trusted teammates via their own
+              Macs. Identities, workspaces and snapshots are end-to-end encrypted with
+              Curve25519 key-sharing — your master key stays in the macOS Keychain on each
+              device.<br /><br />
+              Prerequisite: connect Dropbox first (Cloud Backup), then share your
+              <code>/Apps/OZ Browser/</code> Dropbox folder with each teammate from your
+              Dropbox web UI.
+            </p>
+            <div class="team-actions">
+              <button type="button" class="primary" id="oz-team-create-btn">
+                Create team
+              </button>
+            </div>
+            <div class="team-section-title">Or join an existing team</div>
+            <div class="team-join-row">
+              <input
+                type="text"
+                id="oz-team-join-input"
+                placeholder="oz://team/invite?token=… or token"
+                autocomplete="off"
+                spellcheck="false"
+              />
+              <button type="button" id="oz-team-join-btn">Join team</button>
+            </div>
+          </div>
+        </section>
+
+        <section id="oz-team-owner-view" hidden>
+          <div class="team-meta" id="oz-team-owner-meta">—</div>
+          <div class="team-actions">
+            <button type="button" class="primary" id="oz-team-invite-btn">
+              ＋ Invite member
+            </button>
+            <button type="button" id="oz-team-refresh-btn">↻ Refresh</button>
+            <button type="button" class="danger" id="oz-team-disband-btn">
+              Disband team
+            </button>
+          </div>
+          <div class="team-invite-display" id="oz-team-invite-display" hidden>
+            <input id="oz-team-invite-url" readonly />
+            <small>
+              Send this link to your teammate via Signal or other secure channel. Expires
+              in 24h. They'll open it to start the join flow.
+            </small>
+            <div style="margin-top: 8px">
+              <button type="button" id="oz-team-invite-copy">Copy link</button>
+            </div>
+          </div>
+          <div class="team-section-title">Members</div>
+          <div id="oz-team-members"></div>
+        </section>
+
+        <section id="oz-team-member-view" hidden>
+          <div class="team-banner">
+            <h3>Joined as team member</h3>
+            <div class="team-meta" id="oz-team-member-meta">—</div>
+          </div>
+          <div class="team-actions">
+            <button type="button" class="danger" id="oz-team-leave-btn">
+              Leave team
+            </button>
           </div>
         </section>
       </div>
@@ -4706,6 +4949,7 @@
     <script src="./account-manager.js"></script>
     <script src="./time-machine.js"></script>
     <script src="./cloud-backup.js"></script>
+    <script src="./team.js"></script>
     <script src="./proxy-manager.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>

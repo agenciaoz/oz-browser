@@ -39,6 +39,7 @@ const { setupMenu } = require('./menu')
 const { wireIdentityWorkspaceSync } = require('./identity-workspace-sync')
 const { installProtocolHandler } = require('./protocol-handler')
 const { setupCloudBackup } = require('./cloud-backup-setup')
+const { setupTeamMode } = require('./team-setup')
 const { setupCrashRecovery } = require('./crash-recovery-setup')
 const { AlertManager } = require('./alert-manager')
 const { buildProxyHealthNotify } = require('./proxy-health-notify')
@@ -365,6 +366,11 @@ class Browser {
     // per ADR 0005 (LOC budget). Idempotent: works even if OZ_DROPBOX_APP_KEY
     // is missing (cloud backup just stays disabled).
     setupCloudBackup(this)
+
+    // E: Team mode (Curve25519 key-sharing). Depends on dropboxClient from
+    // setupCloudBackup. If Dropbox isn't configured, team mode reports
+    // NOT_CONFIGURED via the IPC handler.
+    setupTeamMode(this)
 
     // 1.10a: SettingsManager — global user preferences (settings.json) con
     // schema versionado para futuras migraciones. Cargado temprano para que

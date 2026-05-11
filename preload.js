@@ -256,6 +256,28 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:bookmarks:changed', listener)
       },
     },
+    team: {
+      status: () => ipcRenderer.invoke('oz:team:status'),
+      createTeam: () => ipcRenderer.invoke('oz:team:createTeam'),
+      generateInvite: (opts) => ipcRenderer.invoke('oz:team:generateInvite', opts),
+      acceptInvite: (opts) => ipcRenderer.invoke('oz:team:acceptInvite', opts),
+      leaveTeam: () => ipcRenderer.invoke('oz:team:leaveTeam'),
+      disbandTeam: () => ipcRenderer.invoke('oz:team:disbandTeam'),
+      listMembers: () => ipcRenderer.invoke('oz:team:listMembers'),
+      removeMember: (memberId) => ipcRenderer.invoke('oz:team:removeMember', memberId),
+      wrapKeyForPendingMembers: () =>
+        ipcRenderer.invoke('oz:team:wrapKeyForPendingMembers'),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:team:changed', listener)
+        return () => ipcRenderer.off('oz:team:changed', listener)
+      },
+      onJoined(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:team:joined', listener)
+        return () => ipcRenderer.off('oz:team:joined', listener)
+      },
+    },
     cloudBackup: {
       status: () => ipcRenderer.invoke('oz:cloud-backup:status'),
       connect: () => ipcRenderer.invoke('oz:cloud-backup:connect'),

@@ -240,6 +240,75 @@ class Vault {
   }
 
   /**
+   * Replace the in-memory master key + Keychain entry with a different key.
+   * Used by team mode (E) when a member accepts an invite — the team
+   * owner's master key replaces this device's previous key.
+   *
+   * Default behavior: WIPES current accounts (encrypted with old key,
+   * unusable under new key). Use `preserveAccounts: true` ONLY for in-place
+   * key rotation where the same accounts must remain readable under the
+   * new key (e.g. owner-side post-revoke flow).
+   *
+   * @param {Buffer} newKey  32-byte master key
+   * @param {object} [opts]
+   * @param {boolean} [opts.preserveAccounts=false]  re-encrypt instead of wipe
+   */
+  replaceMasterKey(newKey, { preserveAccounts = false } = {}) {
+    this._requireUnlocked()
+    if (!Buffer.isBuffer(newKey) || newKey.length !== 32) {
+      throw new VaultError('newKey must be Buffer(32)', 'BAD_ARG')
+    }
+    if (!preserveAccounts) {
+      this._accounts = []
+    }
+    this._key = Buffer.from(newKey)
+    try {
+      this.keychain.setPassword(
+        KEYCHAIN_SERVICE,
+        KEYCHAIN_ACCOUNT,
+        this._key.toString('hex'),
+      )
+    } catch (err) {
+      throw new VaultError(
+        `Keychain write failed during replaceMasterKey: ${err.message}`,
+        'KEYCHAIN_FAILURE',
+      )
+    }
+    this._save()
+    log.warn('account-vault', 'master key replaced', {
+      preserveAccounts,
+      accountsCount: this._accounts.length,
+    })
+  }
+
+  /**
+   * Archive the current master key to a separate Keychain entry. Used by
+   * team mode before replaceMasterKey so the user can recover their
+   * pre-team data via Time Machine restore later.
+   *
+   * @param {string} label  free-form, e.g. "pre-team-join-2026-05-11T..."
+   * @returns {{ archiveService: string, archiveAccount: string }}
+   */
+  archiveMasterKey(label) {
+    this._requireUnlocked()
+    if (typeof label !== 'string' || !label) {
+      throw new VaultError('label required', 'BAD_ARG')
+    }
+    const archiveService = 'oz-browser-vault-archive'
+    const archiveAccount = `archive::${label}`
+    try {
+      this.keychain.setPassword(archiveService, archiveAccount, this._key.toString('hex'))
+    } catch (err) {
+      throw new VaultError(
+        `Keychain archive write failed: ${err.message}`,
+        'KEYCHAIN_FAILURE',
+      )
+    }
+    log.warn('account-vault', 'master key archived', { archiveAccount })
+    return { archiveService, archiveAccount }
+  }
+
+  /**
    * Delete the vault completely (file + Keychain key). Used by Settings →
    * Reset Vault and by tests cleanup. After this, next unlock() will be
    * first-time setup again.
