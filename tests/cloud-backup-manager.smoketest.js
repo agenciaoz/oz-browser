@@ -125,12 +125,21 @@ function makeDropboxClient(overrides = {}) {
         if (overrides.uploadShouldThrow) throw overrides.uploadShouldThrow
         return { path: dpath, size: contents.length, rev: 'R', contentHash: 'H' }
       },
-      async listFolder(folder) {
+      async listFolderAll(folder) {
         calls.listFolder++
         captured.lastList = folder
-        if (typeof overrides.listFolderImpl === 'function')
-          return overrides.listFolderImpl(folder)
-        return overrides.listFolderResult || []
+        const arr =
+          typeof overrides.listFolderImpl === 'function'
+            ? overrides.listFolderImpl(folder)
+            : []
+        return {
+          entries: Array.isArray(arr) ? arr : arr.entries || [],
+          cursor: null,
+          hasMore: false,
+        }
+      },
+      async listFolderContinue(cursor) {
+        return { entries: [], cursor, hasMore: false }
       },
       async delete(p) {
         calls.delete++
@@ -479,42 +488,27 @@ group('_readState', () => {
       backupManager: bm,
     })
     m.init()
-    // Not connected → emit should be a no-op
-    bm.emit('snapshot-created', {
-      id: 'S0',
-      filePath: '',
-      header: { reason: 'daily-3am' },
-    })
-    // micro-tick to flush any (incorrect) async work
-    await new Promise((r) => setImmediate(r))
+    const emit = (id, reason) =>
+      bm.emit('snapshot-created', { id, filePath: '', header: { reason } })
+    const tick = () => new Promise((r) => setTimeout(r, 30))
+    emit('S0', 'daily-3am')
+    await tick()
     ok('no upload while disconnected', dbx._calls.upload === 0)
-    // Connect + autoUpload on
     m.connect()
     await m.completeConnect({ code: 'C', state: 'STATE' })
     m.setAutoUpload(true)
     writeSnapshotFile(bm.snapshotsDir, 'S1', Buffer.from('body1'))
-    bm.emit('snapshot-created', {
-      id: 'S1',
-      filePath: '',
-      header: { reason: 'daily-3am' },
-    })
-    // give the fire-and-forget time to land
-    await new Promise((r) => setTimeout(r, 30))
+    emit('S1', 'daily-3am')
+    await tick()
     ok('uploaded after emit', dbx._calls.upload === 1)
-    // pre-restore should be skipped
     writeSnapshotFile(bm.snapshotsDir, 'S2', Buffer.from('body2'))
-    bm.emit('snapshot-created', {
-      id: 'S2',
-      filePath: '',
-      header: { reason: 'pre-restore' },
-    })
-    await new Promise((r) => setTimeout(r, 30))
+    emit('S2', 'pre-restore')
+    await tick()
     ok('pre-restore skipped', dbx._calls.upload === 1)
-    // Turning off autoUpload disables
     m.setAutoUpload(false)
     writeSnapshotFile(bm.snapshotsDir, 'S3', Buffer.from('body3'))
-    bm.emit('snapshot-created', { id: 'S3', filePath: '', header: { reason: 'manual' } })
-    await new Promise((r) => setTimeout(r, 30))
+    emit('S3', 'manual')
+    await tick()
     ok('no upload when autoUpload off', dbx._calls.upload === 1)
   })
 

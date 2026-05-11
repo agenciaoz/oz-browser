@@ -44,10 +44,12 @@ const DROPBOX_REDIRECT_URI = 'oz://auth/dropbox/callback'
 const APP_ROOT_PATH = ''
 
 // Upload cutoff for simple vs chunked-session upload. Dropbox API limit is
-// 150 MB for files.upload; above that we'd need uploadSessionStart. Our
-// .ozbackup files are typically <50 MB → simple upload is fine for D-1.
-// Chunked support is queued for D-2 polish.
+// 150 MB for files.upload; above that we use filesUploadSessionStart +
+// AppendV2 + Finish (D-2.2). Chunk size 8 MB = Dropbox recommended sweet spot
+// (low enough for memory + retry-friendly, high enough to keep round-trip
+// count down on a 1 GB snapshot).
 const SIMPLE_UPLOAD_MAX_BYTES = 140 * 1024 * 1024
+const CHUNK_SIZE = 8 * 1024 * 1024
 
 class DropboxError extends Error {
   constructor(message, code, status) {
@@ -274,13 +276,9 @@ function createDropboxClient(opts = {}) {
     if (!dbxPath) throw new DropboxError('path required', 'BAD_ARG')
     if (!Buffer.isBuffer(contents))
       throw new DropboxError('contents must be Buffer', 'BAD_ARG')
+    // D-2.2: routing per size. <=140MB → single PUT. >140MB → chunked session.
     if (contents.length > SIMPLE_UPLOAD_MAX_BYTES) {
-      // D-2 polish will add filesUploadSession* path. .ozbackup files are
-      // far below this threshold in v1.
-      throw new DropboxError(
-        `upload too large (${contents.length} bytes) — chunked upload not impl yet`,
-        'TOO_LARGE',
-      )
+      return _uploadChunked({ path: dbxPath, contents, mode })
     }
     return _withAuth(async (sdk) => {
       const resp = await sdk.filesUpload({
@@ -323,9 +321,18 @@ function createDropboxClient(opts = {}) {
   }
 
   /**
-   * List folder contents (non-recursive by default). Returns array of
-   * { name, pathLower, size, serverModified, isFolder }.
-   * If folder doesn't exist, returns [] (not an error).
+   * D-2.3: list folder, single page. Returns
+   *   { entries, cursor, hasMore }
+   * where entries = [{ name, pathLower, pathDisplay, size, serverModified,
+   * isFolder, isDeleted }]. The cursor can be passed to listFolderContinue()
+   * for incremental fetches (delta listings).
+   *
+   * Convention preserved from D-1: if folder doesn't exist, returns
+   *   { entries: [], cursor: null, hasMore: false }
+   * (caller doesn't need to special-case path/not_found).
+   *
+   * Note: this only returns ONE page. To enumerate everything in one call,
+   * use listFolderAll() — it loops internally until hasMore=false.
    */
   async function listFolder(folderPath, { recursive = false } = {}) {
     return _withAuth(async (sdk) => {
@@ -335,26 +342,158 @@ function createDropboxClient(opts = {}) {
           recursive,
         })
         const r = resp.result || resp
-        return (r.entries || []).map((e) => ({
-          name: e.name,
-          pathLower: e.path_lower,
-          pathDisplay: e.path_display,
-          size: e.size || 0,
-          serverModified: e.server_modified || null,
-          isFolder: e['.tag'] === 'folder',
-        }))
+        return {
+          entries: (r.entries || []).map(_normalizeEntry),
+          cursor: r.cursor || null,
+          hasMore: !!r.has_more,
+        }
       } catch (err) {
         const summary = _errSummary(err)
-        if (summary && summary.includes('path/not_found')) return []
+        if (summary && summary.includes('path/not_found')) {
+          return { entries: [], cursor: null, hasMore: false }
+        }
         throw _wrap(err)
       }
     })
+  }
+
+  /**
+   * D-2.3: incremental listing via cursor. Returns
+   *   { entries, cursor, hasMore }
+   * where entries reflects ONLY changes since the cursor was issued. Deleted
+   * entries have `isDeleted: true`. Caller is responsible for merging into
+   * a local cache (cloud-backup-manager keeps an in-memory Map per folder).
+   *
+   * If the cursor is too old (Dropbox reset_required), the SDK throws with
+   * `error_summary` including "reset". We propagate as code 'CURSOR_RESET'
+   * so cloud-backup-manager can drop the cache + re-list from scratch.
+   */
+  async function listFolderContinue(cursor) {
+    if (!cursor || typeof cursor !== 'string') {
+      throw new DropboxError('cursor required', 'BAD_ARG')
+    }
+    return _withAuth(async (sdk) => {
+      try {
+        const resp = await sdk.filesListFolderContinue({ cursor })
+        const r = resp.result || resp
+        return {
+          entries: (r.entries || []).map(_normalizeEntry),
+          cursor: r.cursor || null,
+          hasMore: !!r.has_more,
+        }
+      } catch (err) {
+        const summary = _errSummary(err)
+        if (summary && /reset/i.test(summary)) {
+          throw new DropboxError(
+            'cursor stale — caller must re-list from scratch',
+            'CURSOR_RESET',
+          )
+        }
+        throw _wrap(err)
+      }
+    })
+  }
+
+  /**
+   * Convenience: page through everything until has_more=false. Useful for
+   * first-time enumeration where you want a full snapshot of the folder.
+   * Returns the same shape as listFolder() but `entries` is the union of
+   * all pages and `hasMore` is false.
+   */
+  async function listFolderAll(folderPath, opts) {
+    const first = await listFolder(folderPath, opts)
+    if (!first.hasMore || !first.cursor) return first
+    const accum = [...first.entries]
+    let cursor = first.cursor
+    while (true) {
+      const page = await listFolderContinue(cursor)
+      for (const e of page.entries) accum.push(e)
+      cursor = page.cursor
+      if (!page.hasMore) {
+        return { entries: accum, cursor, hasMore: false }
+      }
+    }
   }
 
   async function deletePath(dbxPath) {
     return _withAuth(async (sdk) => {
       await sdk.filesDeleteV2({ path: _normalizePath(dbxPath) })
       return { ok: true }
+    })
+  }
+
+  /**
+   * D-2.2 chunked upload. Splits the buffer into CHUNK_SIZE pieces and
+   * uses Dropbox upload-session APIs (start + appendV2 × N + finish).
+   *
+   * Auth handling: the whole multi-call session runs inside one _withAuth
+   * block. If any call inside the session 401s, _withAuth refreshes + retries
+   * the WHOLE session from chunk 0 (session_id from a stale token may be
+   * invalid; safer to restart). Re-upload cost = bandwidth, not correctness.
+   *
+   * Returns same shape as single-PUT upload: { path, size, rev, contentHash }.
+   */
+  async function _uploadChunked({ path: dbxPath, contents, mode }) {
+    const normalized = _normalizePath(dbxPath)
+    const total = contents.length
+    return _withAuth(async (sdk) => {
+      // 1) Start session with the first chunk.
+      const firstChunk = contents.subarray(0, Math.min(CHUNK_SIZE, total))
+      const startResp = await sdk.filesUploadSessionStart({
+        contents: firstChunk,
+        close: false,
+      })
+      const sessionId =
+        (startResp.result && startResp.result.session_id) || startResp.session_id
+      if (!sessionId) {
+        throw new DropboxError(
+          'filesUploadSessionStart returned no session_id',
+          'BAD_RESPONSE',
+        )
+      }
+      let offset = firstChunk.length
+
+      // 2) Middle chunks. Last one is handled by finish (no need to send
+      // an extra empty appendV2 — Dropbox accepts the final body in finish).
+      while (offset < total) {
+        const remaining = total - offset
+        const isLast = remaining <= CHUNK_SIZE
+        const chunk = contents.subarray(offset, offset + Math.min(CHUNK_SIZE, remaining))
+        if (isLast) {
+          // 3) Final commit.
+          const finishResp = await sdk.filesUploadSessionFinish({
+            contents: chunk,
+            cursor: { session_id: sessionId, offset },
+            commit: {
+              path: normalized,
+              mode,
+              autorename: false,
+              mute: true,
+            },
+          })
+          const r = finishResp.result || finishResp
+          log.info('dropbox-client', 'chunked upload complete', {
+            path: r.path_display || r.path_lower,
+            size: r.size,
+            chunks: Math.ceil(total / CHUNK_SIZE),
+          })
+          return {
+            path: r.path_display || r.path_lower,
+            size: r.size,
+            rev: r.rev,
+            contentHash: r.content_hash,
+          }
+        }
+        await sdk.filesUploadSessionAppendV2({
+          contents: chunk,
+          cursor: { session_id: sessionId, offset },
+          close: false,
+        })
+        offset += chunk.length
+      }
+      // Unreachable — total === 0 would have skipped the chunked path
+      // (length <= SIMPLE_UPLOAD_MAX_BYTES). Throw defensively.
+      throw new DropboxError('chunked upload reached unreachable branch', 'BAD_RESPONSE')
     })
   }
 
@@ -370,6 +509,8 @@ function createDropboxClient(opts = {}) {
     upload,
     download,
     listFolder,
+    listFolderContinue,
+    listFolderAll,
     delete: deletePath,
     // Introspection (tests)
     _loadTokens,
@@ -378,6 +519,23 @@ function createDropboxClient(opts = {}) {
 }
 
 // -------- helpers --------
+
+/**
+ * D-2.3: normalize a Dropbox listFolder entry into our flatter shape.
+ * Handles file/folder/deleted variants from the SDK.
+ */
+function _normalizeEntry(e) {
+  const tag = e['.tag']
+  return {
+    name: e.name,
+    pathLower: e.path_lower || null,
+    pathDisplay: e.path_display || null,
+    size: e.size || 0,
+    serverModified: e.server_modified || null,
+    isFolder: tag === 'folder',
+    isDeleted: tag === 'deleted',
+  }
+}
 
 /**
  * Dropbox API expects paths starting with `/` (or empty for root). Normalize
@@ -426,9 +584,11 @@ module.exports = {
   DROPBOX_REDIRECT_URI,
   APP_ROOT_PATH,
   SIMPLE_UPLOAD_MAX_BYTES,
+  CHUNK_SIZE,
   injectDropboxSdk,
   // Internal exports for tests
   _normalizePath,
+  _normalizeEntry,
   _statusFromError,
   _errSummary,
   _wrap,

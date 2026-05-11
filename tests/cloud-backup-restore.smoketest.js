@@ -129,6 +129,23 @@ function makeDropboxClient(overrides = {}) {
           return overrides.listFolderImpl(folder)
         return overrides.listFolderResult || []
       },
+      async listFolderAll(folder) {
+        calls.listFolder++
+        captured.lastList = folder
+        const arr =
+          typeof overrides.listFolderImpl === 'function'
+            ? overrides.listFolderImpl(folder)
+            : overrides.listFolderResult || []
+        return {
+          entries: Array.isArray(arr) ? arr : arr.entries || [],
+          cursor: null,
+          hasMore: false,
+        }
+      },
+      async listFolderContinue(cursor) {
+        captured.lastContinueCursor = cursor
+        return { entries: [], cursor, hasMore: false }
+      },
       async delete(p) {
         calls.delete++
         captured.lastDelete = p

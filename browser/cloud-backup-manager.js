@@ -171,6 +171,7 @@ function createCloudBackupManager(opts = {}) {
     } catch (err) {
       log.warn('cloud-backup', 'clearAuth threw', { message: err.message })
     }
+    _folderCache.clear()
     state = { ..._initialState(), autoUpload: state.autoUpload }
     _flush()
     log.info('cloud-backup', 'disconnected')
@@ -226,6 +227,10 @@ function createCloudBackupManager(opts = {}) {
       lastUploadError: null,
     }
     _flush()
+    // Invalidate the folder cache so the next listRemoteSnapshots picks up
+    // the new file. listFolderContinue would catch it anyway via delta, but
+    // invalidating skips a wasted API call when the UI refreshes immediately.
+    _invalidateFolderCache(_deviceSnapshotsPath())
     log.info('cloud-backup', 'snapshot uploaded', {
       id: snapshotId,
       sizeBytes: contents.length,
@@ -237,6 +242,74 @@ function createCloudBackupManager(opts = {}) {
   // -------- listings --------
 
   /**
+   * D-2.3 cursor cache. In-memory only (cold start re-lists). Keys are
+   * normalized folder paths. Values: { entries: [{pathLower,...}], cursor }.
+   *
+   * Flow per call:
+   *   - First call (cache miss): listFolderAll → cache entries + cursor.
+   *   - Subsequent call (cache hit): listFolderContinue(cursor) → apply
+   *     delta (upsert entries by pathLower, remove isDeleted) → update cursor.
+   *   - CURSOR_RESET error → drop entry + listFolderAll fresh.
+   */
+  const _folderCache = new Map()
+
+  function _applyDelta(cached, deltaEntries) {
+    // Build a lookup by pathLower for upsert + delete.
+    const byPath = new Map()
+    for (const e of cached.entries) byPath.set(e.pathLower, e)
+    for (const e of deltaEntries) {
+      if (e.isDeleted) {
+        byPath.delete(e.pathLower)
+        continue
+      }
+      byPath.set(e.pathLower, e)
+    }
+    return [...byPath.values()]
+  }
+
+  async function _listFolderCached(folderPath) {
+    const key = folderPath
+    const cached = _folderCache.get(key)
+    if (!cached) {
+      const fresh = await dropboxClient.listFolderAll(folderPath)
+      _folderCache.set(key, { entries: fresh.entries, cursor: fresh.cursor })
+      return fresh.entries
+    }
+    if (!cached.cursor) {
+      // No cursor — folder didn't exist last time. Try fresh listing.
+      const fresh = await dropboxClient.listFolderAll(folderPath)
+      _folderCache.set(key, { entries: fresh.entries, cursor: fresh.cursor })
+      return fresh.entries
+    }
+    try {
+      // Page through deltas (Dropbox can split a large delta across pages).
+      let cursor = cached.cursor
+      let entries = cached.entries
+      while (true) {
+        const page = await dropboxClient.listFolderContinue(cursor)
+        entries = _applyDelta({ entries }, page.entries)
+        cursor = page.cursor
+        if (!page.hasMore) break
+      }
+      _folderCache.set(key, { entries, cursor })
+      return entries
+    } catch (err) {
+      if (err && err.code === 'CURSOR_RESET') {
+        log.warn('cloud-backup', 'cursor reset — re-listing fresh', { folderPath })
+        _folderCache.delete(key)
+        const fresh = await dropboxClient.listFolderAll(folderPath)
+        _folderCache.set(key, { entries: fresh.entries, cursor: fresh.cursor })
+        return fresh.entries
+      }
+      throw err
+    }
+  }
+
+  function _invalidateFolderCache(folderPath) {
+    _folderCache.delete(folderPath)
+  }
+
+  /**
    * List snapshots in Dropbox for a given device. Defaults to current device.
    * Returns array sorted by id descending (newest first).
    *
@@ -245,7 +318,7 @@ function createCloudBackupManager(opts = {}) {
   async function listRemoteSnapshots(deviceFolder) {
     if (!state.connected) throw new Error('cloud-backup: not connected')
     const folder = _deviceSnapshotsPath(deviceFolder)
-    const items = await dropboxClient.listFolder(folder)
+    const items = await _listFolderCached(folder)
     const snaps = []
     for (const e of items) {
       if (e.isFolder) continue
@@ -331,7 +404,7 @@ function createCloudBackupManager(opts = {}) {
    */
   async function listDevices() {
     if (!state.connected) throw new Error('cloud-backup: not connected')
-    const rootItems = await dropboxClient.listFolder(APP_BASE_PATH || '')
+    const rootItems = await _listFolderCached(APP_BASE_PATH || '')
     const currentFolder = _deviceFolder()
     const out = []
     for (const e of rootItems) {
@@ -372,6 +445,7 @@ function createCloudBackupManager(opts = {}) {
     const folder = _deviceSnapshotsPath(deviceFolder)
     const remotePath = `${folder}/${snapshotId}.ozbackup`
     await dropboxClient.delete(remotePath)
+    _invalidateFolderCache(folder)
     log.info('cloud-backup', 'remote snapshot deleted', { snapshotId, remotePath })
     return { ok: true, snapshotId }
   }

@@ -1,8 +1,8 @@
 # `browser/dropbox-client.js`
 
-**Bloque:** D-1.2
-**ADR:** [0025 Cloud backup architecture](../architecture/0025-cloud-backup.md)
-**Tests:** `tests/dropbox-client.smoketest.js` (71 cases)
+**Bloque:** D-1.2 + D-2.2 (chunked upload) + D-2.3 (cursor-based listings)
+**ADR:** [0025 Cloud backup architecture](../architecture/0025-cloud-backup.md), [0026 Sync engine](../architecture/0026-sync-engine.md)
+**Tests:** `tests/dropbox-client.smoketest.js` (64 cases) + `tests/dropbox-client-d2.smoketest.js` (28 cases)
 
 ## Qué hace
 
@@ -21,11 +21,27 @@ c.isAuthenticated() // bool
 
 await c.getAccountInfo()                        // → { accountId, email, name, country }
 await c.ensureFolder(path)                      // idempotent on path/conflict/folder
-await c.upload({ path, contents, mode? })       // contents = Buffer; <140MB
+await c.upload({ path, contents, mode? })       // contents = Buffer; routes single-PUT or chunked-session by size
 await c.download(path)                          // → { contents: Buffer, path, size, rev, contentHash }
-await c.listFolder(path, { recursive? })        // → [{name, pathLower, pathDisplay, size, serverModified, isFolder}]; [] on path_not_found
+await c.listFolder(path, { recursive? })        // D-2.3: → { entries, cursor, hasMore }
+await c.listFolderContinue(cursor)              // D-2.3: delta page; throws CURSOR_RESET on stale cursor
+await c.listFolderAll(path, { recursive? })     // D-2.3: paginates listFolder + listFolderContinue until !hasMore
 await c.delete(path)
 ```
+
+## Chunked upload (D-2.2)
+
+Routing automático por `contents.length`. ≤140MB → `filesUpload` (1 PUT). >140MB → `filesUploadSessionStart` + `filesUploadSessionAppendV2` × N + `filesUploadSessionFinish`. Chunks de 8MB.
+
+La sesión entera corre dentro de un solo `_withAuth` wrapper — si 401 mid-session, refresh + retry desde chunk 0 (session_id puede invalidarse con stale token; re-upload los bytes es el path predecible).
+
+## Cursor-based listings (D-2.3)
+
+`listFolder()` retorna ahora una página `{ entries, cursor, hasMore }`. El cursor permite `listFolderContinue(cursor)` para delta listings — solo cambios desde el cursor. Entries del delta pueden tener `isDeleted: true` (file fue removido del folder).
+
+Si Dropbox dice "cursor too old" → `listFolderContinue` propaga como `CURSOR_RESET`. Caller (cloud-backup-manager) lo trata como "drop cache + re-list from scratch".
+
+`listFolderAll()` convenience: paginates internamente hasta `!hasMore`, devuelve la unión.
 
 ## Endpoints
 

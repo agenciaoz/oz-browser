@@ -164,6 +164,50 @@ function makeFakeSdk(scriptedResponses = {}) {
         }
       )
     }
+    async filesUploadSessionStart(arg) {
+      log.push({
+        kind: 'filesUploadSessionStart',
+        size: arg.contents.length,
+        close: arg.close,
+      })
+      const next = (scriptedResponses.filesUploadSessionStart || []).shift()
+      if (next instanceof Error) throw next
+      return next || { result: { session_id: 'SESS-1' } }
+    }
+    async filesUploadSessionAppendV2(arg) {
+      log.push({
+        kind: 'filesUploadSessionAppendV2',
+        size: arg.contents.length,
+        offset: arg.cursor.offset,
+        sessionId: arg.cursor.session_id,
+      })
+      const next = (scriptedResponses.filesUploadSessionAppendV2 || []).shift()
+      if (next instanceof Error) throw next
+      return next || {}
+    }
+    async filesUploadSessionFinish(arg) {
+      log.push({
+        kind: 'filesUploadSessionFinish',
+        size: arg.contents.length,
+        offset: arg.cursor.offset,
+        sessionId: arg.cursor.session_id,
+        commitPath: arg.commit.path,
+      })
+      const next = (scriptedResponses.filesUploadSessionFinish || []).shift()
+      if (next instanceof Error) throw next
+      const totalSize = arg.cursor.offset + arg.contents.length
+      return (
+        next || {
+          result: {
+            path_display: arg.commit.path,
+            path_lower: arg.commit.path.toLowerCase(),
+            size: totalSize,
+            rev: 'REV-FIN',
+            content_hash: 'CFIN',
+          },
+        }
+      )
+    }
     async filesDownload(arg) {
       log.push({ kind: 'filesDownload', path: arg.path })
       const next = (scriptedResponses.filesDownload || []).shift()
@@ -376,15 +420,8 @@ group('_wrap', () => {
       threw = e
     }
     ok('rejects non-Buffer', threw && threw.code === 'BAD_ARG')
-    // Too large
-    const big = Buffer.alloc(SIMPLE_UPLOAD_MAX_BYTES + 1, 0)
-    threw = null
-    try {
-      await c.upload({ path: '/x', contents: big })
-    } catch (e) {
-      threw = e
-    }
-    ok('rejects too-large', threw && threw.code === 'TOO_LARGE')
+    // D-2.2 chunked upload + D-2.3 cursor-based listings cobertura: split
+    // a tests/dropbox-client-d2.smoketest.js (ADR 0005 LOC budget).
   })
 
   await asyncGroup('download', async () => {
@@ -397,44 +434,8 @@ group('_wrap', () => {
     ok('size returned', r.size === 5)
   })
 
-  await asyncGroup('listFolder + path_not_found', async () => {
-    const oauth = makeFakeOauth({ tokens: { accessToken: 'AT' } })
-    const sdk = makeFakeSdk({
-      filesListFolder: [
-        {
-          result: {
-            entries: [
-              {
-                name: '2026-05-10T22-00-00.ozbackup',
-                path_lower: '/dev1/snapshots/2026-05-10t22-00-00.ozbackup',
-                path_display: '/dev1/snapshots/2026-05-10T22-00-00.ozbackup',
-                size: 1234,
-                server_modified: '2026-05-10T22:00:00Z',
-                '.tag': 'file',
-              },
-              {
-                name: 'subfolder',
-                path_lower: '/dev1/snapshots/subfolder',
-                path_display: '/dev1/snapshots/subfolder',
-                '.tag': 'folder',
-              },
-            ],
-          },
-        },
-        makeStatusError(409, 'path/not_found/.'),
-      ],
-    })
-    injectDropboxSdk(sdk)
-    const c = createDropboxClient({ clientId: 'APPKEY', oauth })
-    const items = await c.listFolder('/dev1/snapshots')
-    ok('returns 2 entries', items.length === 2)
-    ok('file flagged not folder', items[0].isFolder === false)
-    ok('folder flagged', items[1].isFolder === true)
-    ok('name preserved', items[0].name === '2026-05-10T22-00-00.ozbackup')
-    ok('size preserved', items[0].size === 1234)
-    const empty = await c.listFolder('/missing')
-    ok('not_found returns empty []', Array.isArray(empty) && empty.length === 0)
-  })
+  // listFolder shape tests moved to dropbox-client-d2.smoketest.js
+  // (D-2.3 cursor-based listings).
 
   await asyncGroup('delete', async () => {
     const oauth = makeFakeOauth({ tokens: { accessToken: 'AT' } })

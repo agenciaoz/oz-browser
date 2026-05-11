@@ -1,8 +1,8 @@
 # `browser/cloud-backup-manager.js`
 
-**Bloque:** D-1.3 + D-1.4
-**ADR:** [0025 Cloud backup architecture](../architecture/0025-cloud-backup.md)
-**Tests:** `tests/cloud-backup-manager.smoketest.js` (52) + `tests/cloud-backup-restore.smoketest.js` (27)
+**Bloque:** D-1.3 + D-1.4 + D-2.3 (cursor cache)
+**ADR:** [0025 Cloud backup architecture](../architecture/0025-cloud-backup.md), [0026 Sync engine](../architecture/0026-sync-engine.md)
+**Tests:** `tests/cloud-backup-manager.smoketest.js` (52) + `tests/cloud-backup-restore.smoketest.js` (27) + `tests/cloud-backup-cache.smoketest.js` (14)
 
 ## Qué hace
 
@@ -83,6 +83,18 @@ Cada device aterriza bajo `/Apps/OZ Browser/` (path root del Scoped App, interna
 2. `backupManager.restoreSnapshot(id)` (existing flow, vault required).
 
 Caller (handler layer) hace el pre-restore safety snapshot ANTES, mismo patrón que `backup-handlers.restore`.
+
+## Cursor cache (D-2.3)
+
+In-memory `Map<folderPath, {entries, cursor}>`. Flujo:
+
+- Cache miss → `dropboxClient.listFolderAll(folder)`, cachea `entries + cursor`.
+- Cache hit → `dropboxClient.listFolderContinue(cursor)`, aplica delta (upsert + remove on `isDeleted`), refresca cursor.
+- `CURSOR_RESET` → drop cache + re-list fresh.
+
+Invalidation explícita: `uploadSnapshot` y `deleteRemoteSnapshot` invalidan el folder afectado. `disconnect` clear todo.
+
+Cold start re-lista (memory-only). El cursor en disco es trade-off vs complejidad — postergado a D-3 si la métrica de UX lo justifica.
 
 ## NOT_CONFIGURED
 
