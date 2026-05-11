@@ -31,17 +31,10 @@ function buildCloudBackupHandlers(browser) {
     return browser.cloudBackupManager
   }
 
-  function notConfigured() {
-    return _err(
-      'NOT_CONFIGURED',
-      'Cloud backup is not configured (OZ_DROPBOX_APP_KEY missing at build time).',
-    )
-  }
-
-  function ensureConfigured() {
-    if (!cb()) return notConfigured()
-    return null
-  }
+  // notConfigured() — kept conceptually but inlined where needed. `status()`
+  // is the only handler that branches on `!cb()` today; other handlers fail
+  // fast via the manager throwing "not connected" once status() shows the
+  // UI is in the disconnected view.
 
   return {
     /**
