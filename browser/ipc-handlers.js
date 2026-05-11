@@ -23,6 +23,7 @@ const { buildWorkspaceHandlers } = require('./workspace-handlers')
 const { buildVaultHandlers, buildAccountHandlers } = require('./account-handlers')
 const { buildExcelHandlers } = require('./excel-handlers')
 const { buildBackupHandlers } = require('./backup-handlers')
+const { buildCloudBackupHandlers } = require('./cloud-backup-handlers')
 const { buildBookmarkHandlers } = require('./bookmark-handlers')
 const { buildCookieHandlers } = require('./cookies-handlers')
 const { buildProxyHandlers } = require('./proxy-handlers')
@@ -54,6 +55,7 @@ function registerIpcHandlers(browser) {
     accounts: buildAccountHandlers(browser),
     excel: buildExcelHandlers(browser),
     timemachine: buildBackupHandlers(browser),
+    cloudBackup: buildCloudBackupHandlers(browser),
     bookmarks: buildBookmarkHandlers(browser),
     cookies: buildCookieHandlers(browser),
     proxies: buildProxyHandlers(browser),

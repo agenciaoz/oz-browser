@@ -256,6 +256,26 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:bookmarks:changed', listener)
       },
     },
+    cloudBackup: {
+      status: () => ipcRenderer.invoke('oz:cloud-backup:status'),
+      connect: () => ipcRenderer.invoke('oz:cloud-backup:connect'),
+      disconnect: () => ipcRenderer.invoke('oz:cloud-backup:disconnect'),
+      setAutoUpload: (enabled) =>
+        ipcRenderer.invoke('oz:cloud-backup:setAutoUpload', enabled),
+      uploadNow: (snapshotId) =>
+        ipcRenderer.invoke('oz:cloud-backup:uploadNow', snapshotId),
+      listRemoteSnapshots: (deviceFolder) =>
+        ipcRenderer.invoke('oz:cloud-backup:listRemoteSnapshots', deviceFolder),
+      listDevices: () => ipcRenderer.invoke('oz:cloud-backup:listDevices'),
+      downloadAndRestore: (opts) =>
+        ipcRenderer.invoke('oz:cloud-backup:downloadAndRestore', opts),
+      deleteRemote: (opts) => ipcRenderer.invoke('oz:cloud-backup:deleteRemote', opts),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:cloud-backup:changed', listener)
+        return () => ipcRenderer.off('oz:cloud-backup:changed', listener)
+      },
+    },
     cookies: {
       exportContent: (identityId, format) =>
         ipcRenderer.invoke('oz:cookies:exportContent', identityId, format),

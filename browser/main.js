@@ -38,6 +38,7 @@ const { setupAutoUpdate } = require('./auto-update')
 const { setupMenu } = require('./menu')
 const { wireIdentityWorkspaceSync } = require('./identity-workspace-sync')
 const { installProtocolHandler } = require('./protocol-handler')
+const { setupCloudBackup } = require('./cloud-backup-setup')
 const { setupCrashRecovery } = require('./crash-recovery-setup')
 const { AlertManager } = require('./alert-manager')
 const { buildProxyHealthNotify } = require('./proxy-health-notify')
@@ -359,6 +360,11 @@ class Browser {
       snapshotsDir: this.backupManager.snapshotsDir,
       existingCount: this.backupManager.listSnapshots().length,
     })
+
+    // D-1: Cloud Backup (Dropbox) + DeviceInfo. Delegated to cloud-backup-setup.js
+    // per ADR 0005 (LOC budget). Idempotent: works even if OZ_DROPBOX_APP_KEY
+    // is missing (cloud backup just stays disabled).
+    setupCloudBackup(this)
 
     // 1.10a: SettingsManager — global user preferences (settings.json) con
     // schema versionado para futuras migraciones. Cargado temprano para que

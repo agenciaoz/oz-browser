@@ -1463,6 +1463,241 @@
         flex: 1;
       }
 
+      /*----- CLOUD BACKUP (D-1.6) -----*/
+
+      .cb-banner {
+        background: rgba(91, 141, 239, 0.08);
+        border: 1px solid rgba(91, 141, 239, 0.22);
+        border-radius: 6px;
+        padding: 14px 18px;
+        text-align: center;
+      }
+      .cb-banner h3 {
+        margin: 0 0 6px 0;
+        font-size: 14px;
+        color: var(--text-color);
+      }
+      .cb-banner p {
+        margin: 0 0 12px 0;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .cb-banner button {
+        background: var(--accent);
+        border: none;
+        color: #fff;
+        padding: 8px 16px;
+        border-radius: 5px;
+        font: inherit;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      .cb-banner button:hover {
+        filter: brightness(1.1);
+      }
+      .cb-banner button:disabled {
+        opacity: 0.5;
+        cursor: wait;
+      }
+      .cb-info-row {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        font-size: 12px;
+        margin-bottom: 8px;
+      }
+      .cb-info-row .cb-label {
+        color: var(--text-muted);
+        flex: 0 0 90px;
+      }
+      .cb-info-row .cb-value {
+        color: var(--text-color);
+        font-family: monospace;
+        flex: 1;
+        word-break: break-all;
+      }
+      .cb-info-row button {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--text-muted);
+        padding: 4px 9px;
+        border-radius: 4px;
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+      .cb-info-row button:hover {
+        color: var(--text-color);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+      .cb-toggle-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 12px;
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        margin-bottom: 12px;
+      }
+      .cb-toggle-row label {
+        flex: 1;
+        font-size: 12px;
+        color: var(--text-color);
+      }
+      .cb-toggle-row label small {
+        display: block;
+        color: var(--text-muted);
+        margin-top: 2px;
+        font-size: 11px;
+      }
+      .cb-toggle-row input[type='checkbox'] {
+        transform: scale(1.2);
+        accent-color: var(--accent);
+      }
+      .cb-last-upload {
+        font-size: 11px;
+        color: var(--text-muted);
+        padding: 0 4px 8px;
+      }
+      .cb-last-upload.error {
+        color: var(--danger);
+      }
+      .cb-last-upload.ok {
+        color: #2da657;
+      }
+      .cb-section-title {
+        margin: 10px 4px 6px;
+        font-size: 12px;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .cb-section-title button {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--text-muted);
+        padding: 2px 7px;
+        border-radius: 4px;
+        font: inherit;
+        font-size: 10px;
+        cursor: pointer;
+      }
+      .cb-section-title button:hover {
+        color: var(--text-color);
+      }
+      .cb-device {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 6px;
+        margin-bottom: 8px;
+      }
+      .cb-device.current {
+        border-color: rgba(91, 141, 239, 0.4);
+        background: rgba(91, 141, 239, 0.06);
+      }
+      .cb-device-head {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 12px;
+      }
+      .cb-device-name {
+        flex: 1;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-color);
+        font-family: monospace;
+      }
+      .cb-device-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .cb-device-toggle {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--text-muted);
+        padding: 4px 9px;
+        border-radius: 4px;
+        font: inherit;
+        font-size: 11px;
+        cursor: pointer;
+      }
+      .cb-device-toggle:hover:not(:disabled) {
+        color: var(--text-color);
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+      .cb-device-toggle:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .cb-snapshots {
+        border-top: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 4px 0;
+      }
+      .cb-snapshots-empty {
+        padding: 14px 12px;
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .cb-snap-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 70px 130px auto;
+        gap: 8px;
+        align-items: center;
+        padding: 6px 12px;
+        font-size: 11px;
+      }
+      .cb-snap-row:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+      .cb-snap-id {
+        font-family: monospace;
+        color: var(--text-color);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .cb-snap-size,
+      .cb-snap-when {
+        color: var(--text-muted);
+      }
+      .cb-snap-actions {
+        display: flex;
+        gap: 4px;
+      }
+      .cb-snap-actions button {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        color: var(--text-muted);
+        cursor: pointer;
+        font-size: 11px;
+        padding: 3px 7px;
+        border-radius: 4px;
+      }
+      .cb-snap-actions button:hover {
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--text-color);
+      }
+      .cb-snap-actions button.danger:hover {
+        color: var(--danger);
+        border-color: var(--danger);
+      }
+      .oz-modal-error.info {
+        background: rgba(91, 141, 239, 0.1);
+        border-color: rgba(91, 141, 239, 0.3);
+        color: #a3c1ff;
+      }
+
       /*----- PROXY MANAGER (1.8d) -----*/
 
       #oz-pm-button {
@@ -3525,6 +3760,7 @@
               ⏱ Take snapshot now
             </button>
             <span class="tm-spacer"></span>
+            <button type="button" id="oz-tm-cloud-btn">☁ Cloud backup…</button>
             <button type="button" id="oz-tm-retention-btn">Run retention</button>
           </div>
           <div class="tm-list-wrap">
@@ -3546,6 +3782,69 @@
             <span id="oz-tm-summary">0 snapshots</span>
             <span class="tm-spacer"></span>
             <span>Shortcut: ⌘⇧B</span>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- Cloud Backup modal — managed by cloud-backup.js (D-1.6) -->
+    <div class="oz-modal" id="oz-cb-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-cb-title"
+      >
+        <header>
+          <h2 id="oz-cb-title">☁ Cloud Backup (Dropbox)</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+        <div class="oz-modal-error" id="oz-cb-error" hidden></div>
+
+        <section id="oz-cb-disconnected-view" hidden>
+          <div class="cb-banner">
+            <h3>Connect Dropbox to enable cloud backup</h3>
+            <p>
+              Time Machine snapshots are already encrypted on your Mac with AES-256-GCM.
+              Connecting Dropbox uploads those encrypted files to your account — Dropbox
+              never sees plaintext. Your master key stays in the macOS Keychain.<br /><br />
+              Each Mac uploads to its own folder so multiple devices never collide. From
+              any other device you can restore an older snapshot uploaded here.
+            </p>
+            <button type="button" id="oz-cb-connect-btn">Connect Dropbox</button>
+          </div>
+        </section>
+
+        <section id="oz-cb-connected-view" hidden>
+          <div class="cb-info-row">
+            <span class="cb-label">Account</span>
+            <span class="cb-value" id="oz-cb-account-email">—</span>
+            <button type="button" id="oz-cb-disconnect-btn">Disconnect</button>
+          </div>
+          <div class="cb-info-row">
+            <span class="cb-label">This device</span>
+            <span class="cb-value" id="oz-cb-device-folder">—</span>
+            <button type="button" id="oz-cb-refresh-btn">↻ Refresh</button>
+          </div>
+          <div class="cb-toggle-row">
+            <input type="checkbox" id="oz-cb-auto-toggle" />
+            <label for="oz-cb-auto-toggle">
+              Auto-upload new snapshots
+              <small
+                >Every daily, manual and pre-destructive snapshot uploads in the
+                background. Pre-restore snapshots are skipped.</small
+              >
+            </label>
+          </div>
+          <div class="cb-last-upload" id="oz-cb-last-upload">No uploads yet.</div>
+
+          <div class="cb-section-title">Devices</div>
+          <div id="oz-cb-devices"></div>
+          <div class="cb-empty" id="oz-cb-devices-empty" hidden>
+            No devices have uploaded snapshots yet. Take a snapshot to start.
           </div>
         </section>
       </div>
@@ -4406,6 +4705,7 @@
     <script src="./account-manager-render.js"></script>
     <script src="./account-manager.js"></script>
     <script src="./time-machine.js"></script>
+    <script src="./cloud-backup.js"></script>
     <script src="./proxy-manager.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>

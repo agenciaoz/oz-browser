@@ -52,6 +52,7 @@ const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
 const zlib = require('zlib')
+const { EventEmitter } = require('events')
 const log = require('./logger')
 
 const BACKUP_FORMAT_VERSION = 1
@@ -64,7 +65,7 @@ class BackupError extends Error {
   }
 }
 
-class BackupManager {
+class BackupManager extends EventEmitter {
   /**
    * @param {object} opts
    * @param {string} opts.userDataDir - root that contains identities.json,
@@ -74,8 +75,14 @@ class BackupManager {
    *   createSnapshot/restoreSnapshot is invoked). Used to read the master key.
    * @param {string} [opts.snapshotsDir] - override storage dir (tests).
    * @param {string} [opts.appVersion] - put in header for forensics.
+   *
+   * Events:
+   *   'snapshot-created' — emits {id, filePath, header, sizeBytes} after every
+   *     successful createSnapshot. Cloud backup (D-1) listens to this for
+   *     auto-upload. Listeners run synchronously after the disk write.
    */
   constructor(opts = {}) {
+    super()
     if (!opts.userDataDir) throw new BackupError('userDataDir required', 'BAD_ARG')
     if (!opts.vault) throw new BackupError('vault required', 'BAD_ARG')
     this.userDataDir = opts.userDataDir
@@ -143,6 +150,7 @@ class BackupManager {
 
     const filePath = path.join(this.snapshotsDir, `${id}.ozbackup`)
     fs.writeFileSync(filePath, out)
+    const sizeBytes = out.length
     log.info('backup-manager', 'snapshot created', {
       id,
       reason,
@@ -150,9 +158,19 @@ class BackupManager {
       uncompressedBytes,
       compressedBytes,
       fileCount: files.length,
+      sizeBytes,
       filePath,
     })
-    return { id, filePath, header }
+    // Notify listeners (cloud backup auto-upload, future telemetry, etc.).
+    // Wrap in try/catch so a listener throw never breaks the snapshot path.
+    try {
+      this.emit('snapshot-created', { id, filePath, header, sizeBytes })
+    } catch (err) {
+      log.warn('backup-manager', 'snapshot-created listener threw', {
+        message: err.message,
+      })
+    }
+    return { id, filePath, header, sizeBytes }
   }
 
   /**

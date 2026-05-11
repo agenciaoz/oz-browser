@@ -60,6 +60,7 @@
       this.$btnUnlock = document.getElementById('oz-tm-unlock-btn')
       this.$btnSnapshotNow = document.getElementById('oz-tm-snapshot-now')
       this.$btnRetention = document.getElementById('oz-tm-retention-btn')
+      this.$btnCloud = document.getElementById('oz-tm-cloud-btn')
       this.$list = document.getElementById('oz-tm-list')
       this.$empty = document.getElementById('oz-tm-empty')
       this.$summary = document.getElementById('oz-tm-summary')
@@ -102,6 +103,15 @@
       this.$btnUnlock.addEventListener('click', () => this._doUnlock())
       this.$btnSnapshotNow.addEventListener('click', () => this._doSnapshotNow())
       this.$btnRetention.addEventListener('click', () => this._doRetention())
+      if (this.$btnCloud) {
+        this.$btnCloud.addEventListener('click', () => {
+          // Open the cloud-backup modal over (or instead of) the TM modal.
+          // Keep TM modal open underneath — cloud-backup is a sub-flow.
+          if (window.OZ?.CloudBackup?.open) {
+            window.OZ.CloudBackup.open()
+          }
+        })
+      }
     }
 
     async open() {

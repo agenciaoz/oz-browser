@@ -17,6 +17,29 @@ function registerExtraIpcHandlers(browser) {
   registerAlertHandlersIPC(browser)
   registerHealthHandlersIPC(browser)
   registerExtensionShareHandlersIPC(browser)
+  registerCloudBackupHandlersIPC(browser)
+}
+
+// ----- Cloud Backup (D-1.5) -------------------------------------------------
+
+function registerCloudBackupHandlersIPC(browser) {
+  const h = browser.handlers.cloudBackup
+  if (!h) return // not wired (e.g. early-boot edge cases)
+  ipcMain.handle('oz:cloud-backup:status', () => h.status())
+  ipcMain.handle('oz:cloud-backup:connect', () => h.connect())
+  ipcMain.handle('oz:cloud-backup:disconnect', () => h.disconnect())
+  ipcMain.handle('oz:cloud-backup:setAutoUpload', (_e, enabled) =>
+    h.setAutoUpload(enabled),
+  )
+  ipcMain.handle('oz:cloud-backup:uploadNow', (_e, snapshotId) => h.uploadNow(snapshotId))
+  ipcMain.handle('oz:cloud-backup:listRemoteSnapshots', (_e, deviceFolder) =>
+    h.listRemoteSnapshots(deviceFolder),
+  )
+  ipcMain.handle('oz:cloud-backup:listDevices', () => h.listDevices())
+  ipcMain.handle('oz:cloud-backup:downloadAndRestore', (_e, opts) =>
+    h.downloadAndRestore(opts || {}),
+  )
+  ipcMain.handle('oz:cloud-backup:deleteRemote', (_e, opts) => h.deleteRemote(opts || {}))
 }
 
 // ----- Anti-Detect Health (E2-C-6) -----------------------------------------
