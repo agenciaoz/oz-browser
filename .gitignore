@@ -31,3 +31,4 @@ proxies.json
 *.p12
 *.cer
 *.mobileprovision
+*.git-commit-msg-tmp.txt

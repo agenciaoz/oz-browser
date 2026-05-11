@@ -89,6 +89,15 @@ const setupMenu = (browser) => {
     }
   }
 
+  // C-4 — ⌥⇧O opens the bulk multi-account opener. Same focused-window
+  // routing as Cmd+K so multi-window setups don't get duplicate modals.
+  const openBulkOpener = () => {
+    const win = browser.getFocusedWindow()
+    if (win && win.webContents && !win.webContents.isDestroyed()) {
+      win.webContents.send('oz:bulk-open:open')
+    }
+  }
+
   const template = [
     ...(isMac ? [{ role: 'appMenu' }] : []),
     { role: 'fileMenu' },
@@ -193,15 +202,19 @@ const setupMenu = (browser) => {
       ],
     },
     {
-      // C-1 — Command palette lives in its own top-level menu entry so the
-      // ⌘K shortcut and the menu item stay discoverable. Single item for
-      // now; future quick-actions can join here.
+      // C-1 + C-4 — quick-actions menu. Command palette + Bulk multi-account
+      // opener. Future quick-actions join here.
       label: 'Go',
       submenu: [
         {
           label: 'Command Palette…',
           accelerator: 'CmdOrCtrl+K',
           click: openCommandPalette,
+        },
+        {
+          label: 'Bulk Open Identities…',
+          accelerator: 'Alt+Shift+O',
+          click: openBulkOpener,
         },
       ],
     },

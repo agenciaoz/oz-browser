@@ -2178,6 +2178,226 @@
         font-family: ui-monospace, 'SF Mono', Menlo, monospace;
         font-size: 10px;
       }
+
+      /* ── Bulk Opener modal (C-4) ─────────────────────────────────────── */
+      .oz-bo-window {
+        width: 620px;
+        max-width: calc(100% - 32px);
+      }
+      .bo-modes {
+        display: flex;
+        gap: 2px;
+        background: rgba(0, 0, 0, 0.25);
+        border-radius: 6px;
+        padding: 3px;
+      }
+      .bo-mode-btn {
+        flex: 1;
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        padding: 7px 10px;
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+        border-radius: 4px;
+      }
+      .bo-mode-btn:hover {
+        color: var(--text-color);
+      }
+      .bo-mode-btn.active {
+        background: var(--accent);
+        color: white;
+      }
+      .bo-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin: 4px 0;
+      }
+      .bo-toolbar input[type='search'] {
+        flex: 1;
+        background: var(--bg-color);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        color: var(--text-color);
+        padding: 6px 8px;
+        font: inherit;
+        outline: none;
+        user-select: text;
+      }
+      .bo-toolbar input[type='search']:focus {
+        border-color: var(--accent);
+      }
+      .bo-checkbox-inline {
+        display: inline-flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        gap: 5px;
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: normal;
+        font-size: 12px;
+        color: var(--text-color);
+      }
+      .bo-checkbox-inline input {
+        width: auto;
+      }
+      .bo-spacer {
+        flex: 1;
+      }
+      .bo-existing-count {
+        color: var(--text-muted);
+        font-size: 11px;
+        font-variant-numeric: tabular-nums;
+      }
+      .bo-id-list {
+        list-style: none;
+        margin: 0;
+        padding: 6px 0;
+        max-height: 220px;
+        overflow-y: auto;
+        background: var(--bg-color);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 5px;
+      }
+      .bo-id-row {
+        padding: 4px 10px;
+      }
+      .bo-id-row.locked {
+        opacity: 0.55;
+      }
+      .bo-id-row label {
+        display: flex !important;
+        flex-direction: row !important;
+        align-items: center;
+        gap: 9px;
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: normal;
+        font-size: 13px;
+        color: var(--text-color);
+        cursor: pointer;
+      }
+      .bo-id-row label input {
+        width: auto;
+        cursor: pointer;
+      }
+      .bo-id-row.locked label {
+        cursor: not-allowed;
+      }
+      .bo-swatch {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: inline-block;
+        flex: 0 0 auto;
+      }
+      .bo-id-name {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .bo-lock {
+        color: var(--text-muted);
+        font-size: 11px;
+      }
+      .bo-empty {
+        padding: 20px;
+        text-align: center;
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .bo-row {
+        display: flex;
+        gap: 12px;
+      }
+      .bo-row > label {
+        flex: 1;
+      }
+      .bo-color-label {
+        flex: 0 0 80px !important;
+      }
+      .bo-color-label input[type='color'] {
+        padding: 0;
+        height: 32px;
+        cursor: pointer;
+        background: var(--bg-color);
+      }
+      .bo-preview {
+        list-style: none;
+        margin: 0;
+        padding: 4px 8px;
+        max-height: 180px;
+        overflow-y: auto;
+        background: var(--bg-color);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 5px;
+        font-size: 12px;
+      }
+      .bo-preview li {
+        display: flex;
+        gap: 12px;
+        padding: 3px 0;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.04);
+      }
+      .bo-preview li:last-child {
+        border-bottom: none;
+      }
+      .bo-preview .bo-id-name {
+        font-weight: 500;
+      }
+      .bo-preview .bo-id-url {
+        color: var(--text-muted);
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .bo-target-label {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .bo-target-label select {
+        background: var(--bg-color);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 5px;
+        color: var(--text-color);
+        padding: 7px 9px;
+        font: inherit;
+        outline: none;
+        text-transform: none;
+        letter-spacing: normal;
+        font-weight: 400;
+      }
+      .bo-result {
+        background: rgba(0, 0, 0, 0.22);
+        border-left: 3px solid var(--accent);
+        padding: 10px 12px;
+        border-radius: 4px;
+        font-size: 12.5px;
+        color: var(--text-color);
+      }
+      .bo-result .bo-warn {
+        color: #ffa53a;
+      }
+      .bo-error-list {
+        margin: 6px 0 0;
+        padding-left: 18px;
+        color: var(--text-muted);
+        font-size: 11.5px;
+      }
+      .oz-modal-actions button.primary {
+        background: var(--accent);
+        color: white;
+        border-color: var(--accent);
+      }
+      .oz-modal-actions button.primary:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
@@ -2247,6 +2467,9 @@
         </button>
         <button id="oz-bd-button" type="button">
           <span>📚 Browsing Data</span>
+        </button>
+        <button id="oz-bo-button" type="button">
+          <span>🎯 Bulk Open</span>
         </button>
         <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
         <!-- H3c: header renamed; the list below is now the unified tree
@@ -3068,6 +3291,128 @@
       </div>
     </div>
 
+    <!-- Bulk Opener modal (C-4) — 🎯 Bulk Open. Modal estilo am-window con
+         segmented control (From existing / Create new), multi-select de
+         identities, count + name/url patterns, target workspace dropdown.
+         Locked identities aparecen disabled (no se mueven entre WS per D5). -->
+    <div class="oz-modal" id="oz-bo-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window oz-bo-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-bo-title"
+      >
+        <header>
+          <h2 id="oz-bo-title">🎯 Bulk Open</h2>
+          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+            ✕
+          </button>
+        </header>
+
+        <div class="bo-modes" data-bo-mode role="tablist">
+          <button id="oz-bo-mode-existing" class="bo-mode-btn active" type="button">
+            From existing identities
+          </button>
+          <button id="oz-bo-mode-create" class="bo-mode-btn" type="button">
+            Create N new
+          </button>
+        </div>
+
+        <div class="oz-modal-error" id="oz-bo-error" hidden></div>
+
+        <!-- ── From existing ── -->
+        <section data-mode="existing">
+          <div class="bo-toolbar">
+            <input
+              type="search"
+              id="oz-bo-existing-search"
+              placeholder="Search identities…"
+              autocomplete="off"
+            />
+            <label class="bo-checkbox-inline">
+              <input type="checkbox" id="oz-bo-existing-select-all" />
+              Select visible
+            </label>
+            <span class="bo-spacer"></span>
+            <span class="bo-existing-count" id="oz-bo-existing-count">0 selected</span>
+          </div>
+          <ul class="bo-id-list" id="oz-bo-existing-list"></ul>
+          <label>
+            URL pattern (optional)
+            <input
+              type="text"
+              id="oz-bo-url-existing"
+              placeholder="https://instagram.com/  — use {n} for 1-indexed counter"
+              autocomplete="off"
+            />
+          </label>
+          <small
+            >Leave blank for <code>about:blank</code>. Use <code>{n}</code> for 1-indexed
+            counter or <code>{i}</code> for 0-indexed.</small
+          >
+        </section>
+
+        <!-- ── Create new ── -->
+        <section data-mode="create" hidden>
+          <div class="bo-row">
+            <label>
+              Count
+              <input type="number" id="oz-bo-count" min="1" max="200" value="5" />
+            </label>
+            <label class="bo-color-label">
+              Color
+              <input type="color" id="oz-bo-color" value="#6b8e9f" />
+            </label>
+          </div>
+          <label>
+            Name pattern
+            <input
+              type="text"
+              id="oz-bo-name-pattern"
+              value="Account {n}"
+              autocomplete="off"
+            />
+          </label>
+          <label>
+            URL pattern (optional)
+            <input
+              type="text"
+              id="oz-bo-url-create"
+              placeholder="https://instagram.com/ — use {n} or {i}"
+              autocomplete="off"
+            />
+          </label>
+          <small>Preview (first 50):</small>
+          <ul class="bo-preview" id="oz-bo-preview"></ul>
+        </section>
+
+        <!-- Target workspace -->
+        <label class="bo-target-label">
+          Target workspace
+          <select id="oz-bo-ws-target"></select>
+        </label>
+        <div class="bo-row" id="oz-bo-new-ws-row" hidden>
+          <label style="flex: 1">
+            New workspace name
+            <input
+              type="text"
+              id="oz-bo-new-ws-name"
+              placeholder="Bulk Open — 2026-05-10"
+              autocomplete="off"
+            />
+          </label>
+        </div>
+
+        <div id="oz-bo-result" class="bo-result" hidden></div>
+
+        <div class="oz-modal-actions">
+          <button type="button" id="oz-bo-cancel">Cancel</button>
+          <button type="button" id="oz-bo-submit" class="primary">Open selected</button>
+        </div>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
     <script src="./identity-editor.js"></script>
@@ -3082,6 +3427,7 @@
     <script src="./onboarding.js"></script>
     <script src="./browsing-data.js"></script>
     <script src="./command-palette.js"></script>
+    <script src="./bulk-opener.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

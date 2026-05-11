@@ -377,5 +377,20 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:command-palette:open', listener)
       },
     },
+    // C-4: Bulk multi-account opener. Both mutations return
+    // { ok, opened|created, errors, workspaceId, workspaceCreated }.
+    // preview* / validate are pure helpers for the UI form.
+    bulkOpen: {
+      fromExisting: (input) => ipcRenderer.invoke('oz:bulkOpen:fromExisting', input),
+      createNew: (input) => ipcRenderer.invoke('oz:bulkOpen:createNew', input),
+      previewNames: (input) => ipcRenderer.invoke('oz:bulkOpen:previewNames', input),
+      previewUrls: (input) => ipcRenderer.invoke('oz:bulkOpen:previewUrls', input),
+      validate: (input) => ipcRenderer.invoke('oz:bulkOpen:validate', input),
+      onOpen(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:bulk-open:open', listener)
+        return () => ipcRenderer.off('oz:bulk-open:open', listener)
+      },
+    },
   })
 }

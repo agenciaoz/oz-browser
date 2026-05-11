@@ -13,6 +13,7 @@ function registerExtraIpcHandlers(browser) {
   registerSettingsHandlersIPC(browser)
   registerBrowsingDataHandlersIPC(browser)
   registerCommandPaletteHandlersIPC(browser)
+  registerBulkOpenerHandlersIPC(browser)
 }
 
 // ----- Proxies (1.8a/1.8b/1.8c/1.8d) ---------------------------------------
@@ -152,6 +153,17 @@ function registerCommandPaletteHandlersIPC(browser) {
     const focusedWindowId = win ? win.id : opts && opts.focusedWindowId
     return h.list({ focusedWindowId })
   })
+}
+
+// ----- Bulk Opener (C-4) ----------------------------------------------------
+
+function registerBulkOpenerHandlersIPC(browser) {
+  const h = browser.handlers.bulkOpen
+  ipcMain.handle('oz:bulkOpen:fromExisting', (_e, input) => h.fromExisting(input))
+  ipcMain.handle('oz:bulkOpen:createNew', (_e, input) => h.createNew(input))
+  ipcMain.handle('oz:bulkOpen:previewNames', (_e, input) => h.previewNames(input))
+  ipcMain.handle('oz:bulkOpen:previewUrls', (_e, input) => h.previewUrls(input))
+  ipcMain.handle('oz:bulkOpen:validate', (_e, input) => h.validate(input))
 }
 
 module.exports = { registerExtraIpcHandlers }

@@ -169,6 +169,14 @@ function buildCommands(sources) {
       payload: { action: 'open-modal', modal: 'settings' },
     },
     {
+      id: 'action:open-bulk-opener',
+      label: 'Bulk Open Identities…',
+      hint: '⌥⇧O',
+      keywords: 'multi account batch many open mass',
+      emoji: '🎯',
+      payload: { action: 'open-modal', modal: 'bulkOpener' },
+    },
+    {
       id: 'action:toggle-devtools',
       label: 'Toggle DevTools',
       hint: '⇧⌘J',

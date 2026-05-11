@@ -23,6 +23,8 @@
   const commandPaletteUI = window.OZ.CommandPaletteUI
     ? new window.OZ.CommandPaletteUI()
     : null
+  // C-4: Bulk multi-account opener (⌥⇧O / sidebar button / palette).
+  const bulkOpenerUI = window.OZ.BulkOpenerUI ? new window.OZ.BulkOpenerUI() : null
   window.tabstrip = tabstrip
   window.ozsidebar = sidebar
   window.ozWsSwitcher = wsSwitcher
@@ -31,6 +33,7 @@
   window.ozOnboardingUI = onboardingUI
   window.ozBrowsingDataUI = browsingDataUI
   window.ozCommandPaletteUI = commandPaletteUI
+  window.ozBulkOpenerUI = bulkOpenerUI
   ;(async () => {
     await tabstrip.init()
     await sidebar.init()

@@ -273,6 +273,7 @@
           accountManager: window.OZ && window.OZ.AccountManager,
           proxyManager: window.ozProxyManagerUI,
           browsingData: window.ozBrowsingDataUI,
+          bulkOpener: window.ozBulkOpenerUI,
         }
         const ui = modalMap[payload.modal]
         if (ui && typeof ui.open === 'function') ui.open()
