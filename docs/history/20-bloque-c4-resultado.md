@@ -40,6 +40,7 @@ Resolver el use case real de Jose: abrir N cuentas (existentes o nuevas) en un w
 ### `browser/ui/bulk-opener.js` (~390 LOC, IIFE class)
 
 Modal full-screen estilo `am-window` (620px width). Estructura:
+
 - **Header** "🎯 Bulk Open" con close button
 - **Segmented control** `From existing identities` / `Create N new`
 - **Mode "existing"**: search box + select-visible checkbox + scrollable list de identities con swatch color + 🔒 si locked (disabled). URL pattern input opcional.
