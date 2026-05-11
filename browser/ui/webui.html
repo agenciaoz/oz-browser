@@ -2808,6 +2808,135 @@
         opacity: 0.5;
         cursor: not-allowed;
       }
+
+      /* ── C-8 Sidebar Compactor ──────────────────────────────────────── */
+      /* Layout: tree toma todo el alto vertical disponible, toolbar
+         queda sticky al fondo. Sidebar pasa de overflow:auto a hidden +
+         identity-list maneja su propio scroll. */
+      #oz-sidebar {
+        overflow-y: hidden;
+      }
+      #oz-identity-list {
+        flex: 1 1 auto;
+        overflow-y: auto;
+        min-height: 0;
+      }
+
+      /* Footer toolbar — 8 íconos compactos */
+      #oz-sidebar-toolbar {
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 2px;
+        padding: 8px 4px 4px;
+        margin-top: 6px;
+        border-top: 1px solid rgba(255, 255, 255, 0.08);
+      }
+
+      .oz-toolbar-btn {
+        position: relative;
+        flex: 1 1 0;
+        min-width: 0;
+        height: 32px;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 5px;
+        cursor: pointer;
+        color: var(--text);
+        font: inherit;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .oz-toolbar-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      .oz-toolbar-btn:active {
+        background: rgba(255, 255, 255, 0.1);
+      }
+      .oz-toolbar-icon {
+        font-size: 16px;
+        line-height: 1;
+        display: inline-block;
+      }
+
+      /* Override estilos previos del Accounts button (eran para botón grande) */
+      #oz-accounts-button.oz-toolbar-btn {
+        margin: 0;
+        padding: 0;
+        background: transparent;
+        border: 1px solid transparent;
+        gap: 0;
+        font-weight: normal;
+      }
+      #oz-accounts-button.oz-toolbar-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      #oz-accounts-button.oz-toolbar-btn .vault-status-dot {
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        width: 6px;
+        height: 6px;
+      }
+
+      /* Notification badge — corner over the icon */
+      .oz-toolbar-btn .toolbar-badge {
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        min-width: 14px;
+        height: 14px;
+        padding: 0 3px;
+        background: #e85a5a;
+        color: white;
+        border-radius: 7px;
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 14px;
+        text-align: center;
+        box-shadow: 0 0 0 1.5px var(--bg-elevated);
+      }
+
+      /* TM/PM count — small badge top-right when present */
+      .oz-toolbar-btn .toolbar-count {
+        position: absolute;
+        top: 1px;
+        right: 1px;
+        font-size: 9px;
+        color: var(--text-muted);
+        background: rgba(0, 0, 0, 0.4);
+        border-radius: 6px;
+        padding: 0 4px;
+        line-height: 12px;
+      }
+      .oz-toolbar-btn .toolbar-count:empty {
+        display: none;
+      }
+
+      /* + New Identity inline button — appears in each workspace row */
+      .ws-add-identity-btn {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0 4px;
+        font-size: 14px;
+        line-height: 1;
+        opacity: 0;
+        transition: opacity 0.1s ease;
+      }
+      .tree-row.workspace-row:hover .ws-add-identity-btn {
+        opacity: 0.7;
+      }
+      .ws-add-identity-btn:hover {
+        opacity: 1 !important;
+        color: var(--accent);
+      }
     </style>
   </head>
   <body>
@@ -2860,36 +2989,84 @@
             </button>
           </div>
         </div>
-        <button id="oz-accounts-button" type="button" data-vault="unknown">
-          <span class="vault-status-dot"></span>
-          <span>🔐 Accounts</span>
-        </button>
-        <button id="oz-tm-button" type="button">
-          <span>⏱ Time Machine</span>
-          <span class="tm-count" id="oz-tm-count"></span>
-        </button>
-        <button id="oz-pm-button" type="button">
-          <span>🌐 Proxies</span>
-          <span class="pm-count" id="oz-pm-count"></span>
-        </button>
-        <button id="oz-settings-button" type="button">
-          <span>⚙️ Settings</span>
-        </button>
-        <button id="oz-bd-button" type="button">
-          <span>📚 Browsing Data</span>
-        </button>
-        <button id="oz-bo-button" type="button">
-          <span>🎯 Bulk Open</span>
-        </button>
-        <button id="oz-notif-button" type="button">
-          <span>🔔 Notifications</span>
-          <span class="notif-badge" id="oz-notif-badge" hidden>0</span>
-        </button>
-        <button class="new-identity" id="oz-new-identity">＋ New Identity</button>
-        <!-- H3c: header renamed; the list below is now the unified tree
-             (workspaces > identities > tabs). -->
+        <!-- C-8: header del árbol — el "+ New Identity" grande se eliminó.
+             Crear identity ahora es contextual: botón "+" mini en cada
+             workspace row (sidebar.js renderWorkspaceWrapper). -->
         <div class="header" id="oz-tree-header">WORKSPACES &amp; IDENTITIES</div>
         <div id="oz-identity-list"></div>
+
+        <!-- C-8: footer toolbar — 8 íconos compactos reemplazan los botones
+             grandes anteriores. Misma funcionalidad, ~70% menos espacio
+             vertical. IDs preservados para compat con account-manager.js,
+             time-machine.js, proxy-manager.js, settings.js, browsing-data.js,
+             bulk-opener.js, notifications.js (cada uno hace
+             document.getElementById('oz-X-button')). -->
+        <div id="oz-sidebar-toolbar">
+          <button
+            id="oz-accounts-button"
+            class="oz-toolbar-btn"
+            type="button"
+            data-vault="unknown"
+            title="Accounts"
+          >
+            <span class="vault-status-dot"></span>
+            <span class="oz-toolbar-icon">🔐</span>
+          </button>
+          <button
+            id="oz-tm-button"
+            class="oz-toolbar-btn"
+            type="button"
+            title="Time Machine"
+          >
+            <span class="oz-toolbar-icon">⏱</span>
+            <span class="tm-count toolbar-count" id="oz-tm-count"></span>
+          </button>
+          <button id="oz-pm-button" class="oz-toolbar-btn" type="button" title="Proxies">
+            <span class="oz-toolbar-icon">🌐</span>
+            <span class="pm-count toolbar-count" id="oz-pm-count"></span>
+          </button>
+          <button
+            id="oz-bd-button"
+            class="oz-toolbar-btn"
+            type="button"
+            title="Browsing Data"
+          >
+            <span class="oz-toolbar-icon">📚</span>
+          </button>
+          <button
+            id="oz-bo-button"
+            class="oz-toolbar-btn"
+            type="button"
+            title="Bulk Open"
+          >
+            <span class="oz-toolbar-icon">🎯</span>
+          </button>
+          <button
+            id="oz-health-button"
+            class="oz-toolbar-btn"
+            type="button"
+            title="Anti-Detect Health"
+          >
+            <span class="oz-toolbar-icon">🩺</span>
+          </button>
+          <button
+            id="oz-notif-button"
+            class="oz-toolbar-btn"
+            type="button"
+            title="Notifications"
+          >
+            <span class="oz-toolbar-icon">🔔</span>
+            <span class="notif-badge toolbar-badge" id="oz-notif-badge" hidden>0</span>
+          </button>
+          <button
+            id="oz-settings-button"
+            class="oz-toolbar-btn"
+            type="button"
+            title="Settings"
+          >
+            <span class="oz-toolbar-icon">⚙️</span>
+          </button>
+        </div>
       </aside>
       <div id="oz-content"></div>
     </div>

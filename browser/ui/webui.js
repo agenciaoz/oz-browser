@@ -38,6 +38,22 @@
     await tabstrip.init()
     await sidebar.init()
     if (wsSwitcher) await wsSwitcher.init()
+
+    // C-8: wire the new Health Check button (toolbar footer). The other
+    // toolbar buttons hook themselves up via document.getElementById in
+    // their own modules (account-manager.js, time-machine.js, etc).
+    // Health is a singleton self-instantiated in health-modal.js but its
+    // open() takes an identityId — we pass the active one.
+    const healthBtn = document.getElementById('oz-health-button')
+    if (healthBtn) {
+      healthBtn.addEventListener('click', async () => {
+        const activeId = await window.oz.identities.getActive()
+        if (window.OZ && window.OZ.HealthCheck && activeId) {
+          window.OZ.HealthCheck.open(activeId)
+        }
+      })
+    }
+
     // 1.10c: trigger onboarding if first run. Must run after sidebar init so
     // the WebUI is ready to receive setContentVisible IPC properly.
     if (onboardingUI) {

@@ -145,67 +145,42 @@
     }
 
     // --- workspace + identity creation -----------------------------------------
+    // C-8: simplificado tras el sidebar redesign. El "+ New Identity" button
+    // grande se eliminó (handleNewIdentity legacy retirada). El "+ New
+    // Workspace" sigue en el switcher pills + ahora pide nombre via prompt
+    // (consistente con handleNewIdentityInWorkspace, eliminó el helper
+    // _inlineRename de ~40 LOC).
 
-    handleNewWorkspace() {
-      this._inlineRename(this.$newWsBtn, 'Workspace name…', async (name) => {
-        if (!name) return
-        const ws = await safe(window.oz.workspaces.create({ name }), 'workspaces.create')
-        if (ws && ws.id) {
-          await safe(window.oz.workspaces.setActive(ws.id), 'workspaces.setActive')
-        }
-      })
+    async handleNewWorkspace() {
+      const name = window.prompt('Workspace name')
+      if (!name || !name.trim()) return
+      const ws = await safe(
+        window.oz.workspaces.create({ name: name.trim() }),
+        'workspaces.create',
+      )
+      if (ws && ws.id) {
+        await safe(window.oz.workspaces.setActive(ws.id), 'workspaces.setActive')
+      }
     }
 
-    handleNewIdentity() {
-      // Identity gets created in the active workspace by default (handler
-      // resolves focused window's workspaceId; we don't need to pass it).
-      this._inlineRename(this.$newIdBtn, 'Identity name…', async (name) => {
-        if (!name) return
-        const ident = await safe(
-          window.oz.identities.create({ name }),
-          'identities.create',
-        )
-        if (ident && ident.__error) {
-          alert(ident.__error.message || 'Cannot create identity.')
-          return
-        }
-        if (ident && ident.id) {
-          await safe(window.oz.identities.setActive(ident.id), 'identities.setActive')
-        }
-      })
-    }
-
-    _inlineRename(btnEl, placeholder, onCommit) {
-      if (!btnEl || btnEl.dataset.editing) return
-      btnEl.dataset.editing = '1'
-      const orig = btnEl.textContent
-      btnEl.textContent = ''
-      const input = document.createElement('input')
-      input.placeholder = placeholder
-      input.style.cssText =
-        'background: transparent; border: none; outline: none; color: var(--text-color); font: inherit; width: 100%;'
-      btnEl.appendChild(input)
-      input.focus()
-      let committed = false
-      const cleanup = () => {
-        btnEl.textContent = orig
-        delete btnEl.dataset.editing
+    /**
+     * C-8 — new identity inside a specific workspace. Triggered by the "+"
+     * inline button on each workspace row.
+     */
+    async handleNewIdentityInWorkspace(workspaceId) {
+      const name = window.prompt('Identity name')
+      if (!name || !name.trim()) return
+      const ident = await safe(
+        window.oz.identities.create({ name: name.trim(), workspaceId }),
+        'identities.create',
+      )
+      if (ident && ident.__error) {
+        alert(ident.__error.message || 'Cannot create identity.')
+        return
       }
-      const commit = async () => {
-        if (committed) return
-        committed = true
-        const v = input.value.trim()
-        cleanup()
-        await onCommit(v)
+      if (ident && ident.id) {
+        await safe(window.oz.identities.setActive(ident.id), 'identities.setActive')
       }
-      input.addEventListener('blur', commit)
-      input.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') input.blur()
-        if (e.key === 'Escape') {
-          committed = true
-          cleanup()
-        }
-      })
     }
 
     // --- handlers ----------------------------------------------------------------
@@ -367,6 +342,24 @@
       count.textContent = `(${idCount})`
       if (idCount === 0) count.classList.add('zero')
       row.appendChild(count)
+
+      // C-8: + new identity inline (replaces the big "+ New Identity" button
+      // that lived above the tree). Contextual: creates the identity directly
+      // in THIS workspace. Hidden by default, fades in on row hover.
+      // Frozen workspaces don't get the button (frozen blocks identity move
+      // and updates per ADR 0023).
+      if (!ws.isFrozen && !ws.isArchived) {
+        const addId = document.createElement('button')
+        addId.type = 'button'
+        addId.className = 'ws-add-identity-btn'
+        addId.title = `New identity in "${ws.name}"`
+        addId.textContent = '＋'
+        addId.addEventListener('click', (ev) => {
+          ev.stopPropagation()
+          this.handleNewIdentityInWorkspace(ws.id)
+        })
+        row.appendChild(addId)
+      }
 
       row.addEventListener('click', () => this.handleSelectWorkspace(ws.id))
       row.addEventListener('contextmenu', (e) => this.showWorkspaceContextMenu(e, ws))
