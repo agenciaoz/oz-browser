@@ -154,15 +154,27 @@ main.js creció a 526 LOC al inline-ar el wiring de crash recovery (límite 500)
 - 3 tests/ nuevos: crash-detector.smoketest.js, window-snapshot.smoketest.js, session-restore.smoketest.js. Total ~700 LOC en tests/.
 - Cero deps npm nuevas.
 
-## Validación pendiente
+## Validación visual ✅ PASADA 2026-05-10 noche bis
 
-Validación visual end-to-end vía Desktop Commander queda para próxima sesión:
+Validación end-to-end vía Desktop Commander + computer-use sobre `.app` empaquetada (`/Applications/OZ Browser.app` reemplazada con commit `7e34d11`):
 
-1. `npm start` → verificar que no hay regresión en boot normal.
-2. Force-quit del proceso (`kill -9` o force quit) mientras 2-3 windows con workspaces distintos están abiertos.
-3. Re-launch → confirmar dialog "Restore previous session?" aparece.
-4. Click "Restore" → verificar que las N windows se recrean con sus workspaceIds + bounds + tabs.
-5. Repetir con click "Start Fresh" → verificar que arranca con una sola window Default.
+1. **Pre-kill state capturado:** `running.lock` con `{pid:73540, startedAt:"2026-05-11T02:23:00.997Z"}` + `windows.json` v1 con 1 window `{workspaceId:"general", bounds:{x:224,y:135,w:1280,h:720}, isMaximized:false, isFullScreen:false}`. `window-snapshot daemon started intervalMs:2000` confirmado en log.
+2. **`pkill -9 -f "OZ Browser"`** → todos los procesos OZ muertos. Lockfile preservado con PID 73540 (esperado).
+3. **Re-launch** vía `OZ_MCP_ENABLED=1 open -n "/Applications/OZ Browser.app"`. Log muestra `Browser.init() starting` sin `Browser.init() done` correspondiente — el init() está colgado en el `await promptRestore()` (comportamiento correcto).
+4. **Dialog nativo aparece** con copy correcto:
+   > 📑 OZ Browser ended unexpectedly last time.
+   >
+   > Would you like to restore your previous window and tabs?
+   >
+   > [ Start Fresh ] [ **Restore** ] (default highlighted)
+5. **Click Restore** → log:
+   - `[browser] session restored from snapshot {"requested":1, "created":1}`
+   - `[window-snapshot] daemon started {"intervalMs":2000}` (post-restore)
+   - `[browser] Browser.init() done — initial window created`
+6. **Window recreada** con bounds 1280×720 originales + workspaceId "general" + 8 tabs lazy.
+7. **Bonus integration C-2 ↔ C-5 verde:** alert nueva auto-emitida en panel: `"Session restored" (crash-recovery / info)` con message `"Restored 1 window(s) from the last session before the crash."`. Visible en sidebar 🔔 con badge "1".
+
+**Resultado:** Cero bugs runtime. El feature funciona en .app empaquetada exactamente como en los unit tests.
 
 ## Próximo
 

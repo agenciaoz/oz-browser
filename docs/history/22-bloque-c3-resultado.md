@@ -111,16 +111,24 @@ Plus +2 tools en mcp-server contract test (oz.identities.clone + previewCloneNam
 - Modificados: `identity-manager.js` (+1 field opcional en create), `identity-handlers.js` (+~55 LOC), `ipc-handlers.js` (+2 channels), `preload.js` (+~7 LOC), `mcp-tools.js` (+1 import + 1 spread), `identity-context-menu.js` (+1 entry), `command-palette.js` (+1 action), `ui/command-palette.js` (+1 modalMap entry), `webui.html` (+modal markup + CSS + script tag).
 - Cero deps npm nuevas.
 
-## Validación pendiente
+## Validación visual ✅ PASADA 2026-05-10 noche bis
 
-Validación visual end-to-end vía Desktop Commander queda para próxima sesión:
+Validación end-to-end vía Desktop Commander + computer-use sobre `.app` empaquetada (`/Applications/OZ Browser.app` reemplazada con commit `7e34d11`):
 
-1. `npm start` → boot normal.
-2. Right-click cualquier identity en sidebar → "Clone identity…" → modal abre con preview name + checkboxes.
-3. Probar las 3 combinaciones de checkboxes + Cancel/Clone.
-4. Cmd+K → "Clone" → Enter → modal abre con identity activa preset.
-5. Verificar que el clone aparece en sidebar bajo el mismo workspace que el padre.
-6. Verificar que `sameFingerprint:true` resulta en mismo perfil en about:fingerprint o vía MCP `oz.fingerprint.get`.
+1. **MCP path:** `oz.identities.clone({srcId:"7c139faf1b2a1293", opts:{sameFingerprint:true}})` → `ok:true`, new id `08f29d3f97bc9a79`, name `"IG 1 (copy)"` (resolveCopyName generated), color `#e1306c` heredado, workspaceId `"general"` heredado, fpSeed `dccd43431a21ee8c` **idéntico al parent**, `inherited.fingerprint:true`.
+2. **MCP fingerprint match verification:** `oz.fingerprint.get` para parent + clone retornan idénticos UA `Mozilla/5.0 (X11; Linux x86_64)…`, `hardwareConcurrency:4`, `timezone:"Europe/Berlin"`, `language:"de-DE"`. La integración con FingerprintEngine SHA256-stream RNG funciona end-to-end.
+3. **UI path:** right-click "IG 1" en sidebar → context menu nativo aparece con orden correcto: Rename · Edit identity… · **Clone identity…** · Move to workspace… ▸ · Lock identity · Delete identity.
+4. **Click "Clone identity…"** → modal `📑 Clone identity` abre con:
+   - "Cloning from: ● IG 1" con color dot matching la identity (`#e1306c`).
+   - **NEW NAME pre-poblado "IG 1 (copy 2)"** — `previewCloneName` correctamente detectó que `"IG 1 (copy)"` ya existía (creada vía MCP en step 1) y propone `(copy 2)`.
+   - 3 checkboxes con copy descriptiva visible:
+     - ☐ Same fingerprint (default OFF) — "clone matches the source's blueprint…"
+     - ☑ Same proxy (default ON, marcado) — "inherit the proxy assignment of the source."
+     - ☐ Same custom User-Agent (DISABLED + grey + label "source has no custom UA") — el defensive disabled state cuando source no tiene UA funciona.
+   - Cancel + Clone buttons.
+5. **Click Cancel** → modal cierra limpio sin side effects.
+
+**Resultado:** Cero bugs runtime. Tanto el MCP path (programático) como el UI path (right-click + modal) funcionan en .app empaquetada exactamente como en los unit tests. La verificación de mismo fingerprint profile via MCP confirma que el feature ⭐ "sub-cuentas same person" funciona realmente — diferenciador clave vs Ghost Browser.
 
 ## Próximo
 

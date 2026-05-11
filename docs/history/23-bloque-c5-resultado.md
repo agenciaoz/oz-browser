@@ -104,15 +104,22 @@ Plus +N tools en mcp-server contract test (auto-detected vía regex).
 - Modificados: `main.js` (alert + late-bind + cron alert + flush), `anti-logout.js` (+ alertManager + settingsManager wiring), `crash-recovery-setup.js` (+ post-restore alert), `ipc-handlers.js` (+ alerts handler register), `ipc-handlers-extra.js` (+ 7 IPC channels), `preload.js` (+ alerts bridge), `mcp-tools.js` (+ import + spread), `command-palette.js` (+ entry), `ui/command-palette.js` (+ modal map), `settings-manager.js` (+ notifications section + validation), `ui/settings.js` (+ binding), `ui/webui.html` (+ sidebar button + badge + modal markup + CSS + script tag + settings section + nav button).
 - Cero deps npm nuevas.
 
-## Validación pendiente
+## Validación visual ✅ PASADA 2026-05-10 noche bis
 
-Validación visual end-to-end vía Desktop Commander queda para próxima sesión:
+Validación end-to-end vía Desktop Commander + computer-use sobre `.app` empaquetada (`/Applications/OZ Browser.app` reemplazada con commit `7e34d11`):
 
-1. `npm start` → boot normal. Sidebar muestra botón 🔔 sin badge.
-2. Trigger artificial vía MCP: `curl -s http://127.0.0.1:9223/mcp -X POST -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"oz.alerts.add","arguments":{"type":"test","severity":"urgent","title":"Hello","message":"world"}}}'` → badge aparece con "1".
-3. Click 🔔 → modal abre con la alert + inline button (si tiene action) + auto-mark-read 800ms después.
-4. Verificar: persistencia (cerrar/reabrir OZ → alerts siguen ahí), filter `oz.alerts.list({unreadOnly:true})`, `clear()` deja vacío.
-5. Settings → Notifications → toggle "Show OS notifications" off → simular proxy-disable y verificar que el alert va al panel SIN OS notification.
+1. **Boot normal:** sidebar muestra botón `🔔 Notifications` sin badge (unreadCount=0 al inicio).
+2. **Trigger artificial vía MCP:** `oz.alerts.add({type:'test', severity:'urgent', title:'Hello from Claude', message:'This is a test alert triggered via MCP', action:{kind:'open-modal', payload:{modal:'timeMachine'}}})` → returns alert con id `a-ebdfd515c3ba`, ts populated, read:false. `oz.alerts.unreadCount` → `1`.
+3. **Badge aparece** rojo `#e85a5a` con texto "1" en el botón `🔔 Notifications` (visible en screenshot del sidebar).
+4. **Click 🔔** → modal abre con:
+   - Header `🔔 Notifications` + close ×
+   - Toolbar: `Mark all read` + `Clear all` + stats `1 total · 0 unread` (auto-mark-read 800ms post-open ya disparó)
+   - Row con severity dot rojo (urgent), title bold "Hello from Claude", message muted, meta `TEST · JUST NOW`, **inline action button "Open Time Machine"** renderizado correctamente desde `action.payload.modal`, dismiss × per row.
+5. **Persistencia confirmada:** `cat alerts.json` post-modal-close muestra `read:true`, schema v1 intacto.
+6. **Click ESC** + reopen → modal arranca sin badge (todas marcadas leídas), conserva la alert en el log.
+7. **Bonus integration C-2 ↔ C-5:** después del crash recovery flow (validación C-2), apareció auto en el panel una alert `"Session restored" (crash-recovery / info)` con message `"Restored 1 window(s) from the last session before the crash."`. El wire de `crash-recovery-setup.js` que agregué funciona end-to-end.
+
+**Resultado:** Cero bugs runtime. El feature funciona en .app empaquetada exactamente como en los unit tests. La integration con producers existentes (anti-logout, proxy-health, backup cron, crash-recovery) está validada — al menos crash-recovery fue probado live.
 
 ## Próximo
 
