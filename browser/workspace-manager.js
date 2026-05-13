@@ -26,6 +26,7 @@
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
+const { EventEmitter } = require('events')
 const { app } = require('electron')
 const log = require('./logger')
 
@@ -51,8 +52,28 @@ function now() {
   return Date.now()
 }
 
-class WorkspaceManager {
+// D-4: ISO 8601 timestamp for the sync layer. createdAt stays as ms-since-epoch
+// (legacy compatibility); updatedAt is now ISO so the sync engine can do
+// lex / Date.parse comparisons consistently across devices.
+function nowIso() {
+  return new Date().toISOString()
+}
+
+class WorkspaceManager extends EventEmitter {
+  /**
+   * D-4 — emits 'changed' after every metadata mutation (create/update/
+   * archive/restore/freeze/unfreeze/remove/duplicate/addIdentity/
+   * removeIdentity). Tab-spec mutations (setTabSpecs/appendTabSpec/
+   * removeTabSpec/setActiveTabId) do NOT emit — tab state is local
+   * session state, not shared team config (ADR 0026 §1 carveout).
+   *
+   * Event payload shapes (mirrors IdentityManager):
+   *   { op: 'create',  recordType: 'workspace', recordId, record, updatedAt }
+   *   { op: 'update',  recordType: 'workspace', recordId, record, updatedAt }
+   *   { op: 'delete',  recordType: 'workspace', recordId, deletedAt }
+   */
   constructor(opts = {}) {
+    super()
     this.dataDir = opts.dataDir || app.getPath('userData')
     this.filePath = path.join(this.dataDir, 'workspaces.json')
     this.workspaces = []
@@ -102,6 +123,30 @@ class WorkspaceManager {
       })
       this._saveNow()
     }
+
+    // D-4: backfill updatedAt to ISO. Legacy records have ms-since-epoch
+    // (number); coerce to ISO for sync LWW comparisons. Missing field →
+    // fall back to ISO(createdAt) when available, otherwise nowIso().
+    let isoBackfilled = 0
+    for (const ws of this.workspaces) {
+      if (typeof ws.updatedAt === 'number') {
+        ws.updatedAt = new Date(ws.updatedAt).toISOString()
+        isoBackfilled += 1
+      } else if (typeof ws.updatedAt !== 'string') {
+        const seed =
+          typeof ws.createdAt === 'number'
+            ? new Date(ws.createdAt).toISOString()
+            : nowIso()
+        ws.updatedAt = seed
+        isoBackfilled += 1
+      }
+    }
+    if (isoBackfilled > 0) {
+      log.warn('workspace-manager', 'backfilled workspaces to ISO updatedAt', {
+        count: isoBackfilled,
+      })
+      this._saveNow()
+    }
   }
 
   _buildDefault() {
@@ -115,7 +160,8 @@ class WorkspaceManager {
       isFrozen: false,
       quickTabsMode: DEFAULT_QUICK_TAB_MODE,
       createdAt: t,
-      updatedAt: t,
+      // D-4: ISO timestamp used by the sync engine for LWW.
+      updatedAt: nowIso(),
       tabSpecs: [],
       activeTabId: null,
       // H3a: identities belonging to this workspace (ADR 0023 D1).
@@ -209,7 +255,7 @@ class WorkspaceManager {
         ? quickTabsMode
         : DEFAULT_QUICK_TAB_MODE,
       createdAt: t,
-      updatedAt: t,
+      updatedAt: nowIso(),
       tabSpecs: [],
       activeTabId: null,
       // H3a: identities belonging to this workspace (ADR 0023 D1).
@@ -221,6 +267,13 @@ class WorkspaceManager {
       id: ws.id,
       name: ws.name,
       total: this.workspaces.length,
+    })
+    this._emitChanged({
+      op: 'create',
+      recordType: 'workspace',
+      recordId: ws.id,
+      record: { ...ws, tabSpecs: [], identityIds: [] },
+      updatedAt: ws.updatedAt,
     })
     return { ...ws, tabSpecs: [], identityIds: [] }
   }
@@ -239,6 +292,7 @@ class WorkspaceManager {
 
     const allowed = ['name', 'color', 'quickTabsMode']
     const before = { ...ws }
+    let mutated = false
     for (const key of allowed) {
       if (Object.hasOwn(patch, key)) {
         if (key === 'quickTabsMode' && !QUICK_TAB_MODES.includes(patch[key])) {
@@ -248,15 +302,29 @@ class WorkspaceManager {
           })
           continue
         }
-        ws[key] = patch[key]
+        if (ws[key] !== patch[key]) {
+          ws[key] = patch[key]
+          mutated = true
+        }
       }
     }
-    ws.updatedAt = now()
+    if (mutated) {
+      ws.updatedAt = nowIso()
+    }
     this._save()
     log.info('workspace-manager', 'workspace updated', {
       id,
       changedKeys: allowed.filter((k) => Object.hasOwn(patch, k) && before[k] !== ws[k]),
     })
+    if (mutated) {
+      this._emitChanged({
+        op: 'update',
+        recordType: 'workspace',
+        recordId: id,
+        record: { ...ws, tabSpecs: [...ws.tabSpecs] },
+        updatedAt: ws.updatedAt,
+      })
+    }
     return { ...ws, tabSpecs: [...ws.tabSpecs] }
   }
 
@@ -285,7 +353,7 @@ class WorkspaceManager {
       isArchived: false,
       isFrozen: false,
       createdAt: t,
-      updatedAt: t,
+      updatedAt: nowIso(),
       activeTabId: null,
       tabSpecs: src.tabSpecs.map((ts) => ({ ...ts, id: uuid() })),
       // H3a: duplicate is a fresh workspace — identities aren't copied
@@ -300,6 +368,13 @@ class WorkspaceManager {
       to: copy.id,
       tabsCopied: copy.tabSpecs.length,
     })
+    this._emitChanged({
+      op: 'create',
+      recordType: 'workspace',
+      recordId: copy.id,
+      record: { ...copy, tabSpecs: [...copy.tabSpecs], identityIds: [] },
+      updatedAt: copy.updatedAt,
+    })
     return { ...copy, tabSpecs: [...copy.tabSpecs], identityIds: [] }
   }
 
@@ -310,40 +385,48 @@ class WorkspaceManager {
       log.warn('workspace-manager', 'refusing to archive default workspace', { id })
       return false
     }
+    const before = !!ws.isArchived
     ws.isArchived = true
-    ws.updatedAt = now()
+    if (!before) ws.updatedAt = nowIso()
     this._save()
     log.info('workspace-manager', 'workspace archived', { id })
+    if (!before) this._emitWs('update', ws)
     return true
   }
 
   restore(id) {
     const ws = this._getRaw(id)
     if (!ws) return false
+    const before = !!ws.isArchived
     ws.isArchived = false
-    ws.updatedAt = now()
+    if (before) ws.updatedAt = nowIso()
     this._save()
     log.info('workspace-manager', 'workspace restored', { id })
+    if (before) this._emitWs('update', ws)
     return true
   }
 
   freeze(id) {
     const ws = this._getRaw(id)
     if (!ws) return false
+    const before = !!ws.isFrozen
     ws.isFrozen = true
-    ws.updatedAt = now()
+    if (!before) ws.updatedAt = nowIso()
     this._save()
     log.info('workspace-manager', 'workspace frozen', { id })
+    if (!before) this._emitWs('update', ws)
     return true
   }
 
   unfreeze(id) {
     const ws = this._getRaw(id)
     if (!ws) return false
+    const before = !!ws.isFrozen
     ws.isFrozen = false
-    ws.updatedAt = now()
+    if (before) ws.updatedAt = nowIso()
     this._save()
     log.info('workspace-manager', 'workspace unfrozen', { id })
+    if (before) this._emitWs('update', ws)
     return true
   }
 
@@ -406,11 +489,18 @@ class WorkspaceManager {
         this._workspaceCascadeRun(id, identityIds, DEFAULT_WORKSPACE_ID)
       }
     }
+    const deletedAt = nowIso()
     this.workspaces = this.workspaces.filter((w) => w.id !== id)
     this._save()
     log.info('workspace-manager', 'workspace removed', {
       id,
       cascadedIdentities: identityIds.length,
+    })
+    this._emitChanged({
+      op: 'delete',
+      recordType: 'workspace',
+      recordId: id,
+      deletedAt,
     })
     return true
   }
@@ -424,8 +514,9 @@ class WorkspaceManager {
     if (!Array.isArray(ws.identityIds)) ws.identityIds = []
     if (!ws.identityIds.includes(identityId)) {
       ws.identityIds.push(identityId)
-      ws.updatedAt = now()
+      ws.updatedAt = nowIso()
       this._save()
+      this._emitWs('update', ws)
     }
     return true
   }
@@ -441,8 +532,9 @@ class WorkspaceManager {
     const before = ws.identityIds.length
     ws.identityIds = ws.identityIds.filter((iid) => iid !== identityId)
     if (ws.identityIds.length !== before) {
-      ws.updatedAt = now()
+      ws.updatedAt = nowIso()
       this._save()
+      this._emitWs('update', ws)
     }
     return true
   }
@@ -477,8 +569,10 @@ class WorkspaceManager {
     if (!ws) return false
     ws.tabSpecs = (tabSpecs || []).map((ts) => ({ ...ts }))
     if (activeTabId !== undefined) ws.activeTabId = activeTabId
-    ws.updatedAt = now()
+    ws.updatedAt = nowIso()
     this._save()
+    // D-4: tabSpec ops do NOT emit 'changed' — tab state is local session
+    // state, not shared team config (ADR 0026 §1 carveout).
     return true
   }
 
@@ -491,7 +585,7 @@ class WorkspaceManager {
     const ws = this._getRaw(id)
     if (!ws) return false
     ws.tabSpecs.push({ ...spec })
-    ws.updatedAt = now()
+    ws.updatedAt = nowIso()
     this._save()
     return true
   }
@@ -502,7 +596,7 @@ class WorkspaceManager {
     const before = ws.tabSpecs.length
     ws.tabSpecs = ws.tabSpecs.filter((ts) => ts.id !== tabId)
     if (ws.tabSpecs.length === before) return false
-    ws.updatedAt = now()
+    ws.updatedAt = nowIso()
     this._save()
     return true
   }
@@ -513,6 +607,36 @@ class WorkspaceManager {
     ws.activeTabId = tabId
     this._save()
     return true
+  }
+
+  // ---------- D-4: 'changed' event helpers ----------
+
+  /**
+   * D-4: internal helper that announces a workspace mutation to listeners
+   * (the sync engine). Wraps emit in try/catch so a faulty listener cannot
+   * roll back state that's already on disk. Mirrors IdentityManager.
+   */
+  _emitChanged(payload) {
+    try {
+      this.emit('changed', payload)
+    } catch (err) {
+      log.warn('workspace-manager', "'changed' listener threw", {
+        op: payload && payload.op,
+        recordId: payload && payload.recordId,
+        message: err.message,
+      })
+    }
+  }
+
+  /** Helper for the common op:'update' case — builds the payload from a ws record. */
+  _emitWs(op, ws) {
+    this._emitChanged({
+      op,
+      recordType: 'workspace',
+      recordId: ws.id,
+      record: { ...ws, tabSpecs: [...ws.tabSpecs] },
+      updatedAt: ws.updatedAt,
+    })
   }
 }
 

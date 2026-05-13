@@ -37,7 +37,14 @@ const log = require('./logger')
 const { SyncQueue } = require('./sync-queue')
 const { SyncEngine } = require('./sync-engine')
 const { SyncPuller } = require('./sync-pull')
-const { applyRemoteUpsert, applyRemoteDelete } = require('./identity-manager-sync')
+const {
+  applyRemoteUpsert: applyIdentityRemoteUpsert,
+  applyRemoteDelete: applyIdentityRemoteDelete,
+} = require('./identity-manager-sync')
+const {
+  applyRemoteUpsert: applyWorkspaceRemoteUpsert,
+  applyRemoteDelete: applyWorkspaceRemoteDelete,
+} = require('./workspace-manager-sync')
 
 const DEFAULT_POLL_INTERVAL_MS = 30_000
 const DEFAULT_APP_FOLDER = 'sync'
@@ -55,6 +62,7 @@ class SyncSetupError extends Error {
  * @param {object} opts.vault            - Vault instance (getMasterKey, isUnlocked)
  * @param {object} opts.dropbox          - Dropbox client
  * @param {object} opts.identityManager  - IdentityManager instance
+ * @param {object} [opts.workspaceManager] - WorkspaceManager instance (optional)
  * @param {string} opts.userDataDir      - absolute path; queue + state live here
  * @param {string} opts.deviceFolder     - this device's deviceFolder slug
  * @param {string} [opts.appFolder]      - Dropbox app folder (default 'sync')
@@ -117,6 +125,22 @@ function setupSync(opts = {}) {
     fetchRecord: (recordId) => opts.identityManager.get(recordId),
   })
 
+  if (opts.workspaceManager) {
+    engine.registerSource({
+      recordType: 'workspace',
+      manager: opts.workspaceManager,
+      // Strip tabSpecs / activeTabId at push time — privacy carveout
+      // (mirror of the strip on the apply side in workspace-manager-sync).
+      fetchRecord: (recordId) => {
+        const ws = opts.workspaceManager.get(recordId)
+        if (!ws) return null
+
+        const { tabSpecs: _t, activeTabId: _a, ...stripped } = ws
+        return stripped
+      },
+    })
+  }
+
   // ---------- 3. Puller (pull side) ----------
   const puller = new SyncPuller({
     vault: opts.vault,
@@ -131,16 +155,35 @@ function setupSync(opts = {}) {
     fetchRecord: (recordId) => opts.identityManager.get(recordId),
   })
 
-  // ---------- 4. Bridge: puller 'remote-apply' → identity-manager-sync ----------
+  if (opts.workspaceManager) {
+    puller.registerSource({
+      recordType: 'workspace',
+      fetchRecord: (recordId) => opts.workspaceManager.get(recordId),
+    })
+  }
+
+  // ---------- 4. Bridge: puller 'remote-apply' → sync helpers ----------
+  // Routed by recordType: identity → identity-manager-sync,
+  // workspace → workspace-manager-sync.
   puller.on('remote-apply', (evt) => {
     try {
-      if (evt.action === 'upsert') {
-        applyRemoteUpsert(opts.identityManager, evt.body)
-      } else if (evt.action === 'delete') {
-        const deletedAt = evt.header && evt.header.deletedAt
-        applyRemoteDelete(opts.identityManager, evt.recordId, deletedAt)
-      } else {
+      const isUpsert = evt.action === 'upsert'
+      const isDelete = evt.action === 'delete'
+      if (!isUpsert && !isDelete) {
         log.warn('sync-setup', "unknown 'remote-apply' action", { evt })
+        return
+      }
+      const deletedAt = evt.header && evt.header.deletedAt
+      if (evt.recordType === 'identity') {
+        if (isUpsert) applyIdentityRemoteUpsert(opts.identityManager, evt.body)
+        else applyIdentityRemoteDelete(opts.identityManager, evt.recordId, deletedAt)
+      } else if (evt.recordType === 'workspace' && opts.workspaceManager) {
+        if (isUpsert) applyWorkspaceRemoteUpsert(opts.workspaceManager, evt.body)
+        else applyWorkspaceRemoteDelete(opts.workspaceManager, evt.recordId, deletedAt)
+      } else {
+        log.warn('sync-setup', "unhandled recordType in 'remote-apply'", {
+          recordType: evt.recordType,
+        })
       }
     } catch (err) {
       log.warn('sync-setup', "'remote-apply' handler threw", {
@@ -189,6 +232,9 @@ function setupSync(opts = {}) {
     if (!running) return
     try {
       await puller.pullOnce('identity')
+      if (opts.workspaceManager) {
+        await puller.pullOnce('workspace')
+      }
     } catch (err) {
       log.warn('sync-setup', 'pullOnce threw', { message: err.message })
     }
@@ -224,7 +270,14 @@ function setupSync(opts = {}) {
     start,
     stop,
     isRunning: () => running,
-    pullNow: () => puller.pullOnce('identity'),
+    pullNow: async () => {
+      const identityResult = await puller.pullOnce('identity')
+      let workspaceResult
+      if (opts.workspaceManager) {
+        workspaceResult = await puller.pullOnce('workspace')
+      }
+      return { identity: identityResult, workspace: workspaceResult }
+    },
   }
 }
 

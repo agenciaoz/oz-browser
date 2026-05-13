@@ -351,8 +351,8 @@ section('Remote upload → puller.pullOnce → applyRemoteUpsert → IM updated'
 
   // Trigger pull.
   const r = await setup.pullNow()
-  ok("status 'ok'", r.status === 'ok')
-  ok('applied >= 1', r.applied >= 1)
+  ok("status 'ok'", r.identity && r.identity.status === 'ok')
+  ok('applied >= 1', r.identity && r.identity.applied >= 1)
   ok('IM has the new identity', im.get('rec-from-bob') !== null)
   ok('name matches remote body', im.get('rec-from-bob').name === 'Maria from Bob Mac')
 })()
