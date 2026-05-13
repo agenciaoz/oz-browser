@@ -84,3 +84,21 @@ CRUD de Identities con persistencia en `~/Library/Application Support/OZ Browser
 - Feature: [`../features/identities.md`](../features/identities.md)
 - UI editor: [`ui-identity-editor.md`](ui-identity-editor.md)
 - Usado por: `tabs.js`, `ipc-handlers.js`, `main.js`.
+
+## D-3a — EventEmitter para sync (2026-05-13)
+
+`IdentityManager` ahora `extends EventEmitter` y emite `'changed'` después de cada CRUD efectivo (create / update / setLocked cuando flippea / moveToWorkspace / remove). Payload:
+
+```js
+// op = 'create' | 'update'
+{ op, recordType: 'identity', recordId, record, updatedAt }
+// op = 'delete'
+{ op, recordType: 'identity', recordId, deletedAt }
+```
+
+- **ISO `updatedAt`** stampado en cada mutación efectiva. `createdAt` queda como millis legacy. Defensive backfill on `_load`: legacy records sin `updatedAt` reciben ISO(createdAt) o nowIso().
+- **No-op guards**: `update()` sin cambios reales y `setLocked()` idempotente NO emiten ni stampan (sin tráfico sync spurious).
+- **try/catch wrap** en `_emitChanged` — un listener faulty no rolea back state ya en disk.
+- **Para apply-remote sin loop** ver [`identity-manager-sync.md`](identity-manager-sync.md). Esos helpers mutan el state SIN emitir `'changed'` (cortan el loop remote→local→push→remote) y emiten `'remote-applied'` en su lugar.
+
+Consumer es [`sync-setup.md`](sync-setup.md) que registra IM como source 'identity' en engine + puller.

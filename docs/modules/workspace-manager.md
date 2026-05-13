@@ -74,3 +74,18 @@ El switch logic del Bloque 1.4b va a habilitar throttle 2s para coalescing de bu
 - [ADR 0002](../architecture/0002-lazy-tabs.md) — lazy materialization que reusamos en switch.
 - [`workspace-handlers.md`](workspace-handlers.md) — handler map que envuelve este backend.
 - [`identity-manager.md`](identity-manager.md) — patrón análogo (CRUD + persistencia).
+
+## D-4 mini — EventEmitter para sync (2026-05-13)
+
+`WorkspaceManager` ahora `extends EventEmitter` y emite `'changed'` después de cada **metadata mutation**: create / update (cuando algún field cambia) / archive / restore / freeze / unfreeze (con idempotency guards) / remove / duplicate / addIdentity / removeIdentity. Payload espejo de IdentityManager:
+
+```js
+{ op, recordType: 'workspace', recordId, record?, updatedAt | deletedAt }
+```
+
+- **Tab-spec ops NO emiten** (`setTabSpecs`, `appendTabSpec`, `removeTabSpec`, `setActiveTabId`) — tab state es per-device session state, no shared team config (ADR 0026 §1 carveout). Stampan `updatedAt` localmente igual pero no disparan sync traffic.
+- **`updatedAt` convertido a ISO 8601** (era ms-since-epoch). `_load` defensive backfill coerce legacy ms → ISO; missing field → ISO(createdAt) || nowIso().
+- **Idempotency**: archive cuando ya archivado, restore cuando no archivado, freeze/unfreeze idempotente — NO stampan ni emiten.
+- **Apply-remote sin loop** en [`workspace-manager-sync.md`](workspace-manager-sync.md). Privacy carveout: `tabSpecs` y `activeTabId` STRIPPED al aplicar remote (local preserved).
+
+Consumer en [`sync-setup.md`](sync-setup.md) (workspace source opcional). El `fetchRecord` del engine también strippea tabSpecs/activeTabId al push time — dual-strip garantiza no leakage en ninguna dirección.

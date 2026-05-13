@@ -1,9 +1,36 @@
 # ADR 0026 — Sync engine (D-2)
 
 **Date:** 2026-05-10
-**Status:** Proposed (ADR puro — implementación en D-3 / D-4)
+**Status:** **Implemented** (D-3a → D-4 mini b, commits `d2b947e` → `befc354`, 2026-05-13). Internal layer feature-complete for identities + workspaces + bookmarks. main.js wire-up + real long-poll deferred to D-3c-3c/d (require live validation).
 **Bloque:** D-2 — ADR sync engine + chunked upload + cursor-based listings
 **Predecesores:** ADR 0008 (vault + AES-256-GCM), ADR 0023 (identities + workspaces), ADR 0025 (cloud backup — folder layout + zero-knowledge crypto)
+
+## Implementation map (added 2026-05-13)
+
+| §                | Module                                                                 | Commit    | Notes                                                                                                                  |
+| ---------------- | ---------------------------------------------------------------------- | --------- | ---------------------------------------------------------------------------------------------------------------------- |
+| §3 LWW merge     | `browser/sync-merge.js`                                                | `d2b947e` | Pure logic, no I/O. 40 tests.                                                                                          |
+| §7 record format | `browser/sync-record-store.js`                                         | `d2b947e` | AES-256-GCM, mirrors D-1 backup format. 39 tests.                                                                      |
+| §4 push trigger  | `IdentityManager extends EventEmitter` (`browser/identity-manager.js`) | `d2b947e` | Emits `'changed'` per CRUD. 24 tests.                                                                                  |
+| §5 offline queue | `browser/sync-queue.js`                                                | `f2767f6` | FIFO + coalesce by (recordType, recordId). 63 tests.                                                                   |
+| §4 push side     | `browser/sync-engine.js`                                               | `b752104` | Drain loop + backoff + race-safe conditional remove. 63 tests.                                                         |
+| §4 pull side     | `browser/sync-pull.js`                                                 | `0fa12dc` | Cursor + LWW merge + `'remote-apply'` events. Persisted in `userData/sync-state.json`. 59 tests.                       |
+| §4 apply side    | `browser/identity-manager-sync.js`                                     | `d18b84a` | `applyRemoteUpsert/Delete` — does NOT emit `'changed'` (cuts the loop). 39 tests.                                      |
+| §4 wire-up       | `browser/sync-setup.js`                                                | `f9fecdc` | `setupSync({...}) → {engine, puller, queue, start, stop, pullNow}`. End-to-end Alice→Bob round-trip in test. 29 tests. |
+| Workspace sync   | `WorkspaceManager` + `workspace-manager-sync.js`                       | `9b69776` | `tabSpecs` / `activeTabId` stripped on push AND apply (privacy carveout §1). 55 tests.                                 |
+| Bookmark sync    | `BookmarkManager` + `bookmark-manager-sync.js`                         | `befc354` | Single-record full-file LWW (recordId='all'). Sidecar `bookmarks-sync-meta.json` for `updatedAt`. 49 tests.            |
+
+**Deferred (per ADR §15 + new):**
+
+- main.js wire-up via `setupSync(...)` — instantiate Vault + DropboxClient + IM/WM/BM + start the loops. Requires live validation (`npm start`).
+- Long-poll connection via `filesListFolderLongpoll` — current implementation polls `listFolderContinue` every 30s. Real long-poll cuts remote→local lag to <10s.
+- Tombstone GC sweep (§9) — 30-day retention enforcer.
+- DR drill — wipe local, recibe full state via initial sync cold-start.
+
+**Aceptados como diverge respecto al ADR original:**
+
+- §4 "conflict pre-flight via filesGetMetadata" — NOT implemented. Push side just overwrites; LWW resolves on the pull side. The race window is narrow and tolerable for team <10.
+- §2 storage layout: bookmarks live at `/sync/bookmarks/all.json.enc` (folder with one entry) rather than `sync/bookmarks.json.enc` (loose file) — keeps the engine treatment uniform.
 
 ## Context
 
