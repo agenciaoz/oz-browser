@@ -29,6 +29,7 @@
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
+const { EventEmitter } = require('events')
 const { app } = require('electron')
 const log = require('./logger')
 
@@ -40,11 +41,31 @@ function now() {
   return Date.now()
 }
 
-class BookmarkManager {
+// D-4 mini b: bookmarks sync as a SINGLE-record (full-file LWW per ADR 0026
+// §1). recordId is a fixed string so the engine can treat the collection
+// as one row.
+const BOOKMARKS_RECORD_ID = 'all'
+
+function nowIso() {
+  return new Date().toISOString()
+}
+
+class BookmarkManager extends EventEmitter {
+  /**
+   * D-4 mini b — emits 'changed' after every mutation. Payload:
+   *   { op: 'update', recordType: 'bookmarks', recordId: 'all', updatedAt }
+   *
+   * `updatedAt` is persisted in a SIDECAR file (`bookmarks-sync-meta.json`)
+   * so the existing bookmarks.json format is untouched. Zero migration
+   * risk for the bookmark file itself.
+   */
   constructor(opts = {}) {
+    super()
     this.dataDir = opts.dataDir || app.getPath('userData')
     this.filePath = path.join(this.dataDir, 'bookmarks.json')
+    this.metaFilePath = path.join(this.dataDir, 'bookmarks-sync-meta.json')
     this.bookmarks = []
+    this._updatedAt = null
     this._load()
   }
 
@@ -61,6 +82,42 @@ class BookmarkManager {
       console.error('[bookmark-manager] failed to load bookmarks.json:', err)
       this.bookmarks = []
     }
+    // D-4 mini b: load sidecar updatedAt (separate file — bookmarks.json
+    // format is unchanged for backwards compat).
+    this._updatedAt = this._loadMeta()
+  }
+
+  _loadMeta() {
+    if (!fs.existsSync(this.metaFilePath)) return null
+    try {
+      const raw = fs.readFileSync(this.metaFilePath, 'utf-8')
+      const parsed = JSON.parse(raw)
+      if (
+        parsed &&
+        typeof parsed.updatedAt === 'string' &&
+        !Number.isNaN(Date.parse(parsed.updatedAt))
+      ) {
+        return parsed.updatedAt
+      }
+    } catch (err) {
+      log.warn('bookmark-manager', 'meta read failed', { message: err.message })
+    }
+    return null
+  }
+
+  _saveMeta() {
+    try {
+      fs.mkdirSync(this.dataDir, { recursive: true })
+      const tmp = this.metaFilePath + '.tmp'
+      fs.writeFileSync(
+        tmp,
+        JSON.stringify({ schemaVersion: 1, updatedAt: this._updatedAt }, null, 2),
+        'utf-8',
+      )
+      fs.renameSync(tmp, this.metaFilePath)
+    } catch (err) {
+      log.warn('bookmark-manager', 'meta save failed', { message: err.message })
+    }
   }
 
   _save() {
@@ -69,6 +126,43 @@ class BookmarkManager {
       fs.writeFileSync(this.filePath, JSON.stringify(this.bookmarks, null, 2), 'utf-8')
     } catch (err) {
       console.error('[bookmark-manager] failed to save bookmarks.json:', err)
+    }
+  }
+
+  /** D-4 mini b: ISO 8601 stamp tracked in the sidecar meta file. */
+  getUpdatedAt() {
+    return this._updatedAt
+  }
+
+  /**
+   * D-4 mini b: sync payload — the whole bookmark collection as a single
+   * "record" with id='all'. The sync engine treats this as one row;
+   * fetchRecord('all') returns this on the push side; the apply side
+   * replaces the local array wholesale with body.bookmarks.
+   */
+  getSyncRecord() {
+    return {
+      id: BOOKMARKS_RECORD_ID,
+      updatedAt: this._updatedAt || nowIso(),
+      bookmarks: this.bookmarks.map((b) => ({ ...b })),
+    }
+  }
+
+  /** D-4 mini b: stamp + emit. Called by every mutation after _save(). */
+  _stampAndEmit() {
+    this._updatedAt = nowIso()
+    this._saveMeta()
+    try {
+      this.emit('changed', {
+        op: 'update',
+        recordType: 'bookmark',
+        recordId: BOOKMARKS_RECORD_ID,
+        updatedAt: this._updatedAt,
+      })
+    } catch (err) {
+      log.warn('bookmark-manager', "'changed' listener threw", {
+        message: err.message,
+      })
     }
   }
 
@@ -121,6 +215,7 @@ class BookmarkManager {
     }
     this.bookmarks.push(bookmark)
     this._save()
+    this._stampAndEmit()
     log.info('bookmark-manager', 'bookmark added', {
       id: bookmark.id,
       identityId,
@@ -150,6 +245,7 @@ class BookmarkManager {
     this.bookmarks = this.bookmarks.filter((b) => b.id !== id)
     if (this.bookmarks.length === before) return false
     this._save()
+    this._stampAndEmit()
     log.info('bookmark-manager', 'bookmark removed', { id })
     return true
   }
@@ -161,6 +257,7 @@ class BookmarkManager {
     const deleted = before - this.bookmarks.length
     if (deleted > 0) {
       this._save()
+      this._stampAndEmit()
       log.info('bookmark-manager', 'identity bookmarks purged', {
         identityId,
         deleted,
@@ -170,4 +267,4 @@ class BookmarkManager {
   }
 }
 
-module.exports = { BookmarkManager }
+module.exports = { BookmarkManager, BOOKMARKS_RECORD_ID }

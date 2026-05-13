@@ -45,6 +45,10 @@ const {
   applyRemoteUpsert: applyWorkspaceRemoteUpsert,
   applyRemoteDelete: applyWorkspaceRemoteDelete,
 } = require('./workspace-manager-sync')
+const {
+  applyRemoteUpsert: applyBookmarkRemoteUpsert,
+  BOOKMARKS_RECORD_ID,
+} = require('./bookmark-manager-sync')
 
 const DEFAULT_POLL_INTERVAL_MS = 30_000
 const DEFAULT_APP_FOLDER = 'sync'
@@ -63,6 +67,7 @@ class SyncSetupError extends Error {
  * @param {object} opts.dropbox          - Dropbox client
  * @param {object} opts.identityManager  - IdentityManager instance
  * @param {object} [opts.workspaceManager] - WorkspaceManager instance (optional)
+ * @param {object} [opts.bookmarkManager]  - BookmarkManager instance (optional)
  * @param {string} opts.userDataDir      - absolute path; queue + state live here
  * @param {string} opts.deviceFolder     - this device's deviceFolder slug
  * @param {string} [opts.appFolder]      - Dropbox app folder (default 'sync')
@@ -141,6 +146,19 @@ function setupSync(opts = {}) {
     })
   }
 
+  if (opts.bookmarkManager) {
+    // Bookmarks sync as a single record — recordId='all'. fetchRecord
+    // returns the entire bookmark collection wrapped as one body.
+    engine.registerSource({
+      recordType: 'bookmark',
+      manager: opts.bookmarkManager,
+      fetchRecord: (recordId) => {
+        if (recordId !== BOOKMARKS_RECORD_ID) return null
+        return opts.bookmarkManager.getSyncRecord()
+      },
+    })
+  }
+
   // ---------- 3. Puller (pull side) ----------
   const puller = new SyncPuller({
     vault: opts.vault,
@@ -162,6 +180,14 @@ function setupSync(opts = {}) {
     })
   }
 
+  if (opts.bookmarkManager) {
+    puller.registerSource({
+      recordType: 'bookmark',
+      fetchRecord: (recordId) =>
+        recordId === BOOKMARKS_RECORD_ID ? opts.bookmarkManager.getSyncRecord() : null,
+    })
+  }
+
   // ---------- 4. Bridge: puller 'remote-apply' → sync helpers ----------
   // Routed by recordType: identity → identity-manager-sync,
   // workspace → workspace-manager-sync.
@@ -180,6 +206,9 @@ function setupSync(opts = {}) {
       } else if (evt.recordType === 'workspace' && opts.workspaceManager) {
         if (isUpsert) applyWorkspaceRemoteUpsert(opts.workspaceManager, evt.body)
         else applyWorkspaceRemoteDelete(opts.workspaceManager, evt.recordId, deletedAt)
+      } else if (evt.recordType === 'bookmark' && opts.bookmarkManager) {
+        // Deletes are a no-op for bookmarks (see bookmark-manager-sync docstring).
+        if (isUpsert) applyBookmarkRemoteUpsert(opts.bookmarkManager, evt.body)
       } else {
         log.warn('sync-setup', "unhandled recordType in 'remote-apply'", {
           recordType: evt.recordType,
@@ -235,6 +264,9 @@ function setupSync(opts = {}) {
       if (opts.workspaceManager) {
         await puller.pullOnce('workspace')
       }
+      if (opts.bookmarkManager) {
+        await puller.pullOnce('bookmark')
+      }
     } catch (err) {
       log.warn('sync-setup', 'pullOnce threw', { message: err.message })
     }
@@ -276,7 +308,15 @@ function setupSync(opts = {}) {
       if (opts.workspaceManager) {
         workspaceResult = await puller.pullOnce('workspace')
       }
-      return { identity: identityResult, workspace: workspaceResult }
+      let bookmarkResult
+      if (opts.bookmarkManager) {
+        bookmarkResult = await puller.pullOnce('bookmark')
+      }
+      return {
+        identity: identityResult,
+        workspace: workspaceResult,
+        bookmark: bookmarkResult,
+      }
     },
   }
 }
