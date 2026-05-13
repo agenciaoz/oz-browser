@@ -298,6 +298,17 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:cloud-backup:changed', listener)
       },
     },
+    // D-3c-3c: cross-device sync via Dropbox (encrypted with master key).
+    sync: {
+      getStatus: () => ipcRenderer.invoke('oz:sync:getStatus'),
+      setEnabled: (enabled) => ipcRenderer.invoke('oz:sync:setEnabled', enabled),
+      pullNow: () => ipcRenderer.invoke('oz:sync:pullNow'),
+      onChanged(cb) {
+        const listener = () => cb()
+        ipcRenderer.on('oz:sync:changed', listener)
+        return () => ipcRenderer.off('oz:sync:changed', listener)
+      },
+    },
     cookies: {
       exportContent: (identityId, format) =>
         ipcRenderer.invoke('oz:cookies:exportContent', identityId, format),

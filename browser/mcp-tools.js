@@ -23,6 +23,7 @@ const { buildIdentityCloneTools } = require('./mcp-tools-identity-clone')
 const { buildAlertTools } = require('./mcp-tools-alerts')
 const { buildHealthTools } = require('./mcp-tools-health')
 const { buildExtensionTools } = require('./mcp-tools-extensions')
+const { buildSyncTools } = require('./mcp-tools-sync')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -462,6 +463,9 @@ function buildToolCatalog(browser) {
 
     // E2-C-7: Extension per-identity sharing tools.
     ...buildExtensionTools({ extensions }),
+
+    // D-3c-3c: Cross-device sync tools.
+    ...buildSyncTools({ sync: () => browser.handlers && browser.handlers.sync }),
 
     // -------------------- system metrics --------------------
     {

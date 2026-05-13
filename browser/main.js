@@ -40,6 +40,7 @@ const { wireIdentityWorkspaceSync } = require('./identity-workspace-sync')
 const { installProtocolHandler } = require('./protocol-handler')
 const { setupCloudBackup } = require('./cloud-backup-setup')
 const { setupTeamMode } = require('./team-setup')
+const syncBootstrapSetup = require('./sync-bootstrap-setup')
 const { setupCrashRecovery } = require('./crash-recovery-setup')
 const { AlertManager } = require('./alert-manager')
 const { buildProxyHealthNotify } = require('./proxy-health-notify')
@@ -57,7 +58,7 @@ const {
   setupWebContentsCreatedHandler,
 } = require('./extensions-setup')
 const { getParentWindowOfTab } = require('./paths')
-const { MCPServer } = require('./mcp-server')
+const { setupMcpServer } = require('./mcp-server-setup')
 
 class Browser {
   windows = []
@@ -94,6 +95,10 @@ class Browser {
     })
 
     app.on('before-quit', async (e) => {
+      // D-3c-3c: Stop sync engine + pull poll BEFORE other flushes. Queue
+      // already persists per enqueue, so stop() just halts the loops — avoids
+      // 'getMasterKey on locked vault' noise during teardown.
+      syncBootstrapSetup.stopSyncBootstrap(this)
       // Flush any pending throttled workspace writes (1.4b switch logic).
       if (this.workspaceManager) {
         try {
@@ -508,6 +513,12 @@ class Browser {
       bookmarksCount: this.bookmarkManager.list().length,
     })
 
+    // D-3c-3c: cross-device sync bootstrap. Deps already wired by this point:
+    // identityManager + workspaceManager + bookmarkManager + accountVault +
+    // dropboxClient (cloud-backup) + deviceInfo (cloud-backup) + settingsManager
+    // + alertManager. Default OFF — user opts in from Settings → Sync.
+    syncBootstrapSetup.setupSyncBootstrap(this)
+
     // 1.8a/1.8b: Proxy Manager + Assignment — proxies live unencrypted (auth
     // creds are already plaintext in URLs / setProxy rules). Per-identity and
     // per-workspace assignments resolved with hierarchy Identity > Workspace
@@ -589,6 +600,11 @@ class Browser {
     registerIpcHandlers(this)
     setupMenu(this)
 
+    // D-3c-3c: init() resumes sync engine if user already opted-in + Dropbox
+    // is authenticated. Runs AFTER registerIpcHandlers so handlers.sync exists.
+    // Non-blocking — sync surface logs + broadcasts failures.
+    syncBootstrapSetup.startSyncBootstrap(this)
+
     this.extensions = buildChromeExtensions(this)
     await loadExtensions(this)
     log.info('browser', `WebUI extension loaded id=${this.webuiExtensionId}`)
@@ -607,31 +623,9 @@ class Browser {
     }
     this.windowSnapshot.startDaemon()
 
-    // Start MCP server if env-enabled OR the user toggled it on in Settings.
-    // Off by default — see ADR 0012. H2 wired the settings-manager fallback
-    // (HX0 found it missing — `automation.mcpEnabled` had no effect at boot).
-    const mcpFromEnv =
-      process.env.OZ_MCP_ENABLED === '1' || process.env.OZ_MCP_ENABLED === 'true'
-    const automationSection =
-      this.settingsManager && this.settingsManager.get('automation')
-    const mcpFromSettings = !!(automationSection && automationSection.mcpEnabled)
-    if (mcpFromEnv || mcpFromSettings) {
-      try {
-        this.mcpServer = new MCPServer(this)
-        await this.mcpServer.start()
-        log.info('browser', 'MCP server enabled', {
-          port: this.mcpServer.port,
-          endpoint: `http://127.0.0.1:${this.mcpServer.port}/mcp`,
-        })
-      } catch (err) {
-        log.error('browser', 'MCP server failed to start', {
-          message: err.message,
-          stack: err.stack,
-        })
-        // Don't crash the browser — just leave MCP off.
-        this.mcpServer = null
-      }
-    }
+    // ADR 0012: MCP off by default — env var OZ_MCP_ENABLED=1 or Settings →
+    // Automation → mcpEnabled flips it on. Delegated to setup per ADR 0005.
+    await setupMcpServer(this)
 
     // Etapa 3d: wire auto-update. Skipea con WARN si no estamos packaged
     // (dev mode), si platform != darwin, o si OZ_UPDATE_BASE_URL no está

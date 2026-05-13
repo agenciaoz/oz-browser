@@ -39,6 +39,7 @@ const { buildBulkOpenerHandlers } = require('./bulk-opener-handlers')
 const { buildAlertHandlers } = require('./alert-handlers')
 const { buildHealthHandlers } = require('./anti-detect-health-handlers')
 const { buildExtensionShareHandlers } = require('./extensions-share-handlers')
+const { buildSyncHandlers } = require('./sync-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
@@ -70,6 +71,7 @@ function registerIpcHandlers(browser) {
     alerts: buildAlertHandlers(browser),
     health: buildHealthHandlers(browser),
     extensions: buildExtensionShareHandlers(browser),
+    sync: buildSyncHandlers(browser),
   }
 
   registerLogHandlers(browser)

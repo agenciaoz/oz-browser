@@ -77,6 +77,14 @@ const DEFAULTS = Object.freeze({
   notifications: {
     showOSAlert: true,
   },
+  // D-3c-3c: cross-device sync via Dropbox. Default OFF — user opts in from
+  // Settings → Sync. firstEnableAt is set the first time enable=true is
+  // committed so cold-start (push-all sweep) runs exactly once across the
+  // life of the install.
+  sync: {
+    enabled: false,
+    firstEnableAt: null,
+  },
 })
 
 const VALID_LOG_LEVELS = ['DEBUG', 'INFO', 'WARN', 'ERROR']
@@ -252,10 +260,16 @@ function validateKey(section, key, value) {
     key === 'dailySnapshot' ||
     key === 'completed' ||
     key === 'autoTabDiscard' ||
-    key === 'showOSAlert'
+    key === 'showOSAlert' ||
+    key === 'enabled'
   ) {
     if (typeof value !== 'boolean') {
       return { ok: false, reason: 'must be boolean' }
+    }
+  }
+  if (key === 'firstEnableAt') {
+    if (value !== null && typeof value !== 'string') {
+      return { ok: false, reason: 'must be ISO 8601 string or null' }
     }
   }
   if (key === 'mcpToken') {

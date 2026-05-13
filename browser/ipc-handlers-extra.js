@@ -19,6 +19,17 @@ function registerExtraIpcHandlers(browser) {
   registerExtensionShareHandlersIPC(browser)
   registerCloudBackupHandlersIPC(browser)
   registerTeamHandlersIPC(browser)
+  registerSyncHandlersIPC(browser)
+}
+
+// ----- Cross-device Sync (D-3c-3c) ------------------------------------------
+
+function registerSyncHandlersIPC(browser) {
+  const h = browser.handlers.sync
+  if (!h) return
+  ipcMain.handle('oz:sync:getStatus', () => h.getStatus())
+  ipcMain.handle('oz:sync:setEnabled', (_e, enabled) => h.setEnabled(enabled))
+  ipcMain.handle('oz:sync:pullNow', () => h.pullNow())
 }
 
 // ----- Team (E-6) -----------------------------------------------------------
