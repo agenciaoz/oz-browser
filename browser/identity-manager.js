@@ -13,6 +13,7 @@
 const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
+const { EventEmitter } = require('events')
 const { app, session } = require('electron')
 const log = require('./logger')
 
@@ -77,8 +78,28 @@ function now() {
   return Date.now()
 }
 
-class IdentityManager {
+// D-3a: ISO 8601 timestamp for the sync layer (LWW comparisons use this).
+// We keep `createdAt` as legacy ms-since-epoch for backwards compatibility
+// with existing identities.json files; `updatedAt` is the new field stamped
+// on every mutation.
+function nowIso() {
+  return new Date().toISOString()
+}
+
+class IdentityManager extends EventEmitter {
+  /**
+   * D-3a — emits 'changed' after every successful CRUD mutation. The sync
+   * engine (D-3b/c) listens to this to enqueue uploads / tombstones.
+   * Listeners must be defensive — a throw is caught and logged but does
+   * NOT roll back the mutation.
+   *
+   * Event payload shapes:
+   *   { op: 'create',  recordType: 'identity', recordId, record, updatedAt }
+   *   { op: 'update',  recordType: 'identity', recordId, record, updatedAt }
+   *   { op: 'delete',  recordType: 'identity', recordId, deletedAt }
+   */
   constructor() {
+    super()
     this.dataDir = app.getPath('userData')
     this.filePath = path.join(this.dataDir, 'identities.json')
     this.identities = []
@@ -102,12 +123,15 @@ class IdentityManager {
 
     // Ensure default identity exists.
     if (!this.identities.some((id) => id.isDefault)) {
+      const createdMs = now()
       this.identities.unshift({
         id: 'default',
         name: 'Default',
         color: '#8a8a8a',
         fingerprintSeed: uuid(),
-        createdAt: now(),
+        createdAt: createdMs,
+        // D-3a: ISO timestamp used by the sync engine for LWW comparisons.
+        updatedAt: nowIso(),
         isDefault: true,
         locked: false,
         // H3a: every identity belongs to exactly one workspace. Default lives
@@ -132,6 +156,28 @@ class IdentityManager {
       log.warn('identity-manager', 'backfilled identities without workspaceId', {
         count: backfilled,
         defaultedTo: 'general',
+      })
+      this._save()
+    }
+
+    // D-3a: defensive backfill — legacy identities written before the sync
+    // engine landed have no `updatedAt`. Default to ISO(createdAt) when
+    // available, otherwise current time. This keeps LWW deterministic for
+    // every record on first sync.
+    let updatedAtBackfilled = 0
+    for (const ident of this.identities) {
+      if (typeof ident.updatedAt !== 'string') {
+        const seed =
+          typeof ident.createdAt === 'number'
+            ? new Date(ident.createdAt).toISOString()
+            : nowIso()
+        ident.updatedAt = seed
+        updatedAtBackfilled += 1
+      }
+    }
+    if (updatedAtBackfilled > 0) {
+      log.warn('identity-manager', 'backfilled identities without updatedAt', {
+        count: updatedAtBackfilled,
       })
       this._save()
     }
@@ -180,6 +226,7 @@ class IdentityManager {
       DEFAULT_COLORS.find((c) => !used.has(c)) ||
       DEFAULT_COLORS[Math.floor(Math.random() * DEFAULT_COLORS.length)]
 
+    const createdMs = now()
     const identity = {
       id: uuid(),
       name,
@@ -190,7 +237,9 @@ class IdentityManager {
       // FingerprintEngine's deterministic SHA256-stream RNG). If omitted, a
       // fresh uuid() ensures every new identity gets its own perfil.
       fingerprintSeed: fingerprintSeed || uuid(),
-      createdAt: now(),
+      createdAt: createdMs,
+      // D-3a: sync engine uses this for LWW conflict resolution.
+      updatedAt: nowIso(),
       userAgent: userAgent || null,
       // H2: lock = "no me borres por accidente". Defaults to false. Only
       // remove() and clearBrowsingData() reject when locked — rename, color
@@ -213,6 +262,14 @@ class IdentityManager {
     // H3a: notify the host so it can sync workspace.identityIds[]. Loose
     // coupling — IdentityManager doesn't know about WorkspaceManager.
     this._fireWorkspaceSync('add', identity.id, null, identity.workspaceId)
+    // D-3a: announce to the sync engine so it can enqueue an upsert.
+    this._emitChanged({
+      op: 'create',
+      recordType: 'identity',
+      recordId: identity.id,
+      record: { ...identity },
+      updatedAt: identity.updatedAt,
+    })
     return { ...identity }
   }
 
@@ -239,6 +296,7 @@ class IdentityManager {
 
     const allowed = ['name', 'color', 'userAgent']
     const before = { ...ident }
+    let mutated = false
     for (const key of allowed) {
       if (Object.prototype.hasOwnProperty.call(patch, key)) {
         if (key === 'userAgent' && ident.isDefault && patch.userAgent) {
@@ -252,8 +310,18 @@ class IdentityManager {
           )
           continue
         }
-        ident[key] = patch[key] === '' ? null : patch[key]
+        const next = patch[key] === '' ? null : patch[key]
+        if (ident[key] !== next) {
+          ident[key] = next
+          mutated = true
+        }
       }
+    }
+
+    // D-3a: only stamp updatedAt when a whitelisted field actually changed,
+    // so no-op updates don't generate spurious sync traffic.
+    if (mutated) {
+      ident.updatedAt = nowIso()
     }
 
     this._save()
@@ -280,6 +348,18 @@ class IdentityManager {
       ),
     })
 
+    // D-3a: only emit when something actually changed, mirroring the
+    // mutated-guard above.
+    if (mutated) {
+      this._emitChanged({
+        op: 'update',
+        recordType: 'identity',
+        recordId: id,
+        record: { ...ident },
+        updatedAt: ident.updatedAt,
+      })
+    }
+
     return { ...ident }
   }
 
@@ -299,11 +379,19 @@ class IdentityManager {
       return false
     }
     const wsId = ident.workspaceId
+    const deletedAt = nowIso()
     this.identities = this.identities.filter((i) => i.id !== id)
     this.sessionCache.delete(id)
     this._save()
     // H3a: notify the host to remove this id from workspace.identityIds[].
     this._fireWorkspaceSync('remove', id, wsId, null)
+    // D-3a: announce a tombstone so the sync engine can publish it remotely.
+    this._emitChanged({
+      op: 'delete',
+      recordType: 'identity',
+      recordId: id,
+      deletedAt,
+    })
     // NOTE: partition data on disk is NOT cleared here — leave for Bloque 1.6.
     return true
   }
@@ -345,6 +433,8 @@ class IdentityManager {
       return { ok: true, noop: true, id, workspaceId: targetWorkspaceId }
     }
     ident.workspaceId = targetWorkspaceId
+    // D-3a: stamp updatedAt so the sync engine picks up the move.
+    ident.updatedAt = nowIso()
     this._save()
     log.info('identity-manager', 'identity moved to workspace', {
       id,
@@ -353,6 +443,14 @@ class IdentityManager {
     })
     // H3a: notify host to update both source + target workspace.identityIds[].
     this._fireWorkspaceSync('move', id, fromWorkspaceId, targetWorkspaceId)
+    // D-3a: a workspace move is a content change → emit 'changed'.
+    this._emitChanged({
+      op: 'update',
+      recordType: 'identity',
+      recordId: id,
+      record: { ...ident },
+      updatedAt: ident.updatedAt,
+    })
     return { ok: true, id, from: fromWorkspaceId, to: targetWorkspaceId }
   }
 
@@ -392,14 +490,48 @@ class IdentityManager {
   setLocked(id, locked) {
     const ident = this.identities.find((i) => i.id === id)
     if (!ident) return null
-    ident.locked = !!locked
+    const before = !!ident.locked
+    const next = !!locked
+    ident.locked = next
+    // D-3a: only stamp + emit when the flag actually flipped. Idempotent
+    // setLocked(true) calls shouldn't generate sync traffic.
+    if (before !== next) {
+      ident.updatedAt = nowIso()
+    }
     this._save()
     log.info('identity-manager', 'identity lock toggled', {
       id,
       name: ident.name,
-      locked: !!locked,
+      locked: next,
     })
+    if (before !== next) {
+      this._emitChanged({
+        op: 'update',
+        recordType: 'identity',
+        recordId: id,
+        record: { ...ident },
+        updatedAt: ident.updatedAt,
+      })
+    }
     return { ...ident }
+  }
+
+  /**
+   * D-3a: internal helper that announces a CRUD mutation to listeners (the
+   * sync engine in D-3b/c). Mirrors BackupManager's snapshot-created
+   * pattern — the emit is wrapped in try/catch so a faulty listener cannot
+   * break the mutation path that already persisted state to disk.
+   */
+  _emitChanged(payload) {
+    try {
+      this.emit('changed', payload)
+    } catch (err) {
+      log.warn('identity-manager', "'changed' listener threw", {
+        op: payload && payload.op,
+        recordId: payload && payload.recordId,
+        message: err.message,
+      })
+    }
   }
 
   // ---------- sessions ----------

@@ -292,13 +292,27 @@ async function main() {
     const vault = makeFakeVault()
     const bm = new BackupManager({ userDataDir: userData, vault })
 
-    // Create 3 snapshots, then manually back-date them by editing the file
+    // Create 4 snapshots, then manually back-date them by editing the file
     // headers (cheaper than mocking Date globally).
+    //
+    // Bug fix 2026-05-13: previously old1/old2 used offsets -50d/-52d, which
+    // ASSUMED two days apart was always the same ISO week — false when the
+    // Mon→Sun boundary falls between them. We now pin both to Tue + Thu of
+    // the SAME ISO week ~7 weeks back, deterministic regardless of "today".
+    const dayMs = 86400000
+    const sevenWeeksBack = Date.now() - 50 * dayMs
+    const baseDate = new Date(sevenWeeksBack)
+    // ISO week starts Monday. getUTCDay returns 0=Sun..6=Sat.
+    const isoWeekday = (baseDate.getUTCDay() + 6) % 7 // 0=Mon..6=Sun
+    const mondayMs = sevenWeeksBack - isoWeekday * dayMs
+    const sameWeekTueMs = mondayMs + 1 * dayMs
+    const sameWeekThuMs = mondayMs + 3 * dayMs
+
     const stamps = [
-      { reason: 'manual', label: 'recent', createdAtOffsetDays: -1 }, // within 30d
-      { reason: 'daily-3am', label: 'old1', createdAtOffsetDays: -50 }, // older, week A
-      { reason: 'daily-3am', label: 'old2', createdAtOffsetDays: -52 }, // older, same week (2d apart)
-      { reason: 'daily-3am', label: 'older', createdAtOffsetDays: -120 }, // older, different week
+      { reason: 'manual', label: 'recent', createdAtMs: Date.now() - dayMs },
+      { reason: 'daily-3am', label: 'old1', createdAtMs: sameWeekTueMs },
+      { reason: 'daily-3am', label: 'old2', createdAtMs: sameWeekThuMs },
+      { reason: 'daily-3am', label: 'older', createdAtMs: Date.now() - 120 * dayMs },
     ]
     const created = []
     for (const s of stamps) {
@@ -308,7 +322,7 @@ async function main() {
       const headerLen = raw.readUInt32LE(0)
       const headerJson = raw.subarray(4, 4 + headerLen).toString('utf-8')
       const header = JSON.parse(headerJson)
-      const fakeDate = new Date(Date.now() + s.createdAtOffsetDays * 86400000)
+      const fakeDate = new Date(s.createdAtMs)
       header.createdAt = fakeDate.toISOString()
       const newHeaderBuf = Buffer.from(JSON.stringify(header), 'utf-8')
       // Pad/truncate so the offset of body doesn't change (lazy: rewrite headerLen too)

@@ -558,6 +558,9 @@ section('H3a defensive backfill on _load')
   ok('legacy data persisted', list.length === 2)
 }
 
+// D-3a 'changed' event tests + updatedAt backfill on _load were split into
+// tests/identity-manager-events.smoketest.js (ADR 0005 — 500 LOC rule).
+
 // ---------- Cleanup ----------------------------------------------------------
 
 Module._load = originalLoad
