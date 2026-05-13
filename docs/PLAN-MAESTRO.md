@@ -1,10 +1,49 @@
 # OZ Browser — Plan Maestro v5 (post-1.2 cierre + sub-bloques)
 
-**Fecha:** 2026-05-09
-**Estado:** Etapa 0 ✅ · Bloque 1.1 ✅ · Bloque 1.2 ✅ · Bloque 1.3-MCP ✅ · **Bloques 1.3.5-CI + 1.3.6-DX ✅** (GitHub Actions + ESLint v9 flat + Prettier + Husky pre-commit + lint-staged, format pass sobre 77 archivos, 85/85 tests verde) · **siguiente: Bloque 1.4-WS Workspace Manager**
+**Fecha de actualización:** 2026-05-13
 **Plataforma target primaria:** macOS Apple Silicon (M1 / M2 / M3 / M4). Build universal binary también soporta Intel x86_64.
 
-> **Nota de versión:** v5 reemplaza v4. Cambios: (a) 1.2 cerrado, (b) inserción de 1.3-MCP / 1.3.5-CI / 1.3.6-DX antes de Workspace Manager, (c) renumeración del resto: 1.4-WS Workspace, 1.5 ⭐Vault, 1.6 Time Machine, 1.7 Tab Context Menu, 1.8 FingerprintEngine, 1.9 Settings UI, 1.10 Polish, (d) candidatos #11-#15 (headless mode, Ghost-import, demo mode, recipes, health endpoint) anotados en Etapa 2 / pre-launch. Este documento es la fuente única de verdad — el `Projects/Ghost Browser Clone/07-PLAN-MAESTRO-V2.md` queda deprecado y redirige aquí.
+---
+
+## Modelo de versiones (decisión 2026-05-13)
+
+OZ Browser se entrega en 3 versiones secuenciales con saltos discretos de scope:
+
+| Versión | Para qué                                                                                                                                                                                                                     | Status                                                              |
+| ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- |
+| **v1**  | Producto Ghost-clone interno para uso de la agencia. CORE 1A ✅ + Bloques B-E ✅. Falta F simple (cron) + G (migration wizards) + H (hardening) + I (Apple signing).                                                         | **En curso** — ~22-29h dev restantes                                |
+| **v2**  | Agrega Automation Engine completo (F-K expandido): action runner + recipes + bulk orchestrator + multi-client + audit logs SuperAdmin view + warmup + analytics + LLM endpoint + integraciones. Escala agencia 100+ cuentas. | **Roadmap** documentado en `docs/PLAN-AUTOMATION-F-K.md` — ~95-101h |
+| **v3**  | Convertir en SaaS público. Supabase auth + PayPal billing + marketing site + Public API + Support + i18n + Migration wizards SaaS + Windows port.                                                                            | **Roadmap** original Etapa 3 (bloques J/K/L/M/N/O/P/Q)              |
+
+---
+
+## Status detallado v1
+
+| Bloque                                                                                                                                                          | Status                                                             |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
+| Etapa 0 + 1.1 + 1.2 + 1.3-MCP + 1.3.5-CI + 1.3.6-DX                                                                                                             | ✅                                                                 |
+| 1.4-WS Workspace Manager                                                                                                                                        | ✅                                                                 |
+| 1.5 ⭐ Account Vault                                                                                                                                            | ✅                                                                 |
+| 1.6 Time Machine local                                                                                                                                          | ✅                                                                 |
+| 1.7 Tab Context Menu                                                                                                                                            | ✅                                                                 |
+| 1.8 Proxy Manager                                                                                                                                               | ✅                                                                 |
+| 1.9 FingerprintEngine "Ghost+"                                                                                                                                  | ✅                                                                 |
+| 1.10 Settings + Browsing data + Onboarding                                                                                                                      | ✅                                                                 |
+| **CORE Sub-Etapa 1A**                                                                                                                                           | **✅ Completo**                                                    |
+| Bloque B Foundation infra (protocol handler + dotenv + OAuth helper)                                                                                            | ✅                                                                 |
+| Bloque C Quick wins (C-1 Cmd+K, C-2 crash recovery, C-3 clone, C-4 bulk opener, C-5 notifications, C-6 health dashboard, C-7 extensions, C-8 sidebar compactor) | ✅                                                                 |
+| Bloque D Backup + Sync Dropbox (D-1, D-2, D-3a→D-3c-3c, D-4)                                                                                                    | ✅ — falta F-0 validación visual                                   |
+| Bloque E Team mode (Curve25519 key-sharing)                                                                                                                     | ✅                                                                 |
+| **Bloque F simple** Scheduled Actions cron (~4h)                                                                                                                | ⏳ — wake-up routines, sin automation de comentarios (eso va a v2) |
+| **Bloque G** Migration wizards Chrome/Brave/Edge/Firefox/Safari + AdsPower/Multilogin/Ghost (~10-12h)                                                           | ⏳                                                                 |
+| **Bloque H** Internal hardening + DR drill (~6h)                                                                                                                | ⏳                                                                 |
+| **Bloque I** Apple Dev signing 3b/3c/3e + Cloudflare R2 (~6-7h)                                                                                                 | ⏳ Bloqueado por Apple Dev Program approval (~2d)                  |
+
+**Total v1 dev restante**: ~22-29h. Apple Dev approval es bloqueante solo para I, los otros 3 avanzan en paralelo.
+
+---
+
+> **Notas de versión histórica:** v5 reemplaza v4. Cambios desde la versión inicial: (a) 1.2 cerrado, (b) inserción de 1.3-MCP / 1.3.5-CI / 1.3.6-DX, (c) renumeración 1.4-WS / 1.5 ⭐Vault / 1.6 Time Machine / 1.7 Tab Context Menu / 1.8 Proxies / 1.9 FingerprintEngine / 1.10 Settings, (d) candidatos #11-#15 (headless / Ghost-import / demo / recipes / health endpoint) anotados. **Update 2026-05-13:** reorganización por versiones v1/v2/v3 + Bloque F expandido (originalmente ~4h scheduled actions) se desdobla en **F-simple en v1** + **F-K Automation Engine en v2** (roadmap separado). Este documento + `docs/PLAN-AUTOMATION-F-K.md` son la fuente única de verdad.
 
 ---
 
