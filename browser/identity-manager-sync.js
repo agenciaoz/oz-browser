@@ -58,8 +58,12 @@ function _emitRemoteApplied(im, payload) {
  */
 function applyRemoteUpsert(im, record) {
   if (!record || typeof record !== 'object' || typeof record.id !== 'string') {
+    // H-1: never log the full record — identity records carry
+    // `fingerprintSeed` (entropy source for anti-detection) which must not
+    // hit disk logs. Log only metadata.
     log.warn('identity-manager-sync', 'applyRemoteUpsert: invalid record', {
-      record,
+      recordType: typeof record,
+      hasId: !!(record && typeof record.id === 'string'),
     })
     return null
   }

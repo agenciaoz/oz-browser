@@ -330,10 +330,21 @@ class BackupManager extends EventEmitter {
   _collectFiles() {
     const out = []
     // Top-level files first (cheap).
+    //
+    // H-3 (DR drill 2026-05-13): added bookmarks.json + bookmarks-sync-meta.json,
+    // proxy-assignments.json, fingerprints.json. These post-date the original
+    // Time Machine ship (1.6 / D-1) and were silently missing from snapshots
+    // — restoring an .ozbackup would lose bookmarks, proxy assignments per
+    // identity, and per-identity fingerprint state. Critical for Jose's
+    // agency use case (50+ identities each with assigned mobile proxy).
     const candidates = [
       'identities.json',
       'workspaces.json',
       'proxies.json',
+      'proxy-assignments.json',
+      'fingerprints.json',
+      'bookmarks.json',
+      'bookmarks-sync-meta.json',
       'settings.json',
       'data/vault.enc',
     ]

@@ -196,7 +196,14 @@ function setupSync(opts = {}) {
       const isUpsert = evt.action === 'upsert'
       const isDelete = evt.action === 'delete'
       if (!isUpsert && !isDelete) {
-        log.warn('sync-setup', "unknown 'remote-apply' action", { evt })
+        // H-1: never log `evt` directly — `evt.body` carries the decrypted
+        // record (identity fingerprintSeed, workspace tabSpec URLs,
+        // bookmark URLs). Only metadata fields are safe.
+        log.warn('sync-setup', "unknown 'remote-apply' action", {
+          action: evt && evt.action,
+          recordType: evt && evt.recordType,
+          recordId: evt && evt.recordId,
+        })
         return
       }
       const deletedAt = evt.header && evt.header.deletedAt

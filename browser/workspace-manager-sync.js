@@ -66,8 +66,11 @@ function _emitRemoteApplied(wm, payload) {
  */
 function applyRemoteUpsert(wm, record) {
   if (!record || typeof record !== 'object' || typeof record.id !== 'string') {
+    // H-1: never log the full record — workspace records may carry
+    // `tabSpecs` (full tab URLs = browsing history PII). Log only metadata.
     log.warn('workspace-manager-sync', 'applyRemoteUpsert: invalid record', {
-      record,
+      recordType: typeof record,
+      hasId: !!(record && typeof record.id === 'string'),
     })
     return null
   }

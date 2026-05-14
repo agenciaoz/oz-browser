@@ -51,7 +51,11 @@ function _emitRemoteApplied(bm, payload) {
  */
 function applyRemoteUpsert(bm, body) {
   if (!body || typeof body !== 'object') {
-    log.warn('bookmark-manager-sync', 'applyRemoteUpsert: invalid body', { body })
+    // H-1: never log the full body — bookmark bodies carry the full URL
+    // collection (browsing PII). Only metadata is safe.
+    log.warn('bookmark-manager-sync', 'applyRemoteUpsert: invalid body', {
+      bodyType: typeof body,
+    })
     return null
   }
   if (body.id !== BOOKMARKS_RECORD_ID) {

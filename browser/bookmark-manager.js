@@ -141,9 +141,21 @@ class BookmarkManager extends EventEmitter {
    * replaces the local array wholesale with body.bookmarks.
    */
   getSyncRecord() {
+    // H-2 (DR drill 2026-05-13): when the meta sidecar is missing AND
+    // bookmarks is empty, return an EPOCH timestamp — never `nowIso()` —
+    // so LWW always lets a populated remote record win. The previous
+    // `|| nowIso()` fallback meant a fresh Mac with no bookmarks would
+    // beat the original Mac's pushed record (local-wins on DR restore).
+    let stamp = this._updatedAt
+    if (!stamp) {
+      stamp =
+        this.bookmarks.length > 0
+          ? nowIso() // we have data, stamp it now
+          : new Date(0).toISOString() // empty + unstamped → cede to any remote
+    }
     return {
       id: BOOKMARKS_RECORD_ID,
-      updatedAt: this._updatedAt || nowIso(),
+      updatedAt: stamp,
       bookmarks: this.bookmarks.map((b) => ({ ...b })),
     }
   }
