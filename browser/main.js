@@ -41,6 +41,7 @@ const { installProtocolHandler } = require('./protocol-handler')
 const { setupCloudBackup } = require('./cloud-backup-setup')
 const { setupTeamMode } = require('./team-setup')
 const syncBootstrapSetup = require('./sync-bootstrap-setup')
+const scheduledSetup = require('./scheduled-setup')
 const { setupCrashRecovery } = require('./crash-recovery-setup')
 const { AlertManager } = require('./alert-manager')
 const { buildProxyHealthNotify } = require('./proxy-health-notify')
@@ -95,6 +96,11 @@ class Browser {
     })
 
     app.on('before-quit', async (e) => {
+      // F-4a: Stop scheduled-actions runner FIRST so its in-flight handlers
+      // drain before sync/vault tear down. stop() awaits the in-flight set
+      // — handlers that need vault.unlock observe an unlocked vault for the
+      // full duration of their fire.
+      await scheduledSetup.stopScheduledActions(this)
       // D-3c-3c: Stop sync engine + pull poll BEFORE other flushes. Queue
       // already persists per enqueue, so stop() just halts the loops — avoids
       // 'getMasterKey on locked vault' noise during teardown.
@@ -519,6 +525,14 @@ class Browser {
     // + alertManager. Default OFF — user opts in from Settings → Sync.
     syncBootstrapSetup.setupSyncBootstrap(this)
 
+    // F-4a: Scheduled Actions (cron-lite v1). Setup BEFORE registerIpcHandlers
+    // so browser.handlers.scheduled is wired when IPC routes register. The
+    // runner is NOT started here — startScheduledActions runs AFTER IPC + sync
+    // are ready so the first tick can broadcast / use sync surfaces if needed.
+    // Handlers registered: open-workspace (via workspaceManager), sync-push
+    // (via syncBootstrap.pullNow), backup-snapshot (via backupManager).
+    scheduledSetup.setupScheduledActions(this)
+
     // 1.8a/1.8b: Proxy Manager + Assignment — proxies live unencrypted (auth
     // creds are already plaintext in URLs / setProxy rules). Per-identity and
     // per-workspace assignments resolved with hierarchy Identity > Workspace
@@ -604,6 +618,11 @@ class Browser {
     // is authenticated. Runs AFTER registerIpcHandlers so handlers.sync exists.
     // Non-blocking — sync surface logs + broadcasts failures.
     syncBootstrapSetup.startSyncBootstrap(this)
+
+    // F-4a: kick the scheduled-actions runner loop (60s default tick).
+    // Runs AFTER startSyncBootstrap so sync-push handler can land on a
+    // ready bootstrap if a scheduled push happens to be due immediately.
+    scheduledSetup.startScheduledActions(this)
 
     this.extensions = buildChromeExtensions(this)
     await loadExtensions(this)
