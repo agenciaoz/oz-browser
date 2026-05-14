@@ -6,29 +6,65 @@
 // ADR: docs/architecture/0005-modular-500-loc-rule.md
 
 const { ipcMain, dialog, BrowserWindow } = require('electron')
+const log = require('./logger')
+
+// Smoke F+G 2026-05-13: wrap each subregister so a single throw doesn't
+// abort the entire IPC bootstrap chain silently. Surfaces the bug + keeps
+// later handlers wired even if an early one is broken.
+function _safeRegister(name, fn, browser) {
+  try {
+    fn(browser)
+  } catch (err) {
+    log.error('ipc-handlers-extra', `${name} failed`, {
+      message: err && err.message,
+      stack: err && err.stack,
+    })
+    // re-throw in dev to make it loud; swallow in prod would be wrong here
+    // (we want the bug visible). For now: log + continue.
+  }
+}
 
 function registerExtraIpcHandlers(browser) {
-  registerProxyHandlersIPC(browser)
-  registerFingerprintHandlersIPC(browser)
-  registerSettingsHandlersIPC(browser)
-  registerBrowsingDataHandlersIPC(browser)
-  registerCommandPaletteHandlersIPC(browser)
-  registerBulkOpenerHandlersIPC(browser)
-  registerAlertHandlersIPC(browser)
-  registerHealthHandlersIPC(browser)
-  registerExtensionShareHandlersIPC(browser)
-  registerCloudBackupHandlersIPC(browser)
-  registerTeamHandlersIPC(browser)
-  registerSyncHandlersIPC(browser)
-  registerScheduledHandlersIPC(browser)
-  registerGhostMigrationHandlersIPC(browser)
+  _safeRegister('registerProxyHandlersIPC', registerProxyHandlersIPC, browser)
+  _safeRegister('registerFingerprintHandlersIPC', registerFingerprintHandlersIPC, browser)
+  _safeRegister('registerSettingsHandlersIPC', registerSettingsHandlersIPC, browser)
+  _safeRegister(
+    'registerBrowsingDataHandlersIPC',
+    registerBrowsingDataHandlersIPC,
+    browser,
+  )
+  _safeRegister(
+    'registerCommandPaletteHandlersIPC',
+    registerCommandPaletteHandlersIPC,
+    browser,
+  )
+  _safeRegister('registerBulkOpenerHandlersIPC', registerBulkOpenerHandlersIPC, browser)
+  _safeRegister('registerAlertHandlersIPC', registerAlertHandlersIPC, browser)
+  _safeRegister('registerHealthHandlersIPC', registerHealthHandlersIPC, browser)
+  _safeRegister(
+    'registerExtensionShareHandlersIPC',
+    registerExtensionShareHandlersIPC,
+    browser,
+  )
+  _safeRegister('registerCloudBackupHandlersIPC', registerCloudBackupHandlersIPC, browser)
+  _safeRegister('registerTeamHandlersIPC', registerTeamHandlersIPC, browser)
+  _safeRegister('registerSyncHandlersIPC', registerSyncHandlersIPC, browser)
+  _safeRegister('registerScheduledHandlersIPC', registerScheduledHandlersIPC, browser)
+  _safeRegister(
+    'registerGhostMigrationHandlersIPC',
+    registerGhostMigrationHandlersIPC,
+    browser,
+  )
 }
 
 // ----- Ghost Browser Migration (G-3) ----------------------------------------
 
 function registerGhostMigrationHandlersIPC(browser) {
   const h = browser.handlers && browser.handlers.ghostMigration
-  if (!h) return
+  if (!h) {
+    log.warn('ipc-handlers-extra', 'GhostMigration handlers NOT WIRED — h is null')
+    return
+  }
   ipcMain.handle('oz:migration:detect', () => h.detect())
   ipcMain.handle('oz:migration:dryRun', (_e, options) => h.dryRun(options || {}))
   ipcMain.handle('oz:migration:runImport', (_e, options) => h.runImport(options || {}))
@@ -50,7 +86,10 @@ function registerSyncHandlersIPC(browser) {
 
 function registerScheduledHandlersIPC(browser) {
   const h = browser.handlers && browser.handlers.scheduled
-  if (!h) return
+  if (!h) {
+    log.warn('ipc-handlers-extra', 'Scheduled handlers NOT WIRED — h is null')
+    return
+  }
   ipcMain.handle('oz:scheduled:list', () => h.list())
   ipcMain.handle('oz:scheduled:get', (_e, id) => h.get(id))
   ipcMain.handle('oz:scheduled:create', (_e, input) => h.create(input))

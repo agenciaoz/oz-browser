@@ -49,7 +49,15 @@ function registerIpcHandlers(browser) {
   // 1.7a: tab handlers split in two files — base CRUD (tab-handlers.js) +
   // context menu actions (tab-context-handlers.js). Spread into one map so
   // both consumers (IPC and MCP) see them under `tabs.<name>`.
-  browser.handlers = {
+  //
+  // Smoke F+G bug-fix 2026-05-13: Object.assign instead of reassignment, to
+  // PRESERVE handlers attached by setup glue modules (scheduled-setup,
+  // ghost-migration-setup) that run BEFORE this function. Previous code did
+  // `browser.handlers = {...}` which wiped them out silently — the
+  // downstream `if (!h) return` guards in registerExtraIpcHandlers then
+  // skipped wiring their IPC channels, leaving the UI calling channels that
+  // were never registered.
+  browser.handlers = Object.assign(browser.handlers || {}, {
     identities: buildIdentityHandlers(browser),
     tabs: { ...buildTabHandlers(browser), ...buildTabContextHandlers(browser) },
     workspaces: buildWorkspaceHandlers(browser),
@@ -72,7 +80,7 @@ function registerIpcHandlers(browser) {
     health: buildHealthHandlers(browser),
     extensions: buildExtensionShareHandlers(browser),
     sync: buildSyncHandlers(browser),
-  }
+  })
 
   registerLogHandlers(browser)
   registerIdentityHandlersIPC(browser)

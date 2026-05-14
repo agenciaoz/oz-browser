@@ -2042,6 +2042,18 @@
         grid-template-columns: 180px 1fr;
         gap: 16px;
         min-height: 380px;
+        /* Smoke G UI-fix 2026-05-13: cuando el panel content excede la
+           altura del modal (.am-window tiene overflow:hidden + max-height),
+           el grid item necesita poder shrinkear y scrollear. Sin esto el
+           botón "Import from Ghost Browser" del panel Migration quedaba
+           cortado debajo del modal sin ningún scroll. */
+        min-height: 0;
+        overflow: hidden;
+      }
+      #oz-settings-content {
+        overflow-y: auto;
+        min-height: 0;
+        padding-right: 6px; /* room for scrollbar without jank */
       }
       .stg-nav {
         display: flex;

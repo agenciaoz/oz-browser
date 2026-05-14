@@ -46,6 +46,14 @@ module.exports = {
   // copia explícitamente vía scripts/forge-copy-externals.js.
   externals: {
     '@napi-rs/keyring': 'commonjs2 @napi-rs/keyring',
+    // Smoke G bug-fix 2026-05-13: sql.js bundling rompe su require/loader
+    // (error "Cannot set properties of undefined (setting 'exports')"
+    // al hacer dryRun en Migration). sql.js es pure JS + .wasm, no .node
+    // binding, pero su patrón de exports no soporta webpack mangling.
+    // Marcarlo external → require() resuelve a node_modules en runtime.
+    // forge-copy-externals.js ya copia node_modules de externals al packaged
+    // app, igual que con @napi-rs/keyring.
+    'sql.js': 'commonjs2 sql.js',
   },
   plugins: [
     new CopyWebpackPlugin({

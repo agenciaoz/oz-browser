@@ -20,6 +20,11 @@ const EXTERNAL_PACKAGES = [
   // ship the one matching the current build target.
   // (mac arm64 build → keyring-darwin-arm64; mac x64 → keyring-darwin-x64;
   //  linux x64 → keyring-linux-x64-gnu; etc.)
+  //
+  // Smoke G bug-fix 2026-05-13: sql.js es pure JS pero su patrón de exports
+  // rompe el webpack bundle. Movido a externals en webpack.main.config.js —
+  // hay que copiarlo manualmente al packaged app igual que keyring.
+  'sql.js',
 ]
 
 function platformBindingName(platform, arch) {
