@@ -323,17 +323,28 @@ async function runImport({ reader, crypto: gc, ghostDataDir, deps, options = {} 
     }
 
     // 4. Bookmarks
+    //
+    // Ghost stores bookmarks pool-global (Chromium Default/Bookmarks). They
+    // have no per-identity binding, so we assign them to the 'default'
+    // identity — the closest semantic match. User can reassign via UI.
+    //
+    // Real OZ BookmarkManager.add() requires `identityId` (returns null +
+    // warns when missing). Earlier G-2b versions omitted it; the G-4 e2e
+    // test against the real manager surfaces this. We also only count the
+    // bookmark when add() returns a non-deduped record.
     if (opts.importBookmarks && deps.bookmarkManager) {
       const bookmarks = reader.readBookmarks(ghostDataDir)
+      const bookmarkIdentityId = opts.bookmarkIdentityId || 'default'
       for (const bk of bookmarks) {
         if (!bk.url) continue
         try {
-          deps.bookmarkManager.add({
+          const created = deps.bookmarkManager.add({
+            identityId: bookmarkIdentityId,
             url: bk.url,
             title: bk.title || bk.url,
             folder: bk.folder || null,
           })
-          summary.counts.bookmarks++
+          if (created && !created.deduped) summary.counts.bookmarks++
         } catch (_err) {
           // dedup or other non-fatal — skip silently
         }

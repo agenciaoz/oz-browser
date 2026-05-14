@@ -82,8 +82,12 @@ function buildFakeDeps({ userDataDir }) {
   }
   const bookmarkManager = {
     add(bk) {
-      bookmarks.push(bk)
-      return true
+      // Real BookmarkManager.add() returns the created record with `id`, or
+      // `{ ...existing, deduped: true }` on duplicate. We mimic the new-record
+      // shape so the importer's `if (created && !created.deduped)` counts it.
+      const record = { id: 'bk-' + (bookmarks.length + 1), ...bk }
+      bookmarks.push(record)
+      return record
     },
   }
   const accountVault = {
@@ -379,6 +383,10 @@ async function run() {
     ok('workspaceMap has 1 entry', Object.keys(r.workspaceMap).length === 1)
     // Verify fake deps state
     const s = deps._state
+    ok(
+      'bookmark add() called with identityId="default"',
+      s.bookmarks[0] && s.bookmarks[0].identityId === 'default',
+    )
     ok('identityManager.create called 2x', s.identities.length === 2)
     ok(
       'identity names preserved',
