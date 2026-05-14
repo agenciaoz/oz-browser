@@ -159,6 +159,18 @@
       this.$content.querySelectorAll('section[data-section]').forEach((s) => {
         s.hidden = s.dataset.section !== name
       })
+      // F-4b: when the Scheduled section becomes visible, refresh its
+      // list+status. The UI is auto-instantiated by scheduled-actions-ui.js
+      // (loaded before settings.js) on its own IIFE. We only kick refresh
+      // here so the data is current when the user navigates to the tab.
+      if (
+        name === 'scheduled' &&
+        window.OZ &&
+        window.OZ.scheduledActionsUI &&
+        typeof window.OZ.scheduledActionsUI.refresh === 'function'
+      ) {
+        window.OZ.scheduledActionsUI.refresh()
+      }
     }
 
     showError(msg) {

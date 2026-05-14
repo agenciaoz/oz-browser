@@ -4253,6 +4253,7 @@
             <button data-section="performance">Performance</button>
             <button data-section="notifications">Notifications</button>
             <button data-section="sync">Sync</button>
+            <button data-section="scheduled">Scheduled</button>
             <button data-section="about">About</button>
           </nav>
 
@@ -4445,6 +4446,174 @@
                   <div class="stg-desc" id="oz-stg-syncTimestamps">Never synced yet.</div>
                 </div>
               </div>
+            </section>
+
+            <!-- F-4b: Scheduled Actions (cron-lite v1) -->
+            <section class="stg-section" data-section="scheduled" hidden>
+              <h3>Scheduled Actions</h3>
+              <div class="stg-desc" style="margin-bottom: 12px">
+                Run wake-up routines on a simple schedule — open a workspace at a fixed
+                time, push sync nightly, take a backup snapshot weekly. Locked vault skips
+                firing automatically.
+              </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Runner status</div>
+                  <div class="stg-desc" id="oz-stg-scheduledStatusDesc">—</div>
+                </div>
+                <span
+                  class="oz-sync-pill oz-sync-pill-stopped"
+                  id="oz-stg-scheduledStatusPill"
+                  >—</span
+                >
+              </div>
+
+              <div
+                id="oz-stg-scheduledError"
+                hidden
+                style="
+                  color: var(--oz-danger, #ff6b6b);
+                  padding: 8px 12px;
+                  background: rgba(255, 107, 107, 0.08);
+                  border-radius: 4px;
+                  margin-bottom: 8px;
+                "
+              ></div>
+
+              <button
+                type="button"
+                id="oz-stg-scheduledNewBtn"
+                class="stg-action-btn"
+                style="margin-bottom: 8px"
+              >
+                + New action
+              </button>
+
+              <div
+                id="oz-stg-scheduledForm"
+                hidden
+                style="
+                  border: 1px solid var(--oz-border, #2a2a2a);
+                  border-radius: 6px;
+                  padding: 12px;
+                  margin-bottom: 12px;
+                "
+              >
+                <div class="stg-row">
+                  <div>
+                    <div class="stg-label">Name</div>
+                    <div class="stg-desc">Short label so you recognize it later.</div>
+                  </div>
+                  <input
+                    type="text"
+                    id="oz-stg-schedFormName"
+                    maxlength="100"
+                    style="width: 260px"
+                    placeholder="Nightly sync"
+                  />
+                </div>
+                <div class="stg-row">
+                  <div>
+                    <div class="stg-label">Action</div>
+                    <div class="stg-desc">What this scheduled run does.</div>
+                  </div>
+                  <select id="oz-stg-schedFormAction" style="width: 260px">
+                    <option value="open-workspace">Open workspace</option>
+                    <option value="sync-push">Sync now (pull + drain push)</option>
+                    <option value="backup-snapshot">Backup snapshot</option>
+                  </select>
+                </div>
+                <div class="stg-row" id="oz-stg-schedFormWorkspaceRow">
+                  <div>
+                    <div class="stg-label">Workspace</div>
+                    <div class="stg-desc">
+                      Which workspace to bring to the foreground.
+                    </div>
+                  </div>
+                  <select id="oz-stg-schedFormWorkspace" style="width: 260px"></select>
+                </div>
+                <div class="stg-row">
+                  <div>
+                    <div class="stg-label">Schedule</div>
+                    <div class="stg-desc">When to fire. Minute-precision.</div>
+                  </div>
+                  <select id="oz-stg-schedFormSchedType" style="width: 260px">
+                    <option value="every-minutes">Every N minutes</option>
+                    <option value="daily">Daily at HH:MM</option>
+                    <option value="weekly">Weekly on DAY HH:MM</option>
+                  </select>
+                </div>
+                <div class="stg-row" id="oz-stg-schedFormMinutesRow">
+                  <div>
+                    <div class="stg-label">Minutes</div>
+                    <div class="stg-desc">Between 1 and 1440.</div>
+                  </div>
+                  <input
+                    type="number"
+                    id="oz-stg-schedFormMinutes"
+                    min="1"
+                    max="1440"
+                    style="width: 100px"
+                  />
+                </div>
+                <div class="stg-row" id="oz-stg-schedFormTimeRow">
+                  <div>
+                    <div class="stg-label">Time (HH:MM, local)</div>
+                    <div class="stg-desc">
+                      24-hour wall-clock time in your local timezone.
+                    </div>
+                  </div>
+                  <input
+                    type="time"
+                    id="oz-stg-schedFormTime"
+                    step="60"
+                    style="width: 130px"
+                  />
+                </div>
+                <div class="stg-row" id="oz-stg-schedFormDayRow">
+                  <div>
+                    <div class="stg-label">Day of week</div>
+                    <div class="stg-desc">Local weekday.</div>
+                  </div>
+                  <select id="oz-stg-schedFormDay" style="width: 130px">
+                    <option value="mon">Monday</option>
+                    <option value="tue">Tuesday</option>
+                    <option value="wed">Wednesday</option>
+                    <option value="thu">Thursday</option>
+                    <option value="fri">Friday</option>
+                    <option value="sat">Saturday</option>
+                    <option value="sun">Sunday</option>
+                  </select>
+                </div>
+                <div class="stg-row">
+                  <div>
+                    <div class="stg-label">Enabled</div>
+                    <div class="stg-desc">Uncheck to keep the entry but skip firing.</div>
+                  </div>
+                  <input type="checkbox" id="oz-stg-schedFormEnabled" checked />
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    gap: 8px;
+                    justify-content: flex-end;
+                    margin-top: 8px;
+                  "
+                >
+                  <button
+                    type="button"
+                    id="oz-stg-schedFormCancel"
+                    class="stg-action-btn"
+                  >
+                    Cancel
+                  </button>
+                  <button type="button" id="oz-stg-schedFormSave" class="stg-action-btn">
+                    Save
+                  </button>
+                </div>
+              </div>
+
+              <div id="oz-stg-scheduledList"></div>
             </section>
 
             <!-- About -->
@@ -5037,6 +5206,7 @@
     <script src="./cloud-backup.js"></script>
     <script src="./team.js"></script>
     <script src="./proxy-manager.js"></script>
+    <script src="./scheduled-actions-ui.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>
     <script src="./browsing-data.js"></script>
