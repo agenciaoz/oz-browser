@@ -309,6 +309,18 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:sync:changed', listener)
       },
     },
+    // F-3 v1: simple cron-lite scheduled actions (wake-up routines).
+    scheduledActions: {
+      list: () => ipcRenderer.invoke('oz:scheduled:list'),
+      get: (id) => ipcRenderer.invoke('oz:scheduled:get', id),
+      create: (input) => ipcRenderer.invoke('oz:scheduled:create', input),
+      update: (id, patch) => ipcRenderer.invoke('oz:scheduled:update', id, patch),
+      remove: (id) => ipcRenderer.invoke('oz:scheduled:remove', id),
+      setEnabled: (id, enabled) =>
+        ipcRenderer.invoke('oz:scheduled:setEnabled', id, enabled),
+      getStatus: () => ipcRenderer.invoke('oz:scheduled:getStatus'),
+      tickNow: () => ipcRenderer.invoke('oz:scheduled:tickNow'),
+    },
     cookies: {
       exportContent: (identityId, format) =>
         ipcRenderer.invoke('oz:cookies:exportContent', identityId, format),

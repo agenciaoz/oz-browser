@@ -20,6 +20,7 @@ function registerExtraIpcHandlers(browser) {
   registerCloudBackupHandlersIPC(browser)
   registerTeamHandlersIPC(browser)
   registerSyncHandlersIPC(browser)
+  registerScheduledHandlersIPC(browser)
 }
 
 // ----- Cross-device Sync (D-3c-3c) ------------------------------------------
@@ -30,6 +31,23 @@ function registerSyncHandlersIPC(browser) {
   ipcMain.handle('oz:sync:getStatus', () => h.getStatus())
   ipcMain.handle('oz:sync:setEnabled', (_e, enabled) => h.setEnabled(enabled))
   ipcMain.handle('oz:sync:pullNow', () => h.pullNow())
+}
+
+// ----- Scheduled Actions (F-3, v1) ------------------------------------------
+
+function registerScheduledHandlersIPC(browser) {
+  const h = browser.handlers && browser.handlers.scheduled
+  if (!h) return
+  ipcMain.handle('oz:scheduled:list', () => h.list())
+  ipcMain.handle('oz:scheduled:get', (_e, id) => h.get(id))
+  ipcMain.handle('oz:scheduled:create', (_e, input) => h.create(input))
+  ipcMain.handle('oz:scheduled:update', (_e, id, patch) => h.update(id, patch))
+  ipcMain.handle('oz:scheduled:remove', (_e, id) => h.remove(id))
+  ipcMain.handle('oz:scheduled:setEnabled', (_e, id, enabled) =>
+    h.setEnabled(id, enabled),
+  )
+  ipcMain.handle('oz:scheduled:getStatus', () => h.getStatus())
+  ipcMain.handle('oz:scheduled:tickNow', () => h.tickNow())
 }
 
 // ----- Team (E-6) -----------------------------------------------------------
