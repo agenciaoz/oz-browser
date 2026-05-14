@@ -4254,6 +4254,7 @@
             <button data-section="notifications">Notifications</button>
             <button data-section="sync">Sync</button>
             <button data-section="scheduled">Scheduled</button>
+            <button data-section="migration">Migration</button>
             <button data-section="about">About</button>
           </nav>
 
@@ -4614,6 +4615,119 @@
               </div>
 
               <div id="oz-stg-scheduledList"></div>
+            </section>
+
+            <!-- G-3: Ghost Browser migration wizard -->
+            <section class="stg-section" data-section="migration" hidden>
+              <h3>Migration — Ghost Browser</h3>
+              <div class="stg-desc" style="margin-bottom: 12px">
+                Import identities, workspaces, cookies, and saved passwords from Ghost
+                Browser. macOS will prompt for Keychain access the first time — click
+                <strong>Always Allow</strong> so future runs do not ask again.
+              </div>
+
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Ghost Browser install</div>
+                  <div class="stg-desc" id="oz-mig-detectDesc">Looking…</div>
+                </div>
+                <span class="oz-sync-pill oz-sync-pill-stopped" id="oz-mig-detectPill"
+                  >—</span
+                >
+              </div>
+
+              <div class="stg-row" id="oz-mig-stateRow" hidden>
+                <div>
+                  <div class="stg-label">Last import</div>
+                  <div class="stg-desc" id="oz-mig-stateDesc">—</div>
+                </div>
+                <button type="button" id="oz-mig-clearStateBtn" class="stg-action-btn">
+                  Forget import history
+                </button>
+              </div>
+
+              <div
+                id="oz-mig-error"
+                hidden
+                style="
+                  color: var(--oz-danger, #ff6b6b);
+                  padding: 8px 12px;
+                  background: rgba(255, 107, 107, 0.08);
+                  border-radius: 4px;
+                  margin-bottom: 8px;
+                "
+              ></div>
+
+              <!-- Preview pane — populated by dryRun() -->
+              <div
+                id="oz-mig-preview"
+                hidden
+                style="
+                  border: 1px solid var(--oz-border, #2a2a2a);
+                  border-radius: 6px;
+                  padding: 12px;
+                  margin: 12px 0;
+                "
+              >
+                <div class="stg-label" style="margin-bottom: 8px">Will import:</div>
+                <label class="stg-row" style="margin: 4px 0">
+                  <span>
+                    <input type="checkbox" id="oz-mig-optIdentities" checked />
+                    Identities
+                  </span>
+                  <span class="stg-desc" id="oz-mig-cntIdentities">0</span>
+                </label>
+                <label class="stg-row" style="margin: 4px 0">
+                  <span>
+                    <input type="checkbox" id="oz-mig-optWorkspaces" checked />
+                    Workspaces
+                  </span>
+                  <span class="stg-desc" id="oz-mig-cntWorkspaces">0</span>
+                </label>
+                <label class="stg-row" style="margin: 4px 0">
+                  <span>
+                    <input type="checkbox" id="oz-mig-optCookies" checked />
+                    Cookies
+                  </span>
+                  <span class="stg-desc" id="oz-mig-cntCookies">0</span>
+                </label>
+                <label class="stg-row" style="margin: 4px 0">
+                  <span>
+                    <input type="checkbox" id="oz-mig-optBookmarks" checked />
+                    Bookmarks
+                  </span>
+                  <span class="stg-desc" id="oz-mig-cntBookmarks">0</span>
+                </label>
+                <label class="stg-row" style="margin: 4px 0">
+                  <span>
+                    <input type="checkbox" id="oz-mig-optPasswords" checked />
+                    Passwords
+                  </span>
+                  <span class="stg-desc" id="oz-mig-cntPasswords">0</span>
+                </label>
+              </div>
+
+              <button type="button" id="oz-mig-importBtn" class="stg-action-btn" hidden>
+                Import from Ghost Browser
+              </button>
+
+              <!-- Progress + result -->
+              <div
+                id="oz-mig-progress"
+                hidden
+                style="
+                  border: 1px solid var(--oz-border, #2a2a2a);
+                  border-radius: 6px;
+                  padding: 12px;
+                  margin-top: 12px;
+                "
+              >
+                <div class="stg-label" id="oz-mig-progressTitle">Importing…</div>
+                <div class="stg-desc" id="oz-mig-progressDesc">
+                  This may take a few seconds. macOS may show a Keychain dialog.
+                </div>
+                <div id="oz-mig-summary" hidden style="margin-top: 8px"></div>
+              </div>
             </section>
 
             <!-- About -->
@@ -5207,6 +5321,7 @@
     <script src="./team.js"></script>
     <script src="./proxy-manager.js"></script>
     <script src="./scheduled-actions-ui.js"></script>
+    <script src="./ghost-migration-ui.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>
     <script src="./browsing-data.js"></script>

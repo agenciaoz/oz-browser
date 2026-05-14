@@ -171,6 +171,16 @@
       ) {
         window.OZ.scheduledActionsUI.refresh()
       }
+      // G-3: same pattern for the Migration section — refresh detect +
+      // dryRun counts each time the user navigates here.
+      if (
+        name === 'migration' &&
+        window.OZ &&
+        window.OZ.ghostMigrationUI &&
+        typeof window.OZ.ghostMigrationUI.refresh === 'function'
+      ) {
+        window.OZ.ghostMigrationUI.refresh()
+      }
     }
 
     showError(msg) {

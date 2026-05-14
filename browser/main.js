@@ -42,6 +42,7 @@ const { setupCloudBackup } = require('./cloud-backup-setup')
 const { setupTeamMode } = require('./team-setup')
 const syncBootstrapSetup = require('./sync-bootstrap-setup')
 const scheduledSetup = require('./scheduled-setup')
+const ghostMigrationSetup = require('./ghost-migration-setup')
 const { setupCrashRecovery } = require('./crash-recovery-setup')
 const { AlertManager } = require('./alert-manager')
 const { buildProxyHealthNotify } = require('./proxy-health-notify')
@@ -532,6 +533,11 @@ class Browser {
     // Handlers registered: open-workspace (via workspaceManager), sync-push
     // (via syncBootstrap.pullNow), backup-snapshot (via backupManager).
     scheduledSetup.setupScheduledActions(this)
+
+    // G-3: Ghost Browser migration handlers. One-shot per click, no
+    // lifecycle. setup() just attaches browser.handlers.ghostMigration so
+    // ipc-handlers-extra.js can register the IPC channels.
+    ghostMigrationSetup.setupGhostMigration(this)
 
     // 1.8a/1.8b: Proxy Manager + Assignment — proxies live unencrypted (auth
     // creds are already plaintext in URLs / setProxy rules). Per-identity and

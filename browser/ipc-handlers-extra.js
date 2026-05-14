@@ -21,6 +21,19 @@ function registerExtraIpcHandlers(browser) {
   registerTeamHandlersIPC(browser)
   registerSyncHandlersIPC(browser)
   registerScheduledHandlersIPC(browser)
+  registerGhostMigrationHandlersIPC(browser)
+}
+
+// ----- Ghost Browser Migration (G-3) ----------------------------------------
+
+function registerGhostMigrationHandlersIPC(browser) {
+  const h = browser.handlers && browser.handlers.ghostMigration
+  if (!h) return
+  ipcMain.handle('oz:migration:detect', () => h.detect())
+  ipcMain.handle('oz:migration:dryRun', (_e, options) => h.dryRun(options || {}))
+  ipcMain.handle('oz:migration:runImport', (_e, options) => h.runImport(options || {}))
+  ipcMain.handle('oz:migration:getState', () => h.getState())
+  ipcMain.handle('oz:migration:clearState', () => h.clearState())
 }
 
 // ----- Cross-device Sync (D-3c-3c) ------------------------------------------

@@ -321,6 +321,19 @@ if (isWebUI) {
       getStatus: () => ipcRenderer.invoke('oz:scheduled:getStatus'),
       tickNow: () => ipcRenderer.invoke('oz:scheduled:tickNow'),
     },
+    // G-3: Ghost Browser migration wizard backend.
+    ghostMigration: {
+      detect: () => ipcRenderer.invoke('oz:migration:detect'),
+      dryRun: (options) => ipcRenderer.invoke('oz:migration:dryRun', options),
+      runImport: (options) => ipcRenderer.invoke('oz:migration:runImport', options),
+      getState: () => ipcRenderer.invoke('oz:migration:getState'),
+      clearState: () => ipcRenderer.invoke('oz:migration:clearState'),
+      onDone: (cb) => {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:migration:done', listener)
+        return () => ipcRenderer.off('oz:migration:done', listener)
+      },
+    },
     cookies: {
       exportContent: (identityId, format) =>
         ipcRenderer.invoke('oz:cookies:exportContent', identityId, format),
