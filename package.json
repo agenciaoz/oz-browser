@@ -36,6 +36,7 @@
     "electron-squirrel-startup": "^1.0.0",
     "exceljs": "^4.4.0",
     "otplib": "^13.4.0",
+    "sql.js": "^1.14.1",
     "update-electron-app": "^3.2.0"
   },
   "devDependencies": {
