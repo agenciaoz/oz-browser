@@ -1,7 +1,7 @@
 # Bloque H-2-wire + H-2-extras — cierra el set H-2 completo
 
 **Status:** ✅ H-2-wire + H-2-extras cerrados 2026-05-15
-**Commit:** TBD
+**Commit:** `e6d4f8f`
 **Version:** 1.1.6
 **Tiempo efectivo:** ~2h (H-2-wire ~30min + H-2-extras ~1.5h)
 **Deps nuevas:** ninguna
@@ -103,8 +103,8 @@ Inventory final del Proxy Ops Dashboard (1.1.1 → 1.1.6):
 | H-2i Anti-detect coherence overlay        | 1.1.4   | `2966ed5` |
 | H-2j WebRTC + DNS leak tests              | 1.1.4   | `2966ed5` |
 | H-2k Oxylabs Proxy Builder modal          | 1.1.5   | `35e6292` |
-| H-2-wire proxy-manager ↔ dashboard        | 1.1.6   | TBD       |
-| H-2-extras pre-bulk backup + diag export  | 1.1.6   | TBD       |
+| H-2-wire proxy-manager ↔ dashboard        | 1.1.6   | `e6d4f8f`       |
+| H-2-extras pre-bulk backup + diag export  | 1.1.6   | `e6d4f8f`       |
 
 13 sub-bloques, ~25h efectivos (vs ~23h estimados), ~470 tests nuevos, cero deps externas agregadas.
 
