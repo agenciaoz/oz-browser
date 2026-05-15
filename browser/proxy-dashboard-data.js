@@ -24,18 +24,21 @@ function getDashboardData({
     proxies: [],
     capturedAt: new Date().toISOString(),
   }
-  if (!proxyManager || !identityManager) return out
+  if (!proxyManager) return out
 
   const wsById = new Map()
   if (workspaceManager && typeof workspaceManager.list === 'function') {
     for (const w of workspaceManager.list()) wsById.set(w.id, w)
   }
   const allProxies = proxyManager.list()
-  const proxyById = new Map(allProxies.map((p) => [p.id, p]))
 
   // Per-identity rows — what each identity is resolving to right now.
   const usageCounter = new Map() // proxyId → [identityId,...]
-  for (const i of identityManager.list()) {
+  const identitiesList =
+    identityManager && typeof identityManager.list === 'function'
+      ? identityManager.list()
+      : []
+  for (const i of identitiesList) {
     let resolved = null
     if (proxyAssignment && typeof proxyAssignment.resolve === 'function') {
       try {
