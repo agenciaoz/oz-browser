@@ -195,6 +195,19 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
   )
   ipcMain.handle('oz:proxyDiagnostics:dismissAll', () => diag().dismissAll())
 
+  // H-2j (v1.1.4): WebRTC + DNS leak tests per-identity. Hidden BrowserWindow
+  // dance lives in leak-tests-handlers.js. Singleton per browser instance so
+  // cache persists across calls.
+  const { buildLeakTestHandlers } = require('./leak-tests-handlers')
+  if (!browser._leakTestHandlers) {
+    browser._leakTestHandlers = buildLeakTestHandlers(browser)
+  }
+  const leak = () => browser._leakTestHandlers
+  ipcMain.handle('oz:leakTest:run', (_e, opts) => leak().run(opts || {}))
+  ipcMain.handle('oz:leakTest:get', (_e, identityId) => leak().get(identityId))
+  ipcMain.handle('oz:leakTest:list', () => leak().list())
+  ipcMain.handle('oz:leakTest:clear', (_e, identityId) => leak().clear(identityId))
+
   // H-2b: open the dashboard in a new tab of the focused window.
   ipcMain.handle('oz:proxyHealth:openDashboard', (event) => {
     try {

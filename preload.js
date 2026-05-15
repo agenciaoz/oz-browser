@@ -532,6 +532,21 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:health:changed', listener)
       },
     },
+    // H-2j (v1.1.4): WebRTC + DNS leak tests on demand. run() spawns hidden
+    // BrowserWindow with identity session to gather ICE candidates + hits
+    // ipleak.net via net.request, then judges via leak-tests.js (pure).
+    // Results cached in-memory by main; get() / list() return cached.
+    leakTest: {
+      run: (opts) => ipcRenderer.invoke('oz:leakTest:run', opts),
+      get: (identityId) => ipcRenderer.invoke('oz:leakTest:get', identityId),
+      list: () => ipcRenderer.invoke('oz:leakTest:list'),
+      clear: (identityId) => ipcRenderer.invoke('oz:leakTest:clear', identityId),
+      onChanged(cb) {
+        const listener = (_e, payload) => cb(payload)
+        ipcRenderer.on('oz:leakTest:changed', listener)
+        return () => ipcRenderer.off('oz:leakTest:changed', listener)
+      },
+    },
     // E2-C-5: alert log persisted in main. UI calls list/markRead/clear;
     // main process emits add() (the panel mostly READS, doesn't ADD).
     alerts: {

@@ -179,6 +179,27 @@
       "severityUrgent": "URGENTE",
       "severityWarning": "AVISO"
     },
+    "coherence": {
+      "vectorIpTz": "Zona horaria vs proxy",
+      "vectorFp": "Coherencia de fingerprint",
+      "vectorCookies": "Cookies",
+      "vectorProxy": "Conectividad del proxy",
+      "applyFix": "Aplicar geo",
+      "applyFixTitle": "Aplicar geo del proxy al fingerprint",
+      "applyFixOk": "Geo aplicado al fingerprint. Las nuevas navegaciones usarán la zona horaria/locale del proxy."
+    },
+    "leak": {
+      "run": "Test fugas",
+      "runTooltip": "Correr tests de fuga WebRTC + DNS en una ventana oculta usando la sesión de esta identidad",
+      "title": "Resultado test de fugas",
+      "overall": "General",
+      "proxy": "Proxy",
+      "webrtc": "WebRTC",
+      "dns": "DNS",
+      "leaked": "filtrado",
+      "noResult": "Sin resultado.",
+      "error": "El test de fugas falló"
+    },
     "bulk": {
       "selectAll": "Seleccionar todos los visibles",
       "selected": "{{n}} seleccionados",

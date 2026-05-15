@@ -25,37 +25,24 @@
   const alertsApi = window.OZ_DashboardAlerts
   // H-2f: bulk multi-select + bulk actions owned by proxy-dashboard-bulk.js.
   const bulkApi = window.OZ_DashboardBulk
+  // H-2i: anti-detect coherence overlays owned by proxy-dashboard-health.js.
+  const healthApi = window.OZ_DashboardHealth
+  // Keyed by identityId; populated by fetchHealth(), consumed by renderIdentities().
+  let healthMap = new Map()
+  // H-2j: WebRTC + DNS leak test overlays owned by proxy-dashboard-leaks.js.
+  const leaksApi = window.OZ_DashboardLeaks
+  let leakMap = new Map()
 
   // ---------------- helpers ----------------
-  function fmtAgo(ts) {
-    if (!ts) return '—'
-    const d = Date.now() - ts
-    if (d < 60 * 1000) return Math.round(d / 1000) + 's ago'
-    if (d < 60 * 60 * 1000) return Math.round(d / 60000) + 'm ago'
-    if (d < 24 * 60 * 60 * 1000) return Math.round(d / 3600000) + 'h ago'
-    return Math.round(d / 86400000) + 'd ago'
-  }
-  function fmtCountry(c) {
-    if (!c) return '—'
-    return String(c).toUpperCase()
-  }
-  function fmtMs(ms) {
-    if (ms == null) return '—'
-    return Math.round(ms) + 'ms'
-  }
-  function esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-  }
-  function t(key, fallback) {
-    const tt = window.OZ && window.OZ.t
-    if (!tt) return fallback || key
-    const v = tt(key)
-    if (!v || v === key) return fallback || key
-    return v
-  }
+  // Shared utils (fmtAgo, fmtCountry, fmtMs, esc, t) moved to
+  // proxy-dashboard-utils.js for LOC budget compliance (ADR 0005). Fall
+  // back to defensive no-ops if the script load order ever drifts.
+  const utils = window.OZ_DashboardUtils || {}
+  const fmtAgo = utils.fmtAgo || ((ts) => (ts ? String(ts) : '—'))
+  const fmtCountry = utils.fmtCountry || ((c) => String(c || '—').toUpperCase())
+  const fmtMs = utils.fmtMs || ((ms) => (ms == null ? '—' : Math.round(ms) + 'ms'))
+  const esc = utils.esc || ((s) => String(s == null ? '' : s))
+  const t = utils.t || ((k, f) => f || k)
 
   // ---------------- fetch ----------------
   async function fetchData(forceTest) {
@@ -75,6 +62,18 @@
 
   // H-2e: delegated to proxy-dashboard-alerts.js
   const fetchAlerts = () => (alertsApi ? alertsApi.fetch() : Promise.resolve([]))
+
+  // H-2i: delegated to proxy-dashboard-health.js
+  async function fetchHealth() {
+    if (!healthApi) return
+    healthMap = await healthApi.fetchHealthMap()
+  }
+
+  // H-2j: hydrate cached leak-test records (no fresh runs — user triggers).
+  async function fetchLeaks() {
+    if (!leaksApi) return
+    leakMap = await leaksApi.fetchLeakMap()
+  }
 
   // ---------------- render hero ----------------
   function renderHero() {
@@ -134,13 +133,25 @@
     const prev = document.getElementById('ident-prev')
     const next = document.getElementById('ident-next')
     const data = (state.data && state.data.identities) || []
-    // Decorate rows with derived fields for sorting/filtering.
-    const decorated = data.map((i) => ({
-      ...i,
-      proxyName: i.proxy ? i.proxy.name : '',
-      country: i.proxy ? i.proxy.country : '',
-      status: i.leakRisk ? 'red' : i.proxy ? 'green' : 'gray',
-    }))
+    // Decorate rows with derived fields for sorting/filtering. H-2i: status
+    // now derives from anti-detect health overall (worst of 4 vectors) when
+    // available, falling back to legacy leakRisk-only logic.
+    const decorated = data.map((i) => {
+      const hr = healthMap.get(i.id) || null
+      return {
+        ...i,
+        proxyName: i.proxy ? i.proxy.name : '',
+        country: i.proxy ? i.proxy.country : '',
+        status: healthApi
+          ? healthApi.deriveStatus(i, hr)
+          : i.leakRisk
+            ? 'red'
+            : i.proxy
+              ? 'green'
+              : 'gray',
+        _healthRecord: hr,
+      }
+    })
     const filtered = applyFilterSort(decorated, state.identities, [
       'name',
       'workspaceName',
@@ -190,19 +201,37 @@
               }>${esc(p.name)} (${esc(p.country || '—')})</option>`,
           ),
         ].join('')
+        // H-2i: inline "Apply geo" button surfaces when ipTimezone vector
+        // is yellow/red AND its fix kind is APPLY_GEO. Hidden for default
+        // identity (no proxy to copy geo from).
+        const fixBtn = healthApi
+          ? healthApi.renderFixButton(i, i._healthRecord, t, esc)
+          : ''
+        // H-2j: "Leak test" button + last-result badge.
+        const leakBtn = leaksApi
+          ? leaksApi.renderLeakButton(i, leakMap.get(i.id), t, esc)
+          : ''
         const actions = isDefault
           ? `<span class="small">${t('proxyDashboard.actions.defaultIdent', 'default — n/a')}</span>`
           : `<div class="row-actions">
+            ${fixBtn}
             <button class="primary" data-act="reload" data-id="${esc(i.id)}" title="Re-apply assigned proxy on current session">↻ ${t('proxyDashboard.actions.reload', 'Reload')}</button>
+            ${leakBtn}
             <select class="reassign-select" data-act="reassign" data-id="${esc(i.id)}">${reassignOpts}</select>
           </div>`
+        // H-2i: tooltip on the status pill surfaces the worst vector summary
+        // so users can see WHY a row is yellow/red without opening a modal.
+        const statusTitle = healthApi
+          ? healthApi.buildStatusSummary(i._healthRecord, t)
+          : null
+        const pillTitleAttr = statusTitle ? ` title="${esc(statusTitle)}"` : ''
         return `<tr>
         <td class="bulk-cb-col">${cb}</td>
         <td class="nowrap"><strong>${esc(i.name)}</strong>${isDefault ? ' <span class="small">(default)</span>' : ''}</td>
         <td class="nowrap">${esc(i.workspaceName)}</td>
         <td>${proxyCell}</td>
         <td class="nowrap">${fmtCountry(i.country)}</td>
-        <td><span class="pill" data-status="${i.status}">${i.status}</span></td>
+        <td><span class="pill" data-status="${i.status}"${pillTitleAttr}>${i.status}</span></td>
         <td>${actions}</td>
       </tr>`
       })
@@ -311,7 +340,7 @@
   // ---------------- wire UI events ----------------
   function wire() {
     document.getElementById('btn-refresh').addEventListener('click', async () => {
-      await Promise.all([fetchData(false), fetchAlerts()])
+      await Promise.all([fetchData(false), fetchAlerts(), fetchHealth(), fetchLeaks()])
       renderAll()
     })
 
@@ -488,12 +517,29 @@
   async function start() {
     wire()
     wireActionDelegation()
-    await Promise.all([fetchData(false), fetchAlerts()])
+    await Promise.all([fetchData(false), fetchAlerts(), fetchHealth(), fetchLeaks()])
     renderAll()
-    // Auto-refresh every 30s while tab is visible — both dashboard data and alerts.
+    // H-2i: subscribe to live health-changed broadcasts. ApplyFix from
+    // anywhere (health-modal, sidebar, MCP, our inline button) re-fetches
+    // the map and re-renders without waiting for the 30s poll.
+    if (healthApi) {
+      healthApi.subscribeChanged(async () => {
+        await fetchHealth()
+        renderIdentities()
+      })
+    }
+    // H-2j: subscribe to leak-test broadcasts (run/clear). Same pattern.
+    if (leaksApi) {
+      leaksApi.subscribeChanged(async () => {
+        await fetchLeaks()
+        renderIdentities()
+      })
+    }
+    // Auto-refresh every 30s while tab is visible — dashboard data,
+    // alerts, health records, leak-test cache.
     setInterval(async () => {
       if (document.hidden) return
-      await Promise.all([fetchData(false), fetchAlerts()])
+      await Promise.all([fetchData(false), fetchAlerts(), fetchHealth(), fetchLeaks()])
       renderAll()
     }, 30 * 1000)
   }

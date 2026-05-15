@@ -90,6 +90,46 @@
           }
           return
         }
+        // H-2i: Apply geo suggestion — copies the proxy country's TZ/locale/
+        // languages into the identity's fingerprint. Backend (anti-detect-
+        // health-handlers.applyFix → fingerprintEngine.applyGeoSuggestion)
+        // already exists; we surface it inline in the dashboard so users
+        // don't have to open the health-modal sidebar for the most common
+        // anti-detect coherence fix.
+        case 'apply-geo-fix': {
+          const health = window.oz && window.oz.health
+          if (!health || typeof health.applyFix !== 'function') return
+          r = await health.applyFix({
+            identityId: id,
+            kind: 'apply-geo-suggestion',
+            vector: 'ipTimezone',
+          })
+          if (r && r.ok && r.result) {
+            window.alert(
+              t(
+                'proxyDashboard.coherence.applyFixOk',
+                'Geo applied to fingerprint. New navigations will use the proxy timezone/locale.',
+              ) +
+                (r.result.timezone ? `\n${r.result.timezone}` : '') +
+                (r.result.locale ? ` · ${r.result.locale}` : ''),
+            )
+          }
+          break
+        }
+        // H-2j: Run WebRTC + DNS leak tests for this identity. Backend spawns
+        // a hidden BrowserWindow with the identity's session and runs the
+        // ICE candidate gather + ipleak.net fetch in parallel. Result is
+        // surfaced via window.alert (v1.1.4 keeps the dialog simple; a
+        // proper modal is a future polish pass).
+        case 'run-leak-test': {
+          const leaks = window.OZ_DashboardLeaks
+          if (!leaks) return
+          // Disabled state on the button is auto-managed by the outer try.
+          // Wait up to ~10s for the test to come back (worst case ~6s).
+          r = await leaks.runLeakTest(id)
+          window.alert(leaks.formatResultDialog(r, t))
+          break
+        }
         default:
           return
       }

@@ -179,6 +179,27 @@
       "severityUrgent": "URGENT",
       "severityWarning": "WARNING"
     },
+    "coherence": {
+      "vectorIpTz": "Timezone vs proxy",
+      "vectorFp": "Fingerprint coherence",
+      "vectorCookies": "Cookies",
+      "vectorProxy": "Proxy reachability",
+      "applyFix": "Apply geo",
+      "applyFixTitle": "Apply proxy geo to fingerprint",
+      "applyFixOk": "Geo applied to fingerprint. New navigations will use the proxy timezone/locale."
+    },
+    "leak": {
+      "run": "Leak test",
+      "runTooltip": "Run WebRTC + DNS leak tests in a hidden window using this identity's session",
+      "title": "Leak test result",
+      "overall": "Overall",
+      "proxy": "Proxy",
+      "webrtc": "WebRTC",
+      "dns": "DNS",
+      "leaked": "leaked",
+      "noResult": "No result.",
+      "error": "Leak test failed"
+    },
     "bulk": {
       "selectAll": "Select all visible",
       "selected": "{{n}} selected",
