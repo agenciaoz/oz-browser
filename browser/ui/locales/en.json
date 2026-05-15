@@ -110,5 +110,13 @@
     "auto": "Auto (system)",
     "english": "English",
     "spanish": "Español"
+  },
+  "proxyHealth": {
+    "badge": {
+      "tooltipGreen": "Proxy health: all healthy",
+      "tooltipYellow": "Proxy health: some attention needed",
+      "tooltipRed": "Proxy health: action required — leak risk",
+      "tooltipGray": "Proxy health: no proxies configured"
+    }
   }
 }

@@ -110,5 +110,13 @@
     "auto": "Automático (sistema)",
     "english": "English",
     "spanish": "Español"
+  },
+  "proxyHealth": {
+    "badge": {
+      "tooltipGreen": "Salud de proxies: todo bien",
+      "tooltipYellow": "Salud de proxies: requiere atención",
+      "tooltipRed": "Salud de proxies: acción requerida — riesgo de fuga",
+      "tooltipGray": "Salud de proxies: no hay proxies configurados"
+    }
   }
 }

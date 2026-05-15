@@ -187,6 +187,57 @@
         line-height: 0;
         height: 100%;
       }
+      /* H-2a: proxy health badge in the toolbar */
+      .oz-proxy-health-badge {
+        margin-left: 0.5rem;
+        background: none;
+        border: none;
+        padding: 0;
+        cursor: pointer;
+        width: 22px;
+        height: 22px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: background 0.15s ease;
+      }
+      .oz-proxy-health-badge:hover {
+        background: rgba(255, 255, 255, 0.08);
+      }
+      .oz-proxy-health-badge .oz-phb-dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #888;
+        box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06);
+        transition: background 0.2s ease;
+      }
+      .oz-proxy-health-badge[data-status='green'] .oz-phb-dot {
+        background: #4ade80;
+      }
+      .oz-proxy-health-badge[data-status='yellow'] .oz-phb-dot {
+        background: #fbbf24;
+        animation: oz-phb-pulse 2s ease-in-out infinite;
+      }
+      .oz-proxy-health-badge[data-status='red'] .oz-phb-dot {
+        background: #ef4444;
+        animation: oz-phb-pulse 1.2s ease-in-out infinite;
+      }
+      .oz-proxy-health-badge[data-status='gray'] .oz-phb-dot {
+        background: #888;
+      }
+      @keyframes oz-phb-pulse {
+        0%,
+        100% {
+          box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.06);
+        }
+        50% {
+          box-shadow:
+            0 0 0 4px rgba(255, 255, 255, 0.12),
+            0 0 8px currentColor;
+        }
+      }
       .address-bar input {
         width: 100%;
         height: 100%;
@@ -3537,6 +3588,16 @@
         <div class="address-bar">
           <input id="addressurl" spellcheck="false" />
         </div>
+        <button
+          id="oz-proxy-health-badge"
+          class="oz-proxy-health-badge"
+          type="button"
+          data-status="gray"
+          data-i18n-attr="title:proxyHealth.badge.tooltipGray"
+          title="Proxy health: loading…"
+        >
+          <span class="oz-phb-dot"></span>
+        </button>
         <browser-action-list id="actions" alignment="bottom left"></browser-action-list>
       </div>
     </div>

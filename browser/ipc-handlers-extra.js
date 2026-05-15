@@ -26,6 +26,11 @@ function _safeRegister(name, fn, browser) {
 
 function registerExtraIpcHandlers(browser) {
   _safeRegister('registerAppInfoHandlersIPC', registerAppInfoHandlersIPC, browser)
+  _safeRegister(
+    'registerProxyHealthGlobalHandlersIPC',
+    registerProxyHealthGlobalHandlersIPC,
+    browser,
+  )
   _safeRegister('registerProxyHandlersIPC', registerProxyHandlersIPC, browser)
   _safeRegister('registerFingerprintHandlersIPC', registerFingerprintHandlersIPC, browser)
   _safeRegister('registerSettingsHandlersIPC', registerSettingsHandlersIPC, browser)
@@ -70,6 +75,34 @@ function registerAppInfoHandlersIPC(_browser) {
     } catch (_err) {
       return 'en-US'
     }
+  })
+}
+
+// ----- Proxy Health Global Status (H-2a, v1.1.1) ---------------------------
+
+function registerProxyHealthGlobalHandlersIPC(browser) {
+  const { computeGlobalStatus } = require('./proxy-health-status')
+  ipcMain.handle('oz:proxyHealth:getGlobalStatus', () => {
+    return computeGlobalStatus({
+      proxyManager: browser.proxyManager,
+      proxyAssignment: browser.proxyAssignment,
+      identityManager: browser.identityManager,
+    })
+  })
+  // Fire a manual scan + return fresh status. Used by the badge's "Test now".
+  ipcMain.handle('oz:proxyHealth:testAllAndStatus', async () => {
+    if (browser.proxyHealth && typeof browser.proxyHealth.testAll === 'function') {
+      try {
+        await browser.proxyHealth.testAll()
+      } catch (_err) {
+        // swallow — return status with whatever we have
+      }
+    }
+    return computeGlobalStatus({
+      proxyManager: browser.proxyManager,
+      proxyAssignment: browser.proxyAssignment,
+      identityManager: browser.identityManager,
+    })
   })
 }
 

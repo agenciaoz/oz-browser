@@ -412,6 +412,10 @@ if (isWebUI) {
       getVersion: () => ipcRenderer.invoke('oz:app:getVersion'),
       getSystemLocale: () => ipcRenderer.invoke('oz:app:getSystemLocale'),
     },
+    proxyHealth: {
+      getGlobalStatus: () => ipcRenderer.invoke('oz:proxyHealth:getGlobalStatus'),
+      testAllAndStatus: () => ipcRenderer.invoke('oz:proxyHealth:testAllAndStatus'),
+    },
     settings: {
       getAll: () => ipcRenderer.invoke('oz:settings:getAll'),
       get: (section) => ipcRenderer.invoke('oz:settings:get', section),
