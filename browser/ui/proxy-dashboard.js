@@ -356,33 +356,32 @@
     }
     // H-2g: + Import button → modal
     const btnImport = document.getElementById('btn-import')
-    if (btnImport) {
-      btnImport.addEventListener('click', () => {
-        if (window.OZ_DashboardImport) {
-          window.OZ_DashboardImport.open({
-            t,
-            refreshDashboard: async () => {
-              await fetchData(false)
-              renderAll()
-            },
-          })
-        }
-      })
+    if (btnImport && window.OZ_DashboardImport) {
+      btnImport.addEventListener('click', () =>
+        window.OZ_DashboardImport.open({
+          t,
+          refreshDashboard: async () => {
+            await fetchData(false)
+            renderAll()
+          },
+        }),
+      )
     }
-    // H-2k (v1.1.5): + Oxylabs button → builder modal.
+    // H-2 extras (v1.1.6): export-diag + H-2k (v1.1.5): oxylabs builder.
+    if (window.OZ_DashboardExport) {
+      window.OZ_DashboardExport.wire(document.getElementById('btn-export-diag'), t)
+    }
     const btnOxylabs = document.getElementById('btn-oxylabs')
-    if (btnOxylabs) {
-      btnOxylabs.addEventListener('click', () => {
-        if (window.OZ_OxylabsBuilder) {
-          window.OZ_OxylabsBuilder.open({
-            t,
-            refreshDashboard: async () => {
-              await fetchData(false)
-              renderAll()
-            },
-          })
-        }
-      })
+    if (btnOxylabs && window.OZ_OxylabsBuilder) {
+      btnOxylabs.addEventListener('click', () =>
+        window.OZ_OxylabsBuilder.open({
+          t,
+          refreshDashboard: async () => {
+            await fetchData(false)
+            renderAll()
+          },
+        }),
+      )
     }
     // H-2h: Bulk assign button → modal (placeholder until H-2h closes)
     const btnBulkAssign = document.getElementById('btn-bulk-assign')

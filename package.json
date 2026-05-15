@@ -1,7 +1,7 @@
 {
   "name": "oz-browser",
   "productName": "OZ Browser",
-  "version": "1.1.5",
+  "version": "1.1.6",
   "description": "Multi-session Chromium browser with per-tab proxies and antidetect — based on Electron.",
   "main": ".webpack/main",
   "scripts": {

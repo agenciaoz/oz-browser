@@ -162,8 +162,70 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
   ipcMain.handle('oz:proxyImporter:import', (_e, rows) => importer().importBatch(rows))
 
   // H-2f (v1.1.3): bulk wrappers — sequential over the single actions above.
+  // H-2 extras (v1.1.6): destructive ops auto-snapshot pool state to disk
+  // via proxy-bulk-backup BEFORE running. Failures are non-fatal.
   const { buildProxyActionsBulk } = require('./proxy-actions-bulk')
-  const bulk = () => buildProxyActionsBulk({ proxyActions: actions() })
+  const { buildProxyBulkBackup } = require('./proxy-bulk-backup')
+  if (!browser._proxyBulkBackup) {
+    try {
+      const { app } = require('electron')
+      browser._proxyBulkBackup = buildProxyBulkBackup({
+        proxyManager: browser.proxyManager,
+        userDataDir: app.getPath('userData'),
+      })
+    } catch (err) {
+      // In tests / non-Electron contexts this can fail — log and continue.
+      browser._proxyBulkBackup = null
+    }
+  }
+  const bulk = () =>
+    buildProxyActionsBulk({
+      proxyActions: actions(),
+      bulkBackup: browser._proxyBulkBackup,
+    })
+  ipcMain.handle('oz:proxyBulkBackup:list', () =>
+    browser._proxyBulkBackup ? browser._proxyBulkBackup.list() : [],
+  )
+
+  // H-2 extras (v1.1.6): export diagnostic bundle.
+  // Returns {ok, path} after writing a sanitized JSON bundle the user picks
+  // a save location for via Electron dialog. Bundle contents documented in
+  // proxy-diagnostic-export.js header (NO passwords/usernames/cookies).
+  const { buildDiagnosticBundle } = require('./proxy-diagnostic-export')
+  ipcMain.handle('oz:proxyHealth:exportDiagnostic', async () => {
+    try {
+      const electron = require('electron')
+      const fs = require('fs')
+      const path = require('path')
+      const bundle = buildDiagnosticBundle({
+        proxyManager: browser.proxyManager,
+        proxyAssignment: browser.proxyAssignment,
+        identityManager: browser.identityManager,
+        workspaceManager: browser.workspaceManager,
+        alertManager: browser.alertManager,
+        leakTestHandlers: browser._leakTestHandlers,
+        appVersion: electron.app && electron.app.getVersion(),
+        platform: process.platform,
+      })
+      const defaultName = `oz-proxy-diagnostic-${new Date().toISOString().slice(0, 10)}.json`
+      const defaultPath = path.join(
+        electron.app.getPath('downloads') || electron.app.getPath('home'),
+        defaultName,
+      )
+      const r = await electron.dialog.showSaveDialog({
+        title: 'Export proxy diagnostic',
+        defaultPath,
+        filters: [{ name: 'JSON', extensions: ['json'] }],
+      })
+      if (r.canceled || !r.filePath) {
+        return { ok: false, reason: 'CANCELED' }
+      }
+      fs.writeFileSync(r.filePath, JSON.stringify(bundle, null, 2), 'utf-8')
+      return { ok: true, path: r.filePath, bytes: fs.statSync(r.filePath).size }
+    } catch (err) {
+      return { ok: false, reason: 'EXPORT_FAILED', message: err && err.message }
+    }
+  })
   ipcMain.handle('oz:proxyActionBulk:test', (_e, ids) => bulk().bulkTestProxies(ids))
   ipcMain.handle('oz:proxyActionBulk:reset', (_e, ids) => bulk().bulkResetProxies(ids))
   ipcMain.handle('oz:proxyActionBulk:setDisabled', (_e, ids, disabled) =>

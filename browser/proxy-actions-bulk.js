@@ -18,8 +18,12 @@
 
 const log = require('./logger')
 
-function buildProxyActionsBulk({ proxyActions }) {
+function buildProxyActionsBulk({ proxyActions, bulkBackup }) {
   if (!proxyActions) throw new Error('proxyActions required')
+  // H-2 extras (v1.1.6): bulkBackup is OPTIONAL — when wired, destructive
+  // ops (delete, disable) snapshot the proxy pool to disk first so the user
+  // has a recoverable record. Backup failures are non-fatal: we log and
+  // proceed, returning the backup metadata in the bulk result.
 
   function _summarize(results) {
     let okCount = 0
@@ -65,15 +69,22 @@ function buildProxyActionsBulk({ proxyActions }) {
 
   async function bulkSetDisabled(ids, disabled) {
     const flag = !!disabled
-    return _runSequential(ids, 'bulkSetDisabled', async (id) =>
+    const backup =
+      flag && bulkBackup ? bulkBackup.snapshot({ reason: 'bulk-disable', ids }) : null
+    const r = await _runSequential(ids, 'bulkSetDisabled', async (id) =>
       proxyActions.setDisabled(id, flag),
     )
+    if (backup) r.backup = backup
+    return r
   }
 
   async function bulkDeleteProxies(ids) {
-    return _runSequential(ids, 'bulkDeleteProxies', async (id) =>
+    const backup = bulkBackup ? bulkBackup.snapshot({ reason: 'bulk-delete', ids }) : null
+    const r = await _runSequential(ids, 'bulkDeleteProxies', async (id) =>
       proxyActions.deleteProxy(id),
     )
+    if (backup) r.backup = backup
+    return r
   }
 
   async function bulkReloadSessions(identityIds) {

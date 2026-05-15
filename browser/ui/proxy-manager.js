@@ -45,6 +45,11 @@
       this.$btnExport = document.getElementById('oz-pm-export-btn')
       this.$btnProviders = document.getElementById('oz-pm-providers-btn')
       this.$btnTestAll = document.getElementById('oz-pm-test-all-btn')
+      // H-2-wire (v1.1.6): "Open Dashboard" button surfaces the full
+      // Proxy Health Dashboard (H-2a→H-2k). The modal stays as the compact
+      // CRUD view; bulk ops, leak tests, coherence overlay, Oxylabs builder,
+      // diagnostics — all live in the dashboard tab.
+      this.$btnDashboard = document.getElementById('oz-pm-dashboard-btn')
 
       // Editor view
       this.$form = document.getElementById('oz-pm-form')
@@ -81,6 +86,9 @@
       this.$btnExport.addEventListener('click', () => this.handleExport())
       this.$btnProviders.addEventListener('click', () => this.openProviders())
       this.$btnTestAll.addEventListener('click', () => this.handleTestAll())
+      if (this.$btnDashboard) {
+        this.$btnDashboard.addEventListener('click', () => this.openDashboardTab())
+      }
       this.$formCancel.addEventListener('click', () => this.showView('list'))
       this.$form.addEventListener('submit', (ev) => {
         ev.preventDefault()
@@ -276,6 +284,30 @@
         this.$btnTestAll.textContent = '⚡ Test all'
       }
       await this.refresh()
+    }
+
+    // ---- H-2-wire: open the full dashboard tab ----------------------------
+
+    async openDashboardTab() {
+      if (!window.oz || !window.oz.proxyHealth || !window.oz.proxyHealth.openDashboard) {
+        this.showError('Dashboard bridge unavailable — please update to v1.1.6 or later.')
+        return
+      }
+      const r = await safe(
+        window.oz.proxyHealth.openDashboard(),
+        'proxyHealth.openDashboard',
+      )
+      // Close the modal so the user can see the dashboard tab that just opened.
+      // If the IPC failed (no live window), keep the modal so the error is
+      // visible.
+      if (r && r.ok) {
+        this.close()
+      } else {
+        this.showError(
+          (r && r.reason) ||
+            'Could not open dashboard — try again from a browser window.',
+        )
+      }
     }
 
     // ---- import / export ---------------------------------------------------

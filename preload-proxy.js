@@ -12,6 +12,12 @@ function buildProxyBindings(ipcRenderer) {
       testAllAndStatus: () => ipcRenderer.invoke('oz:proxyHealth:testAllAndStatus'),
       getDashboard: () => ipcRenderer.invoke('oz:proxyHealth:getDashboard'),
       openDashboard: () => ipcRenderer.invoke('oz:proxyHealth:openDashboard'),
+      // H-2 extras (v1.1.6): export sanitized diagnostic bundle as JSON.
+      exportDiagnostic: () => ipcRenderer.invoke('oz:proxyHealth:exportDiagnostic'),
+    },
+    // H-2 extras (v1.1.6): list pre-bulk-destructive snapshots.
+    proxyBulkBackup: {
+      list: () => ipcRenderer.invoke('oz:proxyBulkBackup:list'),
     },
     proxyAction: {
       test: (id) => ipcRenderer.invoke('oz:proxyAction:test', id),
