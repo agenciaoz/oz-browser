@@ -210,7 +210,18 @@
       }
       // About
       const ver = document.getElementById('oz-stg-version')
-      if (ver) ver.textContent = this.settings.version + ' (schema)'
+      if (ver) ver.textContent = String(this.settings.version)
+      const appVerEl = document.getElementById('oz-stg-app-version')
+      if (appVerEl) {
+        try {
+          const v = await (window.oz && window.oz.app
+            ? window.oz.app.getVersion()
+            : Promise.resolve('?'))
+          appVerEl.textContent = v || '?'
+        } catch (_err) {
+          appVerEl.textContent = '?'
+        }
+      }
       // D-3c-3c: Sync status (computed live, NOT persisted in settings).
       await this.refreshSyncStatus()
     }

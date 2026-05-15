@@ -408,6 +408,9 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:fingerprint:changed', listener)
       },
     },
+    app: {
+      getVersion: () => ipcRenderer.invoke('oz:app:getVersion'),
+    },
     settings: {
       getAll: () => ipcRenderer.invoke('oz:settings:getAll'),
       get: (section) => ipcRenderer.invoke('oz:settings:get', section),

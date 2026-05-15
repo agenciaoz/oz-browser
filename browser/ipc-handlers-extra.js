@@ -5,7 +5,7 @@
 // Doc: docs/modules/ipc-handlers-extra.md
 // ADR: docs/architecture/0005-modular-500-loc-rule.md
 
-const { ipcMain, dialog, BrowserWindow } = require('electron')
+const { ipcMain, dialog, BrowserWindow, app } = require('electron')
 const log = require('./logger')
 
 // Smoke F+G 2026-05-13: wrap each subregister so a single throw doesn't
@@ -25,6 +25,7 @@ function _safeRegister(name, fn, browser) {
 }
 
 function registerExtraIpcHandlers(browser) {
+  _safeRegister('registerAppInfoHandlersIPC', registerAppInfoHandlersIPC, browser)
   _safeRegister('registerProxyHandlersIPC', registerProxyHandlersIPC, browser)
   _safeRegister('registerFingerprintHandlersIPC', registerFingerprintHandlersIPC, browser)
   _safeRegister('registerSettingsHandlersIPC', registerSettingsHandlersIPC, browser)
@@ -55,6 +56,12 @@ function registerExtraIpcHandlers(browser) {
     registerGhostMigrationHandlersIPC,
     browser,
   )
+}
+
+// ----- App info (1.0.0) -----------------------------------------------------
+
+function registerAppInfoHandlersIPC(_browser) {
+  ipcMain.handle('oz:app:getVersion', () => app.getVersion())
 }
 
 // ----- Ghost Browser Migration (G-3) ----------------------------------------
