@@ -168,6 +168,16 @@
       "autoRandom": "auto-aleatorio",
       "autoRoundRobin": "auto-round-robin",
       "defaultIdent": "default — n/a"
+    },
+    "alerts": {
+      "title": "Alertas",
+      "empty": "No hay alertas activas — todo se ve saludable.",
+      "dismiss": "Descartar",
+      "dismissAll": "Descartar todas",
+      "dismissAllConfirm": "¿Descartar todas las alertas activas? Se volverán a disparar automáticamente si la condición persiste.",
+      "ago": "hace {{n}}",
+      "severityUrgent": "URGENTE",
+      "severityWarning": "AVISO"
     }
   }
 }

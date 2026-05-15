@@ -21,6 +21,8 @@
       page: 0,
     },
   }
+  // H-2e: alerts section is owned by proxy-dashboard-alerts.js (LOC budget).
+  const alertsApi = window.OZ_DashboardAlerts
 
   // ---------------- helpers ----------------
   function fmtAgo(ts) {
@@ -69,6 +71,9 @@
     }
   }
 
+  // H-2e: delegated to proxy-dashboard-alerts.js
+  const fetchAlerts = () => (alertsApi ? alertsApi.fetch() : Promise.resolve([]))
+
   // ---------------- render hero ----------------
   function renderHero() {
     const d = state.data
@@ -90,6 +95,9 @@
         ? t('proxyDashboard.lastScan', 'last scan') + ': ' + fmtAgo(gs.lastTestedAt)
         : t('proxyDashboard.neverTested', 'never tested'))
   }
+
+  // H-2e: delegated to proxy-dashboard-alerts.js
+  const renderAlerts = () => alertsApi && alertsApi.render({ esc, fmtAgo, t })
 
   // ---------------- table renderers ----------------
   function applyFilterSort(list, view, fieldsForSearch) {
@@ -340,6 +348,17 @@
           }
           break
         }
+        case 'dismiss-alert': {
+          if (alertsApi) {
+            r = await alertsApi.handleDismissAlert(id, {
+              refresh: async () => {
+                await fetchAlerts()
+                renderAlerts()
+              },
+            })
+          }
+          return // alerts UI already refreshed
+        }
         default:
           return
       }
@@ -361,9 +380,20 @@
   // ---------------- wire UI events ----------------
   function wire() {
     document.getElementById('btn-refresh').addEventListener('click', async () => {
-      await fetchData(false)
+      await Promise.all([fetchData(false), fetchAlerts()])
       renderAll()
     })
+
+    // H-2e: dismiss-all delegated to proxy-dashboard-alerts.js
+    if (alertsApi) {
+      alertsApi.wireDismissAll({
+        t,
+        refresh: async () => {
+          await fetchAlerts()
+          renderAlerts()
+        },
+      })
+    }
     document.getElementById('btn-test-all').addEventListener('click', async (ev) => {
       const btn = ev.currentTarget
       btn.disabled = true
@@ -444,6 +474,7 @@
 
   function renderAll() {
     renderHero()
+    renderAlerts()
     renderIdentities()
     renderProxies()
   }
@@ -471,12 +502,12 @@
   async function start() {
     wire()
     wireActionDelegation()
-    await fetchData(false)
+    await Promise.all([fetchData(false), fetchAlerts()])
     renderAll()
-    // Auto-refresh every 30s while tab is visible.
+    // Auto-refresh every 30s while tab is visible — both dashboard data and alerts.
     setInterval(async () => {
       if (document.hidden) return
-      await fetchData(false)
+      await Promise.all([fetchData(false), fetchAlerts()])
       renderAll()
     }, 30 * 1000)
   }

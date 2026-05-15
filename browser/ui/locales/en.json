@@ -168,6 +168,16 @@
       "autoRandom": "auto-random",
       "autoRoundRobin": "auto-round-robin",
       "defaultIdent": "default — n/a"
+    },
+    "alerts": {
+      "title": "Alerts",
+      "empty": "No active alerts — everything looks healthy.",
+      "dismiss": "Dismiss",
+      "dismissAll": "Dismiss all",
+      "dismissAllConfirm": "Dismiss all active alerts? They will re-fire automatically if the underlying condition persists.",
+      "ago": "{{n}} ago",
+      "severityUrgent": "URGENT",
+      "severityWarning": "WARNING"
     }
   }
 }

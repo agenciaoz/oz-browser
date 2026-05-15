@@ -139,6 +139,27 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
     actions().reassignProxy(identityId, value),
   )
 
+  // H-2e (v1.1.3): diagnostics + alerts. Lazy-built so deps swap-late still works.
+  // Singleton per browser instance — keeps in-memory alert state across calls.
+  const { buildProxyDiagnostics } = require('./proxy-diagnostics')
+  const { buildProxyHealthNotify } = require('./proxy-health-notify')
+  if (!browser._proxyDiagnostics) {
+    browser._proxyDiagnostics = buildProxyDiagnostics({
+      proxyManager: browser.proxyManager,
+      proxyAssignment: browser.proxyAssignment,
+      identityManager: browser.identityManager,
+      alertManager: browser.alertManager,
+      notify: buildProxyHealthNotify(browser),
+    })
+  }
+  const diag = () => browser._proxyDiagnostics
+  ipcMain.handle('oz:proxyDiagnostics:scan', () => diag().scan())
+  ipcMain.handle('oz:proxyDiagnostics:getAlerts', () => diag().getAlerts())
+  ipcMain.handle('oz:proxyDiagnostics:dismissAlert', (_e, alertId) =>
+    diag().dismissAlert(alertId),
+  )
+  ipcMain.handle('oz:proxyDiagnostics:dismissAll', () => diag().dismissAll())
+
   // H-2b: open the dashboard in a new tab of the focused window.
   ipcMain.handle('oz:proxyHealth:openDashboard', (event) => {
     try {

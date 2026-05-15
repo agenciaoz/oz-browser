@@ -25,6 +25,14 @@ function buildProxyBindings(ipcRenderer) {
       reassign: (identityId, value) =>
         ipcRenderer.invoke('oz:proxyAction:reassign', identityId, value),
     },
+    // H-2e (v1.1.3): diagnostics + alerts engine.
+    proxyDiagnostics: {
+      scan: () => ipcRenderer.invoke('oz:proxyDiagnostics:scan'),
+      getAlerts: () => ipcRenderer.invoke('oz:proxyDiagnostics:getAlerts'),
+      dismissAlert: (alertId) =>
+        ipcRenderer.invoke('oz:proxyDiagnostics:dismissAlert', alertId),
+      dismissAll: () => ipcRenderer.invoke('oz:proxyDiagnostics:dismissAll'),
+    },
   }
 }
 

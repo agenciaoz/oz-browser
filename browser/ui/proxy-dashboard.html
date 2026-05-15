@@ -273,6 +273,98 @@
         padding: 2px 4px;
         font-size: 11px;
       }
+      /* H-2e Alerts section (v1.1.3) */
+      .alerts-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .alert {
+        display: flex;
+        align-items: flex-start;
+        gap: 12px;
+        padding: 12px 14px;
+        border-radius: 6px;
+        border: 1px solid var(--border);
+        background: rgba(255, 255, 255, 0.02);
+      }
+      .alert[data-severity='urgent'] {
+        border-color: rgba(239, 68, 68, 0.5);
+        background: rgba(239, 68, 68, 0.06);
+      }
+      .alert[data-severity='warning'] {
+        border-color: rgba(251, 191, 36, 0.45);
+        background: rgba(251, 191, 36, 0.06);
+      }
+      .alert .alert-icon {
+        font-size: 18px;
+        line-height: 1;
+        margin-top: 2px;
+      }
+      .alert[data-severity='urgent'] .alert-icon {
+        color: var(--red);
+      }
+      .alert[data-severity='warning'] .alert-icon {
+        color: var(--yellow);
+      }
+      .alert .alert-body {
+        flex: 1;
+        min-width: 0;
+      }
+      .alert .alert-title {
+        font-weight: 600;
+        font-size: 13px;
+        margin-bottom: 2px;
+      }
+      .alert .alert-message {
+        font-size: 12px;
+        color: var(--text-muted);
+        line-height: 1.45;
+      }
+      .alert .alert-meta {
+        font-size: 11px;
+        color: var(--text-muted);
+        margin-top: 4px;
+        opacity: 0.75;
+      }
+      .alert .alert-dismiss {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text-muted);
+        padding: 3px 9px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        white-space: nowrap;
+        flex: 0 0 auto;
+      }
+      .alert .alert-dismiss:hover {
+        color: var(--text);
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .alerts-toolbar {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 8px;
+      }
+      .alerts-toolbar .btn-link {
+        background: transparent;
+        border: none;
+        color: var(--text-muted);
+        font-size: 12px;
+        cursor: pointer;
+        padding: 4px 6px;
+      }
+      .alerts-toolbar .btn-link:hover {
+        color: var(--text);
+      }
+      .alerts-toolbar .btn-link:disabled {
+        opacity: 0.35;
+        cursor: not-allowed;
+      }
     </style>
   </head>
   <body>
@@ -298,6 +390,26 @@
           </button>
         </div>
       </header>
+
+      <section class="card" id="alerts-section">
+        <h2>
+          <span data-i18n="proxyDashboard.alerts.title">Alerts</span>
+          <span class="count" id="alerts-count">0</span>
+        </h2>
+        <div class="alerts-toolbar">
+          <button
+            class="btn-link"
+            id="alerts-dismiss-all"
+            data-i18n="proxyDashboard.alerts.dismissAll"
+          >
+            Dismiss all
+          </button>
+        </div>
+        <div id="alerts-empty" class="empty" data-i18n="proxyDashboard.alerts.empty">
+          No active alerts — everything looks healthy.
+        </div>
+        <ul id="alerts-list" class="alerts-list" hidden></ul>
+      </section>
 
       <section class="card">
         <h2>
@@ -413,6 +525,7 @@
     </div>
 
     <script src="./i18n.js"></script>
+    <script src="./proxy-dashboard-alerts.js"></script>
     <script src="./proxy-dashboard.js"></script>
   </body>
 </html>

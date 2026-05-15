@@ -151,6 +151,13 @@ class Browser {
           })
         }
       }
+      // H-2e (v1.1.3): clear the diagnostics scan interval.
+      if (this._proxyDiagnosticsTimer) {
+        require('./proxy-diagnostics-setup').stopProxyDiagnosticsScan(
+          this._proxyDiagnosticsTimer,
+        )
+        this._proxyDiagnosticsTimer = null
+      }
       // 1.10d: Stop the tab discard daemon.
       if (this.tabDiscardDaemon) {
         try {
@@ -585,6 +592,10 @@ class Browser {
     })
     this.proxyHealth.startDaemon()
     log.info('browser', 'ProxyHealth daemon started (30 min interval)')
+
+    // H-2e (v1.1.3): diagnostics scan loop — extracted per ADR 0005.
+    const { startProxyDiagnosticsScan } = require('./proxy-diagnostics-setup')
+    this._proxyDiagnosticsTimer = startProxyDiagnosticsScan(this)
 
     // app.on('login') handler — when a proxy challenges with HTTP 407, look up
     // which proxy is currently bound to the requesting webContents' session
