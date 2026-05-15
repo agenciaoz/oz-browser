@@ -1,7 +1,7 @@
 # Bloque H-2k — Oxylabs Proxy Builder modal
 
 **Status:** ✅ H-2k cerrado 2026-05-15
-**Commit:** TBD
+**Commit:** `35e6292`
 **Version:** 1.1.5
 **Tiempo efectivo:** ~2.5h (más rápido que 4h estimado porque backend ya existía)
 **Deps nuevas:** ninguna
