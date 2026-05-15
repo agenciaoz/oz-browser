@@ -25,6 +25,12 @@ function buildProxyBindings(ipcRenderer) {
       reassign: (identityId, value) =>
         ipcRenderer.invoke('oz:proxyAction:reassign', identityId, value),
     },
+    // H-2h (v1.1.3): bulk assign 1:1 — pair proxies to identities.
+    proxyBulkAssign: {
+      preview: (proxyIds, identityIds, opts) =>
+        ipcRenderer.invoke('oz:proxyBulkAssign:preview', proxyIds, identityIds, opts),
+      execute: (pairings) => ipcRenderer.invoke('oz:proxyBulkAssign:execute', pairings),
+    },
     // H-2g (v1.1.3): bulk import CSV/TXT with auto-detect.
     proxyImporter: {
       detect: (text) => ipcRenderer.invoke('oz:proxyImporter:detect', text),

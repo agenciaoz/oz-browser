@@ -139,6 +139,21 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
     actions().reassignProxy(identityId, value),
   )
 
+  // H-2h (v1.1.3): bulk assign 1:1 — pair proxies to identities.
+  const { buildProxyBulkAssign } = require('./proxy-bulk-assign')
+  const bulkAssign = () =>
+    buildProxyBulkAssign({
+      proxyManager: browser.proxyManager,
+      proxyAssignment: browser.proxyAssignment,
+      proxyActions: actions(),
+    })
+  ipcMain.handle('oz:proxyBulkAssign:preview', (_e, proxyIds, identityIds, opts) =>
+    bulkAssign().previewPairing(proxyIds, identityIds, opts || {}),
+  )
+  ipcMain.handle('oz:proxyBulkAssign:execute', (_e, pairings) =>
+    bulkAssign().executePairing(pairings),
+  )
+
   // H-2g (v1.1.3): proxy importer — CSV/TXT auto-detect + parse + batch import.
   const { buildProxyImporter, detectFormat, parseProxies } = require('./proxy-importer')
   const importer = () => buildProxyImporter({ proxyManager: browser.proxyManager })
