@@ -36,13 +36,24 @@ OZ Browser se entrega en 3 versiones secuenciales con saltos discretos de scope:
 | Bloque E Team mode (Curve25519 key-sharing)                                                                                                                     | ✅                                                                                           |
 | **Bloque F simple** Scheduled Actions cron (~4h)                                                                                                                | ✅ 2026-05-13 (commit `d9bdbdc` + smoke fix `92630b8`)                                       |
 | **Bloque G** Migration wizard Ghost Browser only en v1 (~10h)                                                                                                   | ✅ 2026-05-13 (G-1→G-4) + ✅ G-5 idempotency/replace/self-heal 2026-05-14 (commit `d2b7d8b`) |
-| **Bloque H** Internal hardening + DR drill (~6h)                                                                                                                | ✅ 2026-05-13 (commit `d408fdc`)                                                             |
-| **Bloque I** Apple Dev signing 3b/3c/3e + Cloudflare R2 (~6-7h)                                                                                                 | ⏳ Bloqueado por Apple Dev Program approval (~2d)                                            |
-| **Bloque I-2** auto-updater (electron-updater + GitHub Releases) (~1-2h)                                                                                        | ⏳ Bloqueado por I cerrado primero                                                           |
+| **Bloque H-1** Internal hardening + DR drill (~6h)                                                                                                              | ✅ 2026-05-13 (commit `d408fdc`)                                                             |
+| **i18n v1.1.0** Internacionalización UI EN/ES primera entrega (~4h)                                                                                             | ✅ 2026-05-14 (commit `dae3d69`)                                                             |
+| **Bloque H-2a/b** Proxy Health Badge + Dashboard tab read-only (~6h)                                                                                            | ✅ 2026-05-14/15 (commits `bb0261c` + `9baf774` en v1.1.1)                                   |
+| **Bloque H-2c/d** Proxy Dashboard live ops (acciones per-proxy + per-identity) (~6h)                                                                            | ✅ 2026-05-15 (commit `041b1f9` en v1.1.2)                                                   |
+| **Bloque H-2e→k** Diagnostics + bulk ops + bulk import/assign + leak tests + Oxylabs builder (~16h)                                                             | ⏳ v1.1.3 → v1.1.5                                                                           |
+| **Bloque G-6** Ghost importer también importa proxies (~3h)                                                                                                     | ⏳ v1.2.0                                                                                    |
+| **Bloque J** Auto-login completo (auto-fill + auto-save + 2FA + auto-relogin) (~6h)                                                                             | ⏳ v1.3.0                                                                                    |
+| **Bloque K1-extras** Bulk-open + Session warmer + Identity HUD + Onboarding wizard + Mac sleep (~12h)                                                           | ⏳ v1.4.0                                                                                    |
+| **i18n cobertura completa** (notifications + modales + onboarding + dashboard) (~4h)                                                                            | ⏳ v1.5.0                                                                                    |
+| **Smoke visuals pendientes** (C-6/C-7/C-8/D-3c-3c) (~2h)                                                                                                        | ⏳ v1.5.x                                                                                    |
+| **Bloque I** Apple Dev signing 3b/3c/3e + Cloudflare R2 (~6-7h)                                                                                                 | ⏳ Bloqueado Apple Dev approval (~2d) — v1.6.0                                               |
+| **Bloque I-2** auto-updater (electron-updater + GitHub Releases) (~1-2h)                                                                                        | ⏳ Bloqueado por I — v1.6.x                                                                  |
 
-**Total v1 dev restante**: ~7-9h, todo dentro de I + I-2. Apple Dev approval es bloqueante.
+**Total v1 dev restante**: ~50-55h (de los ~63-66h planificados, ya completados ~13-15h en 1.1.0/1.1.1/1.1.2). Apple Dev approval bloquea solo I + I-2.
 
-**App version actual:** **`1.0.0` → `1.0.1`** (G-5). v1 line = 1.0.x (patch per release shippable). v2 = 2.0.x, v3 = 3.0.x.
+**App version actual:** **`1.1.2`** (H-2a + H-2b + H-2c + H-2d shipeados). v1 line = 1.x.x (patch per release shippable, minor para features grandes dentro de v1). v2 = 2.x.x, v3 = 3.x.x.
+
+**Roadmap source-of-truth:** `memory/project_v1_roadmap.md` (decisión Jose 2026-05-14) — H-2 a→k + G-6 + J + K1-extras + i18n completa + smokes + I/I-2.
 
 Migrations Chrome/Brave/Edge/Firefox/Safari + AdsPower/Multilogin **diferidas a v2** — Ghost solo en v1 (caso de uso real de Jose). v2 abrirá audiencia más amplia.
 
