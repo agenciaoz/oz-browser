@@ -365,6 +365,62 @@
         opacity: 0.35;
         cursor: not-allowed;
       }
+      /* H-2f bulk actions (v1.1.3) */
+      .bulk-actionbar {
+        position: sticky;
+        top: 0;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 12px;
+        margin-bottom: 8px;
+        background: rgba(124, 95, 191, 0.12);
+        border: 1px solid rgba(124, 95, 191, 0.45);
+        border-radius: 6px;
+      }
+      .bulk-actionbar .count-lbl {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--accent);
+      }
+      .bulk-actionbar .spacer {
+        flex: 1;
+      }
+      .bulk-actionbar button {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 4px 10px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+        white-space: nowrap;
+      }
+      .bulk-actionbar button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+      .bulk-actionbar button.danger:hover {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: var(--red);
+        color: var(--red);
+      }
+      .bulk-actionbar button:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .bulk-cb-col {
+        width: 28px;
+        padding-left: 10px !important;
+        padding-right: 4px !important;
+      }
+      input.bulk-row-cb,
+      input.bulk-header-cb {
+        cursor: pointer;
+        accent-color: var(--accent);
+        margin: 0;
+      }
     </style>
   </head>
   <body>
@@ -384,6 +440,20 @@
             data-i18n="proxyDashboard.refresh"
           >
             Refresh
+          </button>
+          <button
+            class="btn secondary"
+            id="btn-import"
+            data-i18n="proxyDashboard.import.openBtn"
+          >
+            + Import
+          </button>
+          <button
+            class="btn secondary"
+            id="btn-bulk-assign"
+            data-i18n="proxyDashboard.bulkAssign.openBtn"
+          >
+            Bulk assign
           </button>
           <button class="btn" id="btn-test-all" data-i18n="proxyDashboard.testAll">
             Test all now
@@ -429,9 +499,41 @@
             <button id="ident-next">›</button>
           </div>
         </div>
+        <div class="bulk-actionbar" id="ident-bulk-bar" hidden>
+          <span class="count-lbl" id="ident-bulk-count">0 selected</span>
+          <button
+            data-act="bulk-reload"
+            data-i18n="proxyDashboard.bulk.bulkReload"
+            title="Re-apply assigned proxy on each session"
+          >
+            ↻ Reload sessions
+          </button>
+          <button
+            data-act="bulk-reassign"
+            data-i18n="proxyDashboard.bulk.bulkReassign"
+            title="Bulk reassign proxy to selected identities"
+          >
+            Reassign…
+          </button>
+          <span class="spacer"></span>
+          <button data-act="bulk-deselect-ident" data-i18n="proxyDashboard.bulk.deselect">
+            Deselect
+          </button>
+        </div>
         <table>
           <thead>
             <tr>
+              <th class="bulk-cb-col">
+                <input
+                  type="checkbox"
+                  class="bulk-header-cb"
+                  id="ident-select-all"
+                  data-act="bulk-select-all"
+                  data-kind="ident"
+                  data-i18n-attr="title:proxyDashboard.bulk.selectAll"
+                  title="Select all visible"
+                />
+              </th>
               <th data-sort="name" data-i18n="proxyDashboard.col.identity">
                 Identity <span class="sort-arrow">▾</span>
               </th>
@@ -480,9 +582,50 @@
             <button id="proxy-next">›</button>
           </div>
         </div>
+        <div class="bulk-actionbar" id="proxy-bulk-bar" hidden>
+          <span class="count-lbl" id="proxy-bulk-count">0 selected</span>
+          <button
+            class="primary"
+            data-act="bulk-test"
+            data-i18n="proxyDashboard.bulk.bulkTest"
+          >
+            Test
+          </button>
+          <button data-act="bulk-reset" data-i18n="proxyDashboard.bulk.bulkReset">
+            Reset
+          </button>
+          <button data-act="bulk-disable" data-i18n="proxyDashboard.bulk.bulkDisable">
+            Disable
+          </button>
+          <button data-act="bulk-enable" data-i18n="proxyDashboard.bulk.bulkEnable">
+            Enable
+          </button>
+          <button
+            class="danger"
+            data-act="bulk-delete"
+            data-i18n="proxyDashboard.bulk.bulkDelete"
+          >
+            Delete
+          </button>
+          <span class="spacer"></span>
+          <button data-act="bulk-deselect-proxy" data-i18n="proxyDashboard.bulk.deselect">
+            Deselect
+          </button>
+        </div>
         <table>
           <thead>
             <tr>
+              <th class="bulk-cb-col">
+                <input
+                  type="checkbox"
+                  class="bulk-header-cb"
+                  id="proxy-select-all"
+                  data-act="bulk-select-all"
+                  data-kind="proxy"
+                  data-i18n-attr="title:proxyDashboard.bulk.selectAll"
+                  title="Select all visible"
+                />
+              </th>
               <th data-sort="name" data-i18n="proxyDashboard.col.name">
                 Name <span class="sort-arrow">▾</span>
               </th>
@@ -526,6 +669,8 @@
 
     <script src="./i18n.js"></script>
     <script src="./proxy-dashboard-alerts.js"></script>
+    <script src="./proxy-dashboard-bulk.js"></script>
+    <script src="./proxy-dashboard-actions.js"></script>
     <script src="./proxy-dashboard.js"></script>
   </body>
 </html>

@@ -25,6 +25,16 @@ function buildProxyBindings(ipcRenderer) {
       reassign: (identityId, value) =>
         ipcRenderer.invoke('oz:proxyAction:reassign', identityId, value),
     },
+    // H-2f (v1.1.3): bulk wrappers — sequential per id.
+    proxyActionBulk: {
+      test: (ids) => ipcRenderer.invoke('oz:proxyActionBulk:test', ids),
+      reset: (ids) => ipcRenderer.invoke('oz:proxyActionBulk:reset', ids),
+      setDisabled: (ids, disabled) =>
+        ipcRenderer.invoke('oz:proxyActionBulk:setDisabled', ids, disabled),
+      delete: (ids) => ipcRenderer.invoke('oz:proxyActionBulk:delete', ids),
+      reloadSessions: (identityIds) =>
+        ipcRenderer.invoke('oz:proxyActionBulk:reloadSessions', identityIds),
+    },
     // H-2e (v1.1.3): diagnostics + alerts engine.
     proxyDiagnostics: {
       scan: () => ipcRenderer.invoke('oz:proxyDiagnostics:scan'),

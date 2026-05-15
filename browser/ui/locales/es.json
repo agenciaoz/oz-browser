@@ -178,6 +178,52 @@
       "ago": "hace {{n}}",
       "severityUrgent": "URGENTE",
       "severityWarning": "AVISO"
+    },
+    "bulk": {
+      "selectAll": "Seleccionar todos los visibles",
+      "selected": "{{n}} seleccionados",
+      "deselect": "Deseleccionar",
+      "bulkTest": "Probar",
+      "bulkReset": "Restablecer",
+      "bulkDisable": "Desactivar",
+      "bulkEnable": "Activar",
+      "bulkDelete": "Eliminar",
+      "bulkReload": "↻ Recargar sesiones",
+      "bulkReassign": "Reasignar…",
+      "deleteConfirm": "¿Eliminar {{n}} proxies? Las identidades que los usan caerán a la estrategia por defecto.",
+      "zeroSelected": "0 seleccionados",
+      "bulkReassignPrompt": "Id del proxy a aplicar a las identidades seleccionadas (o \"auto-random\" / \"auto-round-robin\" / vacío = ninguno):"
+    },
+    "import": {
+      "openBtn": "+ Importar",
+      "title": "Importar proxies",
+      "paste": "Pegá la lista de proxies",
+      "upload": "Elegir archivo…",
+      "detectedFormat": "Formato detectado",
+      "formatCsv": "CSV (con cabeceras)",
+      "formatUrlStyle": "usuario:clave@host:puerto",
+      "formatHostPort": "host:puerto:usuario:clave",
+      "formatUnknown": "Desconocido — revisá",
+      "previewTitle": "Previsualización",
+      "addProxies": "Importar {{n}} proxies válidos",
+      "placeholder": "host:puerto:usuario:clave\nusuario:clave@host:puerto\no CSV con cabeceras: host,port,user,pass,country,label",
+      "invalidRow": "inválido",
+      "importing": "Importando…",
+      "importComplete": "Importación lista — {{n}} proxies agregados",
+      "reparseOnChange": "Reparsear al cambiar el texto",
+      "close": "Cerrar"
+    },
+    "bulkAssign": {
+      "openBtn": "Asignación masiva",
+      "title": "Asignación masiva de proxies (1:1)",
+      "proxiesHeader": "Proxies",
+      "identitiesHeader": "Identidades",
+      "previewHeader": "Previsualización",
+      "warningMismatch": "Diferencia: {{n}} proxies vs {{m}} identidades — solo se aparearán las primeras {{k}}.",
+      "assignBtn": "Asignar {{n}} pares",
+      "close": "Cerrar",
+      "searchProxies": "Buscar proxies…",
+      "searchIdentities": "Buscar identidades…"
     }
   }
 }

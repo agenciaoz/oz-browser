@@ -139,6 +139,19 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
     actions().reassignProxy(identityId, value),
   )
 
+  // H-2f (v1.1.3): bulk wrappers — sequential over the single actions above.
+  const { buildProxyActionsBulk } = require('./proxy-actions-bulk')
+  const bulk = () => buildProxyActionsBulk({ proxyActions: actions() })
+  ipcMain.handle('oz:proxyActionBulk:test', (_e, ids) => bulk().bulkTestProxies(ids))
+  ipcMain.handle('oz:proxyActionBulk:reset', (_e, ids) => bulk().bulkResetProxies(ids))
+  ipcMain.handle('oz:proxyActionBulk:setDisabled', (_e, ids, disabled) =>
+    bulk().bulkSetDisabled(ids, disabled),
+  )
+  ipcMain.handle('oz:proxyActionBulk:delete', (_e, ids) => bulk().bulkDeleteProxies(ids))
+  ipcMain.handle('oz:proxyActionBulk:reloadSessions', (_e, identityIds) =>
+    bulk().bulkReloadSessions(identityIds),
+  )
+
   // H-2e (v1.1.3): diagnostics + alerts. Lazy-built so deps swap-late still works.
   // Singleton per browser instance — keeps in-memory alert state across calls.
   const { buildProxyDiagnostics } = require('./proxy-diagnostics')

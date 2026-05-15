@@ -23,6 +23,8 @@
   }
   // H-2e: alerts section is owned by proxy-dashboard-alerts.js (LOC budget).
   const alertsApi = window.OZ_DashboardAlerts
+  // H-2f: bulk multi-select + bulk actions owned by proxy-dashboard-bulk.js.
+  const bulkApi = window.OZ_DashboardBulk
 
   // ---------------- helpers ----------------
   function fmtAgo(ts) {
@@ -162,9 +164,15 @@
       return
     }
     empty.hidden = true
+    if (bulkApi)
+      bulkApi.setVisibleIds(
+        'ident',
+        slice.map((i) => i.id),
+      )
     const proxyOptions = (state.data && state.data.proxies) || []
     tbody.innerHTML = slice
       .map((i) => {
+        const cb = bulkApi ? bulkApi.rowCheckboxHtml('ident', i.id) : ''
         const proxyCell = i.proxy
           ? `${esc(i.proxy.name || '?')} <span class="small">${esc(
               i.proxy.host,
@@ -189,6 +197,7 @@
             <select class="reassign-select" data-act="reassign" data-id="${esc(i.id)}">${reassignOpts}</select>
           </div>`
         return `<tr>
+        <td class="bulk-cb-col">${cb}</td>
         <td class="nowrap"><strong>${esc(i.name)}</strong>${isDefault ? ' <span class="small">(default)</span>' : ''}</td>
         <td class="nowrap">${esc(i.workspaceName)}</td>
         <td>${proxyCell}</td>
@@ -201,6 +210,7 @@
     pagerLbl.textContent = `${start + 1}–${end} of ${total}`
     prev.disabled = state.identities.page === 0
     next.disabled = end >= total
+    if (bulkApi) bulkApi.syncActionBar('ident', t)
   }
 
   function renderProxies() {
@@ -239,8 +249,14 @@
       return
     }
     empty.hidden = true
+    if (bulkApi)
+      bulkApi.setVisibleIds(
+        'proxy',
+        slice.map((p) => p.id),
+      )
     tbody.innerHTML = slice
       .map((p) => {
+        const cb = bulkApi ? bulkApi.rowCheckboxHtml('proxy', p.id) : ''
         const stickyBtn =
           p.protocol && p.protocol !== 'socks5'
             ? `<button data-act="rotate" data-id="${esc(p.id)}" title="${t('proxyDashboard.actions.rotateTooltip', 'Rotate sticky session-id in username (Oxylabs format)')}">${t('proxyDashboard.actions.rotate', 'Rotate')}</button>`
@@ -256,6 +272,7 @@
           <button class="danger" data-act="delete" data-id="${esc(p.id)}">${t('proxyDashboard.actions.delete', 'Delete')}</button>
         </div>`
         return `<tr>
+        <td class="bulk-cb-col">${cb}</td>
         <td class="nowrap"><strong>${esc(p.name)}</strong>${
           p.label ? ` <span class="small">${esc(p.label)}</span>` : ''
         }</td>
@@ -274,107 +291,21 @@
     pagerLbl.textContent = `${start + 1}–${end} of ${total}`
     prev.disabled = state.proxies.page === 0
     next.disabled = end >= total
+    if (bulkApi) bulkApi.syncActionBar('proxy', t)
   }
 
-  // ---------------- action handlers ----------------
-  async function performAction(act, id, el) {
-    const pa = window.oz && window.oz.proxyAction
-    if (!pa) return
-    if (el) el.disabled = true
-    try {
-      let r
-      switch (act) {
-        case 'test':
-          r = await pa.test(id)
-          break
-        case 'reset':
-          r = await pa.reset(id)
-          break
-        case 'disable':
-          r = await pa.setDisabled(id, true)
-          break
-        case 'enable':
-          r = await pa.setDisabled(id, false)
-          break
-        case 'rotate':
-          r = await pa.rotateSticky(id)
-          if (r && !r.ok && r.reason === 'NOT_STICKY') {
-            window.alert(
-              t(
-                'proxyDashboard.actions.notStickyMsg',
-                'This proxy does not have a sticky session marker (-sessid- in username).',
-              ),
-            )
-          }
-          break
-        case 'delete': {
-          const ok = window.confirm(
-            t(
-              'proxyDashboard.actions.deleteConfirm',
-              'Delete this proxy from the pool? Identities using it will fall back to default strategy. Continue?',
-            ),
-          )
-          if (!ok) {
-            if (el) el.disabled = false
-            return
-          }
-          r = await pa.delete(id)
-          break
-        }
-        case 'reload':
-          r = await pa.reloadSession(id)
-          if (r && r.ok) {
-            window.alert(
-              t(
-                'proxyDashboard.actions.reloadOk',
-                'Session re-applied. New navigations will use the assigned proxy.',
-              ) +
-                (r.proxyId ? ' (proxyId=' + r.proxyId.slice(0, 8) + ')' : ' (direct://)'),
-            )
-          }
-          break
-        case 'reassign-set': {
-          // id encodes identityId; el is the <select>
-          const raw = el && el.value
-          const value = raw === '(none)' ? null : raw
-          r = await pa.reassign(id, value)
-          if (r && r.ok) {
-            window.alert(
-              t(
-                'proxyDashboard.actions.reassignOk',
-                'Proxy reassigned and session re-applied.',
-              ),
-            )
-          }
-          break
-        }
-        case 'dismiss-alert': {
-          if (alertsApi) {
-            r = await alertsApi.handleDismissAlert(id, {
-              refresh: async () => {
-                await fetchAlerts()
-                renderAlerts()
-              },
-            })
-          }
-          return // alerts UI already refreshed
-        }
-        default:
-          return
-      }
-      if (r && !r.ok) {
-        window.alert(
-          t('proxyDashboard.actions.failed', 'Action failed') +
-            ': ' +
-            (r.reason || 'unknown') +
-            (r.message ? ' — ' + r.message : ''),
-        )
-      }
-    } finally {
-      if (el) el.disabled = false
-    }
-    await fetchData(false)
-    renderAll()
+  // H-2f: single-row action handler extracted to proxy-dashboard-actions.js
+  const actionsApi = window.OZ_DashboardActions
+  function performAction(act, id, el) {
+    if (!actionsApi) return
+    return actionsApi.performAction(act, id, el, {
+      t,
+      fetchData,
+      renderAll,
+      fetchAlerts,
+      renderAlerts,
+      alertsApi,
+    })
   }
 
   // ---------------- wire UI events ----------------
@@ -482,12 +413,37 @@
   function wireActionDelegation() {
     // Delegated click handler for action buttons in either table.
     document.body.addEventListener('click', (ev) => {
-      const t = ev.target
-      if (!t || !t.dataset || !t.dataset.act) return
-      const act = t.dataset.act
-      const id = t.dataset.id
+      const tt = ev.target
+      if (!tt || !tt.dataset || !tt.dataset.act) return
+      const act = tt.dataset.act
+      // H-2f: bulk actions handled by the bulk module first.
+      if (bulkApi) {
+        const handled = bulkApi.handleDelegatedClick(ev, {
+          t,
+          rerender: () => {
+            renderIdentities()
+            renderProxies()
+          },
+          refreshDashboard: async () => {
+            await fetchData(false)
+            renderAll()
+          },
+        })
+        if (handled) return
+      }
+      if (act === 'bulk-deselect-ident') {
+        bulkApi && bulkApi.clearSelection('ident')
+        renderIdentities()
+        return
+      }
+      if (act === 'bulk-deselect-proxy') {
+        bulkApi && bulkApi.clearSelection('proxy')
+        renderProxies()
+        return
+      }
+      const id = tt.dataset.id
       if (!id) return
-      performAction(act, id, t)
+      performAction(act, id, tt)
     })
     // Delegated change handler for reassign selects.
     document.body.addEventListener('change', (ev) => {

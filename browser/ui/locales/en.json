@@ -178,6 +178,52 @@
       "ago": "{{n}} ago",
       "severityUrgent": "URGENT",
       "severityWarning": "WARNING"
+    },
+    "bulk": {
+      "selectAll": "Select all visible",
+      "selected": "{{n}} selected",
+      "deselect": "Deselect",
+      "bulkTest": "Test",
+      "bulkReset": "Reset",
+      "bulkDisable": "Disable",
+      "bulkEnable": "Enable",
+      "bulkDelete": "Delete",
+      "bulkReload": "↻ Reload sessions",
+      "bulkReassign": "Reassign…",
+      "deleteConfirm": "Delete {{n}} proxies? Identities using them will fall back to default strategy.",
+      "zeroSelected": "0 selected",
+      "bulkReassignPrompt": "Proxy id to apply to all selected identities (or \"auto-random\" / \"auto-round-robin\" / blank = none):"
+    },
+    "import": {
+      "openBtn": "+ Import",
+      "title": "Import proxies",
+      "paste": "Paste proxy list",
+      "upload": "Choose file…",
+      "detectedFormat": "Detected format",
+      "formatCsv": "CSV (with headers)",
+      "formatUrlStyle": "user:pass@host:port",
+      "formatHostPort": "host:port:user:pass",
+      "formatUnknown": "Unknown — please review",
+      "previewTitle": "Preview",
+      "addProxies": "Import {{n}} valid proxies",
+      "placeholder": "host:port:user:pass\nuser:pass@host:port\nor CSV with headers: host,port,user,pass,country,label",
+      "invalidRow": "invalid",
+      "importing": "Importing…",
+      "importComplete": "Import complete — added {{n}} proxies",
+      "reparseOnChange": "Re-parse on text change",
+      "close": "Close"
+    },
+    "bulkAssign": {
+      "openBtn": "Bulk assign",
+      "title": "Bulk assign proxies (1:1)",
+      "proxiesHeader": "Proxies",
+      "identitiesHeader": "Identities",
+      "previewHeader": "Preview",
+      "warningMismatch": "Mismatch: {{n}} proxies vs {{m}} identities — only the first {{k}} will be paired.",
+      "assignBtn": "Assign {{n}} pairs",
+      "close": "Close",
+      "searchProxies": "Search proxies…",
+      "searchIdentities": "Search identities…"
     }
   }
 }
