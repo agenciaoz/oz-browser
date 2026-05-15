@@ -51,6 +51,9 @@ const DEFAULTS = Object.freeze({
     devMode: false,
     freeTier: false,
     logLevel: 'INFO',
+    // i18n v1 (1.1.0): UI locale. 'auto' resolves to app.getLocale() at boot.
+    // 'en' / 'es' force a specific catalog. Anything else falls back to 'auto'.
+    locale: 'auto',
   },
   privacy: {
     autoClearOnQuit: false,
@@ -280,6 +283,12 @@ function validateKey(section, key, value) {
   if (key === 'skippedAt') {
     if (value !== null && (!Number.isInteger(value) || value < 0)) {
       return { ok: false, reason: 'must be epoch ms or null' }
+    }
+  }
+  if (key === 'locale') {
+    const VALID = ['auto', 'en', 'es']
+    if (typeof value !== 'string' || !VALID.includes(value)) {
+      return { ok: false, reason: `must be one of ${VALID.join('/')}` }
     }
   }
   return { ok: true }

@@ -152,27 +152,33 @@
     }
 
     _renderState(state) {
+      const t = window.OZ && window.OZ.t ? window.OZ.t : (k, _p) => k // fallback if i18n not loaded yet
       if (!state) {
         this.$stateRow.hidden = true
         if (this.$modeBox) this.$modeBox.hidden = true
-        // No previous import → force merge (replace makes no sense).
         if (this.$modeMerge) this.$modeMerge.checked = true
         return
       }
       const when = state.lastImportAt ? new Date(state.lastImportAt) : null
       const cnts = state.counts || {}
-      const summary = `${cnts.identities || 0} identities, ${cnts.cookies || 0} cookies, ${cnts.passwords || 0} passwords`
+      const summary = t('settings.migration.lastImportSummary', {
+        identities: cnts.identities || 0,
+        cookies: cnts.cookies || 0,
+        passwords: cnts.passwords || 0,
+      })
       this.$stateDesc.textContent = when
-        ? `${when.toLocaleString()} — imported ${summary}`
+        ? `${when.toLocaleString()} — ${summary}`
         : summary
       this.$stateRow.hidden = false
-      // G-5: previous import exists — show mode chooser.
       if (this.$modeBox) {
         this.$modeBox.hidden = false
         if (this.$modePrevCount) {
           const idMapCount = Object.keys(state.identityMap || {}).length
           const wsMapCount = Object.keys(state.workspaceMap || {}).length
-          this.$modePrevCount.textContent = `${idMapCount} identities and ${wsMapCount} workspaces`
+          this.$modePrevCount.textContent = t('settings.migration.prevCount', {
+            identities: idMapCount,
+            workspaces: wsMapCount,
+          })
         }
       }
     }
@@ -205,12 +211,11 @@
     }
 
     async _onImportClick() {
+      const t = window.OZ && window.OZ.t ? window.OZ.t : (k) => k
       const opts = this._collectOptions()
       // G-5: confirm replace mode — it's destructive.
       if (opts.mode === 'replace') {
-        const ok = window.confirm(
-          'This will DELETE the identities and workspaces from your previous Ghost import, then re-import them fresh.\n\nExisting OZ identities/workspaces that were NOT imported from Ghost are not affected.\n\nContinue?',
-        )
+        const ok = window.confirm(t('settings.migration.replaceConfirm'))
         if (!ok) return
       }
       this._setError(null)

@@ -3544,11 +3544,17 @@
     <div class="bottom">
       <aside id="oz-sidebar">
         <div id="oz-workspace-switcher">
-          <div class="header">Workspaces</div>
+          <div class="header" data-i18n="sidebar.workspaces">Workspaces</div>
           <div id="oz-workspace-pills"></div>
           <div id="oz-workspace-actions">
-            <button id="oz-new-workspace">＋ New Workspace</button>
-            <button id="oz-workspace-show-archived" style="display: none">
+            <button id="oz-new-workspace" data-i18n="sidebar.newWorkspace">
+              ＋ New Workspace
+            </button>
+            <button
+              id="oz-workspace-show-archived"
+              style="display: none"
+              data-i18n="sidebar.showArchived"
+            >
               Show archived
             </button>
           </div>
@@ -3556,7 +3562,13 @@
         <!-- C-8: header del árbol — el "+ New Identity" grande se eliminó.
              Crear identity ahora es contextual: botón "+" mini en cada
              workspace row (sidebar.js renderWorkspaceWrapper). -->
-        <div class="header" id="oz-tree-header">WORKSPACES &amp; IDENTITIES</div>
+        <div
+          class="header"
+          id="oz-tree-header"
+          data-i18n="sidebar.workspacesAndIdentities"
+        >
+          WORKSPACES &amp; IDENTITIES
+        </div>
         <div id="oz-identity-list"></div>
 
         <!-- C-8: footer toolbar — 8 íconos compactos reemplazan los botones
@@ -4249,7 +4261,9 @@
         aria-labelledby="oz-settings-title"
       >
         <header>
-          <h2 id="oz-settings-title">⚙️ Settings</h2>
+          <h2 id="oz-settings-title">
+            ⚙️ <span data-i18n="settings.title">Settings</span>
+          </h2>
           <button type="button" class="oz-modal-close" data-close aria-label="Close">
             ✕
           </button>
@@ -4258,33 +4272,72 @@
 
         <div class="stg-layout">
           <nav class="stg-nav" id="oz-settings-nav">
-            <button data-section="general" class="active">General</button>
-            <button data-section="privacy">Privacy</button>
-            <button data-section="automation">Automation</button>
-            <button data-section="backup">Backup</button>
-            <button data-section="performance">Performance</button>
-            <button data-section="notifications">Notifications</button>
-            <button data-section="sync">Sync</button>
-            <button data-section="scheduled">Scheduled</button>
-            <button data-section="migration">Migration</button>
-            <button data-section="about">About</button>
+            <button
+              data-section="general"
+              class="active"
+              data-i18n="settings.nav.general"
+            >
+              General
+            </button>
+            <button data-section="privacy" data-i18n="settings.nav.privacy">
+              Privacy
+            </button>
+            <button data-section="automation" data-i18n="settings.nav.automation">
+              Automation
+            </button>
+            <button data-section="backup" data-i18n="settings.nav.backup">Backup</button>
+            <button data-section="performance" data-i18n="settings.nav.performance">
+              Performance
+            </button>
+            <button data-section="notifications" data-i18n="settings.nav.notifications">
+              Notifications
+            </button>
+            <button data-section="sync" data-i18n="settings.nav.sync">Sync</button>
+            <button data-section="scheduled" data-i18n="settings.nav.scheduled">
+              Scheduled
+            </button>
+            <button data-section="migration" data-i18n="settings.nav.migration">
+              Migration
+            </button>
+            <button data-section="about" data-i18n="settings.nav.about">About</button>
           </nav>
 
           <div id="oz-settings-content">
             <!-- General -->
             <section class="stg-section" data-section="general">
-              <h3>General</h3>
+              <h3 data-i18n="settings.general.title">General</h3>
               <div class="stg-row">
                 <div>
-                  <div class="stg-label">Developer Mode</div>
-                  <div class="stg-desc">Enables verbose logs and DevTools shortcuts.</div>
+                  <div class="stg-label" data-i18n="settings.general.language">
+                    Language
+                  </div>
+                  <div class="stg-desc" data-i18n="settings.general.languageDesc">
+                    UI language. Auto uses your Mac's system language.
+                  </div>
+                </div>
+                <select id="oz-stg-locale">
+                  <option value="auto" data-i18n="language.auto">Auto (system)</option>
+                  <option value="en" data-i18n="language.english">English</option>
+                  <option value="es" data-i18n="language.spanish">Español</option>
+                </select>
+              </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label" data-i18n="settings.general.devMode">
+                    Developer Mode
+                  </div>
+                  <div class="stg-desc" data-i18n="settings.general.devModeDesc">
+                    Enables verbose logs and DevTools shortcuts.
+                  </div>
                 </div>
                 <input type="checkbox" id="oz-stg-devMode" />
               </div>
               <div class="stg-row">
                 <div>
-                  <div class="stg-label">Free Tier limits</div>
-                  <div class="stg-desc">
+                  <div class="stg-label" data-i18n="settings.general.freeTier">
+                    Free Tier limits
+                  </div>
+                  <div class="stg-desc" data-i18n="settings.general.freeTierDesc">
                     Cap identities to 3 (matches Free plan). Useful for marketing
                     screenshots.
                   </div>
@@ -4293,8 +4346,12 @@
               </div>
               <div class="stg-row">
                 <div>
-                  <div class="stg-label">Log level</div>
-                  <div class="stg-desc">DEBUG is verbose; WARN/ERROR for production.</div>
+                  <div class="stg-label" data-i18n="settings.general.logLevel">
+                    Log level
+                  </div>
+                  <div class="stg-desc" data-i18n="settings.general.logLevelDesc">
+                    DEBUG is verbose; WARN/ERROR for production.
+                  </div>
                 </div>
                 <select id="oz-stg-logLevel">
                   <option value="DEBUG">DEBUG</option>
@@ -4631,8 +4688,12 @@
 
             <!-- G-3: Ghost Browser migration wizard -->
             <section class="stg-section" data-section="migration" hidden>
-              <h3>Migration — Ghost Browser</h3>
-              <div class="stg-desc" style="margin-bottom: 12px">
+              <h3 data-i18n="settings.migration.title">Migration — Ghost Browser</h3>
+              <div
+                class="stg-desc"
+                style="margin-bottom: 12px"
+                data-i18n="settings.migration.intro"
+              >
                 Import identities, workspaces, cookies, and saved passwords from Ghost
                 Browser. macOS will prompt for Keychain access the first time — click
                 <strong>Always Allow</strong> so future runs do not ask again.
@@ -4640,8 +4701,16 @@
 
               <div class="stg-row">
                 <div>
-                  <div class="stg-label">Ghost Browser install</div>
-                  <div class="stg-desc" id="oz-mig-detectDesc">Looking…</div>
+                  <div class="stg-label" data-i18n="settings.migration.ghostInstall">
+                    Ghost Browser install
+                  </div>
+                  <div
+                    class="stg-desc"
+                    id="oz-mig-detectDesc"
+                    data-i18n="settings.migration.looking"
+                  >
+                    Looking…
+                  </div>
                 </div>
                 <span class="oz-sync-pill oz-sync-pill-stopped" id="oz-mig-detectPill"
                   >—</span
@@ -4650,10 +4719,17 @@
 
               <div class="stg-row" id="oz-mig-stateRow" hidden>
                 <div>
-                  <div class="stg-label">Last import</div>
+                  <div class="stg-label" data-i18n="settings.migration.lastImport">
+                    Last import
+                  </div>
                   <div class="stg-desc" id="oz-mig-stateDesc">—</div>
                 </div>
-                <button type="button" id="oz-mig-clearStateBtn" class="stg-action-btn">
+                <button
+                  type="button"
+                  id="oz-mig-clearStateBtn"
+                  class="stg-action-btn"
+                  data-i18n="settings.migration.forgetHistory"
+                >
                   Forget import history
                 </button>
               </div>
@@ -4681,39 +4757,45 @@
                   margin: 12px 0;
                 "
               >
-                <div class="stg-label" style="margin-bottom: 8px">Will import:</div>
+                <div
+                  class="stg-label"
+                  style="margin-bottom: 8px"
+                  data-i18n="settings.migration.willImport"
+                >
+                  Will import:
+                </div>
                 <label class="stg-row" style="margin: 4px 0">
                   <span>
                     <input type="checkbox" id="oz-mig-optIdentities" checked />
-                    Identities
+                    <span data-i18n="settings.migration.identities">Identities</span>
                   </span>
                   <span class="stg-desc" id="oz-mig-cntIdentities">0</span>
                 </label>
                 <label class="stg-row" style="margin: 4px 0">
                   <span>
                     <input type="checkbox" id="oz-mig-optWorkspaces" checked />
-                    Workspaces
+                    <span data-i18n="settings.migration.workspaces">Workspaces</span>
                   </span>
                   <span class="stg-desc" id="oz-mig-cntWorkspaces">0</span>
                 </label>
                 <label class="stg-row" style="margin: 4px 0">
                   <span>
                     <input type="checkbox" id="oz-mig-optCookies" checked />
-                    Cookies
+                    <span data-i18n="settings.migration.cookies">Cookies</span>
                   </span>
                   <span class="stg-desc" id="oz-mig-cntCookies">0</span>
                 </label>
                 <label class="stg-row" style="margin: 4px 0">
                   <span>
                     <input type="checkbox" id="oz-mig-optBookmarks" checked />
-                    Bookmarks
+                    <span data-i18n="settings.migration.bookmarks">Bookmarks</span>
                   </span>
                   <span class="stg-desc" id="oz-mig-cntBookmarks">0</span>
                 </label>
                 <label class="stg-row" style="margin: 4px 0">
                   <span>
                     <input type="checkbox" id="oz-mig-optPasswords" checked />
-                    Passwords
+                    <span data-i18n="settings.migration.passwords">Passwords</span>
                   </span>
                   <span class="stg-desc" id="oz-mig-cntPasswords">0</span>
                 </label>
@@ -4730,7 +4812,13 @@
                   margin: 12px 0;
                 "
               >
-                <div class="stg-label" style="margin-bottom: 8px">Import mode</div>
+                <div
+                  class="stg-label"
+                  style="margin-bottom: 8px"
+                  data-i18n="settings.migration.modeTitle"
+                >
+                  Import mode
+                </div>
                 <label class="stg-row" style="margin: 4px 0; cursor: pointer">
                   <span>
                     <input
@@ -4740,10 +4828,16 @@
                       value="merge"
                       checked
                     />
-                    Merge with existing (recommended)
+                    <span data-i18n="settings.migration.modeMerge">
+                      Merge with existing (recommended)
+                    </span>
                   </span>
                 </label>
-                <div class="stg-desc" style="margin-left: 22px; margin-bottom: 8px">
+                <div
+                  class="stg-desc"
+                  style="margin-left: 22px; margin-bottom: 8px"
+                  data-i18n="settings.migration.modeMergeDesc"
+                >
                   Skip Ghost identities and workspaces already imported. Only adds new
                   items from Ghost.
                 </div>
@@ -4755,18 +4849,30 @@
                       id="oz-mig-modeReplace"
                       value="replace"
                     />
-                    Replace previous import (destructive)
+                    <span data-i18n="settings.migration.modeReplace">
+                      Replace previous import (destructive)
+                    </span>
                   </span>
                 </label>
                 <div class="stg-desc" style="margin-left: 22px">
-                  Delete the
+                  <span data-i18n="settings.migration.modeReplaceDescBefore"
+                    >Delete the</span
+                  >
                   <span id="oz-mig-modePrevCount">N identities and M workspaces</span>
-                  imported previously from Ghost, then re-import fresh. Existing OZ
-                  identities/workspaces unrelated to Ghost are untouched.
+                  <span data-i18n="settings.migration.modeReplaceDescAfter">
+                    imported previously from Ghost, then re-import fresh. Existing OZ
+                    identities/workspaces unrelated to Ghost are untouched.
+                  </span>
                 </div>
               </div>
 
-              <button type="button" id="oz-mig-importBtn" class="stg-action-btn" hidden>
+              <button
+                type="button"
+                id="oz-mig-importBtn"
+                class="stg-action-btn"
+                hidden
+                data-i18n="settings.migration.importBtn"
+              >
                 Import from Ghost Browser
               </button>
 
@@ -4781,9 +4887,20 @@
                   margin-top: 12px;
                 "
               >
-                <div class="stg-label" id="oz-mig-progressTitle">Importing…</div>
-                <div class="stg-desc" id="oz-mig-progressDesc">
-                  This may take a few seconds. macOS may show a Keychain dialog.
+                <div
+                  class="stg-label"
+                  id="oz-mig-progressTitle"
+                  data-i18n="settings.migration.importing"
+                >
+                  Importing…
+                </div>
+                <div
+                  class="stg-desc"
+                  id="oz-mig-progressDesc"
+                  data-i18n="settings.migration.importingDesc"
+                >
+                  macOS may show a Keychain dialog asking for access to "Ghost Browser
+                  Safe Storage". Click Always Allow.
                 </div>
                 <div id="oz-mig-summary" hidden style="margin-top: 8px"></div>
               </div>
@@ -4791,25 +4908,34 @@
 
             <!-- About -->
             <section class="stg-section" data-section="about" hidden>
-              <h3>About OZ Browser</h3>
+              <h3 data-i18n="settings.about.title">About OZ Browser</h3>
               <div class="stg-about">
                 <div>
-                  <strong>Version:</strong> <span id="oz-stg-app-version">—</span>
+                  <strong data-i18n="settings.about.version">Version:</strong>
+                  <span id="oz-stg-app-version">—</span>
                 </div>
                 <div>
-                  <strong>Settings schema:</strong> <span id="oz-stg-version">—</span>
+                  <strong data-i18n="settings.about.settingsSchema"
+                    >Settings schema:</strong
+                  >
+                  <span id="oz-stg-version">—</span>
                 </div>
                 <div>
-                  <strong
+                  <strong data-i18n="settings.about.subtitle"
                     >Identities · Workspaces · Vault · Proxies · FingerprintEngine</strong
                   >
                 </div>
-                <div>
+                <div data-i18n="settings.about.description">
                   Multi-session Chromium browser based on Electron. Anti-detect via
                   per-identity fingerprint spoofing (11 vectors).
                 </div>
                 <div style="margin-top: 8px">
-                  <button type="button" id="oz-stg-reset-all" class="stg-action-btn">
+                  <button
+                    type="button"
+                    id="oz-stg-reset-all"
+                    class="stg-action-btn"
+                    data-i18n="settings.about.resetAll"
+                  >
                     Reset ALL settings to defaults
                   </button>
                 </div>
@@ -5386,6 +5512,7 @@
     <script src="./proxy-manager.js"></script>
     <script src="./scheduled-actions-ui.js"></script>
     <script src="./ghost-migration-ui.js"></script>
+    <script src="./i18n.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>
     <script src="./browsing-data.js"></script>

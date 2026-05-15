@@ -62,6 +62,15 @@ function registerExtraIpcHandlers(browser) {
 
 function registerAppInfoHandlersIPC(_browser) {
   ipcMain.handle('oz:app:getVersion', () => app.getVersion())
+  // i18n v1: renderer asks main for the system locale so 'auto' mode can
+  // resolve to it. app.getLocale() returns e.g. 'es-EC' or 'en-US'.
+  ipcMain.handle('oz:app:getSystemLocale', () => {
+    try {
+      return app.getLocale() || 'en-US'
+    } catch (_err) {
+      return 'en-US'
+    }
+  })
 }
 
 // ----- Ghost Browser Migration (G-3) ----------------------------------------

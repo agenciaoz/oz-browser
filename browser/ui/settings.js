@@ -31,6 +31,15 @@
         { id: 'oz-stg-devMode', section: 'general', key: 'devMode', type: 'bool' },
         { id: 'oz-stg-freeTier', section: 'general', key: 'freeTier', type: 'bool' },
         { id: 'oz-stg-logLevel', section: 'general', key: 'logLevel', type: 'string' },
+        // v1.1.0: i18n locale dropdown. Auto resolves to system locale at boot.
+        // Change here triggers i18n.setLocale() which persists + re-renders.
+        {
+          id: 'oz-stg-locale',
+          section: 'general',
+          key: 'locale',
+          type: 'string',
+          localeSpecial: true,
+        },
         {
           id: 'oz-stg-autoClearOnQuit',
           section: 'privacy',
@@ -309,6 +318,14 @@
       // immediate feedback (cold-start kicks in synchronously on enable).
       if (binding.syncSpecial) {
         this.handleSyncEnabledChange(value, el)
+        return
+      }
+      // v1.1.0: locale change → i18n.setLocale persists + re-renders. Skip
+      // the generic save path (i18n module already calls oz.settings.set).
+      if (binding.localeSpecial) {
+        if (window.OZ && window.OZ.i18n) {
+          window.OZ.i18n.setLocale(value)
+        }
         return
       }
       // Debounce so typing in port/text doesn't fire 1 IPC per keystroke

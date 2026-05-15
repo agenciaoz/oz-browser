@@ -410,6 +410,7 @@ if (isWebUI) {
     },
     app: {
       getVersion: () => ipcRenderer.invoke('oz:app:getVersion'),
+      getSystemLocale: () => ipcRenderer.invoke('oz:app:getSystemLocale'),
     },
     settings: {
       getAll: () => ipcRenderer.invoke('oz:settings:getAll'),
