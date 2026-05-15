@@ -233,6 +233,46 @@
         margin-top: 24px;
         padding: 12px;
       }
+      .row-actions {
+        display: inline-flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+      .row-actions button {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 3px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 11px;
+        white-space: nowrap;
+      }
+      .row-actions button:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .row-actions button.danger:hover {
+        background: rgba(239, 68, 68, 0.15);
+        border-color: var(--red);
+        color: var(--red);
+      }
+      .row-actions button.primary {
+        background: var(--accent);
+        border-color: var(--accent);
+        color: white;
+      }
+      .row-actions button:disabled {
+        opacity: 0.4;
+        cursor: wait;
+      }
+      .reassign-select {
+        background: var(--bg);
+        color: var(--text);
+        border: 1px solid var(--border);
+        border-radius: 4px;
+        padding: 2px 4px;
+        font-size: 11px;
+      }
     </style>
   </head>
   <body>
@@ -295,6 +335,7 @@
               <th data-sort="status" data-i18n="proxyDashboard.col.status">
                 Status <span class="sort-arrow">▾</span>
               </th>
+              <th data-i18n="proxyDashboard.col.actions">Actions</th>
             </tr>
           </thead>
           <tbody id="ident-tbody"></tbody>
@@ -351,6 +392,7 @@
               <th data-sort="lastLatencyMs" data-i18n="proxyDashboard.col.latency">
                 Latency <span class="sort-arrow">▾</span>
               </th>
+              <th data-i18n="proxyDashboard.col.actions">Actions</th>
             </tr>
           </thead>
           <tbody id="proxy-tbody"></tbody>
@@ -365,8 +407,8 @@
         </div>
       </section>
 
-      <div class="footer-note" data-i18n="proxyDashboard.readOnlyNote">
-        Read-only view. Actions (test, reset, edit, reassign) arrive in v1.1.2.
+      <div class="footer-note" data-i18n="proxyDashboard.actionsNote">
+        Live ops view. Actions apply immediately. Edit modal arrives in v1.1.3.
       </div>
     </div>
 

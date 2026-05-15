@@ -83,6 +83,17 @@ function registerAppInfoHandlersIPC(_browser) {
 function registerProxyHealthGlobalHandlersIPC(browser) {
   const { computeGlobalStatus } = require('./proxy-health-status')
   const { getDashboardData } = require('./proxy-dashboard-data')
+  const { buildProxyActions } = require('./proxy-actions')
+  const { toProxyRulesString } = require('./proxy-assignment')
+  // Lazy builder — re-resolved each call so swaps in deps still work.
+  const actions = () =>
+    buildProxyActions({
+      proxyManager: browser.proxyManager,
+      proxyAssignment: browser.proxyAssignment,
+      proxyHealth: browser.proxyHealth,
+      identityManager: browser.identityManager,
+      toProxyRulesString,
+    })
   ipcMain.handle('oz:proxyHealth:getGlobalStatus', () => {
     return computeGlobalStatus({
       proxyManager: browser.proxyManager,
@@ -113,6 +124,21 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
       workspaceManager: browser.workspaceManager,
     })
   })
+  // H-2c per-proxy + H-2d per-identity actions.
+  ipcMain.handle('oz:proxyAction:test', (_e, id) => actions().testProxy(id))
+  ipcMain.handle('oz:proxyAction:reset', (_e, id) => actions().resetProxy(id))
+  ipcMain.handle('oz:proxyAction:setDisabled', (_e, id, disabled) =>
+    actions().setDisabled(id, disabled),
+  )
+  ipcMain.handle('oz:proxyAction:rotateSticky', (_e, id) => actions().rotateSticky(id))
+  ipcMain.handle('oz:proxyAction:delete', (_e, id) => actions().deleteProxy(id))
+  ipcMain.handle('oz:proxyAction:reloadSession', (_e, identityId) =>
+    actions().reloadSession(identityId),
+  )
+  ipcMain.handle('oz:proxyAction:reassign', (_e, identityId, value) =>
+    actions().reassignProxy(identityId, value),
+  )
+
   // H-2b: open the dashboard in a new tab of the focused window.
   ipcMain.handle('oz:proxyHealth:openDashboard', (event) => {
     try {

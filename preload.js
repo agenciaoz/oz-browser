@@ -412,12 +412,9 @@ if (isWebUI) {
       getVersion: () => ipcRenderer.invoke('oz:app:getVersion'),
       getSystemLocale: () => ipcRenderer.invoke('oz:app:getSystemLocale'),
     },
-    proxyHealth: {
-      getGlobalStatus: () => ipcRenderer.invoke('oz:proxyHealth:getGlobalStatus'),
-      testAllAndStatus: () => ipcRenderer.invoke('oz:proxyHealth:testAllAndStatus'),
-      getDashboard: () => ipcRenderer.invoke('oz:proxyHealth:getDashboard'),
-      openDashboard: () => ipcRenderer.invoke('oz:proxyHealth:openDashboard'),
-    },
+    // v1.1.2: proxy health + actions bindings live in preload-proxy.js
+    // (ADR 0005 — preload.js kept under 500 LOC). Spread merges into oz.
+    ...require('./preload-proxy').buildProxyBindings(ipcRenderer),
     settings: {
       getAll: () => ipcRenderer.invoke('oz:settings:getAll'),
       get: (section) => ipcRenderer.invoke('oz:settings:get', section),

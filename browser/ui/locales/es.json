@@ -136,6 +136,7 @@
     "emptyProxies": "No hay proxies configurados",
     "noProxy": "Sin proxy — riesgo de fuga",
     "readOnlyNote": "Vista de solo lectura. Las acciones (probar, restablecer, editar, reasignar) llegan en v1.1.2.",
+    "actionsNote": "Vista operativa en vivo. Las acciones se aplican al instante. El editor completo llega en v1.1.3.",
     "col": {
       "identity": "Identidad",
       "workspace": "Espacio",
@@ -146,7 +147,27 @@
       "host": "Servidor",
       "usedBy": "Usado por",
       "lastTest": "Última prueba",
-      "latency": "Latencia"
+      "latency": "Latencia",
+      "actions": "Acciones"
+    },
+    "actions": {
+      "test": "Probar",
+      "reset": "Restablecer",
+      "disable": "Desactivar",
+      "enable": "Activar",
+      "rotate": "Rotar",
+      "rotateTooltip": "Rotar el session-id sticky en el username (formato Oxylabs)",
+      "delete": "Eliminar",
+      "reload": "Recargar sesión",
+      "deleteConfirm": "¿Eliminar este proxy del pool? Las identidades que lo usan caerán a la estrategia por defecto. ¿Continuar?",
+      "notStickyMsg": "Este proxy no tiene un marcador de sesión sticky (-sessid- en el username).",
+      "reloadOk": "Sesión recargada. Las nuevas navegaciones usarán el proxy asignado.",
+      "reassignOk": "Proxy reasignado y sesión recargada.",
+      "failed": "La acción falló",
+      "none": "Ninguno",
+      "autoRandom": "auto-aleatorio",
+      "autoRoundRobin": "auto-round-robin",
+      "defaultIdent": "default — n/a"
     }
   }
 }

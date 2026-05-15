@@ -23,14 +23,6 @@
   }
 
   // ---------------- helpers ----------------
-  function fmtTime(ts) {
-    if (!ts) return '—'
-    try {
-      return new Date(ts).toLocaleString()
-    } catch (_e) {
-      return String(ts)
-    }
-  }
   function fmtAgo(ts) {
     if (!ts) return '—'
     const d = Date.now() - ts
@@ -162,6 +154,7 @@
       return
     }
     empty.hidden = true
+    const proxyOptions = (state.data && state.data.proxies) || []
     tbody.innerHTML = slice
       .map((i) => {
         const proxyCell = i.proxy
@@ -169,12 +162,31 @@
               i.proxy.host,
             )}:${esc(i.proxy.port)}</span>`
           : `<span class="leak-flag">${t('proxyDashboard.noProxy', 'No proxy — leak risk')}</span>`
+        const isDefault = i.isDefault
+        const reassignOpts = [
+          `<option value="(none)">${t('proxyDashboard.actions.none', 'None')}</option>`,
+          `<option value="auto-random">${t('proxyDashboard.actions.autoRandom', 'auto-random')}</option>`,
+          `<option value="auto-round-robin">${t('proxyDashboard.actions.autoRoundRobin', 'auto-round-robin')}</option>`,
+          ...proxyOptions.map(
+            (p) =>
+              `<option value="${esc(p.id)}"${
+                i.proxy && i.proxy.id === p.id ? ' selected' : ''
+              }>${esc(p.name)} (${esc(p.country || '—')})</option>`,
+          ),
+        ].join('')
+        const actions = isDefault
+          ? `<span class="small">${t('proxyDashboard.actions.defaultIdent', 'default — n/a')}</span>`
+          : `<div class="row-actions">
+            <button class="primary" data-act="reload" data-id="${esc(i.id)}" title="Re-apply assigned proxy on current session">↻ ${t('proxyDashboard.actions.reload', 'Reload')}</button>
+            <select class="reassign-select" data-act="reassign" data-id="${esc(i.id)}">${reassignOpts}</select>
+          </div>`
         return `<tr>
-        <td class="nowrap"><strong>${esc(i.name)}</strong>${i.isDefault ? ' <span class="small">(default)</span>' : ''}</td>
+        <td class="nowrap"><strong>${esc(i.name)}</strong>${isDefault ? ' <span class="small">(default)</span>' : ''}</td>
         <td class="nowrap">${esc(i.workspaceName)}</td>
         <td>${proxyCell}</td>
         <td class="nowrap">${fmtCountry(i.country)}</td>
         <td><span class="pill" data-status="${i.status}">${i.status}</span></td>
+        <td>${actions}</td>
       </tr>`
       })
       .join('')
@@ -221,6 +233,20 @@
     empty.hidden = true
     tbody.innerHTML = slice
       .map((p) => {
+        const stickyBtn =
+          p.protocol && p.protocol !== 'socks5'
+            ? `<button data-act="rotate" data-id="${esc(p.id)}" title="${t('proxyDashboard.actions.rotateTooltip', 'Rotate sticky session-id in username (Oxylabs format)')}">${t('proxyDashboard.actions.rotate', 'Rotate')}</button>`
+            : ''
+        const disableBtn = p.isDisabled
+          ? `<button data-act="enable" data-id="${esc(p.id)}">${t('proxyDashboard.actions.enable', 'Enable')}</button>`
+          : `<button data-act="disable" data-id="${esc(p.id)}">${t('proxyDashboard.actions.disable', 'Disable')}</button>`
+        const actions = `<div class="row-actions">
+          <button class="primary" data-act="test" data-id="${esc(p.id)}">${t('proxyDashboard.actions.test', 'Test')}</button>
+          <button data-act="reset" data-id="${esc(p.id)}">${t('proxyDashboard.actions.reset', 'Reset')}</button>
+          ${disableBtn}
+          ${stickyBtn}
+          <button class="danger" data-act="delete" data-id="${esc(p.id)}">${t('proxyDashboard.actions.delete', 'Delete')}</button>
+        </div>`
         return `<tr>
         <td class="nowrap"><strong>${esc(p.name)}</strong>${
           p.label ? ` <span class="small">${esc(p.label)}</span>` : ''
@@ -233,12 +259,103 @@
         }</td>
         <td class="nowrap">${fmtAgo(p.lastTestedAt)}</td>
         <td class="nowrap">${fmtMs(p.lastLatencyMs)}</td>
+        <td>${actions}</td>
       </tr>`
       })
       .join('')
     pagerLbl.textContent = `${start + 1}–${end} of ${total}`
     prev.disabled = state.proxies.page === 0
     next.disabled = end >= total
+  }
+
+  // ---------------- action handlers ----------------
+  async function performAction(act, id, el) {
+    const pa = window.oz && window.oz.proxyAction
+    if (!pa) return
+    if (el) el.disabled = true
+    try {
+      let r
+      switch (act) {
+        case 'test':
+          r = await pa.test(id)
+          break
+        case 'reset':
+          r = await pa.reset(id)
+          break
+        case 'disable':
+          r = await pa.setDisabled(id, true)
+          break
+        case 'enable':
+          r = await pa.setDisabled(id, false)
+          break
+        case 'rotate':
+          r = await pa.rotateSticky(id)
+          if (r && !r.ok && r.reason === 'NOT_STICKY') {
+            window.alert(
+              t(
+                'proxyDashboard.actions.notStickyMsg',
+                'This proxy does not have a sticky session marker (-sessid- in username).',
+              ),
+            )
+          }
+          break
+        case 'delete': {
+          const ok = window.confirm(
+            t(
+              'proxyDashboard.actions.deleteConfirm',
+              'Delete this proxy from the pool? Identities using it will fall back to default strategy. Continue?',
+            ),
+          )
+          if (!ok) {
+            if (el) el.disabled = false
+            return
+          }
+          r = await pa.delete(id)
+          break
+        }
+        case 'reload':
+          r = await pa.reloadSession(id)
+          if (r && r.ok) {
+            window.alert(
+              t(
+                'proxyDashboard.actions.reloadOk',
+                'Session re-applied. New navigations will use the assigned proxy.',
+              ) +
+                (r.proxyId ? ' (proxyId=' + r.proxyId.slice(0, 8) + ')' : ' (direct://)'),
+            )
+          }
+          break
+        case 'reassign-set': {
+          // id encodes identityId; el is the <select>
+          const raw = el && el.value
+          const value = raw === '(none)' ? null : raw
+          r = await pa.reassign(id, value)
+          if (r && r.ok) {
+            window.alert(
+              t(
+                'proxyDashboard.actions.reassignOk',
+                'Proxy reassigned and session re-applied.',
+              ),
+            )
+          }
+          break
+        }
+        default:
+          return
+      }
+      if (r && !r.ok) {
+        window.alert(
+          t('proxyDashboard.actions.failed', 'Action failed') +
+            ': ' +
+            (r.reason || 'unknown') +
+            (r.message ? ' — ' + r.message : ''),
+        )
+      }
+    } finally {
+      if (el) el.disabled = false
+    }
+    await fetchData(false)
+    renderAll()
   }
 
   // ---------------- wire UI events ----------------
@@ -331,8 +448,29 @@
     renderProxies()
   }
 
+  function wireActionDelegation() {
+    // Delegated click handler for action buttons in either table.
+    document.body.addEventListener('click', (ev) => {
+      const t = ev.target
+      if (!t || !t.dataset || !t.dataset.act) return
+      const act = t.dataset.act
+      const id = t.dataset.id
+      if (!id) return
+      performAction(act, id, t)
+    })
+    // Delegated change handler for reassign selects.
+    document.body.addEventListener('change', (ev) => {
+      const t = ev.target
+      if (!t || !t.dataset || t.dataset.act !== 'reassign') return
+      const id = t.dataset.id
+      if (!id) return
+      performAction('reassign-set', id, t)
+    })
+  }
+
   async function start() {
     wire()
+    wireActionDelegation()
     await fetchData(false)
     renderAll()
     // Auto-refresh every 30s while tab is visible.
