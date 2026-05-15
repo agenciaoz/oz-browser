@@ -494,7 +494,12 @@ if (isWebUI) {
       previewUrls: (input) => ipcRenderer.invoke('oz:bulkOpen:previewUrls', input),
       validate: (input) => ipcRenderer.invoke('oz:bulkOpen:validate', input),
       onOpen(cb) {
-        const listener = () => cb()
+        // K1-extras (v1.4.0): broadcast can carry a pre-fill payload
+        // {mode, workspaceId, identityIds} so context-menu callers (e.g.
+        // workspace right-click → "Open all identities") drive the modal
+        // straight to the right configuration. Defensive: cb may not
+        // expect args; we pass undefined when no payload.
+        const listener = (_e, payload) => cb(payload || undefined)
         ipcRenderer.on('oz:bulk-open:open', listener)
         return () => ipcRenderer.off('oz:bulk-open:open', listener)
       },

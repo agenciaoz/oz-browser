@@ -64,7 +64,9 @@
 
     _wire() {
       if (window.oz?.bulkOpen?.onOpen) {
-        window.oz.bulkOpen.onOpen(() => this.open())
+        // K1-extras (v1.4.0): broadcast can carry a pre-fill payload from
+        // the workspace context-menu "Open all identities" entry.
+        window.oz.bulkOpen.onOpen((payload) => this.open(payload))
       }
       if (this.$openBtn) {
         this.$openBtn.addEventListener('click', () => this.open())
@@ -108,7 +110,7 @@
       })
     }
 
-    async open() {
+    async open(payload) {
       this.isOpen = true
       this.$modal.hidden = false
       await safe(window.oz.ui.setContentVisible(false), 'ui.setContentVisible')
@@ -124,6 +126,28 @@
       this.identities = (identities || []).filter((i) => !!i.id)
       this.workspaces = (workspaces || []).filter((w) => !w.isArchived)
       this.activeWorkspaceId = activeWs ? activeWs.id : null
+
+      // K1-extras (v1.4.0): apply pre-fill payload from workspace context-
+      // menu. We set mode + target workspace + select all named identities.
+      // Defensive: ignore unknown identityIds (workspace may have changed
+      // between right-click and modal opening).
+      if (payload && typeof payload === 'object') {
+        if (payload.mode === 'existing' || payload.mode === 'create') {
+          this.mode = payload.mode
+        }
+        this.selected = new Set()
+        if (Array.isArray(payload.identityIds)) {
+          const validIds = new Set(this.identities.map((i) => i.id))
+          for (const id of payload.identityIds) {
+            if (validIds.has(id)) this.selected.add(id)
+          }
+        }
+        // Target workspace pre-select handled by _renderTargetOptions below
+        // — set the active so the option is selected.
+        if (payload.workspaceId) {
+          this.activeWorkspaceId = payload.workspaceId
+        }
+      }
 
       this._renderTargetOptions()
       this._setMode(this.mode)

@@ -53,6 +53,22 @@ function buildWorkspaceContextMenu({ browser, wsId }) {
     click: () => (ws.isFrozen ? h.unfreeze(ws.id) : h.freeze(ws.id)),
   })
 
+  // K1-extras (v1.4.0): 1-click bulk-open. Broadcasts a payload the
+  // sidebar / bulk-opener modal listens for and pre-selects this workspace
+  // + all its identities. User only types the URL and clicks Go.
+  const identityCount = (ws.identityIds && ws.identityIds.length) || 0
+  template.push({
+    label: `Open all identities in tabs… (${identityCount})`,
+    enabled: !ws.isFrozen && !ws.isArchived && identityCount > 0,
+    click: () => {
+      browser.broadcastToWebUI('oz:bulk-open:open', {
+        mode: 'existing',
+        workspaceId: ws.id,
+        identityIds: (ws.identityIds || []).slice(),
+      })
+    },
+  })
+
   // Quick Tabs submenu (mirrors the workspace-switcher legacy ctx menu).
   const QT_LABELS = {
     'on-click': 'Lazy (on click) — default',
