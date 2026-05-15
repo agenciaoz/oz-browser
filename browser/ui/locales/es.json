@@ -118,5 +118,35 @@
       "tooltipRed": "Salud de proxies: acción requerida — riesgo de fuga",
       "tooltipGray": "Salud de proxies: no hay proxies configurados"
     }
+  },
+  "proxyDashboard": {
+    "title": "Panel de salud de proxies",
+    "loading": "Cargando…",
+    "unavailable": "Estado no disponible",
+    "lastScan": "último escaneo",
+    "neverTested": "nunca testeado",
+    "refresh": "Actualizar",
+    "testAll": "Probar todos",
+    "testing": "Probando…",
+    "identities": "Identidades",
+    "proxies": "Proxies",
+    "searchPlaceholder": "Buscar identidad, espacio, proxy…",
+    "searchPlaceholderProxies": "Buscar proxy, host, país…",
+    "emptyIdentities": "No hay identidades para mostrar",
+    "emptyProxies": "No hay proxies configurados",
+    "noProxy": "Sin proxy — riesgo de fuga",
+    "readOnlyNote": "Vista de solo lectura. Las acciones (probar, restablecer, editar, reasignar) llegan en v1.1.2.",
+    "col": {
+      "identity": "Identidad",
+      "workspace": "Espacio",
+      "assignedProxy": "Proxy asignado",
+      "country": "País",
+      "status": "Estado",
+      "name": "Nombre",
+      "host": "Servidor",
+      "usedBy": "Usado por",
+      "lastTest": "Última prueba",
+      "latency": "Latencia"
+    }
   }
 }

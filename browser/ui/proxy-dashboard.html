@@ -1,0 +1,376 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>OZ Browser — Proxy Health Dashboard</title>
+    <style>
+      :root {
+        --bg: #1a1a1a;
+        --panel: #232323;
+        --border: #2e2e2e;
+        --text: #e8e8e8;
+        --text-muted: #888;
+        --accent: #7c5fbf;
+        --green: #4ade80;
+        --yellow: #fbbf24;
+        --red: #ef4444;
+        --gray: #888;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      header.hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 20px 24px;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        flex-wrap: wrap;
+      }
+      header.hero .dot {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+      }
+      header.hero .dot[data-status='green'] {
+        background: var(--green);
+      }
+      header.hero .dot[data-status='yellow'] {
+        background: var(--yellow);
+      }
+      header.hero .dot[data-status='red'] {
+        background: var(--red);
+      }
+      header.hero .dot[data-status='gray'] {
+        background: var(--gray);
+      }
+      header.hero h1 {
+        margin: 0;
+        font-size: 22px;
+        font-weight: 600;
+      }
+      header.hero .hint {
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      header.hero .actions {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+      }
+      button.btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 8px 14px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 500;
+      }
+      button.btn:hover {
+        opacity: 0.92;
+      }
+      button.btn.secondary {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+      }
+      section.card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 16px 20px;
+        margin-bottom: 20px;
+      }
+      section.card h2 {
+        margin: 0 0 12px;
+        font-size: 16px;
+        font-weight: 600;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      section.card h2 .count {
+        background: var(--border);
+        padding: 2px 8px;
+        border-radius: 10px;
+        font-size: 12px;
+        font-weight: normal;
+        color: var(--text-muted);
+      }
+      .table-toolbar {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+        align-items: center;
+      }
+      .table-toolbar input[type='search'] {
+        background: var(--bg);
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 6px 10px;
+        border-radius: 4px;
+        font-size: 13px;
+        flex: 1;
+        max-width: 320px;
+      }
+      .table-toolbar .pager {
+        margin-left: auto;
+        color: var(--text-muted);
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .table-toolbar .pager button {
+        background: transparent;
+        border: 1px solid var(--border);
+        color: var(--text);
+        padding: 3px 8px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 12px;
+      }
+      .table-toolbar .pager button:disabled {
+        opacity: 0.3;
+        cursor: not-allowed;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 13px;
+      }
+      th,
+      td {
+        text-align: left;
+        padding: 8px 10px;
+        border-bottom: 1px solid var(--border);
+      }
+      th {
+        font-weight: 600;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        font-size: 11px;
+        letter-spacing: 0.5px;
+        cursor: pointer;
+        user-select: none;
+      }
+      th .sort-arrow {
+        opacity: 0.5;
+        font-size: 9px;
+        margin-left: 4px;
+      }
+      tbody tr:hover {
+        background: rgba(255, 255, 255, 0.025);
+      }
+      .pill {
+        display: inline-block;
+        padding: 2px 7px;
+        border-radius: 9px;
+        font-size: 11px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.4px;
+      }
+      .pill[data-status='green'] {
+        background: rgba(74, 222, 128, 0.15);
+        color: var(--green);
+      }
+      .pill[data-status='yellow'] {
+        background: rgba(251, 191, 36, 0.15);
+        color: var(--yellow);
+      }
+      .pill[data-status='red'] {
+        background: rgba(239, 68, 68, 0.15);
+        color: var(--red);
+      }
+      .pill[data-status='gray'] {
+        background: rgba(136, 136, 136, 0.15);
+        color: var(--gray);
+      }
+      .leak-flag {
+        color: var(--red);
+        font-weight: 600;
+      }
+      .empty {
+        padding: 40px 20px;
+        text-align: center;
+        color: var(--text-muted);
+      }
+      .muted {
+        color: var(--text-muted);
+      }
+      .nowrap {
+        white-space: nowrap;
+      }
+      .small {
+        font-size: 11px;
+        color: var(--text-muted);
+      }
+      .footer-note {
+        color: var(--text-muted);
+        font-size: 12px;
+        text-align: center;
+        margin-top: 24px;
+        padding: 12px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="hero">
+        <div class="dot" id="hero-dot" data-status="gray"></div>
+        <div>
+          <h1 data-i18n="proxyDashboard.title">Proxy Health Dashboard</h1>
+          <div class="hint" id="hero-hint" data-i18n="proxyDashboard.loading">
+            Loading…
+          </div>
+        </div>
+        <div class="actions">
+          <button
+            class="btn secondary"
+            id="btn-refresh"
+            data-i18n="proxyDashboard.refresh"
+          >
+            Refresh
+          </button>
+          <button class="btn" id="btn-test-all" data-i18n="proxyDashboard.testAll">
+            Test all now
+          </button>
+        </div>
+      </header>
+
+      <section class="card">
+        <h2>
+          <span data-i18n="proxyDashboard.identities">Identities</span>
+          <span class="count" id="ident-count">0</span>
+        </h2>
+        <div class="table-toolbar">
+          <input
+            type="search"
+            id="ident-search"
+            placeholder="Search identity, workspace, proxy…"
+            data-i18n-attr="placeholder:proxyDashboard.searchPlaceholder"
+          />
+          <div class="pager">
+            <button id="ident-prev">‹</button>
+            <span id="ident-pager">0–0 of 0</span>
+            <button id="ident-next">›</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="name" data-i18n="proxyDashboard.col.identity">
+                Identity <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="workspaceName" data-i18n="proxyDashboard.col.workspace">
+                Workspace <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="proxyName" data-i18n="proxyDashboard.col.assignedProxy">
+                Assigned proxy <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="country" data-i18n="proxyDashboard.col.country">
+                Country <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="status" data-i18n="proxyDashboard.col.status">
+                Status <span class="sort-arrow">▾</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="ident-tbody"></tbody>
+        </table>
+        <div
+          id="ident-empty"
+          class="empty"
+          hidden
+          data-i18n="proxyDashboard.emptyIdentities"
+        >
+          No identities to show
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>
+          <span data-i18n="proxyDashboard.proxies">Proxies</span>
+          <span class="count" id="proxy-count">0</span>
+        </h2>
+        <div class="table-toolbar">
+          <input
+            type="search"
+            id="proxy-search"
+            placeholder="Search proxy, host, country…"
+            data-i18n-attr="placeholder:proxyDashboard.searchPlaceholderProxies"
+          />
+          <div class="pager">
+            <button id="proxy-prev">‹</button>
+            <span id="proxy-pager">0–0 of 0</span>
+            <button id="proxy-next">›</button>
+          </div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th data-sort="name" data-i18n="proxyDashboard.col.name">
+                Name <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="hostPort" data-i18n="proxyDashboard.col.host">
+                Host <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="country" data-i18n="proxyDashboard.col.country">
+                Country <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="usedByCount" data-i18n="proxyDashboard.col.usedBy">
+                Used by <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="status" data-i18n="proxyDashboard.col.status">
+                Status <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="lastTestedAt" data-i18n="proxyDashboard.col.lastTest">
+                Last test <span class="sort-arrow">▾</span>
+              </th>
+              <th data-sort="lastLatencyMs" data-i18n="proxyDashboard.col.latency">
+                Latency <span class="sort-arrow">▾</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody id="proxy-tbody"></tbody>
+        </table>
+        <div
+          id="proxy-empty"
+          class="empty"
+          hidden
+          data-i18n="proxyDashboard.emptyProxies"
+        >
+          No proxies configured
+        </div>
+      </section>
+
+      <div class="footer-note" data-i18n="proxyDashboard.readOnlyNote">
+        Read-only view. Actions (test, reset, edit, reassign) arrive in v1.1.2.
+      </div>
+    </div>
+
+    <script src="./i18n.js"></script>
+    <script src="./proxy-dashboard.js"></script>
+  </body>
+</html>

@@ -118,5 +118,35 @@
       "tooltipRed": "Proxy health: action required — leak risk",
       "tooltipGray": "Proxy health: no proxies configured"
     }
+  },
+  "proxyDashboard": {
+    "title": "Proxy Health Dashboard",
+    "loading": "Loading…",
+    "unavailable": "Status unavailable",
+    "lastScan": "last scan",
+    "neverTested": "never tested",
+    "refresh": "Refresh",
+    "testAll": "Test all now",
+    "testing": "Testing…",
+    "identities": "Identities",
+    "proxies": "Proxies",
+    "searchPlaceholder": "Search identity, workspace, proxy…",
+    "searchPlaceholderProxies": "Search proxy, host, country…",
+    "emptyIdentities": "No identities to show",
+    "emptyProxies": "No proxies configured",
+    "noProxy": "No proxy — leak risk",
+    "readOnlyNote": "Read-only view. Actions (test, reset, edit, reassign) arrive in v1.1.2.",
+    "col": {
+      "identity": "Identity",
+      "workspace": "Workspace",
+      "assignedProxy": "Assigned proxy",
+      "country": "Country",
+      "status": "Status",
+      "name": "Name",
+      "host": "Host",
+      "usedBy": "Used by",
+      "lastTest": "Last test",
+      "latency": "Latency"
+    }
   }
 }

@@ -415,6 +415,8 @@ if (isWebUI) {
     proxyHealth: {
       getGlobalStatus: () => ipcRenderer.invoke('oz:proxyHealth:getGlobalStatus'),
       testAllAndStatus: () => ipcRenderer.invoke('oz:proxyHealth:testAllAndStatus'),
+      getDashboard: () => ipcRenderer.invoke('oz:proxyHealth:getDashboard'),
+      openDashboard: () => ipcRenderer.invoke('oz:proxyHealth:openDashboard'),
     },
     settings: {
       getAll: () => ipcRenderer.invoke('oz:settings:getAll'),

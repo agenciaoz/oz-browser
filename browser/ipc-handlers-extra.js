@@ -82,6 +82,7 @@ function registerAppInfoHandlersIPC(_browser) {
 
 function registerProxyHealthGlobalHandlersIPC(browser) {
   const { computeGlobalStatus } = require('./proxy-health-status')
+  const { getDashboardData } = require('./proxy-dashboard-data')
   ipcMain.handle('oz:proxyHealth:getGlobalStatus', () => {
     return computeGlobalStatus({
       proxyManager: browser.proxyManager,
@@ -89,13 +90,12 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
       identityManager: browser.identityManager,
     })
   })
-  // Fire a manual scan + return fresh status. Used by the badge's "Test now".
   ipcMain.handle('oz:proxyHealth:testAllAndStatus', async () => {
     if (browser.proxyHealth && typeof browser.proxyHealth.testAll === 'function') {
       try {
         await browser.proxyHealth.testAll()
       } catch (_err) {
-        // swallow — return status with whatever we have
+        // swallow
       }
     }
     return computeGlobalStatus({
@@ -103,6 +103,50 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
       proxyAssignment: browser.proxyAssignment,
       identityManager: browser.identityManager,
     })
+  })
+  // H-2b: dashboard snapshot.
+  ipcMain.handle('oz:proxyHealth:getDashboard', () => {
+    return getDashboardData({
+      proxyManager: browser.proxyManager,
+      proxyAssignment: browser.proxyAssignment,
+      identityManager: browser.identityManager,
+      workspaceManager: browser.workspaceManager,
+    })
+  })
+  // H-2b: open the dashboard in a new tab of the focused window.
+  ipcMain.handle('oz:proxyHealth:openDashboard', (event) => {
+    try {
+      const senderWc = event && event.sender
+      // Find the window owning the sender or fall back to first live window.
+      let target = null
+      for (const w of browser.windows || []) {
+        if (
+          w.window &&
+          !w.window.isDestroyed() &&
+          (w.window.webContents === senderWc ||
+            (w.tabs &&
+              w.tabs.tabList &&
+              w.tabs.tabList.some((t) => t.webContents === senderWc)))
+        ) {
+          target = w
+          break
+        }
+      }
+      if (!target) {
+        target = (browser.windows || []).find((w) => w.window && !w.window.isDestroyed())
+      }
+      if (!target || !target.tabs) return { ok: false, reason: 'NO_WINDOW' }
+      const url = `chrome-extension://${browser.webuiExtensionId}/proxy-dashboard.html`
+      const tab = target.tabs.create({
+        url,
+        source: 'proxyHealthBadge',
+        materialize: true,
+      })
+      if (typeof target.tabs.select === 'function') target.tabs.select(tab.id)
+      return { ok: true, tabId: tab.id }
+    } catch (err) {
+      return { ok: false, reason: 'OPEN_FAILED', message: err.message }
+    }
   })
 }
 
