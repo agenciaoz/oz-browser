@@ -1,7 +1,7 @@
 # Bloque H-2 (i/j) — Anti-detect coherence overlay + WebRTC/DNS leak tests
 
 **Status:** ✅ H-2i + H-2j cerrados 2026-05-15
-**Commit:** TBD (pendiente push)
+**Commit:** `2966ed5`
 **Version:** 1.1.4
 **Tiempo efectivo:** ~3.5h
 **Deps nuevas:** ninguna
