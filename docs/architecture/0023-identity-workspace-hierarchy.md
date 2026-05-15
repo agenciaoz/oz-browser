@@ -95,6 +95,29 @@ Use case real: "estoy en workspace María, quiero abrir Insta de Pedro rápido".
 
 Durante `hydrateWorkspace`, filtrar tabSpecs cuya identity ya no vive en el workspace → loggear WARN + skip. Post-migration corre 1 vez `cleanupOrphanTabs(window)` para limpiar tabSpecs huérfanos sin perder data (los logueamos a un orphans-log para audit).
 
+### D10 — Self-heal Step 1.5 en `syncIdentityWorkspaces` (G-5, 2026-05-14)
+
+**Contexto:** el Ghost importer G-3 (commit `5b7bd5d`) violaba la invariante D1 — llamaba `workspaceManager.addIdentity(ws.id, ozId)` para asociar identidades importadas con workspaces, pero **no actualizaba `identity.workspaceId`** (default `'general'`). Al boot, Step 2 del reconcile (rebuild `workspace.identityIds[]` desde `identityManager.listByWorkspace(ws.id)`) leía la fuente de verdad (`identity.workspaceId='general'`) y silenciosamente vaciaba `workspace.identityIds[]` de los workspaces importados — bug surfaceado por smoke real de Jose 2026-05-14, ver `docs/history/31-bloque-g5-resultado.md`.
+
+**Decisión:** dos fixes en paralelo.
+
+1. **Source fix:** el importer pasa a usar `identityManager.moveToWorkspace(ozId, ws.id)` (que dispara el hook bidireccional y mantiene D1). Cualquier path nuevo que asocie identidad↔workspace debe usar `moveToWorkspace`, NO `addIdentity` directo (`addIdentity` queda como helper interno del hook, sin documentar para callers externos).
+
+2. **Defense-in-depth — Step 1.5 self-heal:** antes del rebuild de Step 2 que confía ciegamente en `identity.workspaceId`, hacer una inferencia desde `tabSpec` evidence:
+   - Por cada workspace `W` con `W.id !== 'general'`:
+     - Por cada `tab` en `W.tabSpecs`:
+       - Si `tab.identityId` apunta a una identity `I` con `I.workspaceId !== W.id` y `I` no es default → `moveToWorkspace(I, W.id)`. Loggear `inferred += 1`.
+   - **General Browsing EXCLUIDA** del scan (legítimamente hostea tabs de muchas identities sin ownership).
+   - **First-workspace-wins** en conflict (una identity referenciada por tabs en 2+ workspaces non-default): claim por el primero según el orden de `wm.list()`. Estable cross-boot.
+
+**Garantiza:** recupera la invariante D1 desde un estado inconsistente sin requerir intervención manual. Idempotente — corridas subsecuentes sin drift no hacen nada.
+
+**No-op cuando:** sistema healthy (todos `identity.workspaceId` coherentes con tabSpec evidence). Costo: O(workspaces × avgTabs).
+
+**Tests:** `tests/ghost-browser-importer-g5.smoketest.js` sección 3 y 4 cubren ambos paths (self-heal active + General exclusion).
+
+**Trade-off aceptado:** si un usuario manualmente asignó una tab de identity X a workspace W donde W no es el owner de X (estado intencional inconsistente con D1), el self-heal lo "corrige" automáticamente y mueve X a W. Esto se considera correcto porque D1 prohíbe sharing de identities — el modelo no soporta "una identity con múltiples owners". El user-customizado se considera bug en su workflow, no en el self-heal.
+
 ## Implementación — sub-bloques
 
 ### H3a (~3h) — Modelo + Migration sin UI

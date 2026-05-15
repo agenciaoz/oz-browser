@@ -19,27 +19,32 @@ OZ Browser se entrega en 3 versiones secuenciales con saltos discretos de scope:
 
 ## Status detallado v1
 
-| Bloque                                                                                                                                                          | Status                                                             |
-| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
-| Etapa 0 + 1.1 + 1.2 + 1.3-MCP + 1.3.5-CI + 1.3.6-DX                                                                                                             | ✅                                                                 |
-| 1.4-WS Workspace Manager                                                                                                                                        | ✅                                                                 |
-| 1.5 ⭐ Account Vault                                                                                                                                            | ✅                                                                 |
-| 1.6 Time Machine local                                                                                                                                          | ✅                                                                 |
-| 1.7 Tab Context Menu                                                                                                                                            | ✅                                                                 |
-| 1.8 Proxy Manager                                                                                                                                               | ✅                                                                 |
-| 1.9 FingerprintEngine "Ghost+"                                                                                                                                  | ✅                                                                 |
-| 1.10 Settings + Browsing data + Onboarding                                                                                                                      | ✅                                                                 |
-| **CORE Sub-Etapa 1A**                                                                                                                                           | **✅ Completo**                                                    |
-| Bloque B Foundation infra (protocol handler + dotenv + OAuth helper)                                                                                            | ✅                                                                 |
-| Bloque C Quick wins (C-1 Cmd+K, C-2 crash recovery, C-3 clone, C-4 bulk opener, C-5 notifications, C-6 health dashboard, C-7 extensions, C-8 sidebar compactor) | ✅                                                                 |
-| Bloque D Backup + Sync Dropbox (D-1, D-2, D-3a→D-3c-3c, D-4)                                                                                                    | ✅ — falta F-0 validación visual                                   |
-| Bloque E Team mode (Curve25519 key-sharing)                                                                                                                     | ✅                                                                 |
-| **Bloque F simple** Scheduled Actions cron (~4h)                                                                                                                | ⏳ — wake-up routines, sin automation de comentarios (eso va a v2) |
-| **Bloque G** Migration wizards Chrome/Brave/Edge/Firefox/Safari + AdsPower/Multilogin/Ghost (~10-12h)                                                           | ⏳                                                                 |
-| **Bloque H** Internal hardening + DR drill (~6h)                                                                                                                | ⏳                                                                 |
-| **Bloque I** Apple Dev signing 3b/3c/3e + Cloudflare R2 (~6-7h)                                                                                                 | ⏳ Bloqueado por Apple Dev Program approval (~2d)                  |
+| Bloque                                                                                                                                                          | Status                                                                                       |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| Etapa 0 + 1.1 + 1.2 + 1.3-MCP + 1.3.5-CI + 1.3.6-DX                                                                                                             | ✅                                                                                           |
+| 1.4-WS Workspace Manager                                                                                                                                        | ✅                                                                                           |
+| 1.5 ⭐ Account Vault                                                                                                                                            | ✅                                                                                           |
+| 1.6 Time Machine local                                                                                                                                          | ✅                                                                                           |
+| 1.7 Tab Context Menu                                                                                                                                            | ✅                                                                                           |
+| 1.8 Proxy Manager                                                                                                                                               | ✅                                                                                           |
+| 1.9 FingerprintEngine "Ghost+"                                                                                                                                  | ✅                                                                                           |
+| 1.10 Settings + Browsing data + Onboarding                                                                                                                      | ✅                                                                                           |
+| **CORE Sub-Etapa 1A**                                                                                                                                           | **✅ Completo**                                                                              |
+| Bloque B Foundation infra (protocol handler + dotenv + OAuth helper)                                                                                            | ✅                                                                                           |
+| Bloque C Quick wins (C-1 Cmd+K, C-2 crash recovery, C-3 clone, C-4 bulk opener, C-5 notifications, C-6 health dashboard, C-7 extensions, C-8 sidebar compactor) | ✅                                                                                           |
+| Bloque D Backup + Sync Dropbox (D-1, D-2, D-3a→D-3c-3c, D-4)                                                                                                    | ✅ — falta F-0 validación visual                                                             |
+| Bloque E Team mode (Curve25519 key-sharing)                                                                                                                     | ✅                                                                                           |
+| **Bloque F simple** Scheduled Actions cron (~4h)                                                                                                                | ✅ 2026-05-13 (commit `d9bdbdc` + smoke fix `92630b8`)                                       |
+| **Bloque G** Migration wizard Ghost Browser only en v1 (~10h)                                                                                                   | ✅ 2026-05-13 (G-1→G-4) + ✅ G-5 idempotency/replace/self-heal 2026-05-14 (commit `d2b7d8b`) |
+| **Bloque H** Internal hardening + DR drill (~6h)                                                                                                                | ✅ 2026-05-13 (commit `d408fdc`)                                                             |
+| **Bloque I** Apple Dev signing 3b/3c/3e + Cloudflare R2 (~6-7h)                                                                                                 | ⏳ Bloqueado por Apple Dev Program approval (~2d)                                            |
+| **Bloque I-2** auto-updater (electron-updater + GitHub Releases) (~1-2h)                                                                                        | ⏳ Bloqueado por I cerrado primero                                                           |
 
-**Total v1 dev restante**: ~22-29h. Apple Dev approval es bloqueante solo para I, los otros 3 avanzan en paralelo.
+**Total v1 dev restante**: ~7-9h, todo dentro de I + I-2. Apple Dev approval es bloqueante.
+
+**App version actual:** **`1.0.0` → `1.0.1`** (G-5). v1 line = 1.0.x (patch per release shippable). v2 = 2.0.x, v3 = 3.0.x.
+
+Migrations Chrome/Brave/Edge/Firefox/Safari + AdsPower/Multilogin **diferidas a v2** — Ghost solo en v1 (caso de uso real de Jose). v2 abrirá audiencia más amplia.
 
 ---
 
