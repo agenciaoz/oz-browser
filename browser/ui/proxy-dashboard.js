@@ -369,6 +369,21 @@
         }
       })
     }
+    // H-2k (v1.1.5): + Oxylabs button → builder modal.
+    const btnOxylabs = document.getElementById('btn-oxylabs')
+    if (btnOxylabs) {
+      btnOxylabs.addEventListener('click', () => {
+        if (window.OZ_OxylabsBuilder) {
+          window.OZ_OxylabsBuilder.open({
+            t,
+            refreshDashboard: async () => {
+              await fetchData(false)
+              renderAll()
+            },
+          })
+        }
+      })
+    }
     // H-2h: Bulk assign button → modal (placeholder until H-2h closes)
     const btnBulkAssign = document.getElementById('btn-bulk-assign')
     if (btnBulkAssign) {

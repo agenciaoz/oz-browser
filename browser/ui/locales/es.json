@@ -246,5 +246,20 @@
       "searchProxies": "Buscar proxies…",
       "searchIdentities": "Buscar identidades…"
     }
+  },
+  "oxylabsBuilder": {
+    "openBtn": "+ Oxylabs",
+    "title": "Generador de Proxies Oxylabs",
+    "endpoint": "Endpoint (host:port)",
+    "customer": "Cliente",
+    "password": "Contraseña",
+    "country": "País",
+    "city": "Ciudad (opcional)",
+    "sticky": "Sesión sticky (misma IP durante sesstime; apagado = rotación por request)",
+    "sesstime": "Duración sticky",
+    "startSessId": "Sesión inicial #",
+    "count": "Cuántos proxies",
+    "preview": "Previsualización (primeros 5)",
+    "insert": "Insertar proxies"
   }
 }

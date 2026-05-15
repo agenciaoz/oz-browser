@@ -33,8 +33,14 @@ const log = require('./logger')
  * @param {string} opts.customer - the customer username, e.g. "mzewama"
  * @param {string} opts.password - the account password
  * @param {number} opts.count - how many proxies to generate (1..1000)
+ * @param {boolean} [opts.sticky] - whether to emit sessid+sesstime (default true).
+ *   When false, omits both — Oxylabs returns a fresh exit IP per request
+ *   (rotating residential). Useful for high-volume scraping.
  * @param {number} [opts.sesstimeMin] - sticky duration in minutes, default 30
  * @param {string} [opts.country] - 2-letter, e.g. "US"
+ * @param {string} [opts.city] - lowercase city slug, e.g. "new_york". Oxylabs
+ *   only accepts cities the country exposes; we don't validate (let the
+ *   provider surface the error on first connection).
  * @param {number} [opts.startSessId] - first session id, default 1
  */
 function expandOxylabs(opts = {}) {
@@ -43,8 +49,10 @@ function expandOxylabs(opts = {}) {
     customer,
     password,
     count,
+    sticky = true,
     sesstimeMin = 30,
     country = null,
+    city = null,
     startSessId = 1,
   } = opts
   if (!endpoint || !customer || !password) {
@@ -75,28 +83,42 @@ function expandOxylabs(opts = {}) {
   }
   const [, host, portStr] = m
   const port = parseInt(portStr, 10)
+  // Normalize city: lowercase + underscores (Oxylabs convention).
+  const citySlug = city ? String(city).trim().toLowerCase().replace(/\s+/g, '_') : null
   const items = []
   for (let i = 0; i < n; i++) {
     const sessId = String(startSessId + i).padStart(6, '0')
     const userParts = [`customer-${customer}`]
     if (country) userParts.push(`cc-${country.toLowerCase()}`)
-    userParts.push(`sessid-${sessId}`)
-    userParts.push(`sesstime-${sesstimeMin}`)
+    if (citySlug) userParts.push(`city-${citySlug}`)
+    if (sticky) {
+      userParts.push(`sessid-${sessId}`)
+      userParts.push(`sesstime-${sesstimeMin}`)
+    }
+    const labelGeo = [country, city].filter(Boolean).join('/')
     items.push({
       protocol: 'https',
       host,
       port,
       username: userParts.join('-'),
       password,
-      tags: ['oxylabs', country].filter(Boolean),
+      tags: ['oxylabs', country, city].filter(Boolean),
       country,
-      name: `Oxylabs ${country || ''} #${sessId}`.trim(),
+      city: city || null,
+      // Rotating (non-sticky) proxies all share the same username — we still
+      // emit N "slots" so the user can spread them across identities and get
+      // per-identity rotation; the name suffix uses i+1 for disambiguation.
+      name: sticky
+        ? `Oxylabs ${labelGeo || ''} #${sessId}`.trim()
+        : `Oxylabs ${labelGeo || ''} rot ${i + 1}`.trim(),
     })
   }
   log.info('proxy-providers', 'oxylabs expanded', {
     count: items.length,
     endpoint,
     country,
+    city: citySlug,
+    sticky,
   })
   return { ok: true, items }
 }
@@ -123,6 +145,7 @@ const PROVIDERS = {
       { id: 'password', label: 'Password', type: 'password' },
       { id: 'count', label: 'How many proxies?', type: 'number', placeholder: '10' },
       { id: 'country', label: 'Country code (optional)', placeholder: 'US' },
+      { id: 'city', label: 'City (optional)', placeholder: 'new_york' },
       {
         id: 'sesstimeMin',
         label: 'Sticky session minutes',
