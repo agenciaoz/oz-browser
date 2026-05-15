@@ -4719,6 +4719,53 @@
                 </label>
               </div>
 
+              <!-- G-5: import mode (only shown when previous import exists) -->
+              <div
+                id="oz-mig-modeBox"
+                hidden
+                style="
+                  border: 1px solid var(--oz-border, #2a2a2a);
+                  border-radius: 6px;
+                  padding: 12px;
+                  margin: 12px 0;
+                "
+              >
+                <div class="stg-label" style="margin-bottom: 8px">Import mode</div>
+                <label class="stg-row" style="margin: 4px 0; cursor: pointer">
+                  <span>
+                    <input
+                      type="radio"
+                      name="oz-mig-mode"
+                      id="oz-mig-modeMerge"
+                      value="merge"
+                      checked
+                    />
+                    Merge with existing (recommended)
+                  </span>
+                </label>
+                <div class="stg-desc" style="margin-left: 22px; margin-bottom: 8px">
+                  Skip Ghost identities and workspaces already imported. Only adds new
+                  items from Ghost.
+                </div>
+                <label class="stg-row" style="margin: 4px 0; cursor: pointer">
+                  <span>
+                    <input
+                      type="radio"
+                      name="oz-mig-mode"
+                      id="oz-mig-modeReplace"
+                      value="replace"
+                    />
+                    Replace previous import (destructive)
+                  </span>
+                </label>
+                <div class="stg-desc" style="margin-left: 22px">
+                  Delete the
+                  <span id="oz-mig-modePrevCount">N identities and M workspaces</span>
+                  imported previously from Ghost, then re-import fresh. Existing OZ
+                  identities/workspaces unrelated to Ghost are untouched.
+                </div>
+              </div>
+
               <button type="button" id="oz-mig-importBtn" class="stg-action-btn" hidden>
                 Import from Ghost Browser
               </button>

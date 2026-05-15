@@ -83,6 +83,9 @@ function _defaultOptions(opts = {}) {
     importPasswords: opts.importPasswords !== false,
     includeDefaultCookies: !!opts.includeDefaultCookies,
     includeArchived: !!opts.includeArchived,
+    // G-5: import mode — 'merge' (idempotent, skip already-imported) or
+    // 'replace' (remove previous import then re-create). Default 'merge'.
+    mode: opts.mode === 'replace' ? 'replace' : 'merge',
   }
 }
 
@@ -185,14 +188,28 @@ async function dryRun({ reader, crypto: gc, ghostDataDir, options = {} }) {
 }
 
 // runImport — full pipeline. Throws-then-rolls-back on failure.
+//
+// G-5: supports opts.mode = 'merge' (default, idempotent — skip ghost-ids
+// already in previous state.json) or 'replace' (cleanup prev OZ entities
+// first, then re-import fresh). State.json is merged incrementally across
+// runs in merge mode, fully replaced in replace mode.
 async function runImport({ reader, crypto: gc, ghostDataDir, deps, options = {} }) {
   const opts = _defaultOptions(options)
+  const mode = opts.mode
   const t0 = Date.now()
+  // G-5: identityMap/workspaceMap seeded from previous state when merging,
+  // empty in replace mode. Summary counters split into created/reused/removed.
+  const prevState = deps && deps.userDataDir ? _loadState(deps.userDataDir) : null
+  const seedIdentityMap =
+    mode === 'merge' && prevState ? { ...prevState.identityMap } : {}
+  const seedWorkspaceMap =
+    mode === 'merge' && prevState ? { ...prevState.workspaceMap } : {}
   const summary = {
     ok: false,
+    mode,
     snapshotId: null,
-    identityMap: {},
-    workspaceMap: {},
+    identityMap: { ...seedIdentityMap },
+    workspaceMap: { ...seedWorkspaceMap },
     counts: {
       identities: 0,
       cookies: 0,
@@ -201,6 +218,9 @@ async function runImport({ reader, crypto: gc, ghostDataDir, deps, options = {} 
       passwords: 0,
     },
     skipped: { cookies: 0, passwords: 0 },
+    // G-5: idempotency counters.
+    reused: { identities: 0, workspaces: 0 },
+    removed: { identities: 0, workspaces: 0 },
     error: null,
   }
 
@@ -230,6 +250,46 @@ async function runImport({ reader, crypto: gc, ghostDataDir, deps, options = {} 
   }
 
   try {
+    // G-5 replace mode: cleanup previous import BEFORE touching new data.
+    // We remove identities first (sessions tied to them get cleaned up by
+    // identityManager.remove) then workspaces. Order matters because
+    // workspaceManager.remove with cascade might re-home identities to
+    // 'general' — we want them just gone.
+    if (mode === 'replace' && prevState) {
+      const prevIds = prevState.identityMap || {}
+      const prevWss = prevState.workspaceMap || {}
+      for (const ozId of Object.values(prevIds)) {
+        try {
+          const ident = deps.identityManager.get(ozId)
+          if (!ident) continue
+          if (ident.isDefault) continue // safety — never remove default
+          // Force unlock if locked, since user explicitly asked replace.
+          if (ident.locked && typeof deps.identityManager.setLocked === 'function') {
+            deps.identityManager.setLocked(ozId, false)
+          }
+          const res = deps.identityManager.remove(ozId)
+          if (res && res.ok !== false) summary.removed.identities++
+        } catch (_err) {
+          // best-effort cleanup; continue.
+        }
+      }
+      for (const ozId of Object.values(prevWss)) {
+        try {
+          const ws = deps.workspaceManager.get(ozId)
+          if (!ws) continue
+          if (ws.isDefault) continue
+          if (ws.isFrozen && typeof deps.workspaceManager.unfreeze === 'function') {
+            deps.workspaceManager.unfreeze(ozId)
+          }
+          // cascade:false because we already removed the identities above.
+          const res = deps.workspaceManager.remove(ozId, { cascade: false })
+          if (res && res.ok !== false) summary.removed.workspaces++
+        } catch (_err) {
+          // best-effort cleanup; continue.
+        }
+      }
+    }
+
     // Fetch Keychain key. If denied/missing, we still do identities +
     // workspaces + bookmarks; cookies + passwords get skipped.
     let derivedKey = null
@@ -253,6 +313,14 @@ async function runImport({ reader, crypto: gc, ghostDataDir, deps, options = {} 
 
     if (opts.importIdentities) {
       for (const id of ghostIdentityData) {
+        // G-5 merge: skip if ghost-hash already mapped AND the OZ identity
+        // still exists. If user deleted it manually, fall through to create
+        // a fresh one (self-healing).
+        const prevOzId = summary.identityMap[id.hash]
+        if (mode === 'merge' && prevOzId && deps.identityManager.get(prevOzId)) {
+          summary.reused.identities++
+          continue
+        }
         const ozId = deps.identityManager.create({
           name: id.metadata.name || 'Imported',
           color: id.metadata.color || undefined,
@@ -298,12 +366,34 @@ async function runImport({ reader, crypto: gc, ghostDataDir, deps, options = {} 
       for (const uuid of projectUuids) {
         const proj = reader.readProject(ghostDataDir, uuid)
         if (!proj) continue
-        const ws = deps.workspaceManager.create({ name: proj.name || 'Imported' })
-        summary.workspaceMap[uuid] = ws.id
-        summary.counts.workspaces++
+        // G-5 merge: skip if ghost-uuid already mapped AND the OZ workspace
+        // still exists. Else create fresh.
+        let ws
+        const prevWsId = summary.workspaceMap[uuid]
+        if (mode === 'merge' && prevWsId && deps.workspaceManager.get(prevWsId)) {
+          ws = deps.workspaceManager.get(prevWsId)
+          summary.reused.workspaces++
+        } else {
+          ws = deps.workspaceManager.create({ name: proj.name || 'Imported' })
+          summary.workspaceMap[uuid] = ws.id
+          summary.counts.workspaces++
+        }
         for (const ghostHash of proj.identities) {
           const ozId = summary.identityMap[ghostHash]
-          if (ozId) deps.workspaceManager.addIdentity(ws.id, ozId)
+          if (!ozId) continue
+          // G-5 BUG C fix: use identityManager.moveToWorkspace instead of
+          // workspaceManager.addIdentity. The former is the source-of-truth
+          // mutation (sets identity.workspaceId) and the wireIdentityWorkspaceSync
+          // hook fires workspaceManager.addIdentity automatically. Without
+          // this, the boot reconcile in identity-workspace-sync.js would
+          // wipe workspace.identityIds because identity.workspaceId still
+          // points at 'general' (the default at create time).
+          if (typeof deps.identityManager.moveToWorkspace === 'function') {
+            deps.identityManager.moveToWorkspace(ozId, ws.id)
+          } else {
+            // Fallback for older managers without moveToWorkspace.
+            deps.workspaceManager.addIdentity(ws.id, ozId)
+          }
         }
         // Build tabSpecs with OZ identity ids.
         const tabSpecs = []

@@ -50,6 +50,13 @@
         passwords: document.getElementById('oz-mig-cntPasswords'),
       }
 
+      // G-5: import mode controls (merge|replace) — only visible when a
+      // previous import exists.
+      this.$modeBox = document.getElementById('oz-mig-modeBox')
+      this.$modeMerge = document.getElementById('oz-mig-modeMerge')
+      this.$modeReplace = document.getElementById('oz-mig-modeReplace')
+      this.$modePrevCount = document.getElementById('oz-mig-modePrevCount')
+
       this._wireEvents()
     }
 
@@ -147,6 +154,9 @@
     _renderState(state) {
       if (!state) {
         this.$stateRow.hidden = true
+        if (this.$modeBox) this.$modeBox.hidden = true
+        // No previous import → force merge (replace makes no sense).
+        if (this.$modeMerge) this.$modeMerge.checked = true
         return
       }
       const when = state.lastImportAt ? new Date(state.lastImportAt) : null
@@ -156,6 +166,15 @@
         ? `${when.toLocaleString()} — imported ${summary}`
         : summary
       this.$stateRow.hidden = false
+      // G-5: previous import exists — show mode chooser.
+      if (this.$modeBox) {
+        this.$modeBox.hidden = false
+        if (this.$modePrevCount) {
+          const idMapCount = Object.keys(state.identityMap || {}).length
+          const wsMapCount = Object.keys(state.workspaceMap || {}).length
+          this.$modePrevCount.textContent = `${idMapCount} identities and ${wsMapCount} workspaces`
+        }
+      }
     }
 
     _renderCounts(c) {
@@ -168,16 +187,32 @@
     }
 
     _collectOptions() {
+      // G-5: mode is 'replace' only if the replace radio is checked AND visible.
+      // Default 'merge' covers all other cases (no previous import, or user
+      // kept the default radio).
+      const mode =
+        this.$modeReplace && this.$modeReplace.checked && !this.$modeBox.hidden
+          ? 'replace'
+          : 'merge'
       return {
         importIdentities: !!this.$opts.importIdentities.checked,
         importWorkspaces: !!this.$opts.importWorkspaces.checked,
         importCookies: !!this.$opts.importCookies.checked,
         importBookmarks: !!this.$opts.importBookmarks.checked,
         importPasswords: !!this.$opts.importPasswords.checked,
+        mode,
       }
     }
 
     async _onImportClick() {
+      const opts = this._collectOptions()
+      // G-5: confirm replace mode — it's destructive.
+      if (opts.mode === 'replace') {
+        const ok = window.confirm(
+          'This will DELETE the identities and workspaces from your previous Ghost import, then re-import them fresh.\n\nExisting OZ identities/workspaces that were NOT imported from Ghost are not affected.\n\nContinue?',
+        )
+        if (!ok) return
+      }
       this._setError(null)
       this.$importBtn.disabled = true
       this.$importBtn.textContent = 'Importing…'
@@ -189,7 +224,7 @@
 
       let summary
       try {
-        summary = await window.oz.ghostMigration.runImport(this._collectOptions())
+        summary = await window.oz.ghostMigration.runImport(opts)
       } catch (err) {
         this._setError('Import failed: ' + err.message)
         this._resetButton()
@@ -220,12 +255,30 @@
       this.$progressDesc.textContent = ''
       const c = summary.counts || {}
       const lines = [
+        `Mode: ${summary.mode || 'merge'}`,
         `Identities: ${c.identities || 0}`,
         `Workspaces: ${c.workspaces || 0}`,
         `Cookies: ${c.cookies || 0}`,
         `Bookmarks: ${c.bookmarks || 0}`,
         `Passwords: ${c.passwords || 0}`,
       ]
+      // G-5: surface reused/removed counts so users see merge/replace effects.
+      if (summary.reused) {
+        const r = summary.reused
+        if (r.identities || r.workspaces) {
+          lines.push(
+            `Reused: ${r.identities || 0} identities, ${r.workspaces || 0} workspaces`,
+          )
+        }
+      }
+      if (summary.removed) {
+        const r = summary.removed
+        if (r.identities || r.workspaces) {
+          lines.push(
+            `Removed (replace): ${r.identities || 0} identities, ${r.workspaces || 0} workspaces`,
+          )
+        }
+      }
       if (summary.skipped) {
         const skip = []
         if (summary.skipped.cookies) skip.push(`${summary.skipped.cookies} cookies`)

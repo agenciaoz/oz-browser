@@ -103,7 +103,8 @@ function syncIdentityWorkspaces(browser) {
   if (!im || !wm) return
 
   const allIdentities = im.list()
-  const wsIds = new Set(wm.list().map((w) => w.id))
+  const wsList = wm.list()
+  const wsIds = new Set(wsList.map((w) => w.id))
 
   // Step 1 — re-home any identity pointing at a missing workspace.
   let rehomed = 0
@@ -111,6 +112,41 @@ function syncIdentityWorkspaces(browser) {
     if (!wsIds.has(ident.workspaceId)) {
       im.moveToWorkspace(ident.id, DEFAULT_WORKSPACE_ID)
       rehomed += 1
+    }
+  }
+
+  // Step 1.5 — G-5 self-healing: infer workspaceId from tabSpec evidence.
+  //
+  // Recovers from the pre-G-5 Ghost importer bug (and any similar future
+  // bug) where workspace.identityIds[] was populated without updating
+  // identity.workspaceId. Without this, step 2 below would rebuild from
+  // identity.workspaceId='general' and silently wipe the workspace's
+  // intended identities.
+  //
+  // Heuristic: for each non-default workspace, scan tabSpecs[].identityId.
+  // If a non-default identity is referenced and its identity.workspaceId
+  // does NOT match this workspace, move it here. First-workspace-wins on
+  // conflict (an identity referenced by tabs in 2+ non-default workspaces
+  // gets claimed by the first scanned — order is workspaces.json order,
+  // stable across boots).
+  //
+  // General Browsing (DEFAULT_WORKSPACE_ID) is EXCLUDED — it semantically
+  // hosts tabs from many identities and is not "owner" of any.
+  let inferred = 0
+  const claimedBy = new Map() // identityId → workspaceId
+  for (const ws of wsList) {
+    if (ws.id === DEFAULT_WORKSPACE_ID) continue
+    for (const tab of ws.tabSpecs || []) {
+      const tid = tab.identityId
+      if (!tid || tid === 'default') continue
+      if (claimedBy.has(tid)) continue
+      const ident = im.get(tid)
+      if (!ident || ident.isDefault) continue
+      claimedBy.set(tid, ws.id)
+      if (ident.workspaceId !== ws.id) {
+        im.moveToWorkspace(tid, ws.id)
+        inferred += 1
+      }
     }
   }
 
@@ -135,9 +171,10 @@ function syncIdentityWorkspaces(browser) {
       driftFixed += 1
     }
   }
-  if (rehomed > 0 || driftFixed > 0) {
+  if (rehomed > 0 || inferred > 0 || driftFixed > 0) {
     log.info('identity-workspace-sync', 'invariant reconciled', {
       identitiesRehomed: rehomed,
+      identitiesInferredFromTabs: inferred,
       workspacesDriftFixed: driftFixed,
     })
   }

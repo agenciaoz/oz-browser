@@ -221,6 +221,14 @@ async function buildRealDeps() {
   const workspaceManager = new WM.WorkspaceManager({ dataDir: TEST_USERDATA })
   const bookmarkManager = new BM.BookmarkManager({ dataDir: TEST_USERDATA })
 
+  // G-5: wire the identity↔workspace sync hooks just like main.js does in
+  // production. Without this, identityManager.moveToWorkspace mutates
+  // identity.workspaceId but workspace.identityIds[] stays empty (the hook
+  // is what fires workspaceManager.addIdentity on move). Mirrors the
+  // production wiring exercised by Browser.init().
+  const IWSYNC = require('../browser/identity-workspace-sync.js')
+  IWSYNC.wireIdentityWorkspaceSync({ identityManager, workspaceManager })
+
   const keychain = makeMockKeychain()
   const accountVault = new AV.Vault({
     keychain,
