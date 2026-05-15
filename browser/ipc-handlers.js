@@ -335,6 +335,15 @@ function registerAccountHandlersIPC(browser) {
       browser.identityManager.identityIdForSession(event.sender.session) || identityIdArg // fall back to arg for WebUI/MCP callers (no isolated session)
     return h.getCredentialsForSite(site, identityId)
   })
+  // J-3 (v1.3.0): TOTP code generation. Same identity-resolution pattern as
+  // getCredentialsForSite — renderer-provided identityIdArg is ignored when
+  // the request comes from a tab with isolated session (prevents
+  // cross-identity TOTP fishing from a compromised renderer).
+  ipcMain.handle('oz:accounts:getTotpForSite', (event, site, identityIdArg) => {
+    const identityId =
+      browser.identityManager.identityIdForSession(event.sender.session) || identityIdArg
+    return h.getTotpForSite(site, identityId)
+  })
   ipcMain.handle('oz:accounts:proposeAutoSave', async (event, opts = {}) => {
     const identityId =
       browser.identityManager.identityIdForSession(event.sender.session) ||

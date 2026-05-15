@@ -25,6 +25,11 @@ const TEMPLATES = [
     loginUrlPatterns: [
       /^https?:\/\/(x|twitter|mobile\.twitter)\.com\/(i\/flow\/login|login)/i,
     ],
+    // J-3 (v1.3.0): X uses the same /i/flow/login URL for password and 2FA
+    // steps; the 2FA prompt distinguishes via DOM state, so we detect by
+    // selector presence (totpInput visible) at the preload level. Using
+    // loginUrlPatterns as the totp URL — preload re-checks via selector.
+    totpUrlPatterns: [/^https?:\/\/(x|twitter|mobile\.twitter)\.com\/(i\/flow\/login)/i],
     flow: 'two-step', // X separa username y password en dos screens
     selectors: {
       usernameInput: 'input[name="text"], input[autocomplete="username"]',
@@ -32,6 +37,9 @@ const TEMPLATES = [
       submitButton: '[data-testid="LoginForm_Login_Button"], button[type="submit"]',
       nextButton:
         '[role="button"]:has-text("Next"), [data-testid="LoginForm_Next_Button"]',
+      // J-3: X 2FA input uses inputmode="numeric" and is the visible text input.
+      totpInput:
+        'input[data-testid="LoginForm_TwoFactorAuthCode_Input"], input[autocomplete="one-time-code"], input[inputmode="numeric"]',
       loggedInIndicator: '[data-testid="primaryColumn"], a[aria-label="Profile"]',
     },
   },
@@ -40,12 +48,21 @@ const TEMPLATES = [
     name: 'Instagram',
     hosts: ['instagram.com', 'www.instagram.com'],
     loginUrlPatterns: [/^https?:\/\/(www\.)?instagram\.com\/accounts\/login/i],
+    // J-3 (v1.3.0): 2FA challenge URL — Instagram redirects here after
+    // submitting valid creds when 2FA is enabled.
+    totpUrlPatterns: [
+      /^https?:\/\/(www\.)?instagram\.com\/accounts\/(login\/)?two_factor/i,
+      /^https?:\/\/(www\.)?instagram\.com\/challenge\//i,
+    ],
     flow: 'one-step',
     selectors: {
       usernameInput:
         'input[name="username"], input[aria-label="Phone number, username, or email"]',
       passwordInput: 'input[name="password"]',
       submitButton: 'button[type="submit"]',
+      // J-3: 2FA code input. Instagram uses name="verificationCode".
+      totpInput:
+        'input[name="verificationCode"], input[autocomplete="one-time-code"], input[name="code"]',
       loggedInIndicator: 'svg[aria-label="Home"]',
     },
   },
@@ -54,11 +71,19 @@ const TEMPLATES = [
     name: 'Facebook',
     hosts: ['facebook.com', 'www.facebook.com', 'm.facebook.com'],
     loginUrlPatterns: [/^https?:\/\/(www\.|m\.)?facebook\.com\/(login|recover)/i],
+    // J-3 (v1.3.0): Facebook's 2FA challenge lives under /checkpoint.
+    totpUrlPatterns: [
+      /^https?:\/\/(www\.|m\.)?facebook\.com\/checkpoint/i,
+      /^https?:\/\/(www\.|m\.)?facebook\.com\/login\/.*two_factor/i,
+    ],
     flow: 'one-step',
     selectors: {
       usernameInput: 'input[name="email"], input[id="email"]',
       passwordInput: 'input[name="pass"], input[id="pass"]',
       submitButton: 'button[name="login"], button[id="loginbutton"]',
+      // J-3: Facebook 2FA code input.
+      totpInput:
+        'input[name="approvals_code"], input[autocomplete="one-time-code"], input[id="approvals_code"]',
       loggedInIndicator: '[aria-label="Account"], [data-testid="left_nav_menu"]',
     },
   },
@@ -97,6 +122,11 @@ const TEMPLATES = [
     id: 'google',
     name: 'Google (YouTube login)',
     hosts: ['accounts.google.com'],
+    // J-3 (v1.3.0): Google's TOTP challenge lives under signin/v2/challenge.
+    totpUrlPatterns: [
+      /^https?:\/\/accounts\.google\.com\/signin\/v2\/challenge\/(totp|az)/i,
+      /^https?:\/\/accounts\.google\.com\/.*\/challenge\/totp/i,
+    ],
     loginUrlPatterns: [
       /^https?:\/\/accounts\.google\.com\/(signin|ServiceLogin|v3\/signin)/i,
     ],
@@ -106,6 +136,9 @@ const TEMPLATES = [
       passwordInput: 'input[type="password"], input[name="Passwd"]',
       submitButton: 'button[type="button"][jsname="LgbsSe"]',
       nextButton: '#identifierNext button, #passwordNext button',
+      // J-3: Google 2FA code input.
+      totpInput:
+        'input[name="totpPin"], input[autocomplete="one-time-code"], input[id="totpPin"]',
       loggedInIndicator: '[aria-label*="Google Account"]',
     },
   },
@@ -205,6 +238,36 @@ function isLoginUrl(url) {
 }
 
 /**
+ * J-3 (v1.3.0): returns true if the URL looks like a 2FA / TOTP challenge
+ * page for any known template that has totpUrlPatterns configured.
+ */
+function isTotpUrl(url) {
+  if (!url || typeof url !== 'string') return false
+  for (const t of TEMPLATES) {
+    if (!t.totpUrlPatterns) continue
+    for (const re of t.totpUrlPatterns) {
+      if (re.test(url)) return true
+    }
+  }
+  return false
+}
+
+/**
+ * J-3 (v1.3.0): returns the template whose totpUrlPatterns matches the URL,
+ * or null. Used by the preload to know which totpInput selector to use.
+ */
+function matchByTotpUrl(url) {
+  if (!url || typeof url !== 'string') return null
+  for (const t of TEMPLATES) {
+    if (!t.totpUrlPatterns) continue
+    for (const re of t.totpUrlPatterns) {
+      if (re.test(url)) return t
+    }
+  }
+  return null
+}
+
+/**
  * Returns the template whose loginUrlPatterns matches the URL, or null.
  * Different from matchByHost in that it requires the URL to be a login page,
  * not just any page on the host.
@@ -246,4 +309,6 @@ module.exports = {
   matchByLoginUrl,
   isLoginUrl,
   siteIdForUrl,
+  isTotpUrl,
+  matchByTotpUrl,
 }

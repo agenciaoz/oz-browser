@@ -31,7 +31,13 @@ const { ipcRenderer } = require('electron')
 
 // Cache local de site-templates para no requerir IPC por cada decisión.
 // Versión copiada en build time vía require — el módulo es pure data.
-const { matchByHost, matchByLoginUrl, isLoginUrl } = require('./site-templates')
+const {
+  matchByHost,
+  matchByLoginUrl,
+  isLoginUrl,
+  matchByTotpUrl,
+  isTotpUrl,
+} = require('./site-templates')
 
 // IDENTITY RESOLUTION: el preload NO sabe (ni necesita saber) qué identity es
 // — el handler IPC del main lo resuelve desde event.sender.session via
@@ -45,6 +51,8 @@ const { matchByHost, matchByLoginUrl, isLoginUrl } = require('./site-templates')
 if (location.protocol !== 'chrome-extension:') {
   installAutoFill()
   installAutoSave()
+  // J-3 (v1.3.0): TOTP injection on 2FA challenge pages.
+  installTotpFill()
 }
 
 function installAutoFill() {
@@ -96,6 +104,55 @@ async function tryFillCredentials() {
 
   const passwordEl = await waitForSelector(template.selectors.passwordInput, 2000)
   if (passwordEl) setInputValue(passwordEl, creds.password)
+}
+
+// J-3 (v1.3.0): TOTP auto-injection on 2FA challenge pages.
+// Pattern matches installAutoFill: trigger on load + SPA URL changes,
+// match by totpUrlPatterns OR fallback to detecting the input by
+// `autocomplete="one-time-code"` (HTML spec for 2FA inputs), request
+// the code via IPC (main generates TOTP from accountVault.totpSecret),
+// fill the input.
+function installTotpFill() {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', tryFillTotp)
+  } else {
+    tryFillTotp()
+  }
+  let lastUrl = location.href
+  setInterval(() => {
+    if (location.href !== lastUrl) {
+      lastUrl = location.href
+      tryFillTotp()
+    }
+  }, 1500)
+}
+
+async function tryFillTotp() {
+  // Two paths: URL pattern match (Instagram, FB, Google) OR generic
+  // detection by autocomplete attribute (works for unknown sites that
+  // follow the modern spec). Hostname-based filter prevents firing on
+  // every page — we only attempt if we know this is a templated host.
+  const template = matchByHost(location.hostname)
+  if (!template || !template.selectors || !template.selectors.totpInput) return
+  // Skip if URL doesn't look like 2FA AND there's no obvious one-time-code
+  // input visible. (Some flows like X reuse the login URL.)
+  if (!isTotpUrl(location.href)) {
+    const probe = document.querySelector('input[autocomplete="one-time-code"]')
+    if (!probe) return
+  }
+
+  const site = template.hosts[0]
+  let totp
+  try {
+    totp = await ipcRenderer.invoke('oz:accounts:getTotpForSite', site, null)
+  } catch (_e) {
+    return
+  }
+  if (!totp || totp.__error || !totp.code) return
+
+  const input = await waitForSelector(template.selectors.totpInput, 4000)
+  if (!input) return
+  setInputValue(input, totp.code)
 }
 
 function installAutoSave() {

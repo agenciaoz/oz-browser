@@ -303,11 +303,82 @@ function buildAccountHandlers(browser) {
         .sort((a, b) => (b.lastLoginAt || 0) - (a.lastLoginAt || 0))
       if (matches.length === 0) return null
       const a = matches[0]
+      // J-4 (v1.3.0): optimistic auto-relogin trigger. If the picked account
+      // is currently flagged `needs_relogin` (cookie watcher detected a
+      // logout), assume this auto-fill is part of the re-login attempt and
+      // flip status back to 'active'. If the fill DOESN'T result in a
+      // successful login, anti-logout's cookie watcher will re-flag the
+      // account on the next logout detection — safe net is intact.
+      const wasNeedsRelogin = a.status === 'needs_relogin'
+      if (wasNeedsRelogin) {
+        const accounts = vault.getAccounts()
+        const idx = accounts.findIndex((x) => x.id === a.id)
+        if (idx >= 0) {
+          accounts[idx] = {
+            ...accounts[idx],
+            status: 'active',
+            updatedAt: Date.now(),
+          }
+          vault.setAccounts(accounts)
+          log.info('account-handlers', 'auto-relogin: flipped status', {
+            accountId: a.id,
+          })
+          browser.broadcastToWebUI('oz:accounts:changed')
+        }
+      }
       return {
         accountId: a.id,
         username: a.username,
         password: a.password,
         totpSecret: a.totpSecret,
+        // J-4: surface the prior flag so the preload / UI can show a hint
+        // ("Re-login filled for IG-1"). Useful when we add J-4 UI polish.
+        wasNeedsRelogin,
+      }
+    },
+
+    /**
+     * J-3 (v1.3.0): Generate a current TOTP code for the most-recent active
+     * account matching (site, identityId). Used by the content script
+     * preload when it detects a 2FA challenge page. Returns:
+     *   { code: 'NNNNNN', accountId } | null | { __error: { code, message } }
+     *
+     * Vault gate applies (LOCKED → __error). If the account has no
+     * totpSecret stored, returns null (NOT an error — user just hasn't
+     * configured 2FA for this account).
+     *
+     * TOTP generation is pure in-process (browser/totp.js, RFC 6238). The
+     * secret never leaves the main process — only the rotating 6-digit code
+     * is sent to the renderer via IPC.
+     */
+    getTotpForSite(site, identityId) {
+      const vault = requireUnlocked()
+      if (!vault) return lockedError()
+      if (!site || !identityId) {
+        return {
+          __error: { code: 'BAD_ARG', message: 'site and identityId are required' },
+        }
+      }
+      const matches = vault
+        .getAccounts()
+        .filter(
+          (a) =>
+            a.identityId === identityId &&
+            a.site === site &&
+            a.status !== 'inactive' &&
+            a.totpSecret,
+        )
+        .sort((a, b) => (b.lastLoginAt || 0) - (a.lastLoginAt || 0))
+      if (matches.length === 0) return null
+      const a = matches[0]
+      try {
+        const { generateTotp } = require('./totp')
+        const code = generateTotp(a.totpSecret)
+        return { code, accountId: a.id }
+      } catch (err) {
+        return {
+          __error: { code: 'TOTP_FAILED', message: err && err.message },
+        }
       }
     },
 
