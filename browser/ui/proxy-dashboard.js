@@ -325,6 +325,36 @@
         },
       })
     }
+    // H-2g: + Import button → modal
+    const btnImport = document.getElementById('btn-import')
+    if (btnImport) {
+      btnImport.addEventListener('click', () => {
+        if (window.OZ_DashboardImport) {
+          window.OZ_DashboardImport.open({
+            t,
+            refreshDashboard: async () => {
+              await fetchData(false)
+              renderAll()
+            },
+          })
+        }
+      })
+    }
+    // H-2h: Bulk assign button → modal (placeholder until H-2h closes)
+    const btnBulkAssign = document.getElementById('btn-bulk-assign')
+    if (btnBulkAssign) {
+      btnBulkAssign.addEventListener('click', () => {
+        if (window.OZ_BulkAssign) {
+          window.OZ_BulkAssign.open({
+            t,
+            refreshDashboard: async () => {
+              await fetchData(false)
+              renderAll()
+            },
+          })
+        }
+      })
+    }
     document.getElementById('btn-test-all').addEventListener('click', async (ev) => {
       const btn = ev.currentTarget
       btn.disabled = true

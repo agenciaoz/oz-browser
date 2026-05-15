@@ -139,6 +139,13 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
     actions().reassignProxy(identityId, value),
   )
 
+  // H-2g (v1.1.3): proxy importer — CSV/TXT auto-detect + parse + batch import.
+  const { buildProxyImporter, detectFormat, parseProxies } = require('./proxy-importer')
+  const importer = () => buildProxyImporter({ proxyManager: browser.proxyManager })
+  ipcMain.handle('oz:proxyImporter:detect', (_e, text) => detectFormat(text))
+  ipcMain.handle('oz:proxyImporter:parse', (_e, text) => parseProxies(text))
+  ipcMain.handle('oz:proxyImporter:import', (_e, rows) => importer().importBatch(rows))
+
   // H-2f (v1.1.3): bulk wrappers — sequential over the single actions above.
   const { buildProxyActionsBulk } = require('./proxy-actions-bulk')
   const bulk = () => buildProxyActionsBulk({ proxyActions: actions() })

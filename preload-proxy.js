@@ -25,6 +25,12 @@ function buildProxyBindings(ipcRenderer) {
       reassign: (identityId, value) =>
         ipcRenderer.invoke('oz:proxyAction:reassign', identityId, value),
     },
+    // H-2g (v1.1.3): bulk import CSV/TXT with auto-detect.
+    proxyImporter: {
+      detect: (text) => ipcRenderer.invoke('oz:proxyImporter:detect', text),
+      parse: (text) => ipcRenderer.invoke('oz:proxyImporter:parse', text),
+      import: (rows) => ipcRenderer.invoke('oz:proxyImporter:import', rows),
+    },
     // H-2f (v1.1.3): bulk wrappers — sequential per id.
     proxyActionBulk: {
       test: (ids) => ipcRenderer.invoke('oz:proxyActionBulk:test', ids),
