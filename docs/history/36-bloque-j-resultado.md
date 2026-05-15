@@ -1,7 +1,7 @@
 # Bloque J — Auto-login set completo (TOTP + auto-relogin loop)
 
 **Status:** ✅ J-1/J-2 (ya en 1.5c) + J-3/J-4 cerrados 2026-05-15
-**Commit:** TBD
+**Commit:** `dbb51e4`
 **Version:** 1.3.0 (minor bump por feature core grande, pre-aprobado)
 **Tiempo efectivo:** ~2.5h (no 6h — J-1+J-2 ya existían, J-4 era casi todo wire de piezas existentes)
 **Deps nuevas:** ninguna (RFC 6238 implementado from scratch)
