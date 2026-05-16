@@ -10,6 +10,13 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
+  // v1.5.6: i18n — lazy lookup via window.OZ.i18n.t() so locale switches
+  // pick up automatically. Falls back to the key if i18n isn't loaded
+  // yet (defensive — webui.html loads i18n.js BEFORE browsing-data.js but
+  // the catalog fetch is async, so the very first call from the constructor
+  // could race with init).
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
   class BrowsingDataUI {
     constructor() {
@@ -64,6 +71,27 @@
       this.currentTab = 'bookmarks'
 
       this._wire()
+
+      // v1.5.6: re-render dynamic content on locale switch. translatePage()
+      // re-renders the static markup automatically (tab labels, empty
+      // states, etc), but the row content (Delete button, identity options,
+      // timeAgo labels) lives in innerHTML strings we build ourselves.
+      if (window.OZ && window.OZ.i18n && typeof window.OZ.i18n.onChange === 'function') {
+        window.OZ.i18n.onChange(() => {
+          if (this.$modal.hidden) return
+          // refreshIdentities rebuilds the filter <option> list which
+          // includes a translated "All identities" entry.
+          this.refreshIdentities()
+            .then(() => {
+              this.renderBookmarks()
+              this.renderHistory()
+              this.renderDownloads()
+            })
+            .catch(() => {
+              // swallow — locale switch must never throw out of i18n callback
+            })
+        })
+      }
     }
 
     _wire() {
@@ -131,8 +159,10 @@
     async refreshIdentities() {
       this.identities = await safe(window.oz.identities.list(), 'identities.list')
       if (!Array.isArray(this.identities)) this.identities = []
-      // Populate filter selects
-      const opts = ['<option value="">All identities</option>']
+      // Populate filter selects — "All identities" is localized via t().
+      const opts = [
+        `<option value="">${escape(t('browsingData.allIdentities'))}</option>`,
+      ]
       for (const i of this.identities) {
         opts.push(`<option value="${i.id}">${escape(i.name)}</option>`)
       }
@@ -199,7 +229,7 @@
             <div class="bd-url">${escape(b.url)}</div>
           </div>
           <div class="bd-meta">${escape(this.identityName(b.identityId))}</div>
-          <div class="bd-actions"><button data-id="${b.id}">Delete</button></div>
+          <div class="bd-actions"><button data-id="${b.id}">${escape(t('browsingData.delete'))}</button></div>
         `
         tr.querySelector('.bd-title').addEventListener('click', () =>
           this.openInIdentity(b.identityId, b.url),
@@ -213,7 +243,8 @@
     }
 
     async handleClearBookmarks() {
-      if (!confirm(`Delete ALL ${this.bookmarks.length} bookmarks?`)) return
+      if (!confirm(t('browsingData.confirmClearBookmarks', { n: this.bookmarks.length })))
+        return
       // BookmarkManager.removeByIdentity is bulk, but no clearAll. Iterate.
       for (const b of this.bookmarks.slice()) {
         await safe(window.oz.bookmarks.remove(b.id), 'bookmarks.remove')
@@ -256,7 +287,7 @@
           </div>
           <div class="bd-meta">${escape(this.identityName(h.identityId))}</div>
           <div class="bd-meta">${escape(timeAgo(h.visitedAt))}</div>
-          <div class="bd-actions"><button data-id="${h.id}">Delete</button></div>
+          <div class="bd-actions"><button data-id="${h.id}">${escape(t('browsingData.delete'))}</button></div>
         `
         tr.querySelector('.bd-title').addEventListener('click', () =>
           this.openInIdentity(h.identityId, h.url),
@@ -270,7 +301,8 @@
     }
 
     async handleClearHistory() {
-      if (!confirm(`Clear ALL ${this.history.length} history entries?`)) return
+      if (!confirm(t('browsingData.confirmClearHistory', { n: this.history.length })))
+        return
       await safe(window.oz.history.clear(), 'history.clear')
       await this.refreshHistory()
     }
@@ -301,8 +333,8 @@
             <div class="bd-url">${escape(d.url)}</div>
           </div>
           <div class="bd-meta">${escape(this.identityName(d.identityId))}</div>
-          <div><span class="bd-status ${d.state}">${d.state}</span></div>
-          <div class="bd-actions"><button data-id="${d.id}">Delete</button></div>
+          <div><span class="bd-status ${d.state}">${escape(stateLabel(d.state))}</span></div>
+          <div class="bd-actions"><button data-id="${d.id}">${escape(t('browsingData.delete'))}</button></div>
         `
         // Click on title opens the source URL in new tab
         tr.querySelector('.bd-title').addEventListener('click', () =>
@@ -317,7 +349,8 @@
     }
 
     async handleClearDownloads() {
-      if (!confirm(`Clear ALL ${this.downloads.length} download records?`)) return
+      if (!confirm(t('browsingData.confirmClearDownloads', { n: this.downloads.length })))
+        return
       await safe(window.oz.downloads.clear(), 'downloads.clear')
       await this.refreshDownloads()
     }
@@ -334,11 +367,24 @@
   function timeAgo(ms) {
     if (!ms) return ''
     const d = Date.now() - ms
-    if (d < 60_000) return 'just now'
-    if (d < 3600_000) return `${Math.floor(d / 60_000)}m ago`
-    if (d < 86400_000) return `${Math.floor(d / 3600_000)}h ago`
-    if (d < 30 * 86400_000) return `${Math.floor(d / 86400_000)}d ago`
+    if (d < 60_000) return t('browsingData.timeAgo.justNow')
+    if (d < 3600_000)
+      return t('browsingData.timeAgo.minutes', { n: Math.floor(d / 60_000) })
+    if (d < 86400_000)
+      return t('browsingData.timeAgo.hours', { n: Math.floor(d / 3600_000) })
+    if (d < 30 * 86400_000)
+      return t('browsingData.timeAgo.days', { n: Math.floor(d / 86400_000) })
     return new Date(ms).toLocaleDateString()
+  }
+
+  // v1.5.6: download state pill — maps the backend state string to a
+  // localized label. Falls back to the raw state on unknown values.
+  function stateLabel(state) {
+    if (state === 'progressing') return t('browsingData.states.progressing')
+    if (state === 'completed') return t('browsingData.states.completed')
+    if (state === 'cancelled') return t('browsingData.states.cancelled')
+    if (state === 'interrupted') return t('browsingData.states.interrupted')
+    return state
   }
 
   window.OZ = window.OZ || {}

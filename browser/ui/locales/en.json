@@ -347,6 +347,39 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "browsingData": {
+    "title": "📚 Browsing Data",
+    "closeAria": "Close",
+    "tabs": {
+      "bookmarks": "Bookmarks",
+      "history": "History",
+      "downloads": "Downloads"
+    },
+    "searchBookmarks": "Search bookmarks…",
+    "searchHistory": "Search history…",
+    "allIdentities": "All identities",
+    "allStates": "All states",
+    "states": {
+      "progressing": "Progressing",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "interrupted": "Interrupted"
+    },
+    "clearAll": "Clear all",
+    "emptyBookmarks": "No bookmarks yet.",
+    "emptyHistory": "No history yet.",
+    "emptyDownloads": "No downloads yet.",
+    "delete": "Delete",
+    "confirmClearBookmarks": "Delete ALL {{n}} bookmarks?",
+    "confirmClearHistory": "Clear ALL {{n}} history entries?",
+    "confirmClearDownloads": "Clear ALL {{n}} download records?",
+    "timeAgo": {
+      "justNow": "just now",
+      "minutes": "{{n}}m ago",
+      "hours": "{{n}}h ago",
+      "days": "{{n}}d ago"
+    }
+  },
   "identityEditor": {
     "title": "Edit Identity",
     "titleWithName": "Edit Identity — {{name}}",

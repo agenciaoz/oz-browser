@@ -347,6 +347,39 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "browsingData": {
+    "title": "📚 Datos de navegación",
+    "closeAria": "Cerrar",
+    "tabs": {
+      "bookmarks": "Marcadores",
+      "history": "Historial",
+      "downloads": "Descargas"
+    },
+    "searchBookmarks": "Buscar marcadores…",
+    "searchHistory": "Buscar en el historial…",
+    "allIdentities": "Todas las identidades",
+    "allStates": "Todos los estados",
+    "states": {
+      "progressing": "En progreso",
+      "completed": "Completada",
+      "cancelled": "Cancelada",
+      "interrupted": "Interrumpida"
+    },
+    "clearAll": "Limpiar todo",
+    "emptyBookmarks": "Aún no hay marcadores.",
+    "emptyHistory": "Aún no hay historial.",
+    "emptyDownloads": "Aún no hay descargas.",
+    "delete": "Eliminar",
+    "confirmClearBookmarks": "¿Eliminar TODOS los {{n}} marcadores?",
+    "confirmClearHistory": "¿Limpiar TODAS las {{n}} entradas del historial?",
+    "confirmClearDownloads": "¿Limpiar TODOS los {{n}} registros de descargas?",
+    "timeAgo": {
+      "justNow": "ahora",
+      "minutes": "hace {{n}}m",
+      "hours": "hace {{n}}h",
+      "days": "hace {{n}}d"
+    }
+  },
   "identityEditor": {
     "title": "Editar identidad",
     "titleWithName": "Editar identidad — {{name}}",

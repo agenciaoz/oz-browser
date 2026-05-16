@@ -5306,8 +5306,14 @@
         aria-labelledby="oz-bd-title"
       >
         <header>
-          <h2 id="oz-bd-title">📚 Browsing Data</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+          <h2 id="oz-bd-title" data-i18n="browsingData.title">📚 Browsing Data</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            data-i18n-attr="aria-label:browsingData.closeAria"
+          >
             ✕
           </button>
         </header>
@@ -5315,62 +5321,113 @@
 
         <div class="bd-tabs" role="tablist">
           <button class="bd-tab-btn active" data-tab="bookmarks">
-            Bookmarks <span class="bd-count" id="oz-bd-count-bookmarks">0</span>
+            <span data-i18n="browsingData.tabs.bookmarks">Bookmarks</span>
+            <span class="bd-count" id="oz-bd-count-bookmarks">0</span>
           </button>
           <button class="bd-tab-btn" data-tab="history">
-            History <span class="bd-count" id="oz-bd-count-history">0</span>
+            <span data-i18n="browsingData.tabs.history">History</span>
+            <span class="bd-count" id="oz-bd-count-history">0</span>
           </button>
           <button class="bd-tab-btn" data-tab="downloads">
-            Downloads <span class="bd-count" id="oz-bd-count-downloads">0</span>
+            <span data-i18n="browsingData.tabs.downloads">Downloads</span>
+            <span class="bd-count" id="oz-bd-count-downloads">0</span>
           </button>
         </div>
 
         <!-- Bookmarks tab -->
         <section data-tab="bookmarks" id="oz-bd-bookmarks">
           <div class="bd-toolbar">
-            <input type="search" id="oz-bd-bm-search" placeholder="Search bookmarks…" />
+            <input
+              type="search"
+              id="oz-bd-bm-search"
+              placeholder="Search bookmarks…"
+              data-i18n-attr="placeholder:browsingData.searchBookmarks"
+            />
             <select id="oz-bd-bm-filter-identity">
-              <option value="">All identities</option>
+              <option value="" data-i18n="browsingData.allIdentities">
+                All identities
+              </option>
             </select>
             <span class="bd-spacer"></span>
-            <button type="button" id="oz-bd-bm-clear">Clear all</button>
+            <button type="button" id="oz-bd-bm-clear" data-i18n="browsingData.clearAll">
+              Clear all
+            </button>
           </div>
           <div class="bd-list" id="oz-bd-bm-list"></div>
-          <div class="bd-empty" id="oz-bd-bm-empty">No bookmarks yet.</div>
+          <div
+            class="bd-empty"
+            id="oz-bd-bm-empty"
+            data-i18n="browsingData.emptyBookmarks"
+          >
+            No bookmarks yet.
+          </div>
         </section>
 
         <!-- History tab -->
         <section data-tab="history" id="oz-bd-history" hidden>
           <div class="bd-toolbar">
-            <input type="search" id="oz-bd-hist-search" placeholder="Search history…" />
+            <input
+              type="search"
+              id="oz-bd-hist-search"
+              placeholder="Search history…"
+              data-i18n-attr="placeholder:browsingData.searchHistory"
+            />
             <select id="oz-bd-hist-filter-identity">
-              <option value="">All identities</option>
+              <option value="" data-i18n="browsingData.allIdentities">
+                All identities
+              </option>
             </select>
             <span class="bd-spacer"></span>
-            <button type="button" id="oz-bd-hist-clear">Clear all</button>
+            <button type="button" id="oz-bd-hist-clear" data-i18n="browsingData.clearAll">
+              Clear all
+            </button>
           </div>
           <div class="bd-list" id="oz-bd-hist-list"></div>
-          <div class="bd-empty" id="oz-bd-hist-empty">No history yet.</div>
+          <div
+            class="bd-empty"
+            id="oz-bd-hist-empty"
+            data-i18n="browsingData.emptyHistory"
+          >
+            No history yet.
+          </div>
         </section>
 
         <!-- Downloads tab -->
         <section data-tab="downloads" id="oz-bd-downloads" hidden>
           <div class="bd-toolbar">
             <select id="oz-bd-dl-filter-identity">
-              <option value="">All identities</option>
+              <option value="" data-i18n="browsingData.allIdentities">
+                All identities
+              </option>
             </select>
             <select id="oz-bd-dl-filter-state">
-              <option value="">All states</option>
-              <option value="progressing">Progressing</option>
-              <option value="completed">Completed</option>
-              <option value="cancelled">Cancelled</option>
-              <option value="interrupted">Interrupted</option>
+              <option value="" data-i18n="browsingData.allStates">All states</option>
+              <option value="progressing" data-i18n="browsingData.states.progressing">
+                Progressing
+              </option>
+              <option value="completed" data-i18n="browsingData.states.completed">
+                Completed
+              </option>
+              <option value="cancelled" data-i18n="browsingData.states.cancelled">
+                Cancelled
+              </option>
+              <option value="interrupted" data-i18n="browsingData.states.interrupted">
+                Interrupted
+              </option>
             </select>
             <span class="bd-spacer"></span>
-            <button type="button" id="oz-bd-dl-clear">Clear all</button>
+            <button type="button" id="oz-bd-dl-clear" data-i18n="browsingData.clearAll">
+              Clear all
+            </button>
           </div>
           <div class="bd-list" id="oz-bd-dl-list"></div>
-          <div class="bd-empty" id="oz-bd-dl-empty">No downloads yet.</div>
+          <div
+            class="bd-empty"
+            id="oz-bd-dl-empty"
+            data-i18n="browsingData.emptyDownloads"
+          >
+            No downloads yet.
+          </div>
         </section>
       </div>
     </div>
