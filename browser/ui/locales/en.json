@@ -559,7 +559,80 @@
       "workspaces": "Workspaces",
       "other": "Other"
     },
-    "newIdentityDefaultName": "New Identity"
+    "newIdentityDefaultName": "New Identity",
+    "actions": {
+      "newTab": { "label": "New Tab", "keywords": "open create blank" },
+      "newIdentity": {
+        "label": "New Identity",
+        "keywords": "create persona profile account"
+      },
+      "duplicateTab": { "label": "Duplicate Tab", "keywords": "clone copy" },
+      "reopenClosedTab": {
+        "label": "Reopen Closed Tab",
+        "keywords": "undo restore last"
+      },
+      "togglePin": { "label": "Pin / Unpin Tab", "keywords": "fix sticky" },
+      "toggleLock": {
+        "label": "Lock / Unlock Tab",
+        "keywords": "protect freeze prevent close"
+      },
+      "moveToNewWindow": {
+        "label": "Move Tab to New Window",
+        "keywords": "detach split"
+      },
+      "takeSnapshot": {
+        "label": "Take Snapshot Now",
+        "keywords": "backup time machine save state"
+      },
+      "openTimeMachine": {
+        "label": "Open Time Machine",
+        "keywords": "backup restore snapshots history"
+      },
+      "openVault": {
+        "label": "Open Account Vault",
+        "keywords": "accounts passwords credentials autofill"
+      },
+      "openProxies": { "label": "Open Proxies", "keywords": "proxy oxylabs ip network" },
+      "openBrowsingData": {
+        "label": "Open Browsing Data",
+        "keywords": "bookmarks history downloads"
+      },
+      "openSettings": {
+        "label": "Open Settings",
+        "keywords": "preferences config options"
+      },
+      "openBulkOpener": {
+        "label": "Bulk Open Identities…",
+        "keywords": "multi account batch many open mass"
+      },
+      "cloneIdentity": {
+        "label": "Clone Identity…",
+        "keywords": "duplicate copy fingerprint sub-account variant"
+      },
+      "healthCheck": {
+        "label": "Anti-Detect Health Check…",
+        "keywords": "fingerprint proxy cookie timezone coherence audit safety"
+      },
+      "manageExtensions": {
+        "label": "Manage Extensions for Identity…",
+        "keywords": "chrome web store ublock 1password addon plugin per identity"
+      },
+      "openNotifications": {
+        "label": "Notifications",
+        "keywords": "alerts log history bell warnings"
+      },
+      "toggleDevtools": { "label": "Toggle DevTools", "keywords": "inspector debug" }
+    },
+    "hints": {
+      "active": "active",
+      "identity": "identity",
+      "workspace": "workspace",
+      "tab": "tab",
+      "focused": "focused"
+    },
+    "fallbacks": {
+      "defaultIdentitySubtitle": "Default identity"
+    }
   },
   "cloudBackup": {
     "title": "☁ Cloud Backup (Dropbox)",

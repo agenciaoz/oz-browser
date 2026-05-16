@@ -559,7 +559,89 @@
       "workspaces": "Espacios",
       "other": "Otros"
     },
-    "newIdentityDefaultName": "Nueva identidad"
+    "newIdentityDefaultName": "Nueva identidad",
+    "actions": {
+      "newTab": {
+        "label": "Nueva pestaña",
+        "keywords": "abrir crear blanco nuevo en blanco"
+      },
+      "newIdentity": {
+        "label": "Nueva identidad",
+        "keywords": "crear persona perfil cuenta"
+      },
+      "duplicateTab": { "label": "Duplicar pestaña", "keywords": "clonar copiar" },
+      "reopenClosedTab": {
+        "label": "Reabrir pestaña cerrada",
+        "keywords": "deshacer restaurar última"
+      },
+      "togglePin": {
+        "label": "Fijar / Desfijar pestaña",
+        "keywords": "pin chinche sticky"
+      },
+      "toggleLock": {
+        "label": "Bloquear / Desbloquear pestaña",
+        "keywords": "proteger congelar evitar cierre"
+      },
+      "moveToNewWindow": {
+        "label": "Mover pestaña a ventana nueva",
+        "keywords": "separar dividir"
+      },
+      "takeSnapshot": {
+        "label": "Tomar snapshot ahora",
+        "keywords": "respaldo time machine guardar estado backup"
+      },
+      "openTimeMachine": {
+        "label": "Abrir Time Machine",
+        "keywords": "respaldo restaurar snapshots historial backup"
+      },
+      "openVault": {
+        "label": "Abrir Bóveda de Cuentas",
+        "keywords": "cuentas contraseñas credenciales autocompletar vault"
+      },
+      "openProxies": { "label": "Abrir Proxies", "keywords": "proxy oxylabs ip red" },
+      "openBrowsingData": {
+        "label": "Abrir Datos de Navegación",
+        "keywords": "marcadores historial descargas"
+      },
+      "openSettings": {
+        "label": "Abrir Configuración",
+        "keywords": "preferencias opciones ajustes"
+      },
+      "openBulkOpener": {
+        "label": "Abrir en masa…",
+        "keywords": "multi cuenta lote varias mass"
+      },
+      "cloneIdentity": {
+        "label": "Clonar identidad…",
+        "keywords": "duplicar copiar fingerprint sub-cuenta variante"
+      },
+      "healthCheck": {
+        "label": "Chequeo Anti-Detect…",
+        "keywords": "fingerprint proxy cookie zona horaria coherencia auditoría seguridad"
+      },
+      "manageExtensions": {
+        "label": "Gestionar extensiones por identidad…",
+        "keywords": "chrome web store ublock 1password addon plugin por identidad"
+      },
+      "openNotifications": {
+        "label": "Notificaciones",
+        "keywords": "alertas log historial campana avisos"
+      },
+      "toggleDevtools": {
+        "label": "Mostrar / Ocultar DevTools",
+        "keywords": "inspector debug"
+      }
+    },
+    "hints": {
+      "active": "activa",
+      "identity": "identidad",
+      "workspace": "espacio",
+      "tab": "pestaña",
+      "focused": "enfocada"
+    },
+    "fallbacks": {
+      "defaultIdentitySubtitle": "Identidad por defecto"
+    }
   },
   "cloudBackup": {
     "title": "☁ Respaldo en la nube (Dropbox)",

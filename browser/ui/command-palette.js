@@ -335,13 +335,19 @@
       this.isOpen = false
       this._wire()
 
-      // v1.5.9: re-render category headers on locale switch. translatePage()
-      // handles the static markup (placeholder, empty state, footer hints)
-      // but the <li class="cmdk-header"> rows are JS-built via categoryLabel()
-      // and need a manual re-render when locale changes mid-session.
+      // v1.5.9 + v1.5.13: re-render on locale switch. translatePage() handles
+      // the static markup (placeholder, empty state, footer hints). We need
+      // to manually:
+      //  - re-localize this.commands (label/keywords/hint/subtitle pulled
+      //    from the new catalog using the preserved *Key fields)
+      //  - re-run _refilter() which rebuilds results via matchAndRank and
+      //    triggers a fresh _render() with translated category headers + row
+      //    contents.
       if (window.OZ?.i18n?.onChange) {
         window.OZ.i18n.onChange(() => {
-          if (this.isOpen) this._render()
+          if (!this.isOpen) return
+          this.commands = this.commands.map((c) => this._localizeCommand(c))
+          this._refilter()
         })
       }
     }
@@ -393,10 +399,28 @@
       this.$modal.hidden = false
       await safe(window.oz.ui.setContentVisible(false), 'ui.setContentVisible')
       this.$input.value = ''
-      this.commands = (await safe(window.oz.commands.list(), 'commands.list')) || []
+      const raw = (await safe(window.oz.commands.list(), 'commands.list')) || []
+      // v1.5.13: overlay locale-aware label/keywords/hint/subtitle so the
+      // fuzzy matcher scores the translated values + the renderer displays
+      // them. Main process emits paralleled `labelKey/keywordsKey/hintKey/
+      // subtitleKey` fields alongside the English values; we resolve them
+      // here using the WebUI's loaded catalog.
+      this.commands = raw.map((c) => this._localizeCommand(c))
       this._refilter()
       // Focus on next tick — DOM has to lay out the modal first.
       setTimeout(() => this.$input.focus(), 0)
+    }
+
+    _localizeCommand(c) {
+      if (!c) return c
+      const out = { ...c }
+      // Preserve the original *Key pointers so locale switches via onChange
+      // can re-resolve from the current catalog.
+      if (c.labelKey) out.label = t(c.labelKey)
+      if (c.keywordsKey) out.keywords = t(c.keywordsKey)
+      if (c.hintKey) out.hint = t(c.hintKey)
+      if (c.subtitleKey) out.subtitle = t(c.subtitleKey)
+      return out
     }
 
     close() {
