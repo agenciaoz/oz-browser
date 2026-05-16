@@ -347,6 +347,32 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "notifications": {
+    "title": "🔔 Notifications",
+    "closeAria": "Close",
+    "markAllRead": "Mark all read",
+    "clearAll": "Clear all",
+    "clearAllConfirm": "Clear all notifications?",
+    "empty": "No notifications yet. They'll appear here when proxies disable, accounts need re-login, snapshots run, etc.",
+    "stats": "{{total}} total · {{unread}} unread",
+    "dismiss": "Dismiss",
+    "timeAgo": {
+      "justNow": "just now",
+      "minutes": "{{n}}m ago",
+      "hours": "{{n}}h ago",
+      "days": "{{n}}d ago"
+    },
+    "actions": {
+      "open": "Open",
+      "openAccounts": "Open Accounts",
+      "openTimeMachine": "Open Time Machine",
+      "openProxies": "Open Proxies",
+      "openSettings": "Open Settings",
+      "openBrowsingData": "Open Browsing Data",
+      "openIdentity": "Open Identity",
+      "showTab": "Show Tab"
+    }
+  },
   "oxylabsBuilder": {
     "openBtn": "+ Oxylabs",
     "title": "Oxylabs Proxy Builder",

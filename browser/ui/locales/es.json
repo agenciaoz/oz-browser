@@ -347,6 +347,32 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "notifications": {
+    "title": "🔔 Notificaciones",
+    "closeAria": "Cerrar",
+    "markAllRead": "Marcar todas como leídas",
+    "clearAll": "Limpiar todo",
+    "clearAllConfirm": "¿Limpiar todas las notificaciones?",
+    "empty": "No hay notificaciones. Aparecerán acá cuando los proxies se deshabiliten, las cuentas necesiten re-login, corran snapshots, etc.",
+    "stats": "{{total}} total · {{unread}} sin leer",
+    "dismiss": "Descartar",
+    "timeAgo": {
+      "justNow": "ahora",
+      "minutes": "hace {{n}}m",
+      "hours": "hace {{n}}h",
+      "days": "hace {{n}}d"
+    },
+    "actions": {
+      "open": "Abrir",
+      "openAccounts": "Abrir Cuentas",
+      "openTimeMachine": "Abrir Time Machine",
+      "openProxies": "Abrir Proxies",
+      "openSettings": "Abrir Configuración",
+      "openBrowsingData": "Abrir Datos de navegación",
+      "openIdentity": "Abrir Identidad",
+      "showTab": "Mostrar Pestaña"
+    }
+  },
   "oxylabsBuilder": {
     "openBtn": "+ Oxylabs",
     "title": "Generador de Proxies Oxylabs",

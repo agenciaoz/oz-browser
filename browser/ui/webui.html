@@ -5393,24 +5393,45 @@
         aria-labelledby="oz-notif-title"
       >
         <header>
-          <h2 id="oz-notif-title">🔔 Notifications</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+          <h2 id="oz-notif-title" data-i18n="notifications.title">🔔 Notifications</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            data-i18n-attr="aria-label:notifications.closeAria"
+            aria-label="Close"
+          >
             ✕
           </button>
         </header>
 
         <div class="oz-notif-toolbar">
-          <button type="button" class="oz-btn oz-btn-small" id="oz-notif-mark-all">
+          <button
+            type="button"
+            class="oz-btn oz-btn-small"
+            id="oz-notif-mark-all"
+            data-i18n="notifications.markAllRead"
+          >
             Mark all read
           </button>
-          <button type="button" class="oz-btn oz-btn-small" id="oz-notif-clear-all">
+          <button
+            type="button"
+            class="oz-btn oz-btn-small"
+            id="oz-notif-clear-all"
+            data-i18n="notifications.clearAll"
+          >
             Clear all
           </button>
           <span class="oz-notif-count" id="oz-notif-stats"></span>
         </div>
 
         <div class="oz-notif-list" id="oz-notif-list" role="list">
-          <p class="oz-notif-empty" id="oz-notif-empty" hidden>
+          <p
+            class="oz-notif-empty"
+            id="oz-notif-empty"
+            data-i18n="notifications.empty"
+            hidden
+          >
             No notifications yet. They'll appear here when proxies disable, accounts need
             re-login, snapshots run, etc.
           </p>

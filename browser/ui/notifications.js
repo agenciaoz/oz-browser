@@ -15,6 +15,12 @@
   if (!window.OZ) window.OZ = {}
   const { safe } = window.OZ.utils
 
+  // v1.5.1: i18n helper — falls back to the key itself if i18n not loaded yet.
+  function t(key, params) {
+    if (window.OZ && typeof window.OZ.t === 'function') return window.OZ.t(key, params)
+    return key
+  }
+
   function escapeHtml(s) {
     if (typeof s !== 'string') return ''
     return s
@@ -27,32 +33,32 @@
 
   function timeAgo(ts) {
     const diffSec = Math.max(0, Math.round((Date.now() - ts) / 1000))
-    if (diffSec < 60) return 'just now'
+    if (diffSec < 60) return t('notifications.timeAgo.justNow')
     const diffMin = Math.round(diffSec / 60)
-    if (diffMin < 60) return `${diffMin}m ago`
+    if (diffMin < 60) return t('notifications.timeAgo.minutes', { n: diffMin })
     const diffHr = Math.round(diffMin / 60)
-    if (diffHr < 24) return `${diffHr}h ago`
+    if (diffHr < 24) return t('notifications.timeAgo.hours', { n: diffHr })
     const diffDay = Math.round(diffHr / 24)
-    if (diffDay < 30) return `${diffDay}d ago`
+    if (diffDay < 30) return t('notifications.timeAgo.days', { n: diffDay })
     return new Date(ts).toLocaleDateString()
   }
 
   function actionLabel(action) {
     if (!action || !action.kind) return null
     if (action.kind === 'open-modal') {
-      const modalLabels = {
-        accountManager: 'Open Accounts',
-        timeMachine: 'Open Time Machine',
-        proxyManager: 'Open Proxies',
-        settings: 'Open Settings',
-        browsingData: 'Open Browsing Data',
+      const modalLabelKeys = {
+        accountManager: 'notifications.actions.openAccounts',
+        timeMachine: 'notifications.actions.openTimeMachine',
+        proxyManager: 'notifications.actions.openProxies',
+        settings: 'notifications.actions.openSettings',
+        browsingData: 'notifications.actions.openBrowsingData',
       }
       const m = action.payload && action.payload.modal
-      return modalLabels[m] || 'Open'
+      return modalLabelKeys[m] ? t(modalLabelKeys[m]) : t('notifications.actions.open')
     }
-    if (action.kind === 'open-identity') return 'Open Identity'
-    if (action.kind === 'select-tab') return 'Show Tab'
-    return 'Open'
+    if (action.kind === 'open-identity') return t('notifications.actions.openIdentity')
+    if (action.kind === 'select-tab') return t('notifications.actions.showTab')
+    return t('notifications.actions.open')
   }
 
   function executeAction(action) {
@@ -114,7 +120,7 @@
         await safe(window.oz.alerts.markAllRead(), 'alerts.markAllRead')
       })
       this.$clearAll.addEventListener('click', async () => {
-        if (!confirm('Clear all notifications?')) return
+        if (!confirm(t('notifications.clearAllConfirm'))) return
         await safe(window.oz.alerts.clear(), 'alerts.clear')
       })
       this.$modal.addEventListener('click', (e) => {
@@ -170,7 +176,7 @@
     _render() {
       const total = this.alerts.length
       const unread = this.alerts.filter((a) => !a.read).length
-      this.$stats.textContent = total ? `${total} total · ${unread} unread` : ''
+      this.$stats.textContent = total ? t('notifications.stats', { total, unread }) : ''
       // Clear list (preserve empty placeholder).
       const rows = this.$list.querySelectorAll('.oz-notif-row')
       rows.forEach((r) => r.remove())
