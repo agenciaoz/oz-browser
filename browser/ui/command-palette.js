@@ -16,6 +16,11 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
+  // v1.5.9: i18n — lazy lookup. command-palette.js loads AFTER i18n.js per
+  // webui.html script order, so window.OZ.i18n is available at construction.
+  // The fallback is defensive only.
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
   // ─── MIRROR of browser/command-palette.js fuzzy matcher ──────────────────
   // Keep these constants and functions in sync with the main-process module
@@ -203,7 +208,9 @@
       },
       'new-identity': async () => {
         const ident = await safe(
-          window.oz.identities.create({ name: 'New Identity' }),
+          window.oz.identities.create({
+            name: t('commandPalette.newIdentityDefaultName'),
+          }),
           'identities.create',
         )
         if (ident && ident.id) {
@@ -327,6 +334,16 @@
       this.selectedIdx = 0
       this.isOpen = false
       this._wire()
+
+      // v1.5.9: re-render category headers on locale switch. translatePage()
+      // handles the static markup (placeholder, empty state, footer hints)
+      // but the <li class="cmdk-header"> rows are JS-built via categoryLabel()
+      // and need a manual re-render when locale changes mid-session.
+      if (window.OZ?.i18n?.onChange) {
+        window.OZ.i18n.onChange(() => {
+          if (this.isOpen) this._render()
+        })
+      }
     }
 
     _wire() {
@@ -482,15 +499,15 @@
   function categoryLabel(type) {
     switch (type) {
       case 'action':
-        return 'Actions'
+        return t('commandPalette.categories.actions')
       case 'tab':
-        return 'Tabs'
+        return t('commandPalette.categories.tabs')
       case 'identity':
-        return 'Identities'
+        return t('commandPalette.categories.identities')
       case 'workspace':
-        return 'Workspaces'
+        return t('commandPalette.categories.workspaces')
       default:
-        return 'Other'
+        return t('commandPalette.categories.other')
     }
   }
 

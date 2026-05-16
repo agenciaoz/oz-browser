@@ -347,6 +347,22 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "commandPalette": {
+    "placeholder": "Type a command, identity, workspace, or tab title…",
+    "ariaLabel": "Command palette",
+    "empty": "No results.",
+    "hintNavigate": "navigate",
+    "hintSelect": "select",
+    "hintClose": "close",
+    "categories": {
+      "actions": "Actions",
+      "tabs": "Tabs",
+      "identities": "Identities",
+      "workspaces": "Workspaces",
+      "other": "Other"
+    },
+    "newIdentityDefaultName": "New Identity"
+  },
   "cloudBackup": {
     "title": "☁ Cloud Backup (Dropbox)",
     "closeAria": "Close",

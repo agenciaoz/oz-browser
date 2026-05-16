@@ -347,6 +347,22 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "commandPalette": {
+    "placeholder": "Escribí un comando, identidad, espacio o título de pestaña…",
+    "ariaLabel": "Paleta de comandos",
+    "empty": "Sin resultados.",
+    "hintNavigate": "navegar",
+    "hintSelect": "seleccionar",
+    "hintClose": "cerrar",
+    "categories": {
+      "actions": "Acciones",
+      "tabs": "Pestañas",
+      "identities": "Identidades",
+      "workspaces": "Espacios",
+      "other": "Otros"
+    },
+    "newIdentityDefaultName": "Nueva identidad"
+  },
   "cloudBackup": {
     "title": "☁ Respaldo en la nube (Dropbox)",
     "closeAria": "Cerrar",

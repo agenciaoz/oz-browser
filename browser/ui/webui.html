@@ -5521,13 +5521,28 @@
           autocomplete="off"
           spellcheck="false"
           aria-label="Command palette"
+          data-i18n-attr="placeholder:commandPalette.placeholder,aria-label:commandPalette.ariaLabel"
         />
         <ul id="oz-cmdk-list" class="cmdk-list"></ul>
-        <div id="oz-cmdk-empty" class="cmdk-empty" hidden>No results.</div>
+        <div
+          id="oz-cmdk-empty"
+          class="cmdk-empty"
+          hidden
+          data-i18n="commandPalette.empty"
+        >
+          No results.
+        </div>
         <footer class="cmdk-footer">
-          <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
-          <span><kbd>⏎</kbd> select</span>
-          <span><kbd>esc</kbd> close</span>
+          <span>
+            <kbd>↑</kbd><kbd>↓</kbd>
+            <span data-i18n="commandPalette.hintNavigate">navigate</span>
+          </span>
+          <span>
+            <kbd>⏎</kbd> <span data-i18n="commandPalette.hintSelect">select</span>
+          </span>
+          <span>
+            <kbd>esc</kbd> <span data-i18n="commandPalette.hintClose">close</span>
+          </span>
         </footer>
       </div>
     </div>
