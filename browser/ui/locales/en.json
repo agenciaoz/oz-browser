@@ -347,6 +347,19 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "extensionsModal": {
+    "title": "🧩 Manage Extensions",
+    "closeAria": "Close",
+    "identityLabel": "Identity:",
+    "defaultSuffix": "(Default)",
+    "empty": "No extensions installed in Default. Open the Chrome Web Store from the Default identity to install one — afterward it will appear here for sharing to other identities.",
+    "done": "Done",
+    "alwaysEnabled": "Always enabled",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "errorNoIdentities": "No identities available.",
+    "errorToggleFailed": "Toggle failed: {{reason}}"
+  },
   "healthModal": {
     "title": "🩺 Anti-Detect Health",
     "closeAria": "Close",

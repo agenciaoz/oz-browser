@@ -5604,11 +5604,14 @@
         aria-labelledby="oz-ext-title"
       >
         <header>
-          <h2 id="oz-ext-title">🧩 Manage Extensions</h2>
+          <h2 id="oz-ext-title" data-i18n="extensionsModal.title">
+            🧩 Manage Extensions
+          </h2>
           <button
             type="button"
             class="oz-modal-close"
             data-close
+            data-i18n-attr="aria-label:extensionsModal.closeAria"
             aria-label="Close"
             id="oz-ext-cancel"
           >
@@ -5618,13 +5621,20 @@
 
         <div class="oz-ext-body-wrap">
           <label class="oz-ext-identity-row">
-            <span class="oz-ext-label">Identity:</span>
+            <span class="oz-ext-label" data-i18n="extensionsModal.identityLabel"
+              >Identity:</span
+            >
             <select id="oz-ext-identity-select"></select>
           </label>
 
           <div class="oz-modal-error" id="oz-ext-error" hidden></div>
 
-          <p class="oz-ext-empty" id="oz-ext-empty" hidden>
+          <p
+            class="oz-ext-empty"
+            id="oz-ext-empty"
+            data-i18n="extensionsModal.empty"
+            hidden
+          >
             No extensions installed in Default. Open the Chrome Web Store from the Default
             identity to install one — afterward it will appear here for sharing to other
             identities.
@@ -5636,7 +5646,14 @@
         </div>
 
         <footer class="oz-ext-footer">
-          <button type="button" class="oz-btn oz-btn-primary" data-close>Done</button>
+          <button
+            type="button"
+            class="oz-btn oz-btn-primary"
+            data-close
+            data-i18n="extensionsModal.done"
+          >
+            Done
+          </button>
         </footer>
       </div>
     </div>

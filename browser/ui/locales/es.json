@@ -347,6 +347,19 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "extensionsModal": {
+    "title": "🧩 Gestionar Extensiones",
+    "closeAria": "Cerrar",
+    "identityLabel": "Identidad:",
+    "defaultSuffix": "(Por defecto)",
+    "empty": "No hay extensiones instaladas en Por defecto. Abrí Chrome Web Store desde la identidad Por defecto para instalar una — después aparecerá acá para compartirla con otras identidades.",
+    "done": "Listo",
+    "alwaysEnabled": "Siempre habilitada",
+    "enabled": "Habilitada",
+    "disabled": "Deshabilitada",
+    "errorNoIdentities": "No hay identidades disponibles.",
+    "errorToggleFailed": "El toggle falló: {{reason}}"
+  },
   "healthModal": {
     "title": "🩺 Salud Anti-Detect",
     "closeAria": "Cerrar",

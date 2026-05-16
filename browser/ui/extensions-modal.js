@@ -15,6 +15,12 @@
   if (!window.OZ) window.OZ = {}
   const { safe } = window.OZ.utils
 
+  // v1.5.3: i18n helper — falls back to the key itself if i18n not loaded.
+  function t(key, params) {
+    if (window.OZ && typeof window.OZ.t === 'function') return window.OZ.t(key, params)
+    return key
+  }
+
   class ExtensionsManagerUI {
     constructor() {
       this.$modal = document.getElementById('oz-ext-modal')
@@ -80,7 +86,7 @@
       }
       this.identityId = identityId || (this.identities[0] && this.identities[0].id)
       if (!this.identityId) {
-        this._showError('No identities available.')
+        this._showError(t('extensionsModal.errorNoIdentities'))
         return
       }
       this._renderIdentitySelect()
@@ -100,7 +106,9 @@
       for (const ident of this.identities || []) {
         const opt = document.createElement('option')
         opt.value = ident.id
-        opt.textContent = ident.isDefault ? `${ident.name} (Default)` : ident.name
+        opt.textContent = ident.isDefault
+          ? `${ident.name} ${t('extensionsModal.defaultSuffix')}`
+          : ident.name
         if (ident.id === this.identityId) opt.selected = true
         this.$identitySelect.appendChild(opt)
       }
@@ -146,7 +154,7 @@
       if (isDefault) {
         const tag = document.createElement('span')
         tag.className = 'oz-ext-tag'
-        tag.textContent = 'Always enabled'
+        tag.textContent = t('extensionsModal.alwaysEnabled')
         action.appendChild(tag)
       } else {
         const checkbox = document.createElement('input')
@@ -157,7 +165,9 @@
         const label = document.createElement('label')
         label.htmlFor = checkbox.id
         label.className = 'oz-ext-cb-label'
-        label.textContent = checkbox.checked ? 'Enabled' : 'Disabled'
+        label.textContent = checkbox.checked
+          ? t('extensionsModal.enabled')
+          : t('extensionsModal.disabled')
         action.appendChild(checkbox)
         action.appendChild(label)
       }
@@ -174,12 +184,16 @@
       if (!result || result.ok === false) {
         const reason = (result && result.reason) || 'unknown'
         checkbox.checked = !want
-        this._showError(`Toggle failed: ${reason}`)
+        this._showError(t('extensionsModal.errorToggleFailed', { reason }))
         return
       }
       this._clearError()
       const label = checkbox.parentElement.querySelector('.oz-ext-cb-label')
-      if (label) label.textContent = want ? 'Enabled' : 'Disabled'
+      if (label) {
+        label.textContent = want
+          ? t('extensionsModal.enabled')
+          : t('extensionsModal.disabled')
+      }
     }
 
     _show() {
