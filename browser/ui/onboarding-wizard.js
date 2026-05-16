@@ -25,6 +25,12 @@
   const STEP_COUNT = 5
   const DEFAULT_WORKSPACE_COLOR = '#5b8def'
 
+  // v1.5.0: i18n helper — falls back to the key itself if i18n not loaded.
+  function t(key, params) {
+    if (window.OZ && typeof window.OZ.t === 'function') return window.OZ.t(key, params)
+    return key
+  }
+
   class OnboardingWizard {
     constructor() {
       this.$modal = document.getElementById('oz-wiz-modal')
@@ -85,7 +91,10 @@
         d.classList.toggle('done', i < this.current)
       })
       this.$back.hidden = this.current === 0
-      this.$next.textContent = this.current === STEP_COUNT - 1 ? 'Finish' : 'Continue'
+      this.$next.textContent =
+        this.current === STEP_COUNT - 1 ? t('wizard.finish') : t('wizard.continue')
+      this.$back.textContent = t('wizard.back')
+      this.$skip.textContent = t('wizard.skip')
       this.$body.innerHTML = this._renderStep(this.current)
       // Re-wire any inputs in the freshly rendered step.
       this._wireStep(this.current)
@@ -112,14 +121,14 @@
       return `
         <div class="wiz-step">
           <div class="onb-emoji">🗂️</div>
-          <h2>Step 1 — Create a workspace</h2>
-          <p class="onb-tagline">Workspaces group identities per project. Name it after the project or client.</p>
+          <h2>${escapeHtml(t('wizard.step1.title'))}</h2>
+          <p class="onb-tagline">${escapeHtml(t('wizard.step1.tagline'))}</p>
           <label class="wiz-field">
-            <span>Workspace name</span>
-            <input type="text" id="wiz-ws-name" placeholder="e.g. Client Alpha — Instagram" value="${escapeHtml(this.state.workspaceName || '')}" />
+            <span>${escapeHtml(t('wizard.step1.nameLabel'))}</span>
+            <input type="text" id="wiz-ws-name" placeholder="${escapeHtml(t('wizard.step1.namePlaceholder'))}" value="${escapeHtml(this.state.workspaceName || '')}" />
           </label>
           <label class="wiz-field">
-            <span>Color</span>
+            <span>${escapeHtml(t('wizard.step1.colorLabel'))}</span>
             <input type="color" id="wiz-ws-color" value="${DEFAULT_WORKSPACE_COLOR}" />
           </label>
           <div class="wiz-status" id="wiz-ws-status"></div>
@@ -134,13 +143,13 @@
       const name = (nameEl && nameEl.value.trim()) || ''
       const color = (colorEl && colorEl.value) || DEFAULT_WORKSPACE_COLOR
       if (!name) {
-        if (status) status.textContent = 'Name is required.'
+        if (status) status.textContent = t('wizard.step1.errNameRequired')
         return false
       }
       try {
         const ws = await window.oz.workspaces.create({ name, color })
         if (!ws || !ws.id) {
-          if (status) status.textContent = 'Failed to create workspace.'
+          if (status) status.textContent = t('wizard.step1.errFailed')
           return false
         }
         this.state.workspaceId = ws.id
@@ -157,10 +166,10 @@
       return `
         <div class="wiz-step">
           <div class="onb-emoji">🌐</div>
-          <h2>Step 2 — Add proxies</h2>
-          <p class="onb-tagline">One per line: <code>host:port:user:pass</code> or <code>user:pass@host:port</code>.</p>
+          <h2>${escapeHtml(t('wizard.step2.title'))}</h2>
+          <p class="onb-tagline">${t('wizard.step2.tagline')}</p>
           <textarea id="wiz-proxy-text" class="wiz-textarea" placeholder="us-pr.oxylabs.io:10001:customer-foo:secret&#10;mx.example.com:8080:user:pass" rows="6"></textarea>
-          <p class="wiz-hint">Tip: skip this step if you already have proxies configured — you can add more from the Proxy Dashboard later.</p>
+          <p class="wiz-hint">${escapeHtml(t('wizard.step2.hint'))}</p>
           <div class="wiz-status" id="wiz-proxy-status"></div>
         </div>
       `
@@ -178,13 +187,15 @@
       try {
         const parsed = await window.oz.proxyImporter.parse(text)
         if (!parsed || !parsed.rows) {
-          if (status) status.textContent = 'Could not parse any proxies.'
+          if (status) status.textContent = t('wizard.step2.errParse')
           return false
         }
         const valid = parsed.rows.filter((r) => r.ok)
         if (valid.length === 0) {
           if (status) {
-            status.textContent = `0 valid proxies (${parsed.summary.invalid} invalid). Fix and retry.`
+            status.textContent = t('wizard.step2.errZeroValid', {
+              n: parsed.summary.invalid,
+            })
           }
           return false
         }
@@ -192,13 +203,15 @@
         if (!result || !result.ok) {
           if (status) {
             status.textContent =
-              'Import failed: ' +
+              t('wizard.step2.errImport') +
+              ' ' +
               (result && result.failed && result.failed[0] && result.failed[0].reason)
           }
           return false
         }
         this.state.proxyIds = result.addedIds || []
-        if (status) status.textContent = `✓ Added ${result.added} proxies.`
+        if (status)
+          status.textContent = t('wizard.step2.successAdded', { n: result.added })
         return true
       } catch (err) {
         if (status) status.textContent = 'Error: ' + (err.message || 'unknown')
@@ -210,20 +223,21 @@
     _renderIdentitiesStep() {
       const proxyCount = this.state.proxyIds.length
       const suggestion = proxyCount > 0 ? proxyCount : 3
+      const prefix = this.state.workspaceName || 'Account'
       return `
         <div class="wiz-step">
           <div class="onb-emoji">👤</div>
-          <h2>Step 3 — Create identities</h2>
-          <p class="onb-tagline">Each identity is a fully isolated session (cookies, storage, login). Common: 1 per social media account.</p>
+          <h2>${escapeHtml(t('wizard.step3.title'))}</h2>
+          <p class="onb-tagline">${escapeHtml(t('wizard.step3.tagline'))}</p>
           <label class="wiz-field">
-            <span>How many?</span>
+            <span>${escapeHtml(t('wizard.step3.countLabel'))}</span>
             <input type="number" id="wiz-id-count" min="1" max="50" value="${suggestion}" />
           </label>
           <label class="wiz-field">
-            <span>Name prefix</span>
-            <input type="text" id="wiz-id-prefix" value="${escapeHtml(this.state.workspaceName || 'Account')}" />
+            <span>${escapeHtml(t('wizard.step3.prefixLabel'))}</span>
+            <input type="text" id="wiz-id-prefix" value="${escapeHtml(prefix)}" />
           </label>
-          <p class="wiz-hint">Identities will be named "<span id="wiz-id-preview">${escapeHtml(this.state.workspaceName || 'Account')} 1</span>", "${escapeHtml(this.state.workspaceName || 'Account')} 2", … and live inside <strong>${escapeHtml(this.state.workspaceName || 'this workspace')}</strong>.</p>
+          <p class="wiz-hint">${t('wizard.step3.previewHint', { prefix: escapeHtml(prefix), workspace: escapeHtml(this.state.workspaceName || 'this workspace') })}</p>
           <div class="wiz-status" id="wiz-id-status"></div>
         </div>
       `
@@ -239,7 +253,7 @@
       )
       const prefix = (prefixEl && prefixEl.value.trim()) || 'Account'
       if (!this.state.workspaceId) {
-        if (status) status.textContent = 'No workspace created — go back to step 1.'
+        if (status) status.textContent = t('wizard.step3.errNoWorkspace')
         return false
       }
       const created = []
@@ -252,14 +266,20 @@
           if (ident && ident.id) created.push(ident.id)
         } catch (err) {
           if (status) {
-            status.textContent = `Created ${created.length} of ${count} before error: ${err.message || 'unknown'}`
+            status.textContent = t('wizard.step3.partial', {
+              done: created.length,
+              total: count,
+              message: err.message || 'unknown',
+            })
           }
           this.state.identityIds = created
           return created.length > 0
         }
       }
       this.state.identityIds = created
-      if (status) status.textContent = `✓ Created ${created.length} identities.`
+      if (status) {
+        status.textContent = t('wizard.step3.successCreated', { n: created.length })
+      }
       return created.length > 0
     }
 
@@ -272,16 +292,16 @@
       return `
         <div class="wiz-step">
           <div class="onb-emoji">🔗</div>
-          <h2>Step 4 — Pair proxies to identities</h2>
-          <p class="onb-tagline">1:1 mapping — each identity gets its own proxy.</p>
+          <h2>${escapeHtml(t('wizard.step4.title'))}</h2>
+          <p class="onb-tagline">${escapeHtml(t('wizard.step4.tagline'))}</p>
           <ul class="wiz-summary">
-            <li><strong>${pCount}</strong> proxies in pool</li>
-            <li><strong>${iCount}</strong> identities created</li>
-            <li><strong>${pairCount}</strong> pairs will be assigned</li>
-            ${pCount > iCount ? `<li>${pCount - iCount} extra proxies stay unassigned (use later)</li>` : ''}
-            ${iCount > pCount ? `<li>${iCount - pCount} identities will use no proxy (direct)</li>` : ''}
+            <li>${t('wizard.step4.proxiesInPool', { n: `<strong>${pCount}</strong>` })}</li>
+            <li>${t('wizard.step4.identitiesCreated', { n: `<strong>${iCount}</strong>` })}</li>
+            <li>${t('wizard.step4.pairsAssigned', { n: `<strong>${pairCount}</strong>` })}</li>
+            ${pCount > iCount ? `<li>${t('wizard.step4.extraProxies', { n: pCount - iCount })}</li>` : ''}
+            ${iCount > pCount ? `<li>${t('wizard.step4.noProxyIdentities', { n: iCount - pCount })}</li>` : ''}
           </ul>
-          ${canPair ? '' : '<p class="wiz-hint">Nothing to pair. You can skip this step and assign later from the Proxy Dashboard.</p>'}
+          ${canPair ? '' : `<p class="wiz-hint">${escapeHtml(t('wizard.step4.nothingToPair'))}</p>`}
           <div class="wiz-status" id="wiz-assign-status"></div>
         </div>
       `
@@ -302,14 +322,19 @@
           this.state.identityIds,
         )
         if (!preview || !preview.pairings || preview.pairings.length === 0) {
-          if (status) status.textContent = 'No pairings to apply.'
           this.state.assignedPairs = []
           return true
         }
         const result = await window.oz.proxyBulkAssign.execute(preview.pairings)
         this.state.assignedPairs = preview.pairings
         if (status) {
-          status.textContent = `✓ Assigned ${preview.pairings.length} pairs${result && result.failed > 0 ? ` (${result.failed} failed)` : ''}.`
+          status.textContent =
+            result && result.failed > 0
+              ? t('wizard.step4.successAssignedWithFails', {
+                  n: preview.pairings.length,
+                  f: result.failed,
+                })
+              : t('wizard.step4.successAssigned', { n: preview.pairings.length })
         }
         return true
       } catch (err) {
@@ -325,9 +350,9 @@
         return `
           <div class="wiz-step">
             <div class="onb-emoji">🩺</div>
-            <h2>Step 5 — Test the setup</h2>
-            <p class="onb-tagline">We'll ping all assigned proxies and confirm they're reachable.</p>
-            <p class="wiz-hint">Click <strong>Finish</strong> below to run the tests. This takes 5–30s depending on proxy count.</p>
+            <h2>${escapeHtml(t('wizard.step5.title'))}</h2>
+            <p class="onb-tagline">${escapeHtml(t('wizard.step5.tagline'))}</p>
+            <p class="wiz-hint">${t('wizard.step5.hint')}</p>
           </div>
         `
       }
@@ -337,10 +362,14 @@
       return `
         <div class="wiz-step">
           <div class="onb-emoji">${fail === 0 ? '✅' : '⚠️'}</div>
-          <h2>Setup complete</h2>
-          <p class="onb-tagline">Tested ${total} proxies: <strong>${ok}</strong> ok, <strong>${fail}</strong> failed.</p>
-          ${fail > 0 ? '<p class="wiz-hint">Some proxies failed — check the Proxy Dashboard to inspect. They are auto-disabled after 3 failures.</p>' : '<p class="wiz-hint">All systems green. You can start opening tabs in your new identities from the sidebar.</p>'}
-          <p class="wiz-hint">Workspace <strong>${escapeHtml(this.state.workspaceName || '')}</strong> · ${this.state.identityIds.length} identities · ${this.state.proxyIds.length} proxies</p>
+          <h2>${escapeHtml(t('wizard.step5.doneTitle'))}</h2>
+          <p class="onb-tagline">${t('wizard.step5.doneTagline', { n: total, ok, fail })}</p>
+          <p class="wiz-hint">${escapeHtml(t(fail > 0 ? 'wizard.step5.doneIssues' : 'wizard.step5.doneOk'))}</p>
+          <p class="wiz-hint">${t('wizard.step5.summary', {
+            ws: escapeHtml(this.state.workspaceName || ''),
+            i: this.state.identityIds.length,
+            p: this.state.proxyIds.length,
+          })}</p>
         </div>
       `
     }

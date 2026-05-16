@@ -71,8 +71,11 @@
         d.classList.toggle('active', i === this.current)
       })
       this.$back.hidden = this.current === 0
+      const t = (window.OZ && window.OZ.t) || ((k) => k)
       this.$next.textContent =
-        this.current === this.$screens.length - 1 ? 'Get started' : 'Next'
+        this.current === this.$screens.length - 1
+          ? t('welcome.getStarted')
+          : t('welcome.next')
     }
 
     next() {

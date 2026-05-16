@@ -5106,11 +5106,12 @@
         aria-labelledby="oz-onb-title"
       >
         <header>
-          <h2 id="oz-onb-title">Welcome to OZ Browser</h2>
+          <h2 id="oz-onb-title" data-i18n="welcome.title">Welcome to OZ Browser</h2>
           <button
             type="button"
             class="oz-modal-close"
             id="oz-onb-skip-x"
+            data-i18n-attr="aria-label:welcome.skipAria"
             aria-label="Skip onboarding"
           >
             ✕
@@ -5119,82 +5120,119 @@
 
         <section class="onb-screen" id="oz-onb-1">
           <div class="onb-emoji">👤</div>
-          <h2>Identities</h2>
-          <p class="onb-tagline">
+          <h2 data-i18n="welcome.identities.title">Identities</h2>
+          <p class="onb-tagline" data-i18n="welcome.identities.tagline">
             Each identity is a fully isolated browser session — its own cookies, storage,
             login state, and extensions.
           </p>
           <ul>
             <li>
-              <strong>Default identity</strong> — your main session, ships with Chrome Web
-              Store extensions enabled.
+              <strong data-i18n="welcome.identities.defaultName">Default identity</strong>
+              <span data-i18n="welcome.identities.defaultDesc"
+                >— your main session, ships with Chrome Web Store extensions
+                enabled.</span
+              >
             </li>
             <li>
-              <strong>Custom identities</strong> — one per persona / account. Switch from
-              the sidebar; tabs remember which identity they belong to.
+              <strong data-i18n="welcome.identities.customName">Custom identities</strong>
+              <span data-i18n="welcome.identities.customDesc"
+                >— one per persona / account. Switch from the sidebar; tabs remember which
+                identity they belong to.</span
+              >
             </li>
             <li>
-              <strong>Per-identity color stripe</strong> on every tab so you never confuse
-              them.
+              <strong data-i18n="welcome.identities.colorName"
+                >Per-identity color stripe</strong
+              >
+              <span data-i18n="welcome.identities.colorDesc"
+                >on every tab so you never confuse them.</span
+              >
             </li>
           </ul>
         </section>
 
         <section class="onb-screen" id="oz-onb-2" hidden>
           <div class="onb-emoji">🗂️</div>
-          <h2>Workspaces &amp; Vault</h2>
-          <p class="onb-tagline">
+          <h2 data-i18n="welcome.workspaces.title">Workspaces &amp; Vault</h2>
+          <p class="onb-tagline" data-i18n="welcome.workspaces.tagline">
             Workspaces group sessions per project; the encrypted vault stores credentials
             safely on your Mac.
           </p>
           <ul>
             <li>
-              <strong>Workspaces</strong> — Excel-like grouping. Switch to snapshot the
-              current set of tabs and load a different one.
+              <strong data-i18n="welcome.workspaces.groupsName">Workspaces</strong>
+              <span data-i18n="welcome.workspaces.groupsDesc"
+                >— Excel-like grouping. Switch to snapshot the current set of tabs and
+                load a different one.</span
+              >
             </li>
             <li>
-              <strong>🔐 Vault</strong> — AES-256-GCM encrypted account store. Master key
-              in Keychain. Auto-fill on login pages.
+              <strong data-i18n="welcome.workspaces.vaultName">🔐 Vault</strong>
+              <span data-i18n="welcome.workspaces.vaultDesc"
+                >— AES-256-GCM encrypted account store. Master key in Keychain. Auto-fill
+                on login pages.</span
+              >
             </li>
             <li>
-              <strong>⏱ Time Machine</strong> — daily encrypted snapshots of your entire
-              setup. Restore any time.
+              <strong data-i18n="welcome.workspaces.timeMachineName"
+                >⏱ Time Machine</strong
+              >
+              <span data-i18n="welcome.workspaces.timeMachineDesc"
+                >— daily encrypted snapshots of your entire setup. Restore any time.</span
+              >
             </li>
           </ul>
         </section>
 
         <section class="onb-screen" id="oz-onb-3" hidden>
           <div class="onb-emoji">🌐</div>
-          <h2>Proxies, Fingerprint &amp; Automation</h2>
-          <p class="onb-tagline">
+          <h2 data-i18n="welcome.antidetect.title">
+            Proxies, Fingerprint &amp; Automation
+          </h2>
+          <p class="onb-tagline" data-i18n="welcome.antidetect.tagline">
             Antidetect that goes beyond Ghost Browser: per-identity fingerprint + GeoIP
             coherence + headless automation.
           </p>
           <ul>
             <li>
-              <strong>🌐 Proxies</strong> — assign per-identity / workspace. Auto-disable
-              on health failure. Oxylabs sticky-session template built-in.
+              <strong data-i18n="welcome.antidetect.proxiesName">🌐 Proxies</strong>
+              <span data-i18n="welcome.antidetect.proxiesDesc"
+                >— assign per-identity / workspace. Auto-disable on health failure.
+                Oxylabs sticky-session template built-in.</span
+              >
             </li>
             <li>
-              <strong>FingerprintEngine "Ghost+"</strong> — 11 vectors spoofed
-              consistently per identity (UA, screen, timezone, canvas, WebGL).
+              <strong data-i18n="welcome.antidetect.fingerprintName"
+                >FingerprintEngine "Ghost+"</strong
+              >
+              <span data-i18n="welcome.antidetect.fingerprintDesc"
+                >— 11 vectors spoofed consistently per identity (UA, screen, timezone,
+                canvas, WebGL).</span
+              >
             </li>
             <li>
-              <strong>MCP server</strong> — control OZ from any LLM agent. Toggle on in
-              Settings → Automation.
+              <strong data-i18n="welcome.antidetect.mcpName">MCP server</strong>
+              <span data-i18n="welcome.antidetect.mcpDesc"
+                >— control OZ from any LLM agent. Toggle on in Settings →
+                Automation.</span
+              >
             </li>
           </ul>
         </section>
 
         <div class="onb-controls">
-          <button type="button" id="oz-onb-skip">Skip</button>
+          <button type="button" id="oz-onb-skip" data-i18n="welcome.skip">Skip</button>
           <div class="onb-dots">
             <span class="onb-dot active" data-dot="1"></span>
             <span class="onb-dot" data-dot="2"></span>
             <span class="onb-dot" data-dot="3"></span>
           </div>
-          <button type="button" id="oz-onb-back" hidden>Back</button>
-          <button type="button" id="oz-onb-next" class="primary">Next</button>
+          <button type="button" id="oz-onb-back" data-i18n="welcome.back" hidden>
+            Back
+          </button>
+          <button type="button" id="oz-onb-next" class="primary" data-i18n="welcome.next">
+            Next
+          </button>
         </div>
       </div>
     </div>
@@ -5209,10 +5247,11 @@
         aria-labelledby="oz-wiz-title"
       >
         <header>
-          <h2 id="oz-wiz-title">Set up your workspace</h2>
+          <h2 id="oz-wiz-title" data-i18n="wizard.title">Set up your workspace</h2>
           <button
             type="button"
             class="oz-modal-close wiz-skip-x"
+            data-i18n-attr="aria-label:wizard.skipAria"
             aria-label="Skip wizard"
           >
             ✕

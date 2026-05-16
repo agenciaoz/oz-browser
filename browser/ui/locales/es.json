@@ -251,6 +251,102 @@
       "searchIdentities": "Buscar identidades…"
     }
   },
+  "welcome": {
+    "title": "Bienvenido a OZ Browser",
+    "skipAria": "Saltar onboarding",
+    "skip": "Saltar",
+    "back": "Atrás",
+    "next": "Siguiente",
+    "getStarted": "Empezar",
+    "identities": {
+      "title": "Identidades",
+      "tagline": "Cada identidad es una sesión completamente aislada — sus propias cookies, storage, login y extensiones.",
+      "defaultName": "Identidad por defecto",
+      "defaultDesc": "— tu sesión principal, viene con extensiones del Chrome Web Store habilitadas.",
+      "customName": "Identidades personalizadas",
+      "customDesc": "— una por persona / cuenta. Cambiá desde el sidebar; las pestañas recuerdan a qué identidad pertenecen.",
+      "colorName": "Franja de color per-identidad",
+      "colorDesc": "en cada pestaña para que nunca las confundas."
+    },
+    "workspaces": {
+      "title": "Espacios y Bóveda",
+      "tagline": "Los espacios agrupan sesiones por proyecto; la bóveda cifrada guarda credenciales de forma segura en tu Mac.",
+      "groupsName": "Espacios",
+      "groupsDesc": "— agrupación tipo Excel. Cambiá para snapshotear el set actual de pestañas y cargar uno distinto.",
+      "vaultName": "🔐 Bóveda",
+      "vaultDesc": "— almacén de cuentas cifrado AES-256-GCM. Master key en Keychain. Auto-fill en páginas de login.",
+      "timeMachineName": "⏱ Time Machine",
+      "timeMachineDesc": "— snapshots cifrados diarios de tu setup entero. Restaurá cuando quieras."
+    },
+    "antidetect": {
+      "title": "Proxies, Fingerprint y Automatización",
+      "tagline": "Antidetect que va más allá de Ghost Browser: fingerprint per-identidad + coherencia GeoIP + automatización headless.",
+      "proxiesName": "🌐 Proxies",
+      "proxiesDesc": "— asigná per-identidad / espacio. Auto-deshabilita en falla de salud. Template Oxylabs sticky-session integrado.",
+      "fingerprintName": "FingerprintEngine \"Ghost+\"",
+      "fingerprintDesc": "— 11 vectores spoofeados consistentemente per-identidad (UA, pantalla, timezone, canvas, WebGL).",
+      "mcpName": "Servidor MCP",
+      "mcpDesc": "— controlá OZ desde cualquier agente LLM. Activá en Configuración → Automatización."
+    }
+  },
+  "wizard": {
+    "title": "Configurá tu espacio",
+    "skipAria": "Saltar wizard",
+    "skip": "Saltar",
+    "back": "Atrás",
+    "continue": "Continuar",
+    "finish": "Finalizar",
+    "step1": {
+      "title": "Paso 1 — Crear un espacio",
+      "tagline": "Los espacios agrupan identidades por proyecto. Nombralo por el proyecto o cliente.",
+      "nameLabel": "Nombre del espacio",
+      "namePlaceholder": "ej. Cliente Alfa — Instagram",
+      "colorLabel": "Color",
+      "errNameRequired": "El nombre es obligatorio.",
+      "errFailed": "Falló al crear el espacio."
+    },
+    "step2": {
+      "title": "Paso 2 — Agregar proxies",
+      "tagline": "Uno por línea: <code>host:port:usuario:contraseña</code> o <code>usuario:contraseña@host:port</code>.",
+      "hint": "Tip: saltá este paso si ya tenés proxies configurados — podés agregar más desde el Dashboard de Proxies después.",
+      "errParse": "No se pudo parsear ningún proxy.",
+      "errZeroValid": "0 proxies válidos ({{n}} inválidos). Corregí y reintentá.",
+      "errImport": "Importación falló:",
+      "successAdded": "✓ Agregados {{n}} proxies."
+    },
+    "step3": {
+      "title": "Paso 3 — Crear identidades",
+      "tagline": "Cada identidad es una sesión completamente aislada (cookies, storage, login). Común: 1 por cuenta de redes sociales.",
+      "countLabel": "¿Cuántas?",
+      "prefixLabel": "Prefijo del nombre",
+      "previewHint": "Las identidades se llamarán \"{{prefix}} 1\", \"{{prefix}} 2\", … y vivirán dentro de <strong>{{workspace}}</strong>.",
+      "errNoWorkspace": "No hay espacio creado — andá al paso 1.",
+      "successCreated": "✓ Creadas {{n}} identidades.",
+      "partial": "Creadas {{done}} de {{total}} antes del error: {{message}}"
+    },
+    "step4": {
+      "title": "Paso 4 — Emparejar proxies con identidades",
+      "tagline": "Mapeo 1:1 — cada identidad recibe su propio proxy.",
+      "proxiesInPool": "{{n}} proxies en el pool",
+      "identitiesCreated": "{{n}} identidades creadas",
+      "pairsAssigned": "se asignarán {{n}} pares",
+      "extraProxies": "{{n}} proxies extra quedan sin asignar (usar después)",
+      "noProxyIdentities": "{{n}} identidades sin proxy (directo)",
+      "nothingToPair": "Nada para emparejar. Podés saltar este paso y asignar después desde el Dashboard de Proxies.",
+      "successAssigned": "✓ {{n}} pares asignados.",
+      "successAssignedWithFails": "✓ {{n}} pares asignados ({{f}} fallaron)."
+    },
+    "step5": {
+      "title": "Paso 5 — Probar el setup",
+      "tagline": "Vamos a pingear todos los proxies asignados y confirmar que respondan.",
+      "hint": "Click <strong>Finalizar</strong> abajo para correr los tests. Tarda 5–30s dependiendo del número de proxies.",
+      "doneTitle": "Setup completo",
+      "doneTagline": "Testeados {{n}} proxies: <strong>{{ok}}</strong> ok, <strong>{{fail}}</strong> fallaron.",
+      "doneIssues": "Algunos proxies fallaron — chequeá el Dashboard de Proxies para inspeccionar. Se auto-deshabilitan después de 3 fallas.",
+      "doneOk": "Todo en verde. Ya podés empezar a abrir pestañas en tus nuevas identidades desde el sidebar.",
+      "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
+    }
+  },
   "oxylabsBuilder": {
     "openBtn": "+ Oxylabs",
     "title": "Generador de Proxies Oxylabs",

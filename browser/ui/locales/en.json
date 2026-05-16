@@ -251,6 +251,102 @@
       "searchIdentities": "Search identities…"
     }
   },
+  "welcome": {
+    "title": "Welcome to OZ Browser",
+    "skipAria": "Skip onboarding",
+    "skip": "Skip",
+    "back": "Back",
+    "next": "Next",
+    "getStarted": "Get started",
+    "identities": {
+      "title": "Identities",
+      "tagline": "Each identity is a fully isolated browser session — its own cookies, storage, login state, and extensions.",
+      "defaultName": "Default identity",
+      "defaultDesc": "— your main session, ships with Chrome Web Store extensions enabled.",
+      "customName": "Custom identities",
+      "customDesc": "— one per persona / account. Switch from the sidebar; tabs remember which identity they belong to.",
+      "colorName": "Per-identity color stripe",
+      "colorDesc": "on every tab so you never confuse them."
+    },
+    "workspaces": {
+      "title": "Workspaces & Vault",
+      "tagline": "Workspaces group sessions per project; the encrypted vault stores credentials safely on your Mac.",
+      "groupsName": "Workspaces",
+      "groupsDesc": "— Excel-like grouping. Switch to snapshot the current set of tabs and load a different one.",
+      "vaultName": "🔐 Vault",
+      "vaultDesc": "— AES-256-GCM encrypted account store. Master key in Keychain. Auto-fill on login pages.",
+      "timeMachineName": "⏱ Time Machine",
+      "timeMachineDesc": "— daily encrypted snapshots of your entire setup. Restore any time."
+    },
+    "antidetect": {
+      "title": "Proxies, Fingerprint & Automation",
+      "tagline": "Antidetect that goes beyond Ghost Browser: per-identity fingerprint + GeoIP coherence + headless automation.",
+      "proxiesName": "🌐 Proxies",
+      "proxiesDesc": "— assign per-identity / workspace. Auto-disable on health failure. Oxylabs sticky-session template built-in.",
+      "fingerprintName": "FingerprintEngine \"Ghost+\"",
+      "fingerprintDesc": "— 11 vectors spoofed consistently per identity (UA, screen, timezone, canvas, WebGL).",
+      "mcpName": "MCP server",
+      "mcpDesc": "— control OZ from any LLM agent. Toggle on in Settings → Automation."
+    }
+  },
+  "wizard": {
+    "title": "Set up your workspace",
+    "skipAria": "Skip wizard",
+    "skip": "Skip",
+    "back": "Back",
+    "continue": "Continue",
+    "finish": "Finish",
+    "step1": {
+      "title": "Step 1 — Create a workspace",
+      "tagline": "Workspaces group identities per project. Name it after the project or client.",
+      "nameLabel": "Workspace name",
+      "namePlaceholder": "e.g. Client Alpha — Instagram",
+      "colorLabel": "Color",
+      "errNameRequired": "Name is required.",
+      "errFailed": "Failed to create workspace."
+    },
+    "step2": {
+      "title": "Step 2 — Add proxies",
+      "tagline": "One per line: <code>host:port:user:pass</code> or <code>user:pass@host:port</code>.",
+      "hint": "Tip: skip this step if you already have proxies configured — you can add more from the Proxy Dashboard later.",
+      "errParse": "Could not parse any proxies.",
+      "errZeroValid": "0 valid proxies ({{n}} invalid). Fix and retry.",
+      "errImport": "Import failed:",
+      "successAdded": "✓ Added {{n}} proxies."
+    },
+    "step3": {
+      "title": "Step 3 — Create identities",
+      "tagline": "Each identity is a fully isolated session (cookies, storage, login). Common: 1 per social media account.",
+      "countLabel": "How many?",
+      "prefixLabel": "Name prefix",
+      "previewHint": "Identities will be named \"{{prefix}} 1\", \"{{prefix}} 2\", … and live inside <strong>{{workspace}}</strong>.",
+      "errNoWorkspace": "No workspace created — go back to step 1.",
+      "successCreated": "✓ Created {{n}} identities.",
+      "partial": "Created {{done}} of {{total}} before error: {{message}}"
+    },
+    "step4": {
+      "title": "Step 4 — Pair proxies to identities",
+      "tagline": "1:1 mapping — each identity gets its own proxy.",
+      "proxiesInPool": "{{n}} proxies in pool",
+      "identitiesCreated": "{{n}} identities created",
+      "pairsAssigned": "{{n}} pairs will be assigned",
+      "extraProxies": "{{n}} extra proxies stay unassigned (use later)",
+      "noProxyIdentities": "{{n}} identities will use no proxy (direct)",
+      "nothingToPair": "Nothing to pair. You can skip this step and assign later from the Proxy Dashboard.",
+      "successAssigned": "✓ Assigned {{n}} pairs.",
+      "successAssignedWithFails": "✓ Assigned {{n}} pairs ({{f}} failed)."
+    },
+    "step5": {
+      "title": "Step 5 — Test the setup",
+      "tagline": "We'll ping all assigned proxies and confirm they're reachable.",
+      "hint": "Click <strong>Finish</strong> below to run the tests. This takes 5–30s depending on proxy count.",
+      "doneTitle": "Setup complete",
+      "doneTagline": "Tested {{n}} proxies: <strong>{{ok}}</strong> ok, <strong>{{fail}}</strong> failed.",
+      "doneIssues": "Some proxies failed — check the Proxy Dashboard to inspect. They are auto-disabled after 3 failures.",
+      "doneOk": "All systems green. You can start opening tabs in your new identities from the sidebar.",
+      "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
+    }
+  },
   "oxylabsBuilder": {
     "openBtn": "+ Oxylabs",
     "title": "Oxylabs Proxy Builder",
