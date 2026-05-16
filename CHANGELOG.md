@@ -8,6 +8,26 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+- [`2026-05-15`] [`sandbox-preload-fix / v1.4.4`] **Fix critical: bundle content preloads via webpack para sortear sandbox require() bug en Electron 42** (1 commit, cero deps nuevas — webpack ya transitive de @electron-forge/plugin-webpack).
+
+  **Bug:** sandboxed preloads de Electron 42 fallan silenciosamente cuando hacen `require()` de archivos siblings (descubierto durante smoke visual de Identity HUD v1.4.3). Afecta a **`preload-content.js`** (auto-fill + auto-save + TOTP inject del bloque J auto-login) Y **`preload-fingerprint.js`** (FP UA override + canvas/audio/webgl spoofs del 1.9b). Visible en page console como `Unable to load preload script ...preload-content.js / Error: module not found: ./site-templates`. Sin estos preloads, las features core del producto (auto-login a las 50 IG accounts + anti-detect fingerprint) están silentemente rotas en el build dev.
+
+  **Fix:** nuevo `scripts/bundle-preloads.js` (~100 LOC) que invoca webpack programáticamente para bundlear cada content preload + sus deps relativos en un solo `.js` standalone. Output: `browser/.bundled/<name>.bundled.js`. El bundle resuelve los requires en build-time, así el archivo final SÓLO contiene `require("electron")` (whitelisted en sandbox). Config webpack: `target: 'node'`, `libraryTarget: 'commonjs2'`, `iife: true`, `externals: { electron: 'commonjs2 electron' }`, `splitChunks: false` (single self-contained file per preload).
+
+  **Wire-up:** `identity-manager.js` `contentPreloadPath()` y `fingerprint-preload-setup.js` `fpPreloadPath` ahora apuntan a `app.getAppPath() + /browser/.bundled/<name>.bundled.js` en lugar del source. **npm scripts** `prestart` + `prepackage` + `bundle:preloads` (manual) corren el script automáticamente — sin overhead para Jose. `.gitignore` agrega `browser/.bundled/`. `forge.config.js` `extraResource` agrega `browser/.bundled` para que el packaging incluya los bundles.
+
+  **Performance:** ~1-2s por bundle, ~3s total post-prestart. Sin cambios para `npm test` o lint.
+
+  **Bundle sizes:** preload-content.bundled.js ~22.2 KiB (inlinea site-templates 314 LOC) + preload-fingerprint.bundled.js ~15.3 KiB (inlinea preload-fingerprint-script 266 LOC). Auto-stamped con header `// AUTO-GENERATED ...`.
+
+  **Smoke visual 2026-05-15 PASS** (parcial): page console ya NO muestra `Unable to load preload script ...preload-content.js`. Verificado en https://www.instagram.com/* con identity IG 2. **El UA override del FP engine NO se está aplicando todavía** (UA muestra `OZBrowser/1.4.4 Chrome/148.0.7778.97 Electron/42.0.1` en lugar del FP-generated UA) — sub-bloque pendiente para investigar el identity-resolution path del FP hook (separado del bundle issue que este commit cierra). El HUD del 1.4.3 sigue funcionando perfecto.
+
+  **Version bumps** package + manifest WebUI 1.4.3 → 1.4.4 (patch). Lint clean. check:loc 499. Tests acumulados ~3349 → 3349 (cero cambios — el script de bundle no agrega asserts, solo build-tooling).
+
+  **Pendiente** (sub-bloques separados):
+  1. Investigar por qué FP UA override no se aplica aunque el preload ahora carga (`session.setUserAgent` desde el FP hook + `webFrame.executeJavaScript` con el override script).
+  2. Onboarding wizard 5-step — último K1-extra.
+
 - [`2026-05-15`] [`K1-identity-hud / v1.4.3`] **In-page identity HUD widget arriba-derecha en cada tab — smoke visual PASS end-to-end** (1 commit, **+122 tests**, cero deps nuevas).
 
   **Resumen ejecutivo:** widget shadow-DOM arriba-derecha en cada tab con identity name + color badge + workspace + proxy country flag (🇲🇽 🇺🇸) + IP last octets ofuscados (·144.18 para IPv4) + session health pill (green/amber/red/gray). Expanded por default, collapse a pill mini per-identity persistente via localStorage. Smoke visual 2026-05-15 confirmado: HUD aparece + click chevron colapsa + identity color de la IG 2 renderizada correctamente.

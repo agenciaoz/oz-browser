@@ -25,12 +25,18 @@ const log = require('./logger')
 let _contentPreloadPath = null
 function contentPreloadPath() {
   if (_contentPreloadPath) return _contentPreloadPath
-  // 1) under electron-forge dev, __dirname = '<repo>/.webpack/main' (after
-  // bundle), so '..' twice lands at repo root.
-  const fromAppPath = path.join(app.getAppPath(), 'browser', 'preload-content.js')
-  // 2) packaged: same join works (asar root). The webpack-mangled __dirname is
-  // unreliable as a fallback, so trust app.getAppPath().
-  _contentPreloadPath = fromAppPath
+  // v1.4.4: load the WEBPACK-BUNDLED preload (with its `./site-templates`
+  // sibling inlined). Raw preload-content.js fails silently in sandboxed
+  // mode because `require('./site-templates')` is rejected by Electron's
+  // sandbox loader (smoke 2026-05-15). The bundle is produced by
+  // `scripts/bundle-preloads.js` (npm prestart + prepackage) and lands in
+  // `browser/.bundled/preload-content.bundled.js`.
+  _contentPreloadPath = path.join(
+    app.getAppPath(),
+    'browser',
+    '.bundled',
+    'preload-content.bundled.js',
+  )
   return _contentPreloadPath
 }
 

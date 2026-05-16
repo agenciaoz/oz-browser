@@ -41,6 +41,12 @@ module.exports = {
       'browser/ui',
       'browser/preload-fingerprint.js',
       'browser/preload-hud.js',
+      // v1.4.4: bundled preloads (with sibling deps inlined via webpack).
+      // Sandboxed Electron preloads can't require() relative files, so we
+      // bundle them in `scripts/bundle-preloads.js` (prestart + prepackage)
+      // and ship the bundled output. Source files above are kept for
+      // historical/test reasons but NOT used at runtime in v1.4.4+.
+      'browser/.bundled',
     ],
     // afterCopy hook: el plugin-webpack de Forge bundlea index.js + sus deps
     // pero NO copia node_modules de los externals al bundle. webpack.main.config

@@ -32,3 +32,4 @@ proxies.json
 *.cer
 *.mobileprovision
 *.git-commit-msg-tmp.txt
+browser/.bundled/

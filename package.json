@@ -1,11 +1,14 @@
 {
   "name": "oz-browser",
   "productName": "OZ Browser",
-  "version": "1.4.3",
+  "version": "1.4.4",
   "description": "Multi-session Chromium browser with per-tab proxies and antidetect — based on Electron.",
   "main": ".webpack/main",
   "scripts": {
     "build": "npm run package",
+    "bundle:preloads": "node scripts/bundle-preloads.js",
+    "prestart": "node scripts/bundle-preloads.js",
+    "prepackage": "node scripts/bundle-preloads.js",
     "start": "electron-forge start",
     "start:trace": "electron-forge start -- --trace-startup=\"*\" --trace-startup-file=\"$HOME/Desktop/trace.json\"",
     "package": "electron-forge package",

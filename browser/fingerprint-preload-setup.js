@@ -22,7 +22,18 @@ const log = require('./logger')
 
 function setupFingerprintPreload(browser) {
   if (!browser || !browser.identityManager || !browser.fingerprintEngine) return false
-  const fpPreloadPath = path.join(app.getAppPath(), 'browser', 'preload-fingerprint.js')
+  // v1.4.4: load the WEBPACK-BUNDLED preload (with `./preload-fingerprint-script`
+  // sibling inlined). Raw preload-fingerprint.js fails silently in sandboxed
+  // mode because `require('./preload-fingerprint-script')` is rejected by
+  // Electron's sandbox loader. The bundle is produced by
+  // `scripts/bundle-preloads.js` and lands in
+  // `browser/.bundled/preload-fingerprint.bundled.js`.
+  const fpPreloadPath = path.join(
+    app.getAppPath(),
+    'browser',
+    '.bundled',
+    'preload-fingerprint.bundled.js',
+  )
   browser.identityManager.addSessionInitHook((identityId, session) => {
     const ident = browser.identityManager.get(identityId)
     if (!ident) return
