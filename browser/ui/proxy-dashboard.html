@@ -2,7 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="utf-8" />
-    <title>OZ Browser — Proxy Health Dashboard</title>
+    <title data-i18n="proxyDashboard.pageTitle">
+      OZ Browser — Proxy Health Dashboard
+    </title>
     <style>
       :root {
         --bg: #1a1a1a;
@@ -469,6 +471,7 @@
             class="btn secondary"
             id="btn-export-diag"
             data-i18n="proxyDashboard.exportDiag"
+            data-i18n-attr="title:proxyDashboard.exportDiagTitle"
             title="Export sanitized diagnostic bundle (no secrets) for troubleshooting"
           >
             📋 Export diag
@@ -519,6 +522,7 @@
           <button
             data-act="bulk-reload"
             data-i18n="proxyDashboard.bulk.bulkReload"
+            data-i18n-attr="title:proxyDashboard.bulk.bulkReloadTitle"
             title="Re-apply assigned proxy on each session"
           >
             ↻ Reload sessions
@@ -526,6 +530,7 @@
           <button
             data-act="bulk-reassign"
             data-i18n="proxyDashboard.bulk.bulkReassign"
+            data-i18n-attr="title:proxyDashboard.bulk.bulkReassignTitle"
             title="Bulk reassign proxy to selected identities"
           >
             Reassign…
