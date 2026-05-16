@@ -15,6 +15,11 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
+  // v1.5.11: i18n — lazy lookup via window.OZ.i18n.t() so locale switches
+  // pick up automatically. bulk-opener.js loads AFTER i18n.js per webui.html
+  // script order, so window.OZ.i18n is available at constructor time.
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
   class BulkOpenerUI {
     constructor() {
@@ -50,6 +55,9 @@
       this.$error = document.getElementById('oz-bo-error')
       this.$result = document.getElementById('oz-bo-result')
       this.$openBtn = document.getElementById('oz-bo-button')
+      // v1.5.11: hint <small> with inline <code> rendered via innerHTML
+      // (data-i18n textContent would strip the <code> children).
+      this.$urlHintExisting = document.getElementById('oz-bo-url-hint-existing')
 
       this.mode = 'existing'
       this.identities = []
@@ -60,6 +68,40 @@
       this.isOpen = false
 
       this._wire()
+      this._applyUrlHint()
+      // v1.5.11: locale-aware default for the name pattern input. We set this
+      // ONCE at init time so a Spanish user sees "Cuenta {n}" instead of
+      // "Account {n}". Subsequent opens preserve user edits (no overwrite).
+      // The HTML value="Account {n}" attribute stays as a defensive English
+      // fallback in case i18n fails to load.
+      if (this.$namePattern && window.OZ?.i18n) {
+        this.$namePattern.value = t('bulkOpener.create.namePatternDefault')
+      }
+
+      // v1.5.11: re-render dynamic content on locale switch. translatePage()
+      // covers static markup (title, mode buttons, labels, hint placeholders).
+      // The url-hint <code>-bearing <small>, the JS-rendered identity list,
+      // the count pill, the target <option>s, the submit button text, the
+      // preview list, and the result block all need manual refresh.
+      if (window.OZ?.i18n?.onChange) {
+        window.OZ.i18n.onChange(() => {
+          this._applyUrlHint()
+          if (!this.isOpen) return
+          this._setMode(this.mode) // re-renders submit button text
+          this._renderTargetOptions()
+          this._renderExistingList()
+          this._renderPreview()
+          // _showResult re-rendering: result might be stale from previous
+          // submit; clear it instead of trying to re-render without the
+          // original payload (avoids cross-locale drift).
+          this.$result.hidden = true
+        })
+      }
+    }
+
+    _applyUrlHint() {
+      if (!this.$urlHintExisting) return
+      this.$urlHintExisting.innerHTML = t('bulkOpener.existing.urlHintHtml')
     }
 
     _wire() {
@@ -169,7 +211,10 @@
       this.$modal
         .querySelectorAll('[data-mode]')
         .forEach((el) => (el.hidden = el.getAttribute('data-mode') !== mode))
-      this.$submit.textContent = mode === 'existing' ? 'Open selected' : 'Create + open'
+      this.$submit.textContent =
+        mode === 'existing'
+          ? t('bulkOpener.submitExisting')
+          : t('bulkOpener.submitCreate')
       this._updateCount()
     }
 
@@ -190,7 +235,7 @@
     _renderExistingList() {
       const visible = this._visibleIdentities()
       if (visible.length === 0) {
-        this.$existingList.innerHTML = `<li class="bo-empty">No identities match.</li>`
+        this.$existingList.innerHTML = `<li class="bo-empty">${escapeHtml(t('bulkOpener.existing.emptySearch'))}</li>`
       } else {
         this.$existingList.innerHTML = visible
           .map((i) => {
@@ -225,8 +270,11 @@
       const opts = []
       if (this.activeWorkspaceId) {
         const cur = this.workspaces.find((w) => w.id === this.activeWorkspaceId)
+        const curLabel = t('bulkOpener.currentWsOption', {
+          name: cur ? cur.name : this.activeWorkspaceId,
+        })
         opts.push(
-          `<option value="${escapeAttr(this.activeWorkspaceId)}">Current — ${escapeHtml(cur ? cur.name : this.activeWorkspaceId)}</option>`,
+          `<option value="${escapeAttr(this.activeWorkspaceId)}">${escapeHtml(curLabel)}</option>`,
         )
       }
       // Then any other non-active, non-archived workspaces.
@@ -234,18 +282,22 @@
         if (w.id === this.activeWorkspaceId) continue
         opts.push(`<option value="${escapeAttr(w.id)}">${escapeHtml(w.name)}</option>`)
       }
-      opts.push(`<option value="__new__">+ New workspace…</option>`)
+      opts.push(
+        `<option value="__new__">${escapeHtml(t('bulkOpener.newWsOption'))}</option>`,
+      )
       this.$wsTarget.innerHTML = opts.join('')
       // Default to "New workspace…" — the typical bulk-open use case.
       this.$wsTarget.value = '__new__'
       const stamp = new Date().toISOString().slice(0, 16).replace('T', ' ')
-      this.$newWsName.value = `Bulk Open — ${stamp}`
+      this.$newWsName.value = t('bulkOpener.newWorkspaceDefault', { stamp })
       this._onTargetChange()
     }
 
     _updateCount() {
       if (this.mode === 'existing') {
-        this.$existingCount.textContent = `${this.selected.size} selected`
+        this.$existingCount.textContent = t('bulkOpener.existing.countSelected', {
+          n: this.selected.size,
+        })
         this.$submit.disabled = this.selected.size === 0
       } else {
         this.$submit.disabled = false
@@ -256,7 +308,7 @@
       if (this.mode !== 'create') return
       const count = Math.min(Math.max(Number(this.$count.value) || 0, 0), 50)
       if (count === 0) {
-        this.$preview.innerHTML = '<li class="bo-empty">Enter a count to preview.</li>'
+        this.$preview.innerHTML = `<li class="bo-empty">${escapeHtml(t('bulkOpener.create.previewEmpty'))}</li>`
         return
       }
       const namePattern = this.$namePattern.value || ''
@@ -299,14 +351,15 @@
       } else {
         const count = Number(this.$count.value)
         if (!count || count < 1) {
-          this._showError('Enter a count between 1 and 200.')
+          this._showError(t('bulkOpener.errorCountRange'))
           this.$submit.disabled = false
           return
         }
         res = await safe(
           window.oz.bulkOpen.createNew({
             count,
-            namePattern: this.$namePattern.value || 'Account {n}',
+            namePattern:
+              this.$namePattern.value || t('bulkOpener.create.namePatternDefault'),
             urlPattern: this.$urlCreate.value || '',
             color: this.$color.value || '#6b8e9f',
             target,
@@ -318,8 +371,7 @@
       this.$submit.disabled = false
       if (!res || res.ok === false) {
         this._showError(
-          (res && (res.reason || res.message)) ||
-            'Bulk open failed (see logs for detail).',
+          (res && (res.reason || res.message)) || t('bulkOpener.errorGeneric'),
         )
         return
       }
@@ -335,16 +387,28 @@
       const opened = (res.opened || res.created || []).length
       const errors = (res.errors || []).length
       const wsLine = res.workspaceCreated
-        ? `New workspace created (${res.workspaceId}).`
-        : `Workspace: ${res.workspaceId || 'current'}.`
-      let html = `<strong>${opened} opened</strong>${errors ? ` · <span class="bo-warn">${errors} skipped</span>` : ''}<br />${wsLine}`
+        ? t('bulkOpener.result.wsCreated', { id: res.workspaceId })
+        : res.workspaceId
+          ? t('bulkOpener.result.wsUsed', { id: res.workspaceId })
+          : t('bulkOpener.result.wsCurrent')
+      const openedLabel =
+        opened === 1
+          ? t('bulkOpener.result.openedSingular')
+          : t('bulkOpener.result.openedPlural', { n: opened })
+      const skippedLabel = !errors
+        ? ''
+        : errors === 1
+          ? t('bulkOpener.result.skippedSingular')
+          : t('bulkOpener.result.skippedPlural', { n: errors })
+      let html = `<strong>${escapeHtml(openedLabel)}</strong>${skippedLabel ? `<span class="bo-warn">${escapeHtml(skippedLabel)}</span>` : ''}<br />${escapeHtml(wsLine)}`
       if (errors) {
         html += '<ul class="bo-error-list">'
         for (const e of res.errors.slice(0, 10)) {
-          html += `<li>${escapeHtml(e.name || e.identityId || `#${e.n}`)} — ${escapeHtml(e.reason)}</li>`
+          const fallback = t('bulkOpener.result.errorRowFallback', { n: e.n })
+          html += `<li>${escapeHtml(e.name || e.identityId || fallback)} — ${escapeHtml(e.reason)}</li>`
         }
         if (res.errors.length > 10) {
-          html += `<li>…and ${res.errors.length - 10} more</li>`
+          html += `<li>${escapeHtml(t('bulkOpener.result.moreErrors', { n: res.errors.length - 10 }))}</li>`
         }
         html += '</ul>'
       }

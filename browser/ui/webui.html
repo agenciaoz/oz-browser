@@ -5908,17 +5908,33 @@
         aria-labelledby="oz-bo-title"
       >
         <header>
-          <h2 id="oz-bo-title">🎯 Bulk Open</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+          <h2 id="oz-bo-title" data-i18n="bulkOpener.title">🎯 Bulk Open</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            data-i18n-attr="aria-label:bulkOpener.closeAria"
+          >
             ✕
           </button>
         </header>
 
         <div class="bo-modes" data-bo-mode role="tablist">
-          <button id="oz-bo-mode-existing" class="bo-mode-btn active" type="button">
+          <button
+            id="oz-bo-mode-existing"
+            class="bo-mode-btn active"
+            type="button"
+            data-i18n="bulkOpener.modeExisting"
+          >
             From existing identities
           </button>
-          <button id="oz-bo-mode-create" class="bo-mode-btn" type="button">
+          <button
+            id="oz-bo-mode-create"
+            class="bo-mode-btn"
+            type="button"
+            data-i18n="bulkOpener.modeCreate"
+          >
             Create N new
           </button>
         </div>
@@ -5933,44 +5949,50 @@
               id="oz-bo-existing-search"
               placeholder="Search identities…"
               autocomplete="off"
+              data-i18n-attr="placeholder:bulkOpener.existing.searchPlaceholder"
             />
             <label class="bo-checkbox-inline">
               <input type="checkbox" id="oz-bo-existing-select-all" />
-              Select visible
+              <span data-i18n="bulkOpener.existing.selectVisible">Select visible</span>
             </label>
             <span class="bo-spacer"></span>
             <span class="bo-existing-count" id="oz-bo-existing-count">0 selected</span>
           </div>
           <ul class="bo-id-list" id="oz-bo-existing-list"></ul>
           <label>
-            URL pattern (optional)
+            <span data-i18n="bulkOpener.existing.urlPatternLabel">
+              URL pattern (optional)
+            </span>
             <input
               type="text"
               id="oz-bo-url-existing"
               placeholder="https://instagram.com/  — use {n} for 1-indexed counter"
               autocomplete="off"
+              data-i18n-attr="placeholder:bulkOpener.existing.urlPatternPlaceholder"
             />
           </label>
-          <small
-            >Leave blank for <code>about:blank</code>. Use <code>{n}</code> for 1-indexed
-            counter or <code>{i}</code> for 0-indexed.</small
-          >
+          <!-- Hint contains <code> elements; rendered as innerHTML from
+               bulk-opener.js via _applyUrlHint() on init + locale switch. -->
+          <small id="oz-bo-url-hint-existing">
+            Leave blank for <code>about:blank</code>. Use <code>{n}</code> for 1-indexed
+            counter or <code>{i}</code> for 0-indexed.
+          </small>
         </section>
 
         <!-- ── Create new ── -->
         <section data-mode="create" hidden>
           <div class="bo-row">
             <label>
-              Count
+              <span data-i18n="bulkOpener.create.countLabel">Count</span>
               <input type="number" id="oz-bo-count" min="1" max="200" value="5" />
             </label>
             <label class="bo-color-label">
-              Color
+              <span data-i18n="bulkOpener.create.colorLabel">Color</span>
               <input type="color" id="oz-bo-color" value="#6b8e9f" />
             </label>
           </div>
           <label>
-            Name pattern
+            <span data-i18n="bulkOpener.create.namePatternLabel">Name pattern</span>
             <input
               type="text"
               id="oz-bo-name-pattern"
@@ -5979,31 +6001,35 @@
             />
           </label>
           <label>
-            URL pattern (optional)
+            <span data-i18n="bulkOpener.create.urlPatternLabel">
+              URL pattern (optional)
+            </span>
             <input
               type="text"
               id="oz-bo-url-create"
               placeholder="https://instagram.com/ — use {n} or {i}"
               autocomplete="off"
+              data-i18n-attr="placeholder:bulkOpener.create.urlPatternPlaceholder"
             />
           </label>
-          <small>Preview (first 50):</small>
+          <small data-i18n="bulkOpener.create.previewLabel">Preview (first 50):</small>
           <ul class="bo-preview" id="oz-bo-preview"></ul>
         </section>
 
         <!-- Target workspace -->
         <label class="bo-target-label">
-          Target workspace
+          <span data-i18n="bulkOpener.targetLabel">Target workspace</span>
           <select id="oz-bo-ws-target"></select>
         </label>
         <div class="bo-row" id="oz-bo-new-ws-row" hidden>
           <label style="flex: 1">
-            New workspace name
+            <span data-i18n="bulkOpener.newWorkspaceLabel">New workspace name</span>
             <input
               type="text"
               id="oz-bo-new-ws-name"
               placeholder="Bulk Open — 2026-05-10"
               autocomplete="off"
+              data-i18n-attr="placeholder:bulkOpener.newWorkspacePlaceholder"
             />
           </label>
         </div>
@@ -6011,7 +6037,9 @@
         <div id="oz-bo-result" class="bo-result" hidden></div>
 
         <div class="oz-modal-actions">
-          <button type="button" id="oz-bo-cancel">Cancel</button>
+          <button type="button" id="oz-bo-cancel" data-i18n="bulkOpener.cancel">
+            Cancel
+          </button>
           <button type="button" id="oz-bo-submit" class="primary">Open selected</button>
         </div>
       </div>

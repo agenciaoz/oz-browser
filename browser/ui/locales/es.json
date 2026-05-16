@@ -347,6 +347,53 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "bulkOpener": {
+    "title": "🎯 Abrir en masa",
+    "closeAria": "Cerrar",
+    "modeExisting": "Desde identidades existentes",
+    "modeCreate": "Crear N nuevas",
+    "existing": {
+      "searchPlaceholder": "Buscar identidades…",
+      "selectVisible": "Seleccionar visibles",
+      "countSelected": "{{n}} seleccionadas",
+      "emptySearch": "Ninguna identidad coincide.",
+      "urlPatternLabel": "Patrón de URL (opcional)",
+      "urlPatternPlaceholder": "https://instagram.com/  — usá {n} para contador 1-indexed",
+      "urlHintHtml": "Dejá vacío para <code>about:blank</code>. Usá <code>{n}</code> para contador 1-indexed o <code>{i}</code> para 0-indexed."
+    },
+    "create": {
+      "countLabel": "Cantidad",
+      "colorLabel": "Color",
+      "namePatternLabel": "Patrón de nombre",
+      "namePatternDefault": "Cuenta {n}",
+      "urlPatternLabel": "Patrón de URL (opcional)",
+      "urlPatternPlaceholder": "https://instagram.com/ — usá {n} o {i}",
+      "previewLabel": "Previsualización (primeras 50):",
+      "previewEmpty": "Ingresá una cantidad para previsualizar."
+    },
+    "targetLabel": "Espacio destino",
+    "newWorkspaceLabel": "Nombre del nuevo espacio",
+    "newWorkspaceDefault": "Abrir en masa — {{stamp}}",
+    "newWorkspacePlaceholder": "Abrir en masa — 2026-05-10",
+    "currentWsOption": "Actual — {{name}}",
+    "newWsOption": "+ Nuevo espacio…",
+    "cancel": "Cancelar",
+    "submitExisting": "Abrir seleccionadas",
+    "submitCreate": "Crear + abrir",
+    "errorCountRange": "Ingresá una cantidad entre 1 y 200.",
+    "errorGeneric": "Falló la apertura en masa (ver logs para detalle).",
+    "result": {
+      "openedSingular": "1 abierta",
+      "openedPlural": "{{n}} abiertas",
+      "skippedSingular": " · 1 omitida",
+      "skippedPlural": " · {{n}} omitidas",
+      "wsCreated": "Nuevo espacio creado ({{id}}).",
+      "wsUsed": "Espacio: {{id}}.",
+      "wsCurrent": "Espacio: actual.",
+      "errorRowFallback": "#{{n}}",
+      "moreErrors": "…y {{n}} más"
+    }
+  },
   "team": {
     "title": "👥 Equipo",
     "closeAria": "Cerrar",

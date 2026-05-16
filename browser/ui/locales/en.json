@@ -347,6 +347,53 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "bulkOpener": {
+    "title": "🎯 Bulk Open",
+    "closeAria": "Close",
+    "modeExisting": "From existing identities",
+    "modeCreate": "Create N new",
+    "existing": {
+      "searchPlaceholder": "Search identities…",
+      "selectVisible": "Select visible",
+      "countSelected": "{{n}} selected",
+      "emptySearch": "No identities match.",
+      "urlPatternLabel": "URL pattern (optional)",
+      "urlPatternPlaceholder": "https://instagram.com/  — use {n} for 1-indexed counter",
+      "urlHintHtml": "Leave blank for <code>about:blank</code>. Use <code>{n}</code> for 1-indexed counter or <code>{i}</code> for 0-indexed."
+    },
+    "create": {
+      "countLabel": "Count",
+      "colorLabel": "Color",
+      "namePatternLabel": "Name pattern",
+      "namePatternDefault": "Account {n}",
+      "urlPatternLabel": "URL pattern (optional)",
+      "urlPatternPlaceholder": "https://instagram.com/ — use {n} or {i}",
+      "previewLabel": "Preview (first 50):",
+      "previewEmpty": "Enter a count to preview."
+    },
+    "targetLabel": "Target workspace",
+    "newWorkspaceLabel": "New workspace name",
+    "newWorkspaceDefault": "Bulk Open — {{stamp}}",
+    "newWorkspacePlaceholder": "Bulk Open — 2026-05-10",
+    "currentWsOption": "Current — {{name}}",
+    "newWsOption": "+ New workspace…",
+    "cancel": "Cancel",
+    "submitExisting": "Open selected",
+    "submitCreate": "Create + open",
+    "errorCountRange": "Enter a count between 1 and 200.",
+    "errorGeneric": "Bulk open failed (see logs for detail).",
+    "result": {
+      "openedSingular": "1 opened",
+      "openedPlural": "{{n}} opened",
+      "skippedSingular": " · 1 skipped",
+      "skippedPlural": " · {{n}} skipped",
+      "wsCreated": "New workspace created ({{id}}).",
+      "wsUsed": "Workspace: {{id}}.",
+      "wsCurrent": "Workspace: current.",
+      "errorRowFallback": "#{{n}}",
+      "moreErrors": "…and {{n}} more"
+    }
+  },
   "team": {
     "title": "👥 Team",
     "closeAria": "Close",
