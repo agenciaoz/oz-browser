@@ -1,34 +1,54 @@
 // OZ Browser — electron-forge config.
 //
 // Etapa 3a (2026-05-10): packaging para macOS sin firmar.
-// - appBundleId estable para que el OS recuerde permisos (Camera, Mic, etc.)
-//   entre versiones, y para que update-electron-app pueda matchear la app.
-// - appCategoryType "productivity" para que aparezca bien en Finder/Spotlight.
-// - icon path apunta a build/icon.icns si existe (placeholder por ahora; el
-//   .icns real lo agregamos en 3b-polish con el branding final).
-// - osxSign: undefined → maker-dmg empaqueta SIN firmar para testing local.
-//   Etapa 3b lo activará con cert "Developer ID Application: ...".
-// - extraResource: 'browser/ui' (HTML/CSS/JS de la UI cargada en runtime via
-//   getAppPath()) y 'preload-fingerprint.js' (cargado per-session via
-//   registerPreloadScript desde main, NO bundleado por webpack).
-// - asar: true reduce I/O al boot y oculta el source de curiosos casuales
-//   (NO es seguridad real, pero es estándar Electron).
-// - plugin-auto-unpack-natives: descomprime *.node bindings (@napi-rs/keyring,
-//   exceljs xlsx parser) fuera del .asar para que dlopen funcione.
+// Etapa I (v1.6.0 2026-05-16): signing + notarize wired via env var guards.
+// Etapa I-2 (v1.6.0 2026-05-16): publisher GitHub Releases wired para
+// auto-updater (electron-updater).
 //
-// Notas para 3b/3c (cuando Apple Dev esté activado):
-// - osxSign: { identity: 'Developer ID Application: <Name> (<TeamID>)' }
-// - osxNotarize: { tool: 'notarytool', appleId, appleIdPassword, teamId }
-// - Ambos vienen de env vars (.env.local, NO commiteado — ver .gitignore).
+// - appBundleId estable para que el OS recuerde permisos (Camera, Mic, etc.)
+//   entre versiones, y para que electron-updater pueda matchear la app.
+// - appCategoryType "productivity" para que aparezca bien en Finder/Spotlight.
+// - icon path apunta a build/icon.icns si existe.
+// - osxSign + osxNotarize: activos solo si todas las env vars están seteadas
+//   (OZ_APPLE_SIGN_IDENTITY + OZ_APPLE_ID + OZ_APPLE_ID_PASSWORD +
+//   OZ_APPLE_TEAM_ID). Sin las vars, build queda unsigned (dev workflow OK).
+// - extraResource: 'browser/ui' (HTML/CSS/JS de la UI cargada en runtime via
+//   getAppPath()) y los preloads bundled.
+// - asar: true reduce I/O al boot y oculta el source de curiosos casuales.
+// - plugin-auto-unpack-natives: descomprime *.node bindings fuera del .asar.
+// - publishers: GitHub Releases provider para que electron-updater pueda
+//   chequear updates desde agenciaoz/oz-browser. Requiere GH_TOKEN env var
+//   con `repo` scope al correr `npm run publish`.
 
 const path = require('path')
 const fs = require('fs')
 
-// Icon es opcional en 3a — si no existe build/icon.icns, packager usa el
-// default de Electron. 3b-polish agrega el .icns final.
 const ICON_PATH = path.join(__dirname, 'build', 'icon')
 const ICON_EXISTS =
   fs.existsSync(ICON_PATH + '.icns') || fs.existsSync(ICON_PATH + '.ico')
+
+// v1.6.0: signing activa cuando las 4 env vars están seteadas. Si falta
+// alguna, build queda unsigned (igual que pre-v1.6.0). Esto permite que dev
+// builds locales sigan funcionando sin Apple Developer cert.
+const APPLE_SIGN_READY = Boolean(
+  process.env.OZ_APPLE_SIGN_IDENTITY &&
+  process.env.OZ_APPLE_ID &&
+  process.env.OZ_APPLE_ID_PASSWORD &&
+  process.env.OZ_APPLE_TEAM_ID,
+)
+
+if (process.env.OZ_PACKAGING_VERBOSE === '1') {
+  // forge.config.js corre en CLI context (electron-forge build pipeline),
+  // console.log es legítimo para diagnostics aquí.
+  // eslint-disable-next-line no-console
+  console.log(
+    `[forge.config] APPLE_SIGN_READY=${APPLE_SIGN_READY} ` +
+      `(identity=${!!process.env.OZ_APPLE_SIGN_IDENTITY}, ` +
+      `id=${!!process.env.OZ_APPLE_ID}, ` +
+      `pw=${!!process.env.OZ_APPLE_ID_PASSWORD}, ` +
+      `team=${!!process.env.OZ_APPLE_TEAM_ID})`,
+  )
+}
 
 module.exports = {
   packagerConfig: {
@@ -62,21 +82,29 @@ module.exports = {
     //
     // exceljs lo dejamos bundleado por webpack (pure JS, sin .node).
     afterCopy: [require('./scripts/forge-copy-externals.js')],
-    // Etapa 3b: descomentar cuando tengamos el cert de Apple instalado.
-    // osxSign: {
-    //   identity: process.env.OZ_APPLE_SIGN_IDENTITY,  // "Developer ID Application: Jose Coronel (TEAMID)"
-    //   'hardened-runtime': true,
-    //   'gatekeeper-assess': false,
-    //   entitlements: path.join(__dirname, 'build', 'entitlements.mac.plist'),
-    //   'entitlements-inherit': path.join(__dirname, 'build', 'entitlements.mac.plist'),
-    // },
-    // Etapa 3c: descomentar cuando tengamos app-specific password de Apple ID.
-    // osxNotarize: {
-    //   tool: 'notarytool',
-    //   appleId: process.env.OZ_APPLE_ID,
-    //   appleIdPassword: process.env.OZ_APPLE_ID_PASSWORD,
-    //   teamId: process.env.OZ_APPLE_TEAM_ID,
-    // },
+    // v1.6.0: signing + notarize activos cuando APPLE_SIGN_READY = true (todas
+    // las 4 env vars seteadas). Sin las vars, build queda unsigned (dev OK).
+    ...(APPLE_SIGN_READY
+      ? {
+          osxSign: {
+            identity: process.env.OZ_APPLE_SIGN_IDENTITY, // "Developer ID Application: Jose Coronel (TEAMID)"
+            'hardened-runtime': true,
+            'gatekeeper-assess': false,
+            entitlements: path.join(__dirname, 'build', 'entitlements.mac.plist'),
+            'entitlements-inherit': path.join(
+              __dirname,
+              'build',
+              'entitlements.mac.plist',
+            ),
+          },
+          osxNotarize: {
+            tool: 'notarytool',
+            appleId: process.env.OZ_APPLE_ID,
+            appleIdPassword: process.env.OZ_APPLE_ID_PASSWORD,
+            teamId: process.env.OZ_APPLE_TEAM_ID,
+          },
+        }
+      : {}),
   },
   rebuildConfig: {},
   makers: [
@@ -132,5 +160,30 @@ module.exports = {
       },
     },
   ].filter(Boolean),
-  // publishers: definidos en Etapa 3d (update-electron-app + GitHub Releases).
+  // v1.6.0: GitHub Releases publisher para electron-updater.
+  // `npm run publish` sube los DMG/zip artifacts al release draft del tag
+  // actual (ej. v1.6.0). Requiere `GH_TOKEN` env var con scope `repo` (o
+  // `public_repo` si el repo fuera público). Para repos privados como
+  // agenciaoz/oz-browser, scope `repo` es necesario.
+  //
+  // El client (electron-updater) lee desde la misma URL — `latest-mac.yml`
+  // generado automáticamente por el publisher contiene hashes + URL al
+  // .zip/.dmg para que el cliente valide signature antes de instalar.
+  //
+  // draft: true asegura que el release queda como draft en GitHub — Jose lo
+  // promueve manualmente a "published" cuando esté listo. Esto evita que un
+  // `npm run publish` accidental triggee updates a usuarios prematuramente.
+  publishers: [
+    {
+      name: '@electron-forge/publisher-github',
+      config: {
+        repository: {
+          owner: 'agenciaoz',
+          name: 'oz-browser',
+        },
+        prerelease: false,
+        draft: true,
+      },
+    },
+  ],
 }

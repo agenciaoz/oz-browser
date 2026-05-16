@@ -129,6 +129,8 @@
       if (syncNowBtn) {
         syncNowBtn.addEventListener('click', () => this.handleSyncNow())
       }
+      // I-2 (v1.6.0): auto-updater controls in About panel
+      this._setupAutoUpdaterPane()
       // Bind every input
       for (const b of this.bindings) {
         const el = document.getElementById(b.id)
@@ -395,6 +397,122 @@
         return
       await safe(window.oz.settings.resetAll(), 'settings.resetAll')
       await this.refresh()
+    }
+
+    // I-2 (v1.6.0): Auto-updater pane inside About section.
+    // Wires the toggle (settings.autoUpdate.enabled), the Check / Install
+    // buttons, and the live status text driven by main-process events.
+    _setupAutoUpdaterPane() {
+      const $toggle = document.getElementById('oz-stg-auto-update-toggle')
+      const $check = document.getElementById('oz-stg-check-update-btn')
+      const $install = document.getElementById('oz-stg-install-update-btn')
+      const $status = document.getElementById('oz-stg-update-status')
+      if (!$toggle || !$check || !$install || !$status) return // markup missing
+
+      const t = (key, params) =>
+        window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
+
+      // Initial status text — assumes "up to date" until a check tells us
+      // otherwise. The label is locale-aware via t().
+      const setIdle = () => {
+        $status.textContent = t('settings.about.statusIdle')
+        $install.hidden = true
+      }
+      setIdle()
+
+      // Toggle wiring — persist to settings.autoUpdate.enabled. The
+      // periodic poll respects this; manual Check button ignores it.
+      const refreshToggle = async () => {
+        try {
+          const s =
+            (await (window.oz?.settings?.get
+              ? window.oz.settings.get('autoUpdate')
+              : Promise.resolve(null))) || {}
+          $toggle.checked = s.enabled !== false
+        } catch (_e) {
+          $toggle.checked = true // default true
+        }
+      }
+      refreshToggle()
+      $toggle.addEventListener('change', async () => {
+        try {
+          await window.oz.settings.set('autoUpdate', { enabled: $toggle.checked })
+        } catch (_e) {
+          // best-effort
+        }
+      })
+
+      // Manual buttons.
+      $check.addEventListener('click', async () => {
+        if (window.oz?.autoUpdater?.checkNow) await window.oz.autoUpdater.checkNow()
+      })
+      $install.addEventListener('click', async () => {
+        if (window.oz?.autoUpdater?.installNow) await window.oz.autoUpdater.installNow()
+      })
+
+      // Subscribe to main-process events.
+      let _lastDownloadedVersion = null
+      if (window.oz?.autoUpdater?.onEvent) {
+        window.oz.autoUpdater.onEvent(({ event, payload }) => {
+          switch (event) {
+            case 'checking':
+              $status.textContent = t('settings.about.statusChecking')
+              $install.hidden = true
+              break
+            case 'available':
+              $status.textContent = t('settings.about.statusAvailable', {
+                version: (payload && payload.version) || '?',
+              })
+              $install.hidden = true
+              break
+            case 'not-available':
+              $status.textContent = t('settings.about.statusNotAvailable')
+              $install.hidden = true
+              break
+            case 'download-progress': {
+              const pct = Math.max(
+                0,
+                Math.min(100, Math.round((payload && payload.percent) || 0)),
+              )
+              $status.textContent = t('settings.about.statusDownloading', {
+                percent: pct,
+              })
+              $install.hidden = true
+              break
+            }
+            case 'downloaded':
+              _lastDownloadedVersion = (payload && payload.version) || '?'
+              $status.textContent = t('settings.about.statusReady', {
+                version: _lastDownloadedVersion,
+              })
+              $install.hidden = false
+              break
+            case 'error':
+              $status.textContent = t('settings.about.statusError', {
+                message: (payload && payload.message) || 'unknown',
+              })
+              break
+          }
+        })
+      }
+
+      // Re-render status text on locale switch (covers in-progress messages
+      // like "Downloading…" that JS owns). Idle/downloaded sticky values
+      // also re-render based on _lastDownloadedVersion state.
+      if (window.OZ?.i18n?.onChange) {
+        window.OZ.i18n.onChange(() => {
+          if (!$install.hidden && _lastDownloadedVersion) {
+            $status.textContent = t('settings.about.statusReady', {
+              version: _lastDownloadedVersion,
+            })
+          } else if ($status.textContent === t('settings.about.statusIdle')) {
+            // already idle, refresh anyway
+            setIdle()
+          }
+          // mid-flight states (checking / downloading / error) get re-rendered
+          // by the next event from main, so no special handling here.
+        })
+      }
     }
   }
 

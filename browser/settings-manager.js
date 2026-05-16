@@ -96,6 +96,13 @@ const DEFAULTS = Object.freeze({
     enabled: false,
     firstEnableAt: null,
   },
+  // I-2 (v1.6.0): auto-updater preferences. enabled controls the periodic
+  // 4h poll — when off, auto-updater-setup skips its scheduled checks but
+  // the manual "Check now" button still works. Default ON because Mac
+  // users expect silent background updates (standard for modern apps).
+  autoUpdate: {
+    enabled: true,
+  },
 })
 
 const VALID_LOG_LEVELS = ['DEBUG', 'INFO', 'WARN', 'ERROR']
@@ -149,7 +156,7 @@ class SettingsManager {
     return deepClone(this.settings)
   }
 
-  /** Get a section: 'general' | 'privacy' | 'automation' | 'backup' | 'onboarding' | 'performance' | 'notifications'. */
+  /** Get a section: 'general' | 'privacy' | 'automation' | 'backup' | 'onboarding' | 'onboardingWizard' | 'performance' | 'notifications' | 'sync' | 'autoUpdate'. */
   get(section) {
     if (!this.settings[section]) return null
     return { ...this.settings[section] }

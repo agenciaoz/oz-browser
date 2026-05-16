@@ -103,7 +103,19 @@
       "settingsSchema": "Versión del esquema:",
       "subtitle": "Identidades · Espacios · Bóveda · Proxies · Motor de huellas",
       "description": "Navegador Chromium multisesión basado en Electron. Anti-detección mediante suplantación de huellas por identidad (11 vectores).",
-      "resetAll": "Restablecer TODA la configuración"
+      "resetAll": "Restablecer TODA la configuración",
+      "updatesTitle": "Actualizaciones",
+      "autoUpdateToggle": "Buscar actualizaciones automáticamente",
+      "autoUpdateDesc": "Cuando está activado, OZ revisa GitHub Releases cada 4 horas y descarga versiones nuevas en segundo plano. Vas a ver una notificación cuando una actualización esté lista para instalar.",
+      "checkNowBtn": "Buscar actualizaciones ahora",
+      "installNowBtn": "Reiniciar e instalar",
+      "statusIdle": "Al día.",
+      "statusChecking": "Buscando actualizaciones…",
+      "statusAvailable": "Actualización disponible: v{{version}}",
+      "statusNotAvailable": "Estás en la última versión.",
+      "statusDownloading": "Descargando actualización: {{percent}}%",
+      "statusReady": "Actualización v{{version}} lista — tocá Reiniciar e instalar.",
+      "statusError": "Falló la búsqueda de actualizaciones: {{message}}"
     }
   },
   "language": {

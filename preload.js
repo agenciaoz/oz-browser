@@ -3,6 +3,7 @@
 
 const { contextBridge, ipcRenderer } = require('electron')
 const { injectBrowserAction } = require('electron-chrome-extensions/browser-action')
+const { buildAutoUpdaterApi } = require('./browser/preload-autoupdater-api')
 
 const isWebUI =
   location.protocol === 'chrome-extension:' && location.pathname === '/webui.html'
@@ -573,5 +574,7 @@ if (isWebUI) {
         return () => ipcRenderer.off('oz:notifications:open', listener)
       },
     },
+    // I-2 (v1.6.0): auto-updater — impl en browser/preload-autoupdater-api.js.
+    autoUpdater: buildAutoUpdaterApi(ipcRenderer),
   })
 }

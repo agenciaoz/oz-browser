@@ -44,6 +44,9 @@ const { buildHudHandlers } = require('./hud-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
+// I-2 (v1.6.0): auto-updater IPC handlers live in auto-updater-handlers.js
+// for the same reason — keep this file under the LOC budget.
+const { registerAutoUpdaterHandlersIPC } = require('./auto-updater-handlers')
 
 function registerIpcHandlers(browser) {
   // Domain handlers — shared with MCP server. Build once per browser instance.
@@ -98,6 +101,7 @@ function registerIpcHandlers(browser) {
   registerNavHandlers(browser)
   registerUiHandlers(browser)
   registerHudHandlersIPC(browser)
+  registerAutoUpdaterHandlersIPC(browser)
 
   log.info('ipc', 'All IPC handlers registered')
 }

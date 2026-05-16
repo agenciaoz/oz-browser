@@ -40,6 +40,7 @@ const { wireIdentityWorkspaceSync } = require('./identity-workspace-sync')
 const { installProtocolHandler } = require('./protocol-handler')
 const { setupCloudBackup } = require('./cloud-backup-setup')
 const { setupTeamMode } = require('./team-setup')
+const autoUpdaterSetup = require('./auto-updater-setup')
 const syncBootstrapSetup = require('./sync-bootstrap-setup')
 const scheduledSetup = require('./scheduled-setup')
 const ghostMigrationSetup = require('./ghost-migration-setup')
@@ -97,6 +98,16 @@ class Browser {
     })
 
     app.on('before-quit', async (e) => {
+      // I-2 (v1.6.0): teardown auto-updater poll FIRST. It's an
+      // independent setInterval; stopping it avoids spurious checks
+      // landing mid-shutdown.
+      try {
+        autoUpdaterSetup.teardown()
+      } catch (err) {
+        log.warn('browser', 'autoUpdaterSetup.teardown failed', {
+          message: err.message,
+        })
+      }
       // F-4a: Stop scheduled-actions runner FIRST so its in-flight handlers
       // drain before sync/vault tear down. stop() awaits the in-flight set
       // — handlers that need vault.unlock observe an unlocked vault for the
@@ -638,6 +649,13 @@ class Browser {
     // E2-C-7: Per-identity extension sharing. Delegated to setup module per
     // ADR 0005 (main.js LOC budget).
     setupExtensionShare(this)
+
+    // I-2 (v1.6.0): auto-updater via electron-updater + GitHub Releases.
+    // Skip en dev mode salvo OZ_FORCE_AUTO_UPDATER=1. Skip si el build no
+    // está firmado (electron-updater rechaza unsigned updates en macOS).
+    // El setup wirea events → broadcastToWebUI, programa initial check +
+    // periodic poll. Settings toggle (settings.autoUpdate.enabled) respetado.
+    autoUpdaterSetup.setupAutoUpdater(this)
 
     // E2-C-2: crash recovery (delegated to crash-recovery-setup.js for LOC
     // budget). Order: init crash-detector + window-snapshot, prompt restore

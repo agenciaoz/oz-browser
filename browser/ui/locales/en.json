@@ -103,7 +103,19 @@
       "settingsSchema": "Settings schema:",
       "subtitle": "Identities · Workspaces · Vault · Proxies · FingerprintEngine",
       "description": "Multi-session Chromium browser based on Electron. Anti-detect via per-identity fingerprint spoofing (11 vectors).",
-      "resetAll": "Reset ALL settings to defaults"
+      "resetAll": "Reset ALL settings to defaults",
+      "updatesTitle": "Updates",
+      "autoUpdateToggle": "Check for updates automatically",
+      "autoUpdateDesc": "When enabled, OZ checks GitHub Releases every 4 hours and downloads new versions in the background. You'll see a notification when an update is ready to install.",
+      "checkNowBtn": "Check for updates now",
+      "installNowBtn": "Restart and install",
+      "statusIdle": "Up to date.",
+      "statusChecking": "Checking for updates…",
+      "statusAvailable": "Update available: v{{version}}",
+      "statusNotAvailable": "You're on the latest version.",
+      "statusDownloading": "Downloading update: {{percent}}%",
+      "statusReady": "Update v{{version}} ready — click Restart and install.",
+      "statusError": "Update check failed: {{message}}"
     }
   },
   "language": {

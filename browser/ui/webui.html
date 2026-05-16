@@ -5364,6 +5364,62 @@
                     Reset ALL settings to defaults
                   </button>
                 </div>
+
+                <!-- I-2 (v1.6.0): auto-updater controls inside About panel.
+                     Wired by browser/ui/settings.js → setupAutoUpdaterPane(). -->
+                <div class="stg-divider" style="margin-top: 18px"></div>
+                <h4
+                  style="margin: 12px 0 6px; font-size: 13px"
+                  data-i18n="settings.about.updatesTitle"
+                >
+                  Updates
+                </h4>
+                <label class="stg-toggle-row">
+                  <input type="checkbox" id="oz-stg-auto-update-toggle" />
+                  <span data-i18n="settings.about.autoUpdateToggle">
+                    Check for updates automatically
+                  </span>
+                </label>
+                <div
+                  class="stg-hint"
+                  style="
+                    font-size: 11px;
+                    color: var(--text-muted);
+                    margin: 2px 0 8px 22px;
+                  "
+                  data-i18n="settings.about.autoUpdateDesc"
+                >
+                  When enabled, OZ checks GitHub Releases every 4 hours and downloads new
+                  versions in the background. You'll see a notification when an update is
+                  ready to install.
+                </div>
+                <div
+                  style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap"
+                >
+                  <button
+                    type="button"
+                    id="oz-stg-check-update-btn"
+                    class="stg-action-btn"
+                    data-i18n="settings.about.checkNowBtn"
+                  >
+                    Check for updates now
+                  </button>
+                  <button
+                    type="button"
+                    id="oz-stg-install-update-btn"
+                    class="stg-action-btn"
+                    hidden
+                    data-i18n="settings.about.installNowBtn"
+                  >
+                    Restart and install
+                  </button>
+                </div>
+                <!-- Status text owned by JS (settings.js setupAutoUpdaterPane).
+                     No data-i18n — JS renders state-based localized strings. -->
+                <div
+                  id="oz-stg-update-status"
+                  style="font-size: 12px; color: var(--text-muted); margin-top: 6px"
+                ></div>
               </div>
             </section>
           </div>
