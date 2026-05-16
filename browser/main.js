@@ -364,10 +364,12 @@ class Browser {
       // the late-set fields below propagate via property reassignment. AntiLogout
       // will pick them up at flag time via this.alertManager / this.settingsManager.
     })
-    this.antiLogout.install()
-    log.info('browser', 'AntiLogout installed', {
-      identitiesHooked: this.identityManager.list().length,
-    })
+    // v1.4.5 fix: defer .install() to AFTER setupFingerprintPreload + setupHud
+    // register their session-init hooks. AntiLogout.install() calls
+    // identityManager.getSession() for every identity, which caches the session
+    // (and fires any registered hooks). If install() runs BEFORE FP + HUD hooks
+    // are added, those sessions get cached without FP UA override — observable
+    // as `navigator.userAgent` still showing the default OZBrowser/Electron UA.
 
     // 1.6: Time Machine — snapshots cifrados con la master key del Vault.
     // El BackupManager se instancia siempre (no necesita unlock) pero crear
@@ -463,6 +465,15 @@ class Browser {
     // K1-extras (v1.4.3): In-page identity HUD. Register HUD preload via
     // session-init hook + wrap broadcastToWebUI for live updates.
     require('./hud-setup').setupHud(this)
+
+    // v1.4.5 fix: NOW it's safe to install AntiLogout cookie hooks — sessions
+    // created from inside install() will fire the FP + HUD hooks registered
+    // above. Without this defer, FP UA override was silently inert because
+    // sessions were cached pre-hook.
+    this.antiLogout.install()
+    log.info('browser', 'AntiLogout installed', {
+      identitiesHooked: this.identityManager.list().length,
+    })
 
     // 1.10b: Download + History managers. Both per-identity, persisted in
     // separate JSON files. DownloadManager hooks every identity session via

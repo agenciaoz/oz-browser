@@ -8,6 +8,40 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+- [`2026-05-15`] [`fp-hook-order-fix / v1.4.5`] **CRITICAL: FP anti-detect engine restored end-to-end — UA + platform + languages + hw now applied correctamente per-identity** (1 commit, cero tests nuevos, cero deps, ~10 line change pero MASSIVE behavioral fix).
+
+  **Bug:** descubierto durante smoke visual del bundle fix (v1.4.4): aunque el bundle hizo que preload-fingerprint.js cargara sin error, el FP UA override seguía sin aplicarse. Page console mostraba `Mozilla/5.0 (Macintosh) ... OZBrowser/1.4.4 ... Electron/42.0.1` en lugar del FP-generated UA. Root cause investigation reveló que `AntiLogout.install()` corría DURANTE el init() ANTES de que `setupFingerprintPreload(this)` + `setupHud(this)` registraran sus `identityManager.addSessionInitHook()` callbacks. AntiLogout.install() itera `identityManager.list()` (12 identities en setup de Jose) y llama `identityManager.getSession(id)` para cada una — eso CACHEA las sessions sin que los hooks de FP + HUD hayan fired. Después de eso, cuando los tabs se materializan, las sessions vienen del cache y los hooks NO se ejecutan (`getSession` retorna early si `sessionCache.has(id)`).
+
+  **Fix:** defer `this.antiLogout.install()` a DESPUÉS de `setupFingerprintPreload(this)` + `setupHud(this)`. Cambio mínimo en main.js (~10 líneas movidas + comment explicando el por qué). AntiLogout constructor sigue donde estaba (no hace side effects). `install()` que ES el que toca sessions corre al final.
+
+  **Smoke visual 2026-05-15 PASS end-to-end** en la IG 2 tab (identityId `8ffa1008da6a795f` con FP profile pt-BR Linux):
+  - `navigator.userAgent` → `Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36` ✅ (NO MORE OZBrowser/Electron)
+  - `navigator.platform` → `Linux x86_64` ✅ (override via webFrame.executeJavaScript en preload-fingerprint.js)
+  - `navigator.languages` → `['pt-BR', 'pt', 'en']` ✅
+  - `navigator.hardwareConcurrency` → `12` ✅
+  - **Instagram automáticamente sirvió la página en portugués** ("Espere!", "Perfil não está disponível", "Cadastrar-se no Instagram") — confirma que el Accept-Language header coherent con el navigator.languages está siendo enviado en cada request.
+
+  **Boot log evidence**: `[fingerprint-preload-setup] session UA set from FP {identityId, ua, language}` aparece **12 veces** (una per identity hooked por AntiLogout) seguidas inmediatamente por `[anti-logout] cookie hook installed {identityId, hostsCount:32}` — confirma que el orden es FP_hook → AntiLogout_per_identity.
+
+  **Why this was silently broken for so long:** el FP nunca tuvo smoke visual real (changelog v1.1.4 menciona "Smoke visual REAL pendiente con app corriendo"). El bundle fix v1.4.4 también surface'd este bug porque sin el bundle fix, los preloads no cargaban en absoluto, lo que daba un símptoma diferente y oscurecía este reorder issue.
+
+  **Impacto en producto:** **anti-detect engine ahora opera por primera vez en este build.** Las 12 identidades de Jose generan fingerprints únicos consistentes per-identity:
+  - IG 2 → Linux Chrome 135 pt-BR
+  - 4c6c37aac35648ea → Windows Edge 135 fr-FR
+  - 1064b87a6d8b2263 → Windows Edge 135 fr-FR
+  - 08f29d3f97bc9a79 → Linux Chrome 135 de-DE
+  - 2e270e3b032df21f → Mac Chrome 135 ja-JP
+  - … (etc, total 12 con blueprints variados)
+
+  Cada identity tiene UA + platform + languages + timezone + screen + WebGL vendor/renderer + canvas noise + hardware coherentes. Anti-detect tools como Pixelscan, BrowserLeaks, CreepJS deberían ahora pasar (smoke visual posterior pendiente).
+
+  **Version bumps** package + manifest WebUI 1.4.4 → 1.4.5 (patch). Lint clean. check:loc 499. Tests acumulados ~3349 (cero cambios — pure runtime fix, todos los unit tests del FP engine ya pasaban). Smoke visual PASS.
+
+  **Pendiente** (sub-bloques separados):
+  1. Onboarding wizard 5-step — último K1-extra, cierra v1.4.x.
+  2. Smoke visual anti-detect tools (Pixelscan / BrowserLeaks / CreepJS) — verificar que el coherence score sube.
+  3. Re-test auto-fill + TOTP con preload-content bundled (Bug del v1.4.4 también se resolvió por el bundle, sub-test pendiente).
+
 - [`2026-05-15`] [`sandbox-preload-fix / v1.4.4`] **Fix critical: bundle content preloads via webpack para sortear sandbox require() bug en Electron 42** (1 commit, cero deps nuevas — webpack ya transitive de @electron-forge/plugin-webpack).
 
   **Bug:** sandboxed preloads de Electron 42 fallan silenciosamente cuando hacen `require()` de archivos siblings (descubierto durante smoke visual de Identity HUD v1.4.3). Afecta a **`preload-content.js`** (auto-fill + auto-save + TOTP inject del bloque J auto-login) Y **`preload-fingerprint.js`** (FP UA override + canvas/audio/webgl spoofs del 1.9b). Visible en page console como `Unable to load preload script ...preload-content.js / Error: module not found: ./site-templates`. Sin estos preloads, las features core del producto (auto-login a las 50 IG accounts + anti-detect fingerprint) están silentemente rotas en el build dev.
