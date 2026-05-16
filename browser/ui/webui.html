@@ -5537,11 +5537,14 @@
         aria-labelledby="oz-health-title"
       >
         <header>
-          <h2 id="oz-health-title">🩺 Anti-Detect Health</h2>
+          <h2 id="oz-health-title" data-i18n="healthModal.title">
+            🩺 Anti-Detect Health
+          </h2>
           <button
             type="button"
             class="oz-modal-close"
             data-close
+            data-i18n-attr="aria-label:healthModal.closeAria"
             aria-label="Close"
             id="oz-health-cancel"
           >
@@ -5551,7 +5554,11 @@
 
         <div class="oz-health-body-wrap">
           <div class="oz-health-src-row">
-            <span class="oz-health-src-label-prefix">Identity:</span>
+            <span
+              class="oz-health-src-label-prefix"
+              data-i18n="healthModal.identityPrefix"
+              >Identity:</span
+            >
             <span class="oz-health-src-dot" id="oz-health-src-dot"></span>
             <span class="oz-health-src-label" id="oz-health-src-label">—</span>
             <span class="oz-health-overall" id="oz-health-overall">—</span>
@@ -5565,8 +5572,22 @@
         </div>
 
         <footer class="oz-health-footer">
-          <button type="button" class="oz-btn" id="oz-health-refresh">Re-check</button>
-          <button type="button" class="oz-btn oz-btn-primary" data-close>Close</button>
+          <button
+            type="button"
+            class="oz-btn"
+            id="oz-health-refresh"
+            data-i18n="healthModal.reCheck"
+          >
+            Re-check
+          </button>
+          <button
+            type="button"
+            class="oz-btn oz-btn-primary"
+            data-close
+            data-i18n="healthModal.close"
+          >
+            Close
+          </button>
         </footer>
       </div>
     </div>

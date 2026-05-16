@@ -347,6 +347,30 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "healthModal": {
+    "title": "🩺 Anti-Detect Health",
+    "closeAria": "Close",
+    "identityPrefix": "Identity:",
+    "overall": "Overall: {{status}}",
+    "reCheck": "Re-check",
+    "close": "Close",
+    "working": "Working…",
+    "errorNoIdentity": "No identity selected.",
+    "errorLoadFailed": "Failed to load health record.",
+    "errorFixFailed": "Fix failed: {{reason}}",
+    "status": {
+      "green": "OK",
+      "yellow": "Warning",
+      "red": "Critical",
+      "unknown": "Unknown"
+    },
+    "vectors": {
+      "ipTimezone": "IP ↔ Timezone",
+      "fingerprintCoherence": "Fingerprint coherence",
+      "cookieHealth": "Cookie health",
+      "proxyReachability": "Proxy reachability"
+    }
+  },
   "notifications": {
     "title": "🔔 Notifications",
     "closeAria": "Close",

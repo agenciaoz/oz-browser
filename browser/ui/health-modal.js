@@ -18,18 +18,28 @@
   if (!window.OZ) window.OZ = {}
   const { safe } = window.OZ.utils
 
-  const VECTOR_LABELS = {
-    ipTimezone: { icon: '🌍', name: 'IP ↔ Timezone' },
-    fingerprintCoherence: { icon: '🧬', name: 'Fingerprint coherence' },
-    cookieHealth: { icon: '🍪', name: 'Cookie health' },
-    proxyReachability: { icon: '🌐', name: 'Proxy reachability' },
+  // v1.5.2: i18n helper — falls back to the key itself if i18n not loaded.
+  function t(key, params) {
+    if (window.OZ && typeof window.OZ.t === 'function') return window.OZ.t(key, params)
+    return key
   }
 
-  const STATUS_LABEL = {
-    green: 'OK',
-    yellow: 'Warning',
-    red: 'Critical',
-    unknown: 'Unknown',
+  const VECTOR_ICONS = {
+    ipTimezone: '🌍',
+    fingerprintCoherence: '🧬',
+    cookieHealth: '🍪',
+    proxyReachability: '🌐',
+  }
+
+  function vectorLabel(key) {
+    return {
+      icon: VECTOR_ICONS[key] || '•',
+      name: t(`healthModal.vectors.${key}`) || key,
+    }
+  }
+
+  function statusLabel(status) {
+    return t(`healthModal.status.${status}`) || status
   }
 
   class HealthCheckUI {
@@ -103,7 +113,7 @@
         identityId = await safe(window.oz.identities.getActive(), 'identities.getActive')
       }
       if (!identityId) {
-        this._showError('No identity selected.')
+        this._showError(t('healthModal.errorNoIdentity'))
         return
       }
       this.identityId = identityId
@@ -125,7 +135,7 @@
       if (!record || record.__error) {
         this._showError(
           (record && record.__error && record.__error.message) ||
-            'Failed to load health record.',
+            t('healthModal.errorLoadFailed'),
         )
         return
       }
@@ -137,7 +147,9 @@
       // Header — identity name + color dot + overall pill.
       this.$srcLabel.textContent = record.identityName || record.identityId
       this.$srcDot.style.background = record.identityColor || '#888'
-      this.$overall.textContent = `Overall: ${STATUS_LABEL[record.overall] || record.overall}`
+      this.$overall.textContent = t('healthModal.overall', {
+        status: statusLabel(record.overall) || record.overall,
+      })
       this.$overall.className = `oz-health-overall oz-health-overall-${record.overall}`
 
       // Body — 4 vector rows.
@@ -156,7 +168,7 @@
     }
 
     _renderVectorRow(key, vector) {
-      const meta = VECTOR_LABELS[key] || { icon: '•', name: key }
+      const meta = vectorLabel(key)
       const row = document.createElement('div')
       row.className = `oz-health-vector oz-health-vector-${vector.status}`
       row.dataset.vector = key
@@ -175,7 +187,7 @@
 
       const statusPill = document.createElement('span')
       statusPill.className = `oz-health-vector-status oz-health-status-${vector.status}`
-      statusPill.textContent = STATUS_LABEL[vector.status] || vector.status
+      statusPill.textContent = statusLabel(vector.status) || vector.status
       head.appendChild(statusPill)
 
       row.appendChild(head)
@@ -205,7 +217,7 @@
       if (!this.identityId) return
       btn.disabled = true
       const originalLabel = btn.textContent
-      btn.textContent = 'Working…'
+      btn.textContent = t('healthModal.working')
       const result = await safe(
         window.oz.health.applyFix({ identityId: this.identityId, kind, vector }),
         'health.applyFix',
@@ -214,7 +226,7 @@
       btn.textContent = originalLabel
       if (!result || result.ok === false) {
         const reason = (result && result.reason) || 'unknown'
-        this._showError(`Fix failed: ${reason}`)
+        this._showError(t('healthModal.errorFixFailed', { reason }))
         return
       }
       this._clearError()

@@ -347,6 +347,30 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "healthModal": {
+    "title": "🩺 Salud Anti-Detect",
+    "closeAria": "Cerrar",
+    "identityPrefix": "Identidad:",
+    "overall": "General: {{status}}",
+    "reCheck": "Re-chequear",
+    "close": "Cerrar",
+    "working": "Trabajando…",
+    "errorNoIdentity": "Ninguna identidad seleccionada.",
+    "errorLoadFailed": "Falló al cargar el registro de salud.",
+    "errorFixFailed": "El fix falló: {{reason}}",
+    "status": {
+      "green": "OK",
+      "yellow": "Advertencia",
+      "red": "Crítico",
+      "unknown": "Desconocido"
+    },
+    "vectors": {
+      "ipTimezone": "IP ↔ Zona horaria",
+      "fingerprintCoherence": "Coherencia de fingerprint",
+      "cookieHealth": "Salud de cookies",
+      "proxyReachability": "Alcance del proxy"
+    }
+  },
   "notifications": {
     "title": "🔔 Notificaciones",
     "closeAria": "Cerrar",
