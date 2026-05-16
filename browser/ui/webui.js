@@ -71,12 +71,7 @@
     // re-seeing the welcome info screens. If welcome IS showing, the wizard
     // auto-opens on the NEXT boot once welcome is dismissed — keeps the
     // UX linear instead of overlapping.
-    if (
-      !welcomeShown &&
-      onboardingWizard &&
-      window.oz &&
-      window.oz.settings
-    ) {
+    if (!welcomeShown && onboardingWizard && window.oz && window.oz.settings) {
       try {
         const wiz = await window.oz.settings.get('onboardingWizard')
         if (!wiz || !wiz.completed) {

@@ -95,6 +95,11 @@ module.exports = [
         MouseEvent: 'readonly',
         KeyboardEvent: 'readonly',
         getComputedStyle: 'readonly',
+        // v1.5.5: FileReader is a standard browser File API used by
+        // proxy-dashboard-import.js for parsing pasted/uploaded proxy CSVs.
+        // Was the lone CI lint error that's been blocking v1.5.3/1.5.4/1.5.5
+        // runs (1 error + 3 pre-existing warnings = exit 1).
+        FileReader: 'readonly',
       },
     },
     rules: {

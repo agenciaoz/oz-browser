@@ -27,7 +27,6 @@ combineLeakResults({ webrtc, dns, identityId, evaluatedAt })
 
 parseRtcCandidate(input)
 // → { type, address, protocol, port } o null
-
 ;(STATUSES, LEAK_REASONS, RANK, isPrivateRange, isMdnsLocal)
 ```
 

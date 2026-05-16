@@ -103,8 +103,8 @@ Inventory final del Proxy Ops Dashboard (1.1.1 → 1.1.6):
 | H-2i Anti-detect coherence overlay        | 1.1.4   | `2966ed5` |
 | H-2j WebRTC + DNS leak tests              | 1.1.4   | `2966ed5` |
 | H-2k Oxylabs Proxy Builder modal          | 1.1.5   | `35e6292` |
-| H-2-wire proxy-manager ↔ dashboard        | 1.1.6   | `e6d4f8f`       |
-| H-2-extras pre-bulk backup + diag export  | 1.1.6   | `e6d4f8f`       |
+| H-2-wire proxy-manager ↔ dashboard        | 1.1.6   | `e6d4f8f` |
+| H-2-extras pre-bulk backup + diag export  | 1.1.6   | `e6d4f8f` |
 
 13 sub-bloques, ~25h efectivos (vs ~23h estimados), ~470 tests nuevos, cero deps externas agregadas.
 
