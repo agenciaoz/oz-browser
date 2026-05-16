@@ -100,11 +100,12 @@ function makeVault(locked) {
 console.log('\n[constants]')
 
 ok(
-  'ACTION_TYPES has the v1 three',
-  ACTION_TYPES.length === 3 &&
+  'ACTION_TYPES has the v1 three + session-warmer (v1.4.1)',
+  ACTION_TYPES.length === 4 &&
     ACTION_TYPES.includes(ACTION_OPEN_WORKSPACE) &&
     ACTION_TYPES.includes(ACTION_SYNC_PUSH) &&
-    ACTION_TYPES.includes(ACTION_BACKUP_SNAPSHOT),
+    ACTION_TYPES.includes(ACTION_BACKUP_SNAPSHOT) &&
+    ACTION_TYPES.includes('session-warmer'),
 )
 ok('ACTION_TYPES is frozen', Object.isFrozen(ACTION_TYPES))
 
@@ -371,8 +372,11 @@ ok('ACTION_TYPES is frozen', Object.isFrozen(ACTION_TYPES))
       vault: { isLocked: () => false },
     })
     ok(
-      'register returns all 3 types',
-      regd.length === 3 && ACTION_TYPES.every((t) => regd.includes(t)),
+      'register returns 3 types (no identityManager → session-warmer skipped)',
+      regd.length === 3 &&
+        regd.includes(ACTION_OPEN_WORKSPACE) &&
+        regd.includes(ACTION_SYNC_PUSH) &&
+        regd.includes(ACTION_BACKUP_SNAPSHOT),
     )
 
     // Three actions, one of each, fire at 1min cadence
