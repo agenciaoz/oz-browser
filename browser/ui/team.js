@@ -15,6 +15,12 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
+  // v1.5.10: i18n — lazy lookup via window.OZ.i18n.t(). team.js loads BEFORE
+  // i18n.js per webui.html script order, but every t() call sits inside a
+  // user-triggered async path that runs after the catalog fetch completes.
+  // Fallback to the key string is defensive only.
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
   function fmt(iso) {
     try {
@@ -53,9 +59,14 @@
       this.$membersList = document.getElementById('oz-team-members')
       this.$ownerMeta = document.getElementById('oz-team-owner-meta')
       this.$memberMeta = document.getElementById('oz-team-member-meta')
+      // v1.5.10: the standalone-view description has inline HTML (<br />, <code>)
+      // so it can't use plain data-i18n textContent. We render it via innerHTML
+      // here on init + on locale switch.
+      this.$standaloneDesc = document.getElementById('oz-team-standalone-desc')
 
       this.status = null
       this._wire()
+      this._applyStandaloneDesc()
       if (window.oz?.team?.onChanged) {
         window.oz.team.onChanged(() => {
           if (!this.$modal.hidden) this._refresh()
@@ -64,11 +75,30 @@
       if (window.oz?.team?.onJoined) {
         window.oz.team.onJoined((payload) => {
           window.alert(
-            `✓ Joined team.\n\nPre-join snapshot saved as ${payload.preJoinSnapshotId}.\n` +
-              `Your previous OZ data was archived. Restart OZ Browser now so the new state takes effect.`,
+            t('team.joinedAlert', { preJoinSnapshotId: payload.preJoinSnapshotId }),
           )
         })
       }
+
+      // v1.5.10: re-render dynamic content on locale switch. translatePage()
+      // covers static markup (titles, button labels, section titles), but
+      // the standalone-view <code>-bearing description, the owner / member
+      // meta lines (with {{teamId}}/{{when}}/{{ownerMemberId}} interpolation),
+      // and the JS-built members list need a manual refresh.
+      if (window.OZ?.i18n?.onChange) {
+        window.OZ.i18n.onChange(() => {
+          this._applyStandaloneDesc()
+          if (this.$modal.hidden) return
+          this._refresh().catch(() => {
+            // swallow — locale switch must never throw out of i18n callback
+          })
+        })
+      }
+    }
+
+    _applyStandaloneDesc() {
+      if (!this.$standaloneDesc) return
+      this.$standaloneDesc.innerHTML = t('team.standalone.descHtml')
     }
 
     _wire() {
@@ -128,7 +158,7 @@
     async _refresh() {
       const s = await safe(window.oz.team.status(), 'team.status')
       if (!s || s.__error) {
-        this._showError('Team status query failed.')
+        this._showError(t('team.errorStatus'))
         return
       }
       this.status = s
@@ -142,7 +172,10 @@
       }
       if (s.role === 'owner') {
         if (this.$ownerMeta) {
-          this.$ownerMeta.textContent = `Team ID: ${s.teamId} · You are the owner (${s.myMemberId})`
+          this.$ownerMeta.textContent = t('team.owner.metaLine', {
+            teamId: s.teamId,
+            myMemberId: s.myMemberId,
+          })
         }
         await this._loadMembers()
         this._showView('owner')
@@ -150,7 +183,11 @@
       }
       if (s.role === 'member') {
         if (this.$memberMeta) {
-          this.$memberMeta.textContent = `Team ID: ${s.teamId} · Joined ${fmt(s.joinedAt)} · Owner: ${s.ownerMemberId}`
+          this.$memberMeta.textContent = t('team.member.metaLine', {
+            teamId: s.teamId,
+            when: fmt(s.joinedAt),
+            ownerMemberId: s.ownerMemberId,
+          })
         }
         this._showView('member')
       }
@@ -159,14 +196,14 @@
     async _loadMembers() {
       const items = await safe(window.oz.team.listMembers(), 'team.listMembers')
       if (!items || items.__error) {
-        this._showError('Failed to load members.')
+        this._showError(t('team.errorLoadMembers'))
         return
       }
       this.$membersList.innerHTML = ''
       if (items.length === 0) {
         const empty = document.createElement('div')
         empty.className = 'team-empty'
-        empty.textContent = 'No members yet. Share an invite to get started.'
+        empty.textContent = t('team.members.empty')
         this.$membersList.appendChild(empty)
         return
       }
@@ -179,19 +216,21 @@
       const name = document.createElement('div')
       name.className = 'team-member-id'
       name.textContent =
-        (m.isOwner ? '👑 ' : '👤 ') + m.memberId + (m.isMe ? ' (me)' : '')
+        (m.isOwner ? '👑 ' : '👤 ') +
+        m.memberId +
+        (m.isMe ? t('team.members.meSuffix') : '')
       row.appendChild(name)
       const status = document.createElement('div')
       status.className = 'team-member-status'
       status.textContent = m.hasWrappedKey
-        ? '✓ Key shared'
-        : '⏳ Waiting for owner to wrap key'
+        ? t('team.members.keyShared')
+        : t('team.members.waitingForKey')
       row.appendChild(status)
       if (!m.isOwner && !m.isMe) {
         const removeBtn = document.createElement('button')
         removeBtn.type = 'button'
         removeBtn.className = 'danger'
-        removeBtn.textContent = 'Remove'
+        removeBtn.textContent = t('team.members.removeBtn')
         removeBtn.addEventListener('click', () => this._doRemoveMember(m.memberId))
         row.appendChild(removeBtn)
       }
@@ -199,20 +238,16 @@
     }
 
     async _doCreateTeam() {
-      if (
-        !window.confirm(
-          'Create a new team using this OZ install as owner? You can invite members afterwards.',
-        )
-      ) {
+      if (!window.confirm(t('team.confirmCreate'))) {
         return
       }
       this.$createBtn.disabled = true
-      this.$createBtn.textContent = 'Creating…'
+      this.$createBtn.textContent = t('team.standalone.creatingBtn')
       const r = await safe(window.oz.team.createTeam(), 'team.createTeam')
       this.$createBtn.disabled = false
-      this.$createBtn.textContent = 'Create team'
+      this.$createBtn.textContent = t('team.standalone.createBtn')
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Create team failed.')
+        this._showError((r && r.__error?.message) || t('team.errorCreate'))
         return
       }
       await this._refresh()
@@ -221,7 +256,7 @@
     async _doInvite() {
       const r = await safe(window.oz.team.generateInvite(), 'team.generateInvite')
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Generate invite failed.')
+        this._showError((r && r.__error?.message) || t('team.errorInvite'))
         return
       }
       this.$inviteUrl.value = r.url
@@ -235,9 +270,7 @@
       this.$inviteUrl.select()
       try {
         document.execCommand('copy')
-        this._showInfo(
-          'Invite URL copied. Send it to your team member via secure channel.',
-        )
+        this._showInfo(t('team.inviteCopiedInfo'))
       } catch (_) {
         // ignore
       }
@@ -246,34 +279,25 @@
     async _doJoin() {
       const tokenOrUrl = this.$joinInput?.value?.trim()
       if (!tokenOrUrl) {
-        this._showError('Paste an oz://team/invite link or token.')
+        this._showError(t('team.errorJoinNoToken'))
         return
       }
-      if (
-        !window.confirm(
-          "Joining a team REPLACES your current OZ data with the team owner's data.\n\n" +
-            'A pre-join snapshot will be saved + your current master key archived\n' +
-            '(recoverable later via Time Machine). Restart will be required.\n\n' +
-            'Continue?',
-        )
-      ) {
+      if (!window.confirm(t('team.confirmJoin'))) {
         return
       }
       this.$joinBtn.disabled = true
-      this.$joinBtn.textContent = 'Joining…'
+      this.$joinBtn.textContent = t('team.standalone.joiningBtn')
       const r = await safe(
         window.oz.team.acceptInvite({ tokenOrUrl, pollTimeoutMs: 90_000 }),
         'team.acceptInvite',
       )
       this.$joinBtn.disabled = false
-      this.$joinBtn.textContent = 'Join team'
+      this.$joinBtn.textContent = t('team.standalone.joinBtn')
       if (!r || r.__error) {
         const code = r && r.__error?.code
-        const msg = (r && r.__error?.message) || 'Accept invite failed.'
+        const msg = (r && r.__error?.message) || t('team.errorJoinDefault')
         if (code === 'PENDING') {
-          this._showInfo(
-            `${msg}\n\nThe team owner needs to open their OZ Browser while you wait. You can retry from this modal.`,
-          )
+          this._showInfo(t('team.pendingInviteInfo', { msg }))
         } else {
           this._showError(msg)
         }
@@ -283,48 +307,36 @@
     }
 
     async _doLeave() {
-      if (
-        !window.confirm(
-          'Leave the team? Your local copy of the team master key remains so you can still access local snapshots, but you stop receiving updates.',
-        )
-      ) {
+      if (!window.confirm(t('team.confirmLeave'))) {
         return
       }
       const r = await safe(window.oz.team.leaveTeam(), 'team.leaveTeam')
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Leave team failed.')
+        this._showError((r && r.__error?.message) || t('team.errorLeave'))
         return
       }
       await this._refresh()
     }
 
     async _doDisband() {
-      if (
-        !window.confirm(
-          'Disband the team? This deletes the team folder in Dropbox and all member access. Your local data stays. Continue?',
-        )
-      ) {
+      if (!window.confirm(t('team.confirmDisband'))) {
         return
       }
       const r = await safe(window.oz.team.disbandTeam(), 'team.disbandTeam')
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Disband team failed.')
+        this._showError((r && r.__error?.message) || t('team.errorDisband'))
         return
       }
       await this._refresh()
     }
 
     async _doRemoveMember(memberId) {
-      if (
-        !window.confirm(
-          `Remove member ${memberId} from team? They will lose access to new snapshots.`,
-        )
-      ) {
+      if (!window.confirm(t('team.confirmRemoveMember', { memberId }))) {
         return
       }
       const r = await safe(window.oz.team.removeMember(memberId), 'team.removeMember')
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Remove member failed.')
+        this._showError((r && r.__error?.message) || t('team.errorRemoveMember'))
         return
       }
       await this._refresh()

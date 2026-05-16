@@ -347,6 +347,62 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "team": {
+    "title": "👥 Equipo",
+    "closeAria": "Cerrar",
+    "notConfigured": {
+      "title": "Modo equipo no configurado",
+      "desc": "Este build de OZ se empaquetó sin la app key de Dropbox. El modo equipo requiere que Dropbox esté configurado primero via Respaldo en la nube."
+    },
+    "standalone": {
+      "title": "Estás operando en modo solo",
+      "descHtml": "El modo equipo te permite compartir tu bóveda OZ con compañeros de confianza desde sus propias Macs. Identidades, espacios y snapshots se cifran end-to-end con key-sharing Curve25519 — tu master key se queda en el Llavero de macOS de cada dispositivo.<br /><br />Prerrequisito: conectá Dropbox primero (Respaldo en la nube), después compartí tu carpeta de Dropbox <code>/Apps/OZ Browser/</code> con cada compañero desde el web UI de Dropbox.",
+      "createBtn": "Crear equipo",
+      "creatingBtn": "Creando…",
+      "joinSectionTitle": "O unirte a un equipo existente",
+      "joinPlaceholder": "oz://team/invite?token=… o token",
+      "joinBtn": "Unirme al equipo",
+      "joiningBtn": "Uniéndome…"
+    },
+    "owner": {
+      "metaLine": "Team ID: {{teamId}} · Sos el owner ({{myMemberId}})",
+      "inviteBtn": "＋ Invitar miembro",
+      "refreshBtn": "↻ Actualizar",
+      "disbandBtn": "Disolver equipo",
+      "inviteDisplayDesc": "Mandá este link a tu compañero vía Signal u otro canal seguro. Expira en 24h. Lo abre para empezar el flujo de unión.",
+      "copyLinkBtn": "Copiar link",
+      "membersTitle": "Miembros"
+    },
+    "member": {
+      "title": "Unido como miembro del equipo",
+      "metaLine": "Team ID: {{teamId}} · Unido {{when}} · Owner: {{ownerMemberId}}",
+      "leaveBtn": "Salir del equipo"
+    },
+    "members": {
+      "empty": "Aún no hay miembros. Compartí un invite para empezar.",
+      "meSuffix": " (vos)",
+      "keyShared": "✓ Key compartida",
+      "waitingForKey": "⏳ Esperando que el owner envuelva la key",
+      "removeBtn": "Eliminar"
+    },
+    "confirmCreate": "¿Crear un equipo nuevo usando este OZ como owner? Podés invitar miembros después.",
+    "confirmJoin": "Unirte a un equipo REEMPLAZA tus datos actuales de OZ con los datos del owner.\n\nSe guarda un snapshot pre-unión + tu master key actual se archiva\n(recuperable después vía Time Machine). Hace falta reiniciar.\n\n¿Continuar?",
+    "confirmLeave": "¿Salir del equipo? Tu copia local de la master key del equipo se queda, así seguís pudiendo acceder a snapshots locales, pero dejás de recibir actualizaciones.",
+    "confirmDisband": "¿Disolver el equipo? Esto borra la carpeta del equipo en Dropbox y el acceso de todos los miembros. Tus datos locales se quedan. ¿Continuar?",
+    "confirmRemoveMember": "¿Eliminar al miembro {{memberId}} del equipo? Va a perder el acceso a snapshots nuevos.",
+    "joinedAlert": "✓ Unido al equipo.\n\nSnapshot pre-unión guardado como {{preJoinSnapshotId}}.\nTus datos OZ anteriores se archivaron. Reiniciá OZ Browser ahora para que tome efecto el nuevo estado.",
+    "inviteCopiedInfo": "URL del invite copiada. Mandala a tu compañero vía canal seguro.",
+    "pendingInviteInfo": "{{msg}}\n\nEl owner del equipo tiene que abrir su OZ Browser mientras esperás. Podés reintentar desde este modal.",
+    "errorStatus": "Falló la consulta del estado del equipo.",
+    "errorLoadMembers": "Falló la carga de miembros.",
+    "errorCreate": "Falló la creación del equipo.",
+    "errorInvite": "Falló la generación del invite.",
+    "errorJoinNoToken": "Pegá un link oz://team/invite o token.",
+    "errorJoinDefault": "Falló la aceptación del invite.",
+    "errorLeave": "Falló la salida del equipo.",
+    "errorDisband": "Falló la disolución del equipo.",
+    "errorRemoveMember": "Falló la eliminación del miembro."
+  },
   "commandPalette": {
     "placeholder": "Escribí un comando, identidad, espacio o título de pestaña…",
     "ariaLabel": "Paleta de comandos",

@@ -4299,8 +4299,14 @@
         aria-labelledby="oz-team-title"
       >
         <header>
-          <h2 id="oz-team-title">👥 Team</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+          <h2 id="oz-team-title" data-i18n="team.title">👥 Team</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            data-i18n-attr="aria-label:team.closeAria"
+          >
             ✕
           </button>
         </header>
@@ -4308,8 +4314,8 @@
 
         <section id="oz-team-not-configured-view" hidden>
           <div class="team-banner">
-            <h3>Team mode not configured</h3>
-            <p>
+            <h3 data-i18n="team.notConfigured.title">Team mode not configured</h3>
+            <p data-i18n="team.notConfigured.desc">
               This OZ build was packaged without the Dropbox app key. Team mode requires
               Dropbox to be set up first via Cloud Backup.
             </p>
@@ -4318,8 +4324,11 @@
 
         <section id="oz-team-standalone-view" hidden>
           <div class="team-banner">
-            <h3>You're operating in solo mode</h3>
-            <p>
+            <h3 data-i18n="team.standalone.title">You're operating in solo mode</h3>
+            <!-- Description has inline <br /><br /> + <code>; rendered as
+                 innerHTML from team.js on init + locale switch (data-i18n
+                 textContent would strip the HTML). -->
+            <p id="oz-team-standalone-desc">
               Team mode lets you share your OZ vault with trusted teammates via their own
               Macs. Identities, workspaces and snapshots are end-to-end encrypted with
               Curve25519 key-sharing — your master key stays in the macOS Keychain on each
@@ -4329,11 +4338,18 @@
               Dropbox web UI.
             </p>
             <div class="team-actions">
-              <button type="button" class="primary" id="oz-team-create-btn">
+              <button
+                type="button"
+                class="primary"
+                id="oz-team-create-btn"
+                data-i18n="team.standalone.createBtn"
+              >
                 Create team
               </button>
             </div>
-            <div class="team-section-title">Or join an existing team</div>
+            <div class="team-section-title" data-i18n="team.standalone.joinSectionTitle">
+              Or join an existing team
+            </div>
             <div class="team-join-row">
               <input
                 type="text"
@@ -4341,8 +4357,15 @@
                 placeholder="oz://team/invite?token=… or token"
                 autocomplete="off"
                 spellcheck="false"
+                data-i18n-attr="placeholder:team.standalone.joinPlaceholder"
               />
-              <button type="button" id="oz-team-join-btn">Join team</button>
+              <button
+                type="button"
+                id="oz-team-join-btn"
+                data-i18n="team.standalone.joinBtn"
+              >
+                Join team
+              </button>
             </div>
           </div>
         </section>
@@ -4350,35 +4373,64 @@
         <section id="oz-team-owner-view" hidden>
           <div class="team-meta" id="oz-team-owner-meta">—</div>
           <div class="team-actions">
-            <button type="button" class="primary" id="oz-team-invite-btn">
+            <button
+              type="button"
+              class="primary"
+              id="oz-team-invite-btn"
+              data-i18n="team.owner.inviteBtn"
+            >
               ＋ Invite member
             </button>
-            <button type="button" id="oz-team-refresh-btn">↻ Refresh</button>
-            <button type="button" class="danger" id="oz-team-disband-btn">
+            <button
+              type="button"
+              id="oz-team-refresh-btn"
+              data-i18n="team.owner.refreshBtn"
+            >
+              ↻ Refresh
+            </button>
+            <button
+              type="button"
+              class="danger"
+              id="oz-team-disband-btn"
+              data-i18n="team.owner.disbandBtn"
+            >
               Disband team
             </button>
           </div>
           <div class="team-invite-display" id="oz-team-invite-display" hidden>
             <input id="oz-team-invite-url" readonly />
-            <small>
+            <small data-i18n="team.owner.inviteDisplayDesc">
               Send this link to your teammate via Signal or other secure channel. Expires
               in 24h. They'll open it to start the join flow.
             </small>
             <div style="margin-top: 8px">
-              <button type="button" id="oz-team-invite-copy">Copy link</button>
+              <button
+                type="button"
+                id="oz-team-invite-copy"
+                data-i18n="team.owner.copyLinkBtn"
+              >
+                Copy link
+              </button>
             </div>
           </div>
-          <div class="team-section-title">Members</div>
+          <div class="team-section-title" data-i18n="team.owner.membersTitle">
+            Members
+          </div>
           <div id="oz-team-members"></div>
         </section>
 
         <section id="oz-team-member-view" hidden>
           <div class="team-banner">
-            <h3>Joined as team member</h3>
+            <h3 data-i18n="team.member.title">Joined as team member</h3>
             <div class="team-meta" id="oz-team-member-meta">—</div>
           </div>
           <div class="team-actions">
-            <button type="button" class="danger" id="oz-team-leave-btn">
+            <button
+              type="button"
+              class="danger"
+              id="oz-team-leave-btn"
+              data-i18n="team.member.leaveBtn"
+            >
               Leave team
             </button>
           </div>

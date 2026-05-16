@@ -347,6 +347,62 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "team": {
+    "title": "👥 Team",
+    "closeAria": "Close",
+    "notConfigured": {
+      "title": "Team mode not configured",
+      "desc": "This OZ build was packaged without the Dropbox app key. Team mode requires Dropbox to be set up first via Cloud Backup."
+    },
+    "standalone": {
+      "title": "You're operating in solo mode",
+      "descHtml": "Team mode lets you share your OZ vault with trusted teammates via their own Macs. Identities, workspaces and snapshots are end-to-end encrypted with Curve25519 key-sharing — your master key stays in the macOS Keychain on each device.<br /><br />Prerequisite: connect Dropbox first (Cloud Backup), then share your <code>/Apps/OZ Browser/</code> Dropbox folder with each teammate from your Dropbox web UI.",
+      "createBtn": "Create team",
+      "creatingBtn": "Creating…",
+      "joinSectionTitle": "Or join an existing team",
+      "joinPlaceholder": "oz://team/invite?token=… or token",
+      "joinBtn": "Join team",
+      "joiningBtn": "Joining…"
+    },
+    "owner": {
+      "metaLine": "Team ID: {{teamId}} · You are the owner ({{myMemberId}})",
+      "inviteBtn": "＋ Invite member",
+      "refreshBtn": "↻ Refresh",
+      "disbandBtn": "Disband team",
+      "inviteDisplayDesc": "Send this link to your teammate via Signal or other secure channel. Expires in 24h. They'll open it to start the join flow.",
+      "copyLinkBtn": "Copy link",
+      "membersTitle": "Members"
+    },
+    "member": {
+      "title": "Joined as team member",
+      "metaLine": "Team ID: {{teamId}} · Joined {{when}} · Owner: {{ownerMemberId}}",
+      "leaveBtn": "Leave team"
+    },
+    "members": {
+      "empty": "No members yet. Share an invite to get started.",
+      "meSuffix": " (me)",
+      "keyShared": "✓ Key shared",
+      "waitingForKey": "⏳ Waiting for owner to wrap key",
+      "removeBtn": "Remove"
+    },
+    "confirmCreate": "Create a new team using this OZ install as owner? You can invite members afterwards.",
+    "confirmJoin": "Joining a team REPLACES your current OZ data with the team owner's data.\n\nA pre-join snapshot will be saved + your current master key archived\n(recoverable later via Time Machine). Restart will be required.\n\nContinue?",
+    "confirmLeave": "Leave the team? Your local copy of the team master key remains so you can still access local snapshots, but you stop receiving updates.",
+    "confirmDisband": "Disband the team? This deletes the team folder in Dropbox and all member access. Your local data stays. Continue?",
+    "confirmRemoveMember": "Remove member {{memberId}} from team? They will lose access to new snapshots.",
+    "joinedAlert": "✓ Joined team.\n\nPre-join snapshot saved as {{preJoinSnapshotId}}.\nYour previous OZ data was archived. Restart OZ Browser now so the new state takes effect.",
+    "inviteCopiedInfo": "Invite URL copied. Send it to your team member via secure channel.",
+    "pendingInviteInfo": "{{msg}}\n\nThe team owner needs to open their OZ Browser while you wait. You can retry from this modal.",
+    "errorStatus": "Team status query failed.",
+    "errorLoadMembers": "Failed to load members.",
+    "errorCreate": "Create team failed.",
+    "errorInvite": "Generate invite failed.",
+    "errorJoinNoToken": "Paste an oz://team/invite link or token.",
+    "errorJoinDefault": "Accept invite failed.",
+    "errorLeave": "Leave team failed.",
+    "errorDisband": "Disband team failed.",
+    "errorRemoveMember": "Remove member failed."
+  },
   "commandPalette": {
     "placeholder": "Type a command, identity, workspace, or tab title…",
     "ariaLabel": "Command palette",
