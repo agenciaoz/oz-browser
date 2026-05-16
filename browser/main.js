@@ -158,6 +158,8 @@ class Browser {
         )
         this._proxyDiagnosticsTimer = null
       }
+      // K1-extras (v1.4.2): power monitor teardown.
+      require('./power-monitor-setup').teardownPowerMonitorFromBrowser(this)
       // 1.10d: Stop the tab discard daemon.
       if (this.tabDiscardDaemon) {
         try {
@@ -596,6 +598,9 @@ class Browser {
     // H-2e (v1.1.3): diagnostics scan loop — extracted per ADR 0005.
     const { startProxyDiagnosticsScan } = require('./proxy-diagnostics-setup')
     this._proxyDiagnosticsTimer = startProxyDiagnosticsScan(this)
+
+    // K1-extras (v1.4.2): re-test proxies on Mac wake from sleep.
+    require('./power-monitor-setup').wirePowerMonitorOntoBrowser(this)
 
     // app.on('login') handler — when a proxy challenges with HTTP 407, look up
     // which proxy is currently bound to the requesting webContents' session
