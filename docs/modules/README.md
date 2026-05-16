@@ -78,6 +78,22 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `tests/excel-io.smoketest.js` 🆕          | ~290 | header inline                                                |
 | `tests/backup-manager.smoketest.js` 🆕    | ~280 | header inline                                                |
 
+## H-2 + J + K1 (v1.1.4 → v1.4.2, 2026-05-15)
+
+| Módulo                                    | LOC  | Doc                                                      |
+| ----------------------------------------- | ---- | -------------------------------------------------------- |
+| `browser/leak-tests.js` 🆕                | ~310 | [leak-tests.md](leak-tests.md)                           |
+| `browser/leak-tests-handlers.js` 🆕       | ~290 | [leak-tests-handlers.md](leak-tests-handlers.md)         |
+| `browser/proxy-bulk-backup.js` 🆕         | ~135 | [proxy-bulk-backup.md](proxy-bulk-backup.md)             |
+| `browser/proxy-diagnostic-export.js` 🆕   | ~140 | [proxy-diagnostic-export.md](proxy-diagnostic-export.md) |
+| `browser/totp.js` 🆕                      | ~120 | [totp.md](totp.md) — RFC 6238 from scratch, see ADR 0028 |
+| `browser/power-monitor-setup.js` 🆕       | ~150 | [power-monitor-setup.md](power-monitor-setup.md)         |
+| `browser/ui/oxylabs-builder.js` 🆕        | ~310 | [oxylabs-builder.md](oxylabs-builder.md)                 |
+| `browser/ui/proxy-dashboard-health.js` 🆕 | ~135 | [proxy-dashboard-health.md](proxy-dashboard-health.md)   |
+| `browser/ui/proxy-dashboard-leaks.js` 🆕  | ~135 | [proxy-dashboard-leaks.md](proxy-dashboard-leaks.md)     |
+| `browser/ui/proxy-dashboard-export.js` 🆕 | ~45  | [proxy-dashboard-export.md](proxy-dashboard-export.md)   |
+| `browser/ui/proxy-dashboard-utils.js` 🆕  | ~50  | [proxy-dashboard-utils.md](proxy-dashboard-utils.md)     |
+
 ## Pendientes (placeholders, se llenan al implementarse)
 
 ### Bloque 1.3.5-CI (próximo)
