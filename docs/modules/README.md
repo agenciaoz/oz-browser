@@ -94,6 +94,18 @@ Un `.md` por archivo de código. Cada doc tiene: qué hace, exports, IPC channel
 | `browser/ui/proxy-dashboard-export.js` 🆕 | ~45  | [proxy-dashboard-export.md](proxy-dashboard-export.md)   |
 | `browser/ui/proxy-dashboard-utils.js` 🆕  | ~50  | [proxy-dashboard-utils.md](proxy-dashboard-utils.md)     |
 
+## K1-extras cierre (v1.4.3 → v1.4.7, 2026-05-15/16)
+
+| Módulo                                    | LOC  | Doc                                                          |
+| ----------------------------------------- | ---- | ------------------------------------------------------------ |
+| `browser/hud-handlers.js` 🆕              | ~200 | [hud-widget.md](hud-widget.md) — Identity HUD (v1.4.3)       |
+| `browser/hud-setup.js` 🆕                 | ~245 | [hud-widget.md](hud-widget.md) — wire-up + injection         |
+| `browser/preload-hud-script.js` 🆕        | ~180 | [hud-widget.md](hud-widget.md) — pure builders               |
+| `browser/preload-hud.js` 🆕               | ~20  | [hud-widget.md](hud-widget.md) — DEPRECATED placeholder      |
+| `browser/fingerprint-preload-setup.js` 🆕 | ~60  | [fingerprint-preload-setup.md](fingerprint-preload-setup.md) |
+| `scripts/bundle-preloads.js` 🆕           | ~115 | [bundle-preloads.md](bundle-preloads.md) — v1.4.4 fix        |
+| `browser/ui/onboarding-wizard.js` 🆕      | ~330 | [onboarding-wizard.md](onboarding-wizard.md) — v1.4.6        |
+
 ## Pendientes (placeholders, se llenan al implementarse)
 
 ### Bloque 1.3.5-CI (próximo)
