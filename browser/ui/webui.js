@@ -61,13 +61,22 @@
 
     // 1.10c: trigger onboarding if first run. Must run after sidebar init so
     // the WebUI is ready to receive setContentVisible IPC properly.
+    let welcomeShown = false
     if (onboardingUI) {
-      await onboardingUI.maybeOpen()
+      welcomeShown = await onboardingUI.maybeOpen()
     }
-    // v1.4.6: after welcome closes, open the action wizard if user hasn't
-    // already completed it. Independent flag so users can re-trigger the
-    // wizard from Settings without re-seeing the welcome info screens.
-    if (onboardingWizard && window.oz && window.oz.settings) {
+    // v1.4.6: open the action wizard if user hasn't already completed it
+    // AND welcome modal isn't currently showing (avoid stacking modals).
+    // Independent flag so users can re-trigger from Settings without
+    // re-seeing the welcome info screens. If welcome IS showing, the wizard
+    // auto-opens on the NEXT boot once welcome is dismissed — keeps the
+    // UX linear instead of overlapping.
+    if (
+      !welcomeShown &&
+      onboardingWizard &&
+      window.oz &&
+      window.oz.settings
+    ) {
       try {
         const wiz = await window.oz.settings.get('onboardingWizard')
         if (!wiz || !wiz.completed) {
