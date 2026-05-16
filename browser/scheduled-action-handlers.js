@@ -30,11 +30,15 @@
 const ACTION_OPEN_WORKSPACE = 'open-workspace'
 const ACTION_SYNC_PUSH = 'sync-push'
 const ACTION_BACKUP_SNAPSHOT = 'backup-snapshot'
+// K1-extras (v1.4.1): session warmer — per-identity HTTP touch to keep
+// social platform session cookies fresh. Lightweight (no BrowserWindows).
+const ACTION_SESSION_WARMER = 'session-warmer'
 
 const ACTION_TYPES = Object.freeze([
   ACTION_OPEN_WORKSPACE,
   ACTION_SYNC_PUSH,
   ACTION_BACKUP_SNAPSHOT,
+  ACTION_SESSION_WARMER,
 ])
 
 class ScheduledHandlerError extends Error {
@@ -195,6 +199,213 @@ function _safeScalar(v) {
   return null
 }
 
+// ---------- session-warmer (K1-extras, v1.4.1) ------------------------------
+//
+// Por qué existe: el use case core ("50 cuentas Insta logueadas") sufre de
+// session expiry por inactividad. Plataformas como IG, X, FB rotan session
+// cookies en cada request — sin requests, las cookies vencen y la cuenta
+// queda logged out. Anti-logout extiende cookies localmente, pero algunos
+// providers solo refrescan server-side al ver tráfico real.
+//
+// Lo que hace el handler: para cada identity (params.identityIds OR todas
+// las del workspace), abre un net.request HTTP GET via la session de la
+// identity contra la URL configurada (default: el homepage del primer site
+// con account en el vault para esa identity, fallback `https://about:blank`).
+// Goes through la proxy chain real + envía las cookies actuales.
+//
+// Lightweight design — NO BrowserWindows. Solo touch HTTP. Si el server
+// devuelve 200 con Set-Cookie, las cookies se renuevan automáticamente
+// (Electron mete las cookies del response en la session.cookies del
+// partition). Si devuelve 401/403, el watcher de anti-logout va a flagear
+// el account como needs_relogin en el próximo check.
+//
+// Cap: 50 identities por run, 1s throttle entre requests para no saturar.
+// Timeout 8s por request.
+
+const WARMER_PER_REQ_TIMEOUT_MS = 8000
+const WARMER_THROTTLE_MS = 1000
+const WARMER_MAX_IDENTITIES = 50
+
+/**
+ * Returns an async handler for `session-warmer`. The handler:
+ *   - Requires `params.workspaceId` OR `params.identityIds` (one or both).
+ *   - Skips on locked vault (no accountVault.list without unlock).
+ *   - For each identity: resolves a target URL (params.urls[siteId] OR
+ *     first account.site for that identity OR fallback `params.fallbackUrl`),
+ *     fires net.request via session.fromPartition('persist:identity-<id>'),
+ *     awaits response or timeout, throttles.
+ *   - Returns `{ warmed: [{identityId, url, status}], skipped: [...], errors: [...] }`.
+ *
+ * @param {object} deps
+ * @param {{list: Function}} deps.identityManager
+ * @param {{get: Function}} [deps.workspaceManager]
+ * @param {{getAccounts: Function, isUnlocked: boolean}} [deps.accountVault]
+ * @param {import('electron').Session} [deps.sessionFactory]
+ *   Function (partition) → Session. Default uses electron.session.fromPartition.
+ * @param {Function} [deps.netRequest] - Electron net.request. Default uses electron.net.
+ * @param {{isLocked?: () => boolean}} [deps.vault]
+ */
+function createSessionWarmerHandler({
+  identityManager,
+  workspaceManager,
+  accountVault,
+  sessionFactory,
+  netRequest,
+  vault,
+} = {}) {
+  if (!identityManager || typeof identityManager.list !== 'function') {
+    throw new ScheduledHandlerError(
+      'createSessionWarmerHandler: identityManager.list required',
+      'BAD_DEP',
+    )
+  }
+  const _sessionFactory =
+    sessionFactory ||
+    ((partition) => require('electron').session.fromPartition(partition, { cache: true }))
+  const _netRequest = netRequest || ((opts) => require('electron').net.request(opts))
+
+  return async function sessionWarmerHandler(params) {
+    const locked = _vaultLockedSkip(vault)
+    if (locked) return locked
+
+    // 1. Resolve identity list.
+    let identityIds = Array.isArray(params && params.identityIds)
+      ? params.identityIds.slice()
+      : null
+    if (!identityIds && params && params.workspaceId && workspaceManager) {
+      const ws = workspaceManager.get(params.workspaceId)
+      if (ws && Array.isArray(ws.identityIds)) identityIds = ws.identityIds.slice()
+    }
+    if (!identityIds || identityIds.length === 0) {
+      throw new ScheduledHandlerError(
+        'session-warmer requires params.identityIds (array) or params.workspaceId',
+        'BAD_PARAMS',
+      )
+    }
+    if (identityIds.length > WARMER_MAX_IDENTITIES) {
+      identityIds = identityIds.slice(0, WARMER_MAX_IDENTITIES)
+    }
+
+    // 2. Build account-by-identity map for URL resolution (best-effort).
+    const accountsByIdentity = new Map()
+    if (
+      accountVault &&
+      typeof accountVault.getAccounts === 'function' &&
+      accountVault.isUnlocked !== false
+    ) {
+      try {
+        for (const a of accountVault.getAccounts()) {
+          if (!accountsByIdentity.has(a.identityId)) {
+            accountsByIdentity.set(a.identityId, [])
+          }
+          accountsByIdentity.get(a.identityId).push(a)
+        }
+      } catch (_e) {
+        // best-effort
+      }
+    }
+
+    // 3. Iterate identities sequentially with throttle.
+    const warmed = []
+    const skipped = []
+    const errors = []
+    const fallbackUrl = (params && params.fallbackUrl) || null
+
+    for (const identityId of identityIds) {
+      const url = _resolveWarmerUrl({
+        identityId,
+        accountsByIdentity,
+        explicitUrlsBySite: params && params.urlsBySite,
+        fallbackUrl,
+      })
+      if (!url) {
+        skipped.push({ identityId, reason: 'no-url' })
+        continue
+      }
+      try {
+        const status = await _fetchAndDiscard({
+          url,
+          identityId,
+          sessionFactory: _sessionFactory,
+          netRequest: _netRequest,
+        })
+        warmed.push({ identityId, url, status })
+      } catch (err) {
+        errors.push({
+          identityId,
+          url,
+          message: err && err.message,
+        })
+      }
+      // Throttle (skip after last).
+      await new Promise((resolve) => setTimeout(resolve, WARMER_THROTTLE_MS))
+    }
+
+    return { warmed, skipped, errors, totalRequested: identityIds.length }
+  }
+}
+
+function _resolveWarmerUrl({
+  identityId,
+  accountsByIdentity,
+  explicitUrlsBySite,
+  fallbackUrl,
+}) {
+  const accounts = accountsByIdentity.get(identityId) || []
+  // 1. Explicit urls map by site: { 'instagram.com': 'https://instagram.com/' }.
+  if (explicitUrlsBySite && typeof explicitUrlsBySite === 'object') {
+    for (const a of accounts) {
+      if (a.site && explicitUrlsBySite[a.site]) return explicitUrlsBySite[a.site]
+    }
+  }
+  // 2. First account.site → derive homepage URL.
+  for (const a of accounts) {
+    if (a.site) return `https://${a.site}/`
+  }
+  // 3. Fallback URL or null.
+  return fallbackUrl || null
+}
+
+function _fetchAndDiscard({ url, identityId, sessionFactory, netRequest }) {
+  return new Promise((resolve) => {
+    let settled = false
+    const finish = (status) => {
+      if (settled) return
+      settled = true
+      resolve(status)
+    }
+    const timer = setTimeout(() => finish('timeout'), WARMER_PER_REQ_TIMEOUT_MS)
+    try {
+      const ses = sessionFactory(`persist:identity-${identityId}`)
+      const req = netRequest({ url, session: ses, useSessionCookies: true })
+      let bytes = 0
+      req.on('response', (res) => {
+        res.on('data', (chunk) => {
+          bytes += chunk.length
+          // Drop bytes after 16KB to avoid memory bloat on huge pages.
+          if (bytes > 16 * 1024) res.removeAllListeners('data')
+        })
+        res.on('end', () => {
+          clearTimeout(timer)
+          finish(res.statusCode || 0)
+        })
+        res.on('error', () => {
+          clearTimeout(timer)
+          finish('error')
+        })
+      })
+      req.on('error', () => {
+        clearTimeout(timer)
+        finish('error')
+      })
+      req.end()
+    } catch (_err) {
+      clearTimeout(timer)
+      finish('throw')
+    }
+  })
+}
+
 // ---------- registry helper -------------------------------------------------
 
 /**
@@ -249,6 +460,23 @@ function registerScheduledActionHandlers(scheduled, deps = {}) {
     )
     registered.push(ACTION_BACKUP_SNAPSHOT)
   }
+  // K1-extras (v1.4.1): session-warmer needs identityManager AND access to
+  // the partition sessions via electron.session.fromPartition. workspaceManager
+  // + accountVault are best-effort (used to resolve identityIds + URLs).
+  if (deps.identityManager && typeof deps.identityManager.list === 'function') {
+    scheduled.setHandler(
+      ACTION_SESSION_WARMER,
+      createSessionWarmerHandler({
+        identityManager: deps.identityManager,
+        workspaceManager: deps.workspaceManager,
+        accountVault: deps.accountVault,
+        sessionFactory: deps.sessionFactory,
+        netRequest: deps.netRequest,
+        vault: deps.vault,
+      }),
+    )
+    registered.push(ACTION_SESSION_WARMER)
+  }
   return registered
 }
 
@@ -257,12 +485,18 @@ module.exports = {
   createOpenWorkspaceHandler,
   createSyncPushHandler,
   createBackupSnapshotHandler,
+  createSessionWarmerHandler,
   registerScheduledActionHandlers,
   // constants
   ACTION_OPEN_WORKSPACE,
   ACTION_SYNC_PUSH,
   ACTION_BACKUP_SNAPSHOT,
+  ACTION_SESSION_WARMER,
   ACTION_TYPES,
+  // tunables exposed for test pinning
+  WARMER_PER_REQ_TIMEOUT_MS,
+  WARMER_THROTTLE_MS,
+  WARMER_MAX_IDENTITIES,
   // error
   ScheduledHandlerError,
 }

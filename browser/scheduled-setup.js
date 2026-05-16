@@ -103,6 +103,16 @@ function _buildDeps(browser, electron) {
     deps.backupManager = browser.backupManager
   }
 
+  // K1-extras (v1.4.1): session warmer needs identityManager + (optional)
+  // workspaceManager + accountVault. The handler factory itself defaults
+  // sessionFactory/netRequest to electron.session.fromPartition + net.request
+  // so we only pass managers — keeps this wiring small.
+  if (browser.identityManager && typeof browser.identityManager.list === 'function') {
+    deps.identityManager = browser.identityManager
+    if (browser.workspaceManager) deps.workspaceManager = browser.workspaceManager
+    if (browser.accountVault) deps.accountVault = browser.accountVault
+  }
+
   return deps
 }
 
