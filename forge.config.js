@@ -37,7 +37,11 @@ module.exports = {
     appCategoryType: 'public.app-category.productivity',
     ...(ICON_EXISTS ? { icon: ICON_PATH } : {}),
     asar: true,
-    extraResource: ['browser/ui', 'browser/preload-fingerprint.js'],
+    extraResource: [
+      'browser/ui',
+      'browser/preload-fingerprint.js',
+      'browser/preload-hud.js',
+    ],
     // afterCopy hook: el plugin-webpack de Forge bundlea index.js + sus deps
     // pero NO copia node_modules de los externals al bundle. webpack.main.config
     // marca @napi-rs/keyring como external (commonjs2 require) porque sus

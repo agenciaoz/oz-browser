@@ -40,6 +40,7 @@ const { buildAlertHandlers } = require('./alert-handlers')
 const { buildHealthHandlers } = require('./anti-detect-health-handlers')
 const { buildExtensionShareHandlers } = require('./extensions-share-handlers')
 const { buildSyncHandlers } = require('./sync-handlers')
+const { buildHudHandlers } = require('./hud-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
@@ -80,6 +81,7 @@ function registerIpcHandlers(browser) {
     health: buildHealthHandlers(browser),
     extensions: buildExtensionShareHandlers(browser),
     sync: buildSyncHandlers(browser),
+    hud: buildHudHandlers(browser, { app: require('electron').app }),
   })
 
   registerLogHandlers(browser)
@@ -95,6 +97,7 @@ function registerIpcHandlers(browser) {
   registerExtraIpcHandlers(browser) // 1.10b: proxies + fingerprint + settings + browsing-data
   registerNavHandlers(browser)
   registerUiHandlers(browser)
+  registerHudHandlersIPC(browser)
 
   log.info('ipc', 'All IPC handlers registered')
 }
@@ -611,6 +614,23 @@ function registerNavHandlers(browser) {
     t.loadURL(normalized)
     return true
   })
+}
+
+// ----- Identity HUD (K1-extras / v1.4.3) ------------------------------------
+// In-page widget arriba-derecha en cada tab. getContext resuelve la identity
+// del sender via webContents.session (anti-spoof). getCollapsed/setCollapsed
+// persisten el estado expanded/collapsed per-identity.
+
+function registerHudHandlersIPC(browser) {
+  const h = browser.handlers.hud
+
+  ipcMain.handle('oz:hud:getContext', (event, identityIdArg) =>
+    h.getContextForSession(event.sender.session, identityIdArg),
+  )
+  ipcMain.handle('oz:hud:getCollapsed', (_e, identityId) => h.getCollapsed(identityId))
+  ipcMain.handle('oz:hud:setCollapsed', (_e, identityId, collapsed) =>
+    h.setCollapsed(identityId, collapsed),
+  )
 }
 
 module.exports = { registerIpcHandlers }

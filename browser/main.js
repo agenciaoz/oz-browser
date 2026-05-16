@@ -456,39 +456,13 @@ class Browser {
       }
     })
 
-    // 1.9b: register session init hook for fingerprint application. Runs
-    // AFTER the 1.8b proxy hook (registration order guaranteed). Two layers:
-    //   (a) session.setUserAgent — defense in depth at network layer.
-    //       Chrome's network stack uses this for fetch headers even if a
-    //       renderer somehow bypasses our preload.
-    //   (b) registerPreloadScript — content-world overrides via webFrame
-    //       executeJavaScript (see preload-fingerprint.js).
-    // Both layers must agree to defeat fingerprinting tools that compare
-    // navigator.userAgent vs request UA (a classic mismatch detection).
-    const fpPreloadPath = require('path').join(
-      app.getAppPath(),
-      'browser',
-      'preload-fingerprint.js',
-    )
-    this.identityManager.addSessionInitHook((identityId, session) => {
-      const ident = this.identityManager.get(identityId)
-      if (!ident) return
-      const fp = this.fingerprintEngine.getOrCreate(identityId, ident.fingerprintSeed)
-      if (fp && fp.ua) {
-        session.setUserAgent(fp.ua, fp.language || 'en-US')
-        log.debug('browser', 'session UA set from FP', {
-          identityId,
-          ua: fp.ua,
-        })
-      }
-      if (typeof session.registerPreloadScript === 'function') {
-        session.registerPreloadScript({
-          type: 'frame',
-          id: 'oz-fingerprint-preload',
-          filePath: fpPreloadPath,
-        })
-      }
-    })
+    // 1.9b: register session init hook for fingerprint application.
+    // Extracted to fingerprint-preload-setup.js in v1.4.3 (LOC budget).
+    require('./fingerprint-preload-setup').setupFingerprintPreload(this)
+
+    // K1-extras (v1.4.3): In-page identity HUD. Register HUD preload via
+    // session-init hook + wrap broadcastToWebUI for live updates.
+    require('./hud-setup').setupHud(this)
 
     // 1.10b: Download + History managers. Both per-identity, persisted in
     // separate JSON files. DownloadManager hooks every identity session via
