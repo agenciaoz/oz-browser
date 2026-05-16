@@ -5451,11 +5451,12 @@
         aria-labelledby="oz-clone-title"
       >
         <header>
-          <h2 id="oz-clone-title">📑 Clone identity</h2>
+          <h2 id="oz-clone-title" data-i18n="identityClone.title">📑 Clone identity</h2>
           <button
             type="button"
             class="oz-modal-close"
             data-close
+            data-i18n-attr="aria-label:identityClone.closeAria"
             aria-label="Close"
             id="oz-clone-cancel"
           >
@@ -5465,16 +5466,19 @@
 
         <div class="oz-clone-body">
           <div class="oz-clone-src-row">
-            <span class="oz-clone-src-label-prefix">Cloning from:</span>
+            <span class="oz-clone-src-label-prefix" data-i18n="identityClone.cloningFrom"
+              >Cloning from:</span
+            >
             <span class="oz-clone-src-dot" id="oz-clone-src-dot"></span>
             <span class="oz-clone-src-label" id="oz-clone-src-label">—</span>
           </div>
 
           <label class="oz-clone-field">
-            <span>New name</span>
+            <span data-i18n="identityClone.newNameLabel">New name</span>
             <input
               type="text"
               id="oz-clone-name"
+              data-i18n-attr="placeholder:identityClone.newNamePlaceholder"
               placeholder="Identity name"
               autocomplete="off"
               spellcheck="false"
@@ -5482,12 +5486,14 @@
           </label>
 
           <fieldset class="oz-clone-options">
-            <legend>Inherit from source:</legend>
+            <legend data-i18n="identityClone.legend">Inherit from source:</legend>
             <label class="oz-clone-cb-row">
               <input type="checkbox" id="oz-clone-cb-fingerprint" />
               <span class="oz-clone-cb-text">
-                <strong>Same fingerprint</strong>
-                <em>
+                <strong data-i18n="identityClone.sameFingerprintTitle"
+                  >Same fingerprint</strong
+                >
+                <em data-i18n="identityClone.sameFingerprintDesc">
                   — clone matches the source's blueprint (UA / screen / timezone). Use for
                   sub-accounts of the same "person".
                 </em>
@@ -5496,7 +5502,7 @@
             <label class="oz-clone-cb-row">
               <input type="checkbox" id="oz-clone-cb-proxy" />
               <span class="oz-clone-cb-text">
-                <strong>Same proxy</strong>
+                <strong data-i18n="identityClone.sameProxyTitle">Same proxy</strong>
                 <em id="oz-clone-proxy-hint">
                   — inherit the proxy assignment of the source.
                 </em>
@@ -5505,7 +5511,9 @@
             <label class="oz-clone-cb-row">
               <input type="checkbox" id="oz-clone-cb-ua" />
               <span class="oz-clone-cb-text">
-                <strong>Same custom User-Agent</strong>
+                <strong data-i18n="identityClone.sameUaTitle"
+                  >Same custom User-Agent</strong
+                >
                 <em id="oz-clone-ua-hint">
                   — copy the UA override (only if source has one).
                 </em>
@@ -5517,8 +5525,20 @@
         </div>
 
         <footer class="oz-clone-footer">
-          <button type="button" class="oz-btn" data-close>Cancel</button>
-          <button type="button" class="oz-btn oz-btn-primary" id="oz-clone-submit">
+          <button
+            type="button"
+            class="oz-btn"
+            data-close
+            data-i18n="identityClone.cancel"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            class="oz-btn oz-btn-primary"
+            id="oz-clone-submit"
+            data-i18n="identityClone.clone"
+          >
             Clone
           </button>
         </footer>

@@ -16,6 +16,12 @@
   if (!window.OZ) window.OZ = {}
   const { safe } = window.OZ.utils
 
+  // v1.5.4: i18n helper — falls back to key if i18n not loaded yet.
+  function t(key, params) {
+    if (window.OZ && typeof window.OZ.t === 'function') return window.OZ.t(key, params)
+    return key
+  }
+
   class IdentityCloneUI {
     constructor() {
       this.$modal = document.getElementById('oz-clone-modal')
@@ -74,12 +80,12 @@
         srcId = await safe(window.oz.identities.getActive(), 'identities.getActive')
       }
       if (!srcId) {
-        this._showError('No identity selected to clone.')
+        this._showError(t('identityClone.errorNoSource'))
         return
       }
       const src = await safe(window.oz.identities.get(srcId), 'identities.get')
       if (!src) {
-        this._showError('Identity not found (it may have been deleted).')
+        this._showError(t('identityClone.errorNotFound'))
         return
       }
       this.srcId = srcId
@@ -108,11 +114,11 @@
       const hasUA = !!src.userAgent
       this.$cbUA.disabled = !hasUA
       this.$uaHint.textContent = hasUA
-        ? `(currently: ${shortUA(src.userAgent)})`
-        : '(source has no custom UA)'
+        ? t('identityClone.uaHintCurrent', { ua: shortUA(src.userAgent) })
+        : t('identityClone.uaHintNone')
 
       // Proxy hint — best-effort fetch of assignment (may not exist).
-      this.$proxyHint.textContent = '(if source has a proxy assigned)'
+      this.$proxyHint.textContent = t('identityClone.proxyHintDefault')
 
       this._clearError()
       this._show()
@@ -133,12 +139,12 @@
     async _submit() {
       const name = this.$name.value.trim()
       if (!name) {
-        this._showError('Name cannot be empty.')
+        this._showError(t('identityClone.errorEmptyName'))
         this.$name.focus()
         return
       }
       if (!this.srcId) {
-        this._showError('No source identity.')
+        this._showError(t('identityClone.errorNoSrcId'))
         return
       }
       this.$submit.disabled = true
@@ -159,11 +165,9 @@
       if (!result || result.ok === false) {
         const reason = (result && result.reason) || 'unknown'
         if (reason === 'IDENTITY_CAP_REACHED') {
-          this._showError(
-            'Free tier identity cap reached (max 3). Upgrade to clone more identities.',
-          )
+          this._showError(t('identityClone.errorCapReached'))
         } else {
-          this._showError(`Clone failed: ${reason}`)
+          this._showError(t('identityClone.errorCloneFailed', { reason }))
         }
         return
       }

@@ -347,6 +347,31 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "identityClone": {
+    "title": "📑 Clonar identidad",
+    "closeAria": "Cerrar",
+    "cloningFrom": "Clonando desde:",
+    "newNameLabel": "Nuevo nombre",
+    "newNamePlaceholder": "Nombre de la identidad",
+    "legend": "Heredar de la fuente:",
+    "sameFingerprintTitle": "Mismo fingerprint",
+    "sameFingerprintDesc": "— el clon usa el mismo blueprint de la fuente (UA / pantalla / timezone). Usá esto para sub-cuentas de la misma \"persona\".",
+    "sameProxyTitle": "Mismo proxy",
+    "sameProxyDesc": "— hereda la asignación de proxy de la fuente.",
+    "sameUaTitle": "Mismo User-Agent personalizado",
+    "sameUaDesc": "— copia el override de UA (solo si la fuente tiene uno).",
+    "uaHintCurrent": "(actualmente: {{ua}})",
+    "uaHintNone": "(la fuente no tiene UA personalizado)",
+    "proxyHintDefault": "(si la fuente tiene un proxy asignado)",
+    "cancel": "Cancelar",
+    "clone": "Clonar",
+    "errorNoSource": "No hay identidad seleccionada para clonar.",
+    "errorNotFound": "Identidad no encontrada (puede haberse borrado).",
+    "errorEmptyName": "El nombre no puede estar vacío.",
+    "errorNoSrcId": "No hay identidad fuente.",
+    "errorCapReached": "Se alcanzó el límite del Free tier (max 3). Hacé upgrade para clonar más identidades.",
+    "errorCloneFailed": "El clonado falló: {{reason}}"
+  },
   "extensionsModal": {
     "title": "🧩 Gestionar Extensiones",
     "closeAria": "Cerrar",

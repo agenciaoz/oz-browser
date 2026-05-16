@@ -347,6 +347,31 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "identityClone": {
+    "title": "📑 Clone identity",
+    "closeAria": "Close",
+    "cloningFrom": "Cloning from:",
+    "newNameLabel": "New name",
+    "newNamePlaceholder": "Identity name",
+    "legend": "Inherit from source:",
+    "sameFingerprintTitle": "Same fingerprint",
+    "sameFingerprintDesc": "— clone matches the source's blueprint (UA / screen / timezone). Use for sub-accounts of the same \"person\".",
+    "sameProxyTitle": "Same proxy",
+    "sameProxyDesc": "— inherit the proxy assignment of the source.",
+    "sameUaTitle": "Same custom User-Agent",
+    "sameUaDesc": "— copy the UA override (only if source has one).",
+    "uaHintCurrent": "(currently: {{ua}})",
+    "uaHintNone": "(source has no custom UA)",
+    "proxyHintDefault": "(if source has a proxy assigned)",
+    "cancel": "Cancel",
+    "clone": "Clone",
+    "errorNoSource": "No identity selected to clone.",
+    "errorNotFound": "Identity not found (it may have been deleted).",
+    "errorEmptyName": "Name cannot be empty.",
+    "errorNoSrcId": "No source identity.",
+    "errorCapReached": "Free tier identity cap reached (max 3). Upgrade to clone more identities.",
+    "errorCloneFailed": "Clone failed: {{reason}}"
+  },
   "extensionsModal": {
     "title": "🧩 Manage Extensions",
     "closeAria": "Close",
