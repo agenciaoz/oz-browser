@@ -4104,8 +4104,14 @@
         aria-labelledby="oz-tm-title"
       >
         <header>
-          <h2 id="oz-tm-title">⏱ Time Machine</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+          <h2 id="oz-tm-title" data-i18n="timeMachine.title">⏱ Time Machine</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            data-i18n-attr="aria-label:timeMachine.closeAria"
+          >
             ✕
           </button>
         </header>
@@ -4114,43 +4120,69 @@
         <section class="tm-section" id="oz-tm-locked-view" hidden>
           <div class="am-lock">
             <div class="am-lock-icon">🔐</div>
-            <h3>Vault locked</h3>
-            <p>
+            <h3 data-i18n="timeMachine.locked.title">Vault locked</h3>
+            <p data-i18n="timeMachine.locked.desc">
               Time Machine snapshots are encrypted with your vault master key. Unlock the
               vault to view, create or restore snapshots.
             </p>
-            <button type="button" id="oz-tm-unlock-btn">Unlock vault</button>
+            <button
+              type="button"
+              id="oz-tm-unlock-btn"
+              data-i18n="timeMachine.locked.unlockBtn"
+            >
+              Unlock vault
+            </button>
           </div>
         </section>
 
         <section class="tm-section" id="oz-tm-list-view" hidden>
           <div class="tm-toolbar">
-            <button type="button" class="tm-primary" id="oz-tm-snapshot-now">
+            <button
+              type="button"
+              class="tm-primary"
+              id="oz-tm-snapshot-now"
+              data-i18n="timeMachine.snapshotNow"
+            >
               ⏱ Take snapshot now
             </button>
             <span class="tm-spacer"></span>
-            <button type="button" id="oz-tm-cloud-btn">☁ Cloud backup…</button>
-            <button type="button" id="oz-tm-retention-btn">Run retention</button>
+            <button
+              type="button"
+              id="oz-tm-cloud-btn"
+              data-i18n="timeMachine.cloudBackup"
+            >
+              ☁ Cloud backup…
+            </button>
+            <button
+              type="button"
+              id="oz-tm-retention-btn"
+              data-i18n="timeMachine.runRetention"
+            >
+              Run retention
+            </button>
           </div>
           <div class="tm-list-wrap">
             <div class="tm-row header">
               <div></div>
-              <div>Label</div>
-              <div>Reason</div>
-              <div>When</div>
-              <div>Size</div>
+              <div data-i18n="timeMachine.col.label">Label</div>
+              <div data-i18n="timeMachine.col.reason">Reason</div>
+              <div data-i18n="timeMachine.col.when">When</div>
+              <div data-i18n="timeMachine.col.size">Size</div>
               <div></div>
             </div>
             <div id="oz-tm-list"></div>
-            <div class="tm-empty" id="oz-tm-empty" hidden>
+            <div class="tm-empty" id="oz-tm-empty" hidden data-i18n="timeMachine.empty">
               No snapshots yet. Pre-destructive snapshots are created automatically before
               risky operations.
             </div>
           </div>
           <div class="tm-footer">
+            <!-- Summary is set dynamically by time-machine.js (_renderList).
+                 No data-i18n on purpose: JS owns it and re-renders on locale
+                 switch via the i18n.onChange hook. -->
             <span id="oz-tm-summary">0 snapshots</span>
             <span class="tm-spacer"></span>
-            <span>Shortcut: ⌘⇧B</span>
+            <span data-i18n="timeMachine.shortcut">Shortcut: ⌘⇧B</span>
           </div>
         </section>
       </div>

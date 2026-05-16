@@ -347,6 +347,56 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "timeMachine": {
+    "title": "⏱ Time Machine",
+    "closeAria": "Close",
+    "locked": {
+      "title": "Vault locked",
+      "desc": "Time Machine snapshots are encrypted with your vault master key. Unlock the vault to view, create or restore snapshots.",
+      "unlockBtn": "Unlock vault",
+      "unlocking": "Unlocking…"
+    },
+    "snapshotNow": "⏱ Take snapshot now",
+    "snapshotting": "Snapshotting…",
+    "cloudBackup": "☁ Cloud backup…",
+    "runRetention": "Run retention",
+    "col": {
+      "label": "Label",
+      "reason": "Reason",
+      "when": "When",
+      "size": "Size"
+    },
+    "empty": "No snapshots yet. Pre-destructive snapshots are created automatically before risky operations.",
+    "shortcut": "Shortcut: ⌘⇧B",
+    "summaryZero": "0 snapshots",
+    "summarySingular": "1 snapshot · {{size}} total",
+    "summaryPlural": "{{n}} snapshots · {{size}} total",
+    "rowFiles": "{{n}} files",
+    "reasons": {
+      "manual": "manual",
+      "preQuit": "before quit",
+      "preOverwriteTotal": "before total overwrite",
+      "preRestore": "before restore",
+      "daily3am": "nightly 3 a.m.",
+      "unknown": "snapshot"
+    },
+    "actions": {
+      "restore": "Restore",
+      "delete": "Delete"
+    },
+    "confirmRestore": "Restore snapshot \"{{label}}\"?\n\nThis REPLACES your current accounts, identities, workspaces and browser sessions with the contents from {{when}}.\n\nA safety snapshot of your CURRENT state will be created automatically before the restore — you can roll back if needed.\n\nAfter restore you must restart OZ Browser. Continue?",
+    "confirmDelete": "Delete snapshot \"{{label}}\" ({{when}})?\n\nThis cannot be undone.",
+    "retentionApplied": "Retention applied: {{n}} snapshot(s) deleted (kept last 30 days + 1 per week for older).",
+    "restoreCompletedAlert": "✓ Snapshot restored.\n\nA pre-restore safety snapshot was saved as: {{preRestoreId}}\n\nRestart OZ Browser now so identities, workspaces and vault load fresh from disk.",
+    "errorVaultStatus": "Failed to read vault status.",
+    "errorLoadSnapshots": "Could not load snapshots.",
+    "errorUnlockFailed": "Unlock failed. Check Keychain access.",
+    "errorSnapshotFailed": "Snapshot failed.",
+    "errorRetentionFailed": "Retention failed.",
+    "errorRestoreFailed": "Restore failed.",
+    "errorRestoreWithPreId": "{{msg}}\nA pre-restore snapshot was saved as {{preId}} — your data is intact.",
+    "errorDeleteFailed": "Delete failed."
+  },
   "browsingData": {
     "title": "📚 Browsing Data",
     "closeAria": "Close",

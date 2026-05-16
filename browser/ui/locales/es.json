@@ -347,6 +347,56 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "timeMachine": {
+    "title": "⏱ Time Machine",
+    "closeAria": "Cerrar",
+    "locked": {
+      "title": "Bóveda bloqueada",
+      "desc": "Los snapshots de Time Machine están cifrados con la master key de tu bóveda. Desbloqueá la bóveda para ver, crear o restaurar snapshots.",
+      "unlockBtn": "Desbloquear bóveda",
+      "unlocking": "Desbloqueando…"
+    },
+    "snapshotNow": "⏱ Snapshot ahora",
+    "snapshotting": "Snapshotteando…",
+    "cloudBackup": "☁ Respaldo en la nube…",
+    "runRetention": "Aplicar retención",
+    "col": {
+      "label": "Etiqueta",
+      "reason": "Motivo",
+      "when": "Cuándo",
+      "size": "Tamaño"
+    },
+    "empty": "Aún no hay snapshots. Los snapshots pre-destructivos se crean automáticamente antes de operaciones riesgosas.",
+    "shortcut": "Atajo: ⌘⇧B",
+    "summaryZero": "0 snapshots",
+    "summarySingular": "1 snapshot · {{size}} total",
+    "summaryPlural": "{{n}} snapshots · {{size}} total",
+    "rowFiles": "{{n}} archivos",
+    "reasons": {
+      "manual": "manual",
+      "preQuit": "antes de cerrar",
+      "preOverwriteTotal": "antes de sobrescribir todo",
+      "preRestore": "antes de restaurar",
+      "daily3am": "diario 3 a.m.",
+      "unknown": "snapshot"
+    },
+    "actions": {
+      "restore": "Restaurar",
+      "delete": "Eliminar"
+    },
+    "confirmRestore": "¿Restaurar el snapshot \"{{label}}\"?\n\nEsto REEMPLAZA tus cuentas, identidades, espacios y sesiones actuales con el contenido del {{when}}.\n\nUn snapshot de seguridad de tu estado ACTUAL se va a crear automáticamente antes de restaurar — podés volver atrás si lo necesitás.\n\nDespués de restaurar tenés que reiniciar OZ Browser. ¿Continuar?",
+    "confirmDelete": "¿Eliminar el snapshot \"{{label}}\" ({{when}})?\n\nEsto no se puede deshacer.",
+    "retentionApplied": "Retención aplicada: {{n}} snapshot(s) eliminados (se mantienen los últimos 30 días + 1 por semana para los más viejos).",
+    "restoreCompletedAlert": "✓ Snapshot restaurado.\n\nSe guardó un snapshot de seguridad pre-restore como: {{preRestoreId}}\n\nReiniciá OZ Browser ahora para que identidades, espacios y bóveda se carguen frescos del disco.",
+    "errorVaultStatus": "No se pudo leer el estado de la bóveda.",
+    "errorLoadSnapshots": "No se pudieron cargar los snapshots.",
+    "errorUnlockFailed": "Falló el desbloqueo. Revisá el acceso al Llavero.",
+    "errorSnapshotFailed": "Falló el snapshot.",
+    "errorRetentionFailed": "Falló la retención.",
+    "errorRestoreFailed": "Falló la restauración.",
+    "errorRestoreWithPreId": "{{msg}}\nSe guardó un snapshot pre-restore como {{preId}} — tus datos están intactos.",
+    "errorDeleteFailed": "Falló la eliminación."
+  },
   "browsingData": {
     "title": "📚 Datos de navegación",
     "closeAria": "Cerrar",

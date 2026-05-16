@@ -16,6 +16,13 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
+  // v1.5.7: i18n — lazy lookup via window.OZ.i18n.t() so locale switches
+  // pick up automatically. Falls back to the key if i18n hasn't loaded
+  // yet (webui.html loads time-machine.js before i18n.js, but the catalog
+  // fetch is async — by the time any user-triggered code path runs, i18n
+  // is ready).
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
   function fmtDate(iso) {
     try {
@@ -41,6 +48,21 @@
     'pre-overwrite-total': '⚠️',
     'pre-restore': '↩',
     'daily-3am': '🌙',
+  }
+
+  // v1.5.7: map snapshot reason strings (kebab-case from backend) to
+  // their i18n catalog leaf key. Unknown reasons fall through to
+  // `timeMachine.reasons.unknown` which is the generic "snapshot" label.
+  const REASON_I18N_KEY = {
+    manual: 'manual',
+    'pre-quit': 'preQuit',
+    'pre-overwrite-total': 'preOverwriteTotal',
+    'pre-restore': 'preRestore',
+    'daily-3am': 'daily3am',
+  }
+  function reasonLabel(reason) {
+    const sub = REASON_I18N_KEY[reason] || 'unknown'
+    return t(`timeMachine.reasons.${sub}`)
   }
 
   class TimeMachine {
@@ -86,8 +108,24 @@
       if (window.oz?.timemachine?.onRestoreCompleted) {
         window.oz.timemachine.onRestoreCompleted((payload) => {
           window.alert(
-            `✓ Snapshot restored.\n\nA pre-restore safety snapshot was saved as: ${payload.preRestoreId}\n\nRestart OZ Browser now so identities, workspaces and vault load fresh from disk.`,
+            t('timeMachine.restoreCompletedAlert', {
+              preRestoreId: payload.preRestoreId,
+            }),
           )
+        })
+      }
+
+      // v1.5.7: re-render dynamic content on locale switch. translatePage()
+      // covers static markup (title, locked-view, column headers, empty
+      // message, shortcut hint), but row content (reason badge label, files
+      // sub-text), the summary, and the button labels we toggle dynamically
+      // (Unlocking… / Snapshotting…) live in JS-set textContent.
+      if (window.OZ?.i18n?.onChange) {
+        window.OZ.i18n.onChange(() => {
+          if (this.$modal.hidden) return
+          // Re-render the list (rebuilds rows + summary). Skip if we are
+          // currently in the locked view — its markup is fully static.
+          if (!this.$viewList.hidden) this._renderList()
         })
       }
     }
@@ -129,7 +167,7 @@
     async _refreshAndShow() {
       const status = await safe(window.oz.vault.status(), 'vault.status')
       if (!status || status.__error) {
-        this._showError('Failed to read vault status.')
+        this._showError(t('timeMachine.errorVaultStatus'))
         return
       }
       if (!status.isUnlocked) {
@@ -142,7 +180,7 @@
     async _reloadAndRender() {
       const list = await safe(window.oz.timemachine.list(), 'timemachine.list')
       if (!list || list.__error) {
-        this._showError('Could not load snapshots.')
+        this._showError(t('timeMachine.errorLoadSnapshots'))
         return
       }
       this.snapshots = Array.isArray(list) ? list : []
@@ -183,14 +221,12 @@
 
     async _doUnlock() {
       this.$btnUnlock.disabled = true
-      this.$btnUnlock.textContent = 'Unlocking…'
+      this.$btnUnlock.textContent = t('timeMachine.locked.unlocking')
       const r = await safe(window.oz.vault.unlock(), 'vault.unlock')
       this.$btnUnlock.disabled = false
-      this.$btnUnlock.textContent = 'Unlock vault'
+      this.$btnUnlock.textContent = t('timeMachine.locked.unlockBtn')
       if (!r || r.__error) {
-        this._showError(
-          (r && r.__error?.message) || 'Unlock failed. Check Keychain access.',
-        )
+        this._showError((r && r.__error?.message) || t('timeMachine.errorUnlockFailed'))
         return
       }
       await this._reloadAndRender()
@@ -199,15 +235,15 @@
     async _doSnapshotNow() {
       this._clearError()
       this.$btnSnapshotNow.disabled = true
-      this.$btnSnapshotNow.textContent = 'Snapshotting…'
+      this.$btnSnapshotNow.textContent = t('timeMachine.snapshotting')
       const r = await safe(
         window.oz.timemachine.create({ reason: 'manual' }),
         'timemachine.create',
       )
       this.$btnSnapshotNow.disabled = false
-      this.$btnSnapshotNow.textContent = '⏱ Take snapshot now'
+      this.$btnSnapshotNow.textContent = t('timeMachine.snapshotNow')
       if (!r || r.__error) {
-        this._showError(r?.__error?.message || 'Snapshot failed.')
+        this._showError(r?.__error?.message || t('timeMachine.errorSnapshotFailed'))
         return
       }
       await this._reloadAndRender()
@@ -220,18 +256,19 @@
         'timemachine.applyRetention',
       )
       if (!r || r.__error) {
-        this._showError(r?.__error?.message || 'Retention failed.')
+        this._showError(r?.__error?.message || t('timeMachine.errorRetentionFailed'))
         return
       }
-      window.alert(
-        `Retention applied: ${r.deletedCount} snapshot(s) deleted (kept last 30 days + 1 per week for older).`,
-      )
+      window.alert(t('timeMachine.retentionApplied', { n: r.deletedCount }))
       await this._reloadAndRender()
     }
 
     async _doRestore(snapshot) {
       const ok = window.confirm(
-        `Restore snapshot "${snapshot.label}"?\n\nThis REPLACES your current accounts, identities, workspaces and browser sessions with the contents from ${fmtDate(snapshot.createdAt)}.\n\nA safety snapshot of your CURRENT state will be created automatically before the restore — you can roll back if needed.\n\nAfter restore you must restart OZ Browser. Continue?`,
+        t('timeMachine.confirmRestore', {
+          label: snapshot.label,
+          when: fmtDate(snapshot.createdAt),
+        }),
       )
       if (!ok) return
       this._clearError()
@@ -240,12 +277,10 @@
         'timemachine.restore',
       )
       if (!r || r.__error) {
-        const msg = r?.__error?.message || 'Restore failed.'
+        const msg = r?.__error?.message || t('timeMachine.errorRestoreFailed')
         const preId = r?.__error?.preRestoreId
         this._showError(
-          preId
-            ? `${msg}\nA pre-restore snapshot was saved as ${preId} — your data is intact.`
-            : msg,
+          preId ? t('timeMachine.errorRestoreWithPreId', { msg, preId }) : msg,
         )
         return
       }
@@ -254,7 +289,10 @@
 
     async _doDelete(snapshot) {
       const ok = window.confirm(
-        `Delete snapshot "${snapshot.label}" (${fmtDate(snapshot.createdAt)})?\n\nThis cannot be undone.`,
+        t('timeMachine.confirmDelete', {
+          label: snapshot.label,
+          when: fmtDate(snapshot.createdAt),
+        }),
       )
       if (!ok) return
       const r = await safe(
@@ -262,7 +300,7 @@
         'timemachine.remove',
       )
       if (!r || r.__error) {
-        this._showError(r?.__error?.message || 'Delete failed.')
+        this._showError(r?.__error?.message || t('timeMachine.errorDeleteFailed'))
       }
     }
 
@@ -270,12 +308,16 @@
       this.$list.innerHTML = ''
       if (this.snapshots.length === 0) {
         this.$empty.hidden = false
-        this.$summary.textContent = '0 snapshots'
+        this.$summary.textContent = t('timeMachine.summaryZero')
         return
       }
       this.$empty.hidden = true
       const totalBytes = this.snapshots.reduce((acc, s) => acc + (s.sizeBytes || 0), 0)
-      this.$summary.textContent = `${this.snapshots.length} snapshot${this.snapshots.length === 1 ? '' : 's'} · ${fmtSize(totalBytes)} total`
+      const size = fmtSize(totalBytes)
+      this.$summary.textContent =
+        this.snapshots.length === 1
+          ? t('timeMachine.summarySingular', { size })
+          : t('timeMachine.summaryPlural', { n: this.snapshots.length, size })
       for (const s of this.snapshots) this.$list.appendChild(this._renderRow(s))
     }
 
@@ -293,14 +335,14 @@
       labelCell.className = 'tm-label'
       labelCell.textContent = s.label || s.id
       const sub = document.createElement('small')
-      sub.textContent = `${s.fileCount || 0} files`
+      sub.textContent = t('timeMachine.rowFiles', { n: s.fileCount || 0 })
       labelCell.appendChild(sub)
       row.appendChild(labelCell)
 
       const reason = document.createElement('div')
       const badge = document.createElement('span')
       badge.className = `tm-reason ${s.reason || ''}`
-      badge.textContent = (s.reason || '').replace(/-/g, ' ')
+      badge.textContent = reasonLabel(s.reason)
       reason.appendChild(badge)
       row.appendChild(reason)
 
@@ -318,7 +360,7 @@
       actions.className = 'tm-actions'
       const restoreBtn = document.createElement('button')
       restoreBtn.type = 'button'
-      restoreBtn.title = 'Restore'
+      restoreBtn.title = t('timeMachine.actions.restore')
       restoreBtn.textContent = '↩'
       restoreBtn.addEventListener('click', (e) => {
         e.stopPropagation()
@@ -327,7 +369,7 @@
       const delBtn = document.createElement('button')
       delBtn.type = 'button'
       delBtn.className = 'danger'
-      delBtn.title = 'Delete'
+      delBtn.title = t('timeMachine.actions.delete')
       delBtn.textContent = '✕'
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation()
