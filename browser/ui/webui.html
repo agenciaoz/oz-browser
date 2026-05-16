@@ -2283,6 +2283,87 @@
       .onb-screen li strong {
         color: var(--text-color);
       }
+      /*----- ONBOARDING ACTION WIZARD (v1.4.6) — reuses onb-* classes -----*/
+
+      #oz-wiz-modal .am-window {
+        max-width: 560px;
+      }
+      .wiz-step {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 8px 4px;
+        min-height: 320px;
+      }
+      .wiz-step h2 {
+        text-align: center;
+        font-size: 20px;
+        margin: 0;
+      }
+      .wiz-field {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-size: 12.5px;
+      }
+      .wiz-field input[type='text'],
+      .wiz-field input[type='number'] {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        padding: 8px 10px;
+        color: var(--text-color);
+        font-size: 13px;
+      }
+      .wiz-field input[type='color'] {
+        width: 60px;
+        height: 28px;
+        padding: 0;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 4px;
+        background: transparent;
+      }
+      .wiz-textarea {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        padding: 8px 10px;
+        color: var(--text-color);
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        font-size: 12px;
+        resize: vertical;
+        min-height: 100px;
+      }
+      .wiz-hint {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin: 0;
+      }
+      .wiz-status {
+        min-height: 18px;
+        font-size: 12px;
+        color: var(--text-muted);
+        padding-top: 4px;
+      }
+      .wiz-summary {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        font-size: 12.5px;
+      }
+      .wiz-summary li {
+        background: rgba(255, 255, 255, 0.03);
+        border-left: 2px solid var(--accent-color, #5b8def);
+        padding: 6px 10px;
+      }
+      .onb-dot.done {
+        background: var(--accent-color, #5b8def);
+        opacity: 0.6;
+      }
+
       .onb-controls {
         display: flex;
         align-items: center;
@@ -5118,6 +5199,41 @@
       </div>
     </div>
 
+    <!-- Onboarding ACTION WIZARD modal — managed by onboarding-wizard.js (v1.4.6) -->
+    <div class="oz-modal" id="oz-wiz-modal" hidden>
+      <div class="oz-modal-backdrop"></div>
+      <div
+        class="oz-modal-window am-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-wiz-title"
+      >
+        <header>
+          <h2 id="oz-wiz-title">Set up your workspace</h2>
+          <button
+            type="button"
+            class="oz-modal-close wiz-skip-x"
+            aria-label="Skip wizard"
+          >
+            ✕
+          </button>
+        </header>
+        <div class="wiz-body"></div>
+        <div class="onb-controls">
+          <button type="button" class="wiz-skip">Skip</button>
+          <div class="onb-dots">
+            <span class="onb-dot wiz-dot active"></span>
+            <span class="onb-dot wiz-dot"></span>
+            <span class="onb-dot wiz-dot"></span>
+            <span class="onb-dot wiz-dot"></span>
+            <span class="onb-dot wiz-dot"></span>
+          </div>
+          <button type="button" class="wiz-back" hidden>Back</button>
+          <button type="button" class="wiz-next primary">Continue</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Browsing Data modal — managed by browsing-data.js (1.10.5) -->
     <div class="oz-modal" id="oz-bd-modal" hidden>
       <div class="oz-modal-backdrop" data-close></div>
@@ -5584,6 +5700,7 @@
     <script src="./i18n.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>
+    <script src="./onboarding-wizard.js"></script>
     <script src="./browsing-data.js"></script>
     <script src="./command-palette.js"></script>
     <script src="./bulk-opener.js"></script>

@@ -17,6 +17,10 @@
   const settingsUI = window.OZ.SettingsUI ? new window.OZ.SettingsUI() : null
   // 1.10c: First-run onboarding modal.
   const onboardingUI = window.OZ.OnboardingUI ? new window.OZ.OnboardingUI() : null
+  // v1.4.6: 5-step action wizard (workspace → proxies → identities → assign → test).
+  const onboardingWizard = window.OZ.OnboardingWizard
+    ? new window.OZ.OnboardingWizard()
+    : null
   // 1.10.5: Browsing Data modal (Bookmarks/History/Downloads).
   const browsingDataUI = window.OZ.BrowsingDataUI ? new window.OZ.BrowsingDataUI() : null
   // C-1: Command Palette (Cmd+K).
@@ -31,6 +35,7 @@
   window.ozProxyManagerUI = proxyManagerUI
   window.ozSettingsUI = settingsUI
   window.ozOnboardingUI = onboardingUI
+  window.ozOnboardingWizard = onboardingWizard
   window.ozBrowsingDataUI = browsingDataUI
   window.ozCommandPaletteUI = commandPaletteUI
   window.ozBulkOpenerUI = bulkOpenerUI
@@ -58,6 +63,19 @@
     // the WebUI is ready to receive setContentVisible IPC properly.
     if (onboardingUI) {
       await onboardingUI.maybeOpen()
+    }
+    // v1.4.6: after welcome closes, open the action wizard if user hasn't
+    // already completed it. Independent flag so users can re-trigger the
+    // wizard from Settings without re-seeing the welcome info screens.
+    if (onboardingWizard && window.oz && window.oz.settings) {
+      try {
+        const wiz = await window.oz.settings.get('onboardingWizard')
+        if (!wiz || !wiz.completed) {
+          onboardingWizard.open()
+        }
+      } catch (_e) {
+        // settings get failed — skip silently. Wizard is launchable from Settings.
+      }
     }
   })().catch((err) => {
     console.error('[oz/webui] boot failed:', err)

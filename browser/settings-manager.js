@@ -71,6 +71,14 @@ const DEFAULTS = Object.freeze({
     completed: false,
     skippedAt: null,
   },
+  // v1.4.6: 5-step action wizard (workspace → proxies → identities → assign → test).
+  // Independent flag from `onboarding` (welcome info screens) so users who saw
+  // welcome but want to re-trigger the wizard from Settings keep welcome dismissed.
+  onboardingWizard: {
+    completed: false,
+    skippedAt: null,
+    skippedAtStep: null,
+  },
   performance: {
     autoTabDiscard: true,
     discardIdleMin: 30,
@@ -283,6 +291,12 @@ function validateKey(section, key, value) {
   if (key === 'skippedAt') {
     if (value !== null && (!Number.isInteger(value) || value < 0)) {
       return { ok: false, reason: 'must be epoch ms or null' }
+    }
+  }
+  // v1.4.6: wizard skip step index.
+  if (key === 'skippedAtStep') {
+    if (value !== null && (!Number.isInteger(value) || value < 0 || value > 100)) {
+      return { ok: false, reason: 'must be small non-negative integer or null' }
     }
   }
   if (key === 'locale') {
