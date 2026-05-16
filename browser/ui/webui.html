@@ -4198,8 +4198,14 @@
         aria-labelledby="oz-cb-title"
       >
         <header>
-          <h2 id="oz-cb-title">☁ Cloud Backup (Dropbox)</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+          <h2 id="oz-cb-title" data-i18n="cloudBackup.title">☁ Cloud Backup (Dropbox)</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            data-i18n-attr="aria-label:cloudBackup.closeAria"
+          >
             ✕
           </button>
         </header>
@@ -4207,44 +4213,76 @@
 
         <section id="oz-cb-disconnected-view" hidden>
           <div class="cb-banner">
-            <h3>Connect Dropbox to enable cloud backup</h3>
-            <p>
+            <h3 data-i18n="cloudBackup.disconnected.title">
+              Connect Dropbox to enable cloud backup
+            </h3>
+            <p data-i18n="cloudBackup.disconnected.desc1">
               Time Machine snapshots are already encrypted on your Mac with AES-256-GCM.
               Connecting Dropbox uploads those encrypted files to your account — Dropbox
-              never sees plaintext. Your master key stays in the macOS Keychain.<br /><br />
+              never sees plaintext. Your master key stays in the macOS Keychain.
+            </p>
+            <p data-i18n="cloudBackup.disconnected.desc2">
               Each Mac uploads to its own folder so multiple devices never collide. From
               any other device you can restore an older snapshot uploaded here.
             </p>
-            <button type="button" id="oz-cb-connect-btn">Connect Dropbox</button>
+            <button
+              type="button"
+              id="oz-cb-connect-btn"
+              data-i18n="cloudBackup.connectBtn"
+            >
+              Connect Dropbox
+            </button>
           </div>
         </section>
 
         <section id="oz-cb-connected-view" hidden>
           <div class="cb-info-row">
-            <span class="cb-label">Account</span>
+            <span class="cb-label" data-i18n="cloudBackup.accountLabel">Account</span>
             <span class="cb-value" id="oz-cb-account-email">—</span>
-            <button type="button" id="oz-cb-disconnect-btn">Disconnect</button>
+            <button
+              type="button"
+              id="oz-cb-disconnect-btn"
+              data-i18n="cloudBackup.disconnectBtn"
+            >
+              Disconnect
+            </button>
           </div>
           <div class="cb-info-row">
-            <span class="cb-label">This device</span>
+            <span class="cb-label" data-i18n="cloudBackup.deviceLabel">This device</span>
             <span class="cb-value" id="oz-cb-device-folder">—</span>
-            <button type="button" id="oz-cb-refresh-btn">↻ Refresh</button>
+            <button
+              type="button"
+              id="oz-cb-refresh-btn"
+              data-i18n="cloudBackup.refreshBtn"
+            >
+              ↻ Refresh
+            </button>
           </div>
           <div class="cb-toggle-row">
             <input type="checkbox" id="oz-cb-auto-toggle" />
             <label for="oz-cb-auto-toggle">
-              Auto-upload new snapshots
-              <small
-                >Every daily, manual and pre-destructive snapshot uploads in the
-                background. Pre-restore snapshots are skipped.</small
+              <span data-i18n="cloudBackup.autoUploadToggle"
+                >Auto-upload new snapshots</span
               >
+              <small data-i18n="cloudBackup.autoUploadDesc">
+                Every daily, manual and pre-destructive snapshot uploads in the
+                background. Pre-restore snapshots are skipped.
+              </small>
             </label>
           </div>
+          <!-- Last upload text is set dynamically by cloud-backup.js based on
+               status.lastUploadAt / status.lastUploadError. No data-i18n — JS
+               owns it and re-renders on locale switch via the onChange hook. -->
           <div class="cb-last-upload" id="oz-cb-last-upload">No uploads yet.</div>
 
-          <div class="cb-section-title">Devices</div>
+          <div class="cb-section-title" data-i18n="cloudBackup.devicesTitle">Devices</div>
           <div id="oz-cb-devices"></div>
-          <div class="cb-empty" id="oz-cb-devices-empty" hidden>
+          <div
+            class="cb-empty"
+            id="oz-cb-devices-empty"
+            hidden
+            data-i18n="cloudBackup.devicesEmpty"
+          >
             No devices have uploaded snapshots yet. Take a snapshot to start.
           </div>
         </section>

@@ -14,6 +14,13 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
+  // v1.5.8: i18n — lazy lookup via window.OZ.i18n.t() so locale switches
+  // pick up automatically. Falls back to the key if i18n hasn't loaded yet
+  // (webui.html loads cloud-backup.js BEFORE i18n.js but the t() helper
+  // here only runs on user-triggered async paths or after the catalog
+  // fetch completes, never at constructor time).
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
   function fmtDate(iso) {
     try {
@@ -62,6 +69,19 @@
           if (!this.$modal.hidden) this._refreshAll()
         })
       }
+
+      // v1.5.8: re-render dynamic content on locale switch. translatePage()
+      // covers static markup (title, banner, labels, toggle text), but the
+      // last-upload pill, device cards (incl. their meta + toggle button
+      // label), and any expanded snapshot rows live in JS-set textContent.
+      if (window.OZ?.i18n?.onChange) {
+        window.OZ.i18n.onChange(() => {
+          if (this.$modal.hidden) return
+          this._refreshAll().catch(() => {
+            // swallow — locale switch must never throw out of i18n callback
+          })
+        })
+      }
     }
 
     _wire() {
@@ -91,7 +111,7 @@
     async _refreshAll() {
       const status = await safe(window.oz.cloudBackup.status(), 'cloudBackup.status')
       if (!status || status.__error) {
-        this._showError('Failed to load cloud backup status.')
+        this._showError(t('cloudBackup.errorLoadStatus'))
         return
       }
       this.status = status
@@ -109,13 +129,17 @@
       if (this.$autoToggle) this.$autoToggle.checked = !!status.autoUpload
       if (this.$lastUpload) {
         if (status.lastUploadError) {
-          this.$lastUpload.textContent = `⚠ Last upload failed: ${status.lastUploadError}`
+          this.$lastUpload.textContent = t('cloudBackup.lastUploadError', {
+            error: status.lastUploadError,
+          })
           this.$lastUpload.className = 'cb-last-upload error'
         } else if (status.lastUploadAt) {
-          this.$lastUpload.textContent = `✓ Last upload: ${fmtDate(status.lastUploadAt)}`
+          this.$lastUpload.textContent = t('cloudBackup.lastUploadOk', {
+            when: fmtDate(status.lastUploadAt),
+          })
           this.$lastUpload.className = 'cb-last-upload ok'
         } else {
-          this.$lastUpload.textContent = 'No uploads yet.'
+          this.$lastUpload.textContent = t('cloudBackup.noUploadsYet')
           this.$lastUpload.className = 'cb-last-upload'
         }
       }
@@ -128,7 +152,7 @@
         'cloudBackup.listDevices',
       )
       if (!list || list.__error) {
-        this._showError('Failed to list devices.')
+        this._showError(t('cloudBackup.errorListDevices'))
         return
       }
       this.devices = Array.isArray(list) ? list : []
@@ -158,20 +182,18 @@
     async _doConnect() {
       this._clearError()
       this.$btnConnect.disabled = true
-      this.$btnConnect.textContent = 'Opening browser…'
+      this.$btnConnect.textContent = t('cloudBackup.connectingBtn')
       const r = await safe(window.oz.cloudBackup.connect(), 'cloudBackup.connect')
       this.$btnConnect.disabled = false
-      this.$btnConnect.textContent = 'Connect Dropbox'
+      this.$btnConnect.textContent = t('cloudBackup.connectBtn')
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Connect failed.')
+        this._showError((r && r.__error?.message) || t('cloudBackup.errorConnect'))
         return
       }
       // The OAuth flow continues in the user's default browser. When the
       // redirect lands, the protocol handler will trigger an oz:cloud-backup:
       // changed broadcast and we'll re-render. Show a hint meanwhile.
-      this._showInfo(
-        'A browser tab opened for Dropbox authorization. Approve there, then come back.',
-      )
+      this._showInfo(t('cloudBackup.connectInfo'))
     }
 
     _showInfo(msg) {
@@ -181,15 +203,10 @@
     }
 
     async _doDisconnect() {
-      if (
-        !window.confirm(
-          'Disconnect Dropbox? Local snapshots stay safe; cloud copies will no longer be uploaded.',
-        )
-      )
-        return
+      if (!window.confirm(t('cloudBackup.confirmDisconnect'))) return
       const r = await safe(window.oz.cloudBackup.disconnect(), 'cloudBackup.disconnect')
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Disconnect failed.')
+        this._showError((r && r.__error?.message) || t('cloudBackup.errorDisconnect'))
         return
       }
       await this._refreshAll()
@@ -202,7 +219,7 @@
         'cloudBackup.setAutoUpload',
       )
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Toggle failed.')
+        this._showError((r && r.__error?.message) || t('cloudBackup.errorToggle'))
         this.$autoToggle.checked = !next
       }
     }
@@ -223,22 +240,31 @@
       head.className = 'cb-device-head'
       const name = document.createElement('div')
       name.className = 'cb-device-name'
+      // Suffix " (this device)" is localized; emoji prefix stays universal.
       name.textContent =
         (d.isCurrentDevice ? '🖥 ' : '💻 ') +
         d.deviceFolder +
-        (d.isCurrentDevice ? ' (this device)' : '')
+        (d.isCurrentDevice ? t('cloudBackup.thisDeviceSuffix') : '')
       head.appendChild(name)
       const meta = document.createElement('div')
       meta.className = 'cb-device-meta'
-      meta.textContent =
-        `${d.snapshotCount} snapshot${d.snapshotCount === 1 ? '' : 's'} · ${fmtSize(d.totalSizeBytes)}` +
-        (d.latestSnapshotAt ? ` · latest ${fmtDate(d.latestSnapshotAt)}` : '')
+      // Build "{N} snapshots · {size}" + optional " · latest {when}".
+      const snapsLabel =
+        d.snapshotCount === 1
+          ? t('cloudBackup.snapshotsSingular')
+          : t('cloudBackup.snapshotsPlural', { n: d.snapshotCount })
+      const latestPart = d.latestSnapshotAt
+        ? t('cloudBackup.latestSuffix', { when: fmtDate(d.latestSnapshotAt) })
+        : ''
+      meta.textContent = `${snapsLabel} · ${fmtSize(d.totalSizeBytes)}${latestPart}`
       head.appendChild(meta)
       const toggle = document.createElement('button')
       toggle.type = 'button'
       toggle.className = 'cb-device-toggle'
       toggle.textContent =
-        this.expandedDevice === d.deviceFolder ? 'Hide snapshots ▲' : 'Browse snapshots ▼'
+        this.expandedDevice === d.deviceFolder
+          ? t('cloudBackup.hideSnapshots')
+          : t('cloudBackup.browseSnapshots')
       toggle.disabled = d.snapshotCount === 0
       toggle.addEventListener('click', () => this._toggleDevice(d.deviceFolder))
       head.appendChild(toggle)
@@ -250,7 +276,7 @@
         if (this.expandedSnapshots.length === 0) {
           const empty = document.createElement('div')
           empty.className = 'cb-snapshots-empty'
-          empty.textContent = 'No remote snapshots in this device folder.'
+          empty.textContent = t('cloudBackup.noRemoteSnapshots')
           list.appendChild(empty)
         } else {
           for (const s of this.expandedSnapshots) {
@@ -274,7 +300,7 @@
         'cloudBackup.listRemoteSnapshots',
       )
       if (!items || items.__error) {
-        this._showError('Failed to list remote snapshots.')
+        this._showError(t('cloudBackup.errorListRemoteSnapshots'))
         return
       }
       this.expandedDevice = deviceFolder
@@ -301,8 +327,8 @@
       actions.className = 'cb-snap-actions'
       const restoreBtn = document.createElement('button')
       restoreBtn.type = 'button'
-      restoreBtn.title = 'Download + restore'
-      restoreBtn.textContent = '↩ Restore'
+      restoreBtn.title = t('cloudBackup.actions.restoreTitle')
+      restoreBtn.textContent = t('cloudBackup.actions.restoreText')
       restoreBtn.addEventListener('click', (e) => {
         e.stopPropagation()
         this._doRestore(s, deviceFolder)
@@ -310,7 +336,7 @@
       const delBtn = document.createElement('button')
       delBtn.type = 'button'
       delBtn.className = 'danger'
-      delBtn.title = 'Delete remote'
+      delBtn.title = t('cloudBackup.actions.deleteTitle')
       delBtn.textContent = '✕'
       delBtn.addEventListener('click', (e) => {
         e.stopPropagation()
@@ -324,15 +350,10 @@
 
     async _doRestore(s, deviceFolder) {
       const isOther = deviceFolder !== this.status?.deviceFolder
-      const sourceLabel = isOther
-        ? `another device (${deviceFolder})`
-        : 'this device (cloud copy)'
-      const ok = window.confirm(
-        `Restore snapshot "${s.id}" from ${sourceLabel}?\n\n` +
-          `This REPLACES your current accounts, identities, workspaces and browser sessions.\n\n` +
-          `A safety snapshot of your CURRENT state will be created automatically. ` +
-          `After restore you must restart OZ Browser. Continue?`,
-      )
+      const source = isOther
+        ? t('cloudBackup.sourceLabelOther', { folder: deviceFolder })
+        : t('cloudBackup.sourceLabelSelf')
+      const ok = window.confirm(t('cloudBackup.confirmRestore', { id: s.id, source }))
       if (!ok) return
       this._clearError()
       const r = await safe(
@@ -343,31 +364,24 @@
         'cloudBackup.downloadAndRestore',
       )
       if (!r || r.__error) {
-        const msg = (r && r.__error?.message) || 'Restore failed.'
+        const msg = (r && r.__error?.message) || t('cloudBackup.errorRestoreFailed')
         const preId = r && r.__error?.preRestoreId
         this._showError(
-          preId
-            ? `${msg}\nA pre-restore snapshot was saved as ${preId} — your data is intact.`
-            : msg,
+          preId ? t('cloudBackup.errorRestoreWithPreId', { msg, preId }) : msg,
         )
         return
       }
-      window.alert(
-        `✓ Snapshot restored from ${sourceLabel}.\n\n` +
-          `Pre-restore safety snapshot: ${r.preRestoreId}\n\n` +
-          `Restart OZ Browser now so identities, workspaces and vault load fresh from disk.`,
-      )
+      window.alert(t('cloudBackup.restoreSuccess', { source, preId: r.preRestoreId }))
     }
 
     async _doDelete(s, deviceFolder) {
-      if (!window.confirm(`Delete remote snapshot "${s.id}"?\n\nThis cannot be undone.`))
-        return
+      if (!window.confirm(t('cloudBackup.confirmDelete', { id: s.id }))) return
       const r = await safe(
         window.oz.cloudBackup.deleteRemote({ snapshotId: s.id, deviceFolder }),
         'cloudBackup.deleteRemote',
       )
       if (!r || r.__error) {
-        this._showError((r && r.__error?.message) || 'Delete failed.')
+        this._showError((r && r.__error?.message) || t('cloudBackup.errorDeleteFailed'))
         return
       }
       // Refresh snapshots in expanded device
