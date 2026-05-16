@@ -347,6 +347,22 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "identityEditor": {
+    "title": "Edit Identity",
+    "titleWithName": "Edit Identity — {{name}}",
+    "closeAria": "Close",
+    "nameLabel": "Name",
+    "colorLabel": "Color",
+    "uaLabel": "User-Agent (HTTP)",
+    "uaUseDefault": "Use default",
+    "uaPlaceholder": "(default — Chromium picks the value)",
+    "uaHintHtml": "Sets the HTTP User-Agent header for this Identity's session. Does <strong>not</strong> yet override <code>navigator.userAgent</code> — full coherent fingerprint comes in Bloque 1.5. ADR 0010.",
+    "uaHintDefaultIdentity": "Default Identity uses the shared session — UA cannot be customized here. Use a custom Identity instead.",
+    "cancel": "Cancel",
+    "save": "Save",
+    "errorNameRequired": "Name is required.",
+    "errorSaveFailed": "Failed to save. Check the log."
+  },
   "identityClone": {
     "title": "📑 Clone identity",
     "closeAria": "Close",

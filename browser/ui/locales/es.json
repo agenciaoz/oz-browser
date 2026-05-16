@@ -347,6 +347,22 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "identityEditor": {
+    "title": "Editar identidad",
+    "titleWithName": "Editar identidad — {{name}}",
+    "closeAria": "Cerrar",
+    "nameLabel": "Nombre",
+    "colorLabel": "Color",
+    "uaLabel": "User-Agent (HTTP)",
+    "uaUseDefault": "Usar el default",
+    "uaPlaceholder": "(default — Chromium elige el valor)",
+    "uaHintHtml": "Define el header HTTP User-Agent para la sesión de esta identidad. <strong>No</strong> sobreescribe aún <code>navigator.userAgent</code> — el fingerprint coherente completo viene en el Bloque 1.5. ADR 0010.",
+    "uaHintDefaultIdentity": "La identidad Por defecto usa la sesión compartida — el UA no se puede personalizar acá. Usá una identidad personalizada.",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "errorNameRequired": "El nombre es obligatorio.",
+    "errorSaveFailed": "No se pudo guardar. Revisá el log."
+  },
   "identityClone": {
     "title": "📑 Clonar identidad",
     "closeAria": "Cerrar",

@@ -14,6 +14,13 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
+  // v1.5.5: i18n — read t() lazily via helper so we always pick up the current
+  // locale (window.OZ.i18n.t() also walks fallback to en if a key is missing).
+  // We deliberately do NOT cache the function reference; locale switch via
+  // setLocale() reassigns the catalog inside the same instance, but using the
+  // global accessor keeps this resilient to test stubs.
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
   // Same palette as identity-manager.js DEFAULT_COLORS — keep in sync if changed.
   const COLOR_PALETTE = [
@@ -52,6 +59,40 @@
 
       this._wire()
       this._renderSwatches()
+      this._applyUaHint()
+      // v1.5.5: re-render dynamic strings on locale switch. translatePage()
+      // handles plain data-i18n nodes, but our title (interpolated with the
+      // identity name) and the UA hint (innerHTML with <strong>/<code>) need
+      // manual refresh.
+      if (window.OZ && window.OZ.i18n && typeof window.OZ.i18n.onChange === 'function') {
+        window.OZ.i18n.onChange(() => {
+          this._applyUaHint()
+          if (this.current && !this.$modal.hidden) {
+            this.$title.textContent = t('identityEditor.titleWithName', {
+              name: this.current.name,
+            })
+          }
+        })
+      }
+    }
+
+    /**
+     * Render the User-Agent hint <small> from the i18n catalog. Two states:
+     *  - default identity: plain textContent (no UA editing allowed)
+     *  - custom identity: innerHTML with <strong>/<code> formatting
+     *
+     * v1.5.5: replaces the dataset.originalText snapshot pattern — the source
+     * of truth is now the catalog (identityEditor.uaHintHtml +
+     * identityEditor.uaHintDefaultIdentity).
+     */
+    _applyUaHint() {
+      if (!this.$uaHint) return
+      const isDefault = !!(this.current && this.current.isDefault)
+      if (isDefault) {
+        this.$uaHint.textContent = t('identityEditor.uaHintDefaultIdentity')
+      } else {
+        this.$uaHint.innerHTML = t('identityEditor.uaHintHtml')
+      }
     }
 
     _wire() {
@@ -102,7 +143,7 @@
       this.current = identity
       this.$err.hidden = true
       this.$err.textContent = ''
-      this.$title.textContent = `Edit Identity — ${identity.name}`
+      this.$title.textContent = t('identityEditor.titleWithName', { name: identity.name })
 
       this.$form.elements.name.value = identity.name || ''
       this.$form.elements.userAgent.value = identity.userAgent || ''
@@ -112,15 +153,7 @@
       this.$form.elements.userAgent.disabled = isDefault
       this.$uaDefault.disabled = isDefault
       this.$uaHint.style.opacity = isDefault ? '0.5' : '1'
-      if (isDefault) {
-        this.$uaHint.dataset.originalText =
-          this.$uaHint.dataset.originalText || this.$uaHint.innerHTML
-        this.$uaHint.textContent =
-          'Default Identity uses the shared session — UA cannot be customized here. ' +
-          'Use a custom Identity instead.'
-      } else if (this.$uaHint.dataset.originalText) {
-        this.$uaHint.innerHTML = this.$uaHint.dataset.originalText
-      }
+      this._applyUaHint()
 
       // Pick the swatch closest to current color (or first).
       const colorMatch = COLOR_PALETTE.includes(identity.color)
@@ -163,7 +196,7 @@
       if (!this.current) return
       const name = this.$form.elements.name.value.trim()
       if (!name) {
-        this.$err.textContent = 'Name is required.'
+        this.$err.textContent = t('identityEditor.errorNameRequired')
         this.$err.hidden = false
         return
       }
@@ -183,7 +216,7 @@
       if (!result || result.__error) {
         this.$err.textContent =
           (result && result.__error && result.__error.message) ||
-          'Failed to save. Check the log.'
+          t('identityEditor.errorSaveFailed')
         this.$err.hidden = false
         return
       }

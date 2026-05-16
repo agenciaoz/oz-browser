@@ -3821,25 +3821,38 @@
         aria-labelledby="oz-identity-modal-title"
       >
         <header>
-          <h2 id="oz-identity-modal-title">Edit Identity</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+          <h2 id="oz-identity-modal-title" data-i18n="identityEditor.title">
+            Edit Identity
+          </h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            data-i18n-attr="aria-label:identityEditor.closeAria"
+          >
             ✕
           </button>
         </header>
         <div class="oz-modal-error" id="oz-identity-modal-error" hidden></div>
         <form id="oz-identity-form" autocomplete="off">
           <label>
-            Name
+            <span data-i18n="identityEditor.nameLabel">Name</span>
             <input name="name" type="text" required maxlength="60" />
           </label>
           <label>
-            Color
+            <span data-i18n="identityEditor.colorLabel">Color</span>
             <div class="color-swatches" id="oz-identity-swatches"></div>
           </label>
           <label>
             <div class="ua-row">
-              <span>User-Agent (HTTP)</span>
-              <button type="button" class="oz-btn-secondary" id="oz-identity-ua-default">
+              <span data-i18n="identityEditor.uaLabel">User-Agent (HTTP)</span>
+              <button
+                type="button"
+                class="oz-btn-secondary"
+                id="oz-identity-ua-default"
+                data-i18n="identityEditor.uaUseDefault"
+              >
                 Use default
               </button>
             </div>
@@ -3847,6 +3860,7 @@
               name="userAgent"
               rows="3"
               placeholder="(default — Chromium picks the value)"
+              data-i18n-attr="placeholder:identityEditor.uaPlaceholder"
             ></textarea>
             <small id="oz-identity-ua-hint">
               Sets the HTTP User-Agent header for this Identity's session. Does
@@ -3855,8 +3869,17 @@
             </small>
           </label>
           <div class="oz-modal-actions">
-            <button type="button" class="oz-btn-cancel" data-close>Cancel</button>
-            <button type="submit" class="oz-btn-save">Save</button>
+            <button
+              type="button"
+              class="oz-btn-cancel"
+              data-close
+              data-i18n="identityEditor.cancel"
+            >
+              Cancel
+            </button>
+            <button type="submit" class="oz-btn-save" data-i18n="identityEditor.save">
+              Save
+            </button>
           </div>
         </form>
       </div>
@@ -5802,7 +5825,6 @@
 
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
-    <script src="./identity-editor.js"></script>
     <script src="./workspace-switcher.js"></script>
     <script src="./sidebar-events.js"></script>
     <script src="./sidebar-health.js"></script>
@@ -5816,6 +5838,9 @@
     <script src="./scheduled-actions-ui.js"></script>
     <script src="./ghost-migration-ui.js"></script>
     <script src="./i18n.js"></script>
+    <!-- v1.5.5: identity-editor.js must load AFTER i18n.js — constructor wires
+         onChange + does initial _applyUaHint that depends on window.OZ.i18n. -->
+    <script src="./identity-editor.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>
     <script src="./onboarding-wizard.js"></script>
