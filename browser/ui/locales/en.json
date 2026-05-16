@@ -347,6 +347,101 @@
       "summary": "Workspace <strong>{{ws}}</strong> · {{i}} identities · {{p}} proxies"
     }
   },
+  "accountManager": {
+    "title": "Account Manager",
+    "closeAria": "Close",
+    "lock": {
+      "title": "Vault is locked",
+      "desc": "Unlock the vault to access your saved accounts. The master key is stored in your macOS Keychain — you may be prompted to allow access.",
+      "setupTitle": "Set up your vault",
+      "setupDesc": "On first unlock, OZ generates a 256-bit master key, stores it in your macOS Keychain, and creates an empty vault. Click Unlock to begin — you may see a Keychain prompt.",
+      "unlockBtn": "Unlock vault",
+      "unlockingBtn": "Unlocking…",
+      "resetBtn": "Reset vault…"
+    },
+    "list": {
+      "searchPlaceholder": "Search site or username…",
+      "filterAllIdentities": "All identities",
+      "filterAllWorkspaces": "All workspaces",
+      "filterAnyStatus": "Any status",
+      "statusActive": "Active",
+      "statusNeedsRelogin": "Needs re-login",
+      "statusInactive": "Inactive",
+      "exportBtn": "⬇ Export…",
+      "importBtn": "⬆ Import…",
+      "newBtn": "＋ New",
+      "colSite": "Site",
+      "colUsername": "Username",
+      "colIdentity": "Identity",
+      "colWorkspace": "Workspace",
+      "colStatus": "Status",
+      "empty": "No accounts match the current filters.",
+      "countsZero": "0 accounts",
+      "countsSingular": "{{filtered}} of 1 account",
+      "countsPlural": "{{filtered}} of {{total}} accounts",
+      "lockBtn": "🔒 Lock vault"
+    },
+    "editor": {
+      "labelSite": "Site",
+      "placeholderSite": "e.g. x.com",
+      "labelUsername": "Username",
+      "labelPassword": "Password",
+      "labelIdentity": "Identity",
+      "labelWorkspace": "Workspace",
+      "placeholderWorkspaceNone": "— None —",
+      "label2fa": "2FA Secret (optional)",
+      "placeholderTotp": "base32 secret",
+      "labelStatus": "Status",
+      "labelNotes": "Notes",
+      "backBtn": "Back",
+      "saveBtn": "Save"
+    },
+    "import": {
+      "filenameIntro": "Importing from <strong>{{filename}}</strong>. Choose how to merge into your vault:",
+      "modeMergePermTitle": "Permanent merge",
+      "modeMergePermDesc": "Update accounts matched by identity+site+username, add the rest. Identities and workspaces missing in the vault are auto-created.",
+      "modeNewWsTitle": "New workspace",
+      "modeNewWsDesc": "Put all imported accounts into a new dedicated workspace named \"Imported YYYY-MM-DD\". Existing data untouched.",
+      "modeEphemeralTitle": "Ephemeral session",
+      "modeEphemeralDesc": "Don't persist anything — only show the parsed rows in this session. Useful for one-shot logins (external client, etc.).",
+      "modeOverwriteTitle": "⚠ Overwrite total",
+      "modeOverwriteDesc": "REPLACE the entire vault with the file's contents. Make a Time Machine snapshot first — this is destructive.",
+      "cancelBtn": "Cancel",
+      "importBtn": "Import",
+      "importingBtn": "Importing…",
+      "errorNoFile": "No file selected.",
+      "confirmOverwriteTotal": "⚠ OVERWRITE TOTAL\n\nThis REPLACES the entire vault with the contents of the Excel file. Existing accounts will be permanently lost unless you have a backup.\n\nMake sure Time Machine has a recent snapshot. Proceed?",
+      "errorImportFailed": "Import failed. Check the log.",
+      "summaryHeader": "✓ {{mode}}: {{n}} account(s) imported.",
+      "summaryIdentitiesCreated": "↳ Identities auto-created: {{list}}",
+      "summaryWorkspacesCreated": "↳ Workspaces auto-created: {{list}}"
+    },
+    "statusBadge": {
+      "active": "active",
+      "needsRelogin": "needs relogin",
+      "inactive": "inactive"
+    },
+    "actions": {
+      "edit": "Edit",
+      "delete": "Delete"
+    },
+    "errors": {
+      "vaultStatus": "Failed to read vault status. Check the log.",
+      "loadAccounts": "Could not load accounts.",
+      "unlockFailed": "Unlock failed. Check Keychain access.",
+      "lockFailed": "Failed to lock vault.",
+      "destroyFailed": "Failed to destroy vault.",
+      "deleteFailed": "Failed to delete account.",
+      "editorRequired": "Site, username, password and identity are required.",
+      "saveFailed": "Failed to save account.",
+      "exportFailed": "Export failed. Check the log."
+    },
+    "confirms": {
+      "destroyVault": "DESTROY the vault?\n\nThis deletes the encrypted file AND removes the master key from Keychain. Old accounts become unrecoverable. The next unlock will start a fresh, empty vault.\n\nThis cannot be undone.",
+      "deleteAccount": "Delete account \"{{username}}\" on {{site}}?\n\nThis cannot be undone."
+    },
+    "exportAlert": "✓ Exported {{n}} account(s) to:\n{{path}}\n\n⚠ This file contains plaintext passwords and 2FA secrets. Treat as sensitive material."
+  },
   "bulkOpener": {
     "title": "🎯 Bulk Open",
     "closeAria": "Close",

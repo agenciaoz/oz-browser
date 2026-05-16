@@ -3895,8 +3895,14 @@
         aria-labelledby="oz-am-title"
       >
         <header>
-          <h2 id="oz-am-title">Account Manager</h2>
-          <button type="button" class="oz-modal-close" data-close aria-label="Close">
+          <h2 id="oz-am-title" data-i18n="accountManager.title">Account Manager</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            data-i18n-attr="aria-label:accountManager.closeAria"
+          >
             ✕
           </button>
         </header>
@@ -3905,13 +3911,27 @@
         <!-- View 1: Vault locked -->
         <section class="am-section am-lock" id="oz-am-lock" hidden>
           <div class="am-lock-icon">🔐</div>
+          <!-- Title + desc swap between locked-state and first-time setup
+               state; JS owns those textContent values via t() so they stay
+               localized on locale switch. -->
           <h3 id="oz-am-lock-title">Vault is locked</h3>
           <p id="oz-am-lock-desc">
             Unlock the vault to access your saved accounts. The master key is stored in
             your macOS Keychain — you may be prompted to allow access.
           </p>
-          <button type="button" id="oz-am-unlock-btn">Unlock vault</button>
-          <button type="button" class="am-lock-secondary" id="oz-am-destroy-btn">
+          <button
+            type="button"
+            id="oz-am-unlock-btn"
+            data-i18n="accountManager.lock.unlockBtn"
+          >
+            Unlock vault
+          </button>
+          <button
+            type="button"
+            class="am-lock-secondary"
+            id="oz-am-destroy-btn"
+            data-i18n="accountManager.lock.resetBtn"
+          >
             Reset vault…
           </button>
         </section>
@@ -3923,27 +3943,58 @@
               type="search"
               id="oz-am-search"
               placeholder="Search site or username…"
+              data-i18n-attr="placeholder:accountManager.list.searchPlaceholder"
             />
             <select id="oz-am-filter-identity">
-              <option value="">All identities</option>
+              <option value="" data-i18n="accountManager.list.filterAllIdentities">
+                All identities
+              </option>
             </select>
             <select id="oz-am-filter-workspace">
-              <option value="">All workspaces</option>
+              <option value="" data-i18n="accountManager.list.filterAllWorkspaces">
+                All workspaces
+              </option>
             </select>
             <select id="oz-am-filter-status">
-              <option value="">Any status</option>
-              <option value="active">Active</option>
-              <option value="needs_relogin">Needs re-login</option>
-              <option value="inactive">Inactive</option>
+              <option value="" data-i18n="accountManager.list.filterAnyStatus">
+                Any status
+              </option>
+              <option value="active" data-i18n="accountManager.list.statusActive">
+                Active
+              </option>
+              <option
+                value="needs_relogin"
+                data-i18n="accountManager.list.statusNeedsRelogin"
+              >
+                Needs re-login
+              </option>
+              <option value="inactive" data-i18n="accountManager.list.statusInactive">
+                Inactive
+              </option>
             </select>
             <span class="am-spacer"></span>
-            <button type="button" class="am-action-btn" id="oz-am-export-btn">
+            <button
+              type="button"
+              class="am-action-btn"
+              id="oz-am-export-btn"
+              data-i18n="accountManager.list.exportBtn"
+            >
               ⬇ Export…
             </button>
-            <button type="button" class="am-action-btn" id="oz-am-import-btn">
+            <button
+              type="button"
+              class="am-action-btn"
+              id="oz-am-import-btn"
+              data-i18n="accountManager.list.importBtn"
+            >
               ⬆ Import…
             </button>
-            <button type="button" class="am-action-btn am-primary" id="oz-am-new-btn">
+            <button
+              type="button"
+              class="am-action-btn am-primary"
+              id="oz-am-new-btn"
+              data-i18n="accountManager.list.newBtn"
+            >
               ＋ New
             </button>
           </div>
@@ -3951,23 +4002,42 @@
           <div class="am-list-wrap">
             <div class="am-list" id="oz-am-list">
               <div class="am-row header">
-                <div class="am-cell">Site</div>
-                <div class="am-cell">Username</div>
-                <div class="am-cell">Identity</div>
-                <div class="am-cell">Workspace</div>
-                <div class="am-cell">Status</div>
+                <div class="am-cell" data-i18n="accountManager.list.colSite">Site</div>
+                <div class="am-cell" data-i18n="accountManager.list.colUsername">
+                  Username
+                </div>
+                <div class="am-cell" data-i18n="accountManager.list.colIdentity">
+                  Identity
+                </div>
+                <div class="am-cell" data-i18n="accountManager.list.colWorkspace">
+                  Workspace
+                </div>
+                <div class="am-cell" data-i18n="accountManager.list.colStatus">
+                  Status
+                </div>
                 <div class="am-cell"></div>
               </div>
             </div>
-            <div class="am-empty" id="oz-am-empty" hidden>
+            <div
+              class="am-empty"
+              id="oz-am-empty"
+              hidden
+              data-i18n="accountManager.list.empty"
+            >
               No accounts match the current filters.
             </div>
           </div>
 
           <div class="am-footer">
+            <!-- counts span owned by JS, see _renderList. No data-i18n. -->
             <span id="oz-am-counts">0 accounts</span>
             <span class="am-spacer"></span>
-            <button type="button" class="am-action-btn" id="oz-am-lock-btn">
+            <button
+              type="button"
+              class="am-action-btn"
+              id="oz-am-lock-btn"
+              data-i18n="accountManager.list.lockBtn"
+            >
               🔒 Lock vault
             </button>
           </div>
@@ -3977,66 +4047,102 @@
         <section class="am-section" id="oz-am-editor-view" hidden>
           <form id="oz-am-form" class="am-editor">
             <label class="am-full">
-              Site
+              <span data-i18n="accountManager.editor.labelSite">Site</span>
               <input
                 name="site"
                 type="text"
                 required
                 placeholder="e.g. x.com"
                 autocomplete="off"
+                data-i18n-attr="placeholder:accountManager.editor.placeholderSite"
               />
             </label>
             <label>
-              Username
+              <span data-i18n="accountManager.editor.labelUsername">Username</span>
               <input name="username" type="text" required autocomplete="off" />
             </label>
             <label>
-              Password
+              <span data-i18n="accountManager.editor.labelPassword">Password</span>
               <input name="password" type="text" required autocomplete="off" />
             </label>
             <label>
-              Identity
+              <span data-i18n="accountManager.editor.labelIdentity">Identity</span>
               <select name="identityId" required></select>
             </label>
             <label>
-              Workspace
+              <span data-i18n="accountManager.editor.labelWorkspace">Workspace</span>
               <select name="workspaceId">
-                <option value="">— None —</option>
+                <option
+                  value=""
+                  data-i18n="accountManager.editor.placeholderWorkspaceNone"
+                >
+                  — None —
+                </option>
               </select>
             </label>
             <label>
-              2FA Secret (optional)
+              <span data-i18n="accountManager.editor.label2fa"
+                >2FA Secret (optional)</span
+              >
               <input
                 name="totpSecret"
                 type="text"
                 placeholder="base32 secret"
                 autocomplete="off"
+                data-i18n-attr="placeholder:accountManager.editor.placeholderTotp"
               />
             </label>
             <label>
-              Status
+              <span data-i18n="accountManager.editor.labelStatus">Status</span>
               <select name="status">
-                <option value="active">Active</option>
-                <option value="needs_relogin">Needs re-login</option>
-                <option value="inactive">Inactive</option>
+                <option value="active" data-i18n="accountManager.list.statusActive">
+                  Active
+                </option>
+                <option
+                  value="needs_relogin"
+                  data-i18n="accountManager.list.statusNeedsRelogin"
+                >
+                  Needs re-login
+                </option>
+                <option value="inactive" data-i18n="accountManager.list.statusInactive">
+                  Inactive
+                </option>
               </select>
             </label>
             <label class="am-full">
-              Notes
+              <span data-i18n="accountManager.editor.labelNotes">Notes</span>
               <textarea name="notes" rows="2"></textarea>
             </label>
           </form>
           <div class="oz-modal-actions">
-            <button type="button" class="oz-btn-cancel" id="oz-am-editor-cancel">
+            <button
+              type="button"
+              class="oz-btn-cancel"
+              id="oz-am-editor-cancel"
+              data-i18n="accountManager.editor.backBtn"
+            >
               Back
             </button>
-            <button type="button" class="oz-btn-save" id="oz-am-editor-save">Save</button>
+            <button
+              type="button"
+              class="oz-btn-save"
+              id="oz-am-editor-save"
+              data-i18n="accountManager.editor.saveBtn"
+            >
+              Save
+            </button>
           </div>
         </section>
 
         <!-- View 4: Import mode picker -->
         <section class="am-section" id="oz-am-import-view" hidden>
-          <p style="font-size: 12px; color: var(--text-muted); margin: 0">
+          <!-- "Importing from <strong>file</strong>. Choose..." intro is
+               rendered via innerHTML from account-manager.js (the <strong>
+               element wraps the filename injected dynamically). -->
+          <p
+            id="oz-am-import-intro"
+            style="font-size: 12px; color: var(--text-muted); margin: 0"
+          >
             Importing from <strong id="oz-am-import-filename">file.xlsx</strong>. Choose
             how to merge into your vault:
           </p>
@@ -4044,8 +4150,10 @@
             <label>
               <input type="radio" name="import-mode" value="PERMANENT_MERGE" checked />
               <div>
-                <strong>Permanent merge</strong>
-                <small>
+                <strong data-i18n="accountManager.import.modeMergePermTitle">
+                  Permanent merge
+                </strong>
+                <small data-i18n="accountManager.import.modeMergePermDesc">
                   Update accounts matched by identity+site+username, add the rest.
                   Identities and workspaces missing in the vault are auto-created.
                 </small>
@@ -4054,8 +4162,10 @@
             <label>
               <input type="radio" name="import-mode" value="NEW_WORKSPACE" />
               <div>
-                <strong>New workspace</strong>
-                <small>
+                <strong data-i18n="accountManager.import.modeNewWsTitle">
+                  New workspace
+                </strong>
+                <small data-i18n="accountManager.import.modeNewWsDesc">
                   Put all imported accounts into a new dedicated workspace named "Imported
                   YYYY-MM-DD". Existing data untouched.
                 </small>
@@ -4064,8 +4174,10 @@
             <label>
               <input type="radio" name="import-mode" value="EPHEMERAL_SESSION" />
               <div>
-                <strong>Ephemeral session</strong>
-                <small>
+                <strong data-i18n="accountManager.import.modeEphemeralTitle">
+                  Ephemeral session
+                </strong>
+                <small data-i18n="accountManager.import.modeEphemeralDesc">
                   Don't persist anything — only show the parsed rows in this session.
                   Useful for one-shot logins (external client, etc.).
                 </small>
@@ -4074,8 +4186,16 @@
             <label>
               <input type="radio" name="import-mode" value="OVERWRITE_TOTAL" />
               <div>
-                <strong class="am-mode-danger">⚠ Overwrite total</strong>
-                <small class="am-mode-danger">
+                <strong
+                  class="am-mode-danger"
+                  data-i18n="accountManager.import.modeOverwriteTitle"
+                >
+                  ⚠ Overwrite total
+                </strong>
+                <small
+                  class="am-mode-danger"
+                  data-i18n="accountManager.import.modeOverwriteDesc"
+                >
                   REPLACE the entire vault with the file's contents. Make a Time Machine
                   snapshot first — this is destructive.
                 </small>
@@ -4083,10 +4203,20 @@
             </label>
           </div>
           <div class="oz-modal-actions">
-            <button type="button" class="oz-btn-cancel" id="oz-am-import-cancel">
+            <button
+              type="button"
+              class="oz-btn-cancel"
+              id="oz-am-import-cancel"
+              data-i18n="accountManager.import.cancelBtn"
+            >
               Cancel
             </button>
-            <button type="button" class="oz-btn-save" id="oz-am-import-confirm">
+            <button
+              type="button"
+              class="oz-btn-save"
+              id="oz-am-import-confirm"
+              data-i18n="accountManager.import.importBtn"
+            >
               Import
             </button>
           </div>

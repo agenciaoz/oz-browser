@@ -347,6 +347,101 @@
       "summary": "Espacio <strong>{{ws}}</strong> · {{i}} identidades · {{p}} proxies"
     }
   },
+  "accountManager": {
+    "title": "Gestor de cuentas",
+    "closeAria": "Cerrar",
+    "lock": {
+      "title": "Bóveda bloqueada",
+      "desc": "Desbloqueá la bóveda para acceder a tus cuentas guardadas. La master key se guarda en el Llavero de macOS — puede que te pida permiso de acceso.",
+      "setupTitle": "Configurá tu bóveda",
+      "setupDesc": "En el primer desbloqueo, OZ genera una master key de 256 bits, la guarda en el Llavero de macOS y crea una bóveda vacía. Tocá Desbloquear para empezar — puede que veas un diálogo del Llavero.",
+      "unlockBtn": "Desbloquear bóveda",
+      "unlockingBtn": "Desbloqueando…",
+      "resetBtn": "Resetear bóveda…"
+    },
+    "list": {
+      "searchPlaceholder": "Buscar sitio o usuario…",
+      "filterAllIdentities": "Todas las identidades",
+      "filterAllWorkspaces": "Todos los espacios",
+      "filterAnyStatus": "Cualquier estado",
+      "statusActive": "Activa",
+      "statusNeedsRelogin": "Necesita re-login",
+      "statusInactive": "Inactiva",
+      "exportBtn": "⬇ Exportar…",
+      "importBtn": "⬆ Importar…",
+      "newBtn": "＋ Nueva",
+      "colSite": "Sitio",
+      "colUsername": "Usuario",
+      "colIdentity": "Identidad",
+      "colWorkspace": "Espacio",
+      "colStatus": "Estado",
+      "empty": "Ninguna cuenta coincide con los filtros actuales.",
+      "countsZero": "0 cuentas",
+      "countsSingular": "{{filtered}} de 1 cuenta",
+      "countsPlural": "{{filtered}} de {{total}} cuentas",
+      "lockBtn": "🔒 Bloquear bóveda"
+    },
+    "editor": {
+      "labelSite": "Sitio",
+      "placeholderSite": "ej. x.com",
+      "labelUsername": "Usuario",
+      "labelPassword": "Contraseña",
+      "labelIdentity": "Identidad",
+      "labelWorkspace": "Espacio",
+      "placeholderWorkspaceNone": "— Ninguno —",
+      "label2fa": "Secreto 2FA (opcional)",
+      "placeholderTotp": "secreto base32",
+      "labelStatus": "Estado",
+      "labelNotes": "Notas",
+      "backBtn": "Atrás",
+      "saveBtn": "Guardar"
+    },
+    "import": {
+      "filenameIntro": "Importando desde <strong>{{filename}}</strong>. Elegí cómo combinar en tu bóveda:",
+      "modeMergePermTitle": "Combinación permanente",
+      "modeMergePermDesc": "Actualiza las cuentas que coincidan por identidad+sitio+usuario, agrega el resto. Identidades y espacios que falten en la bóveda se crean automáticamente.",
+      "modeNewWsTitle": "Espacio nuevo",
+      "modeNewWsDesc": "Mete todas las cuentas importadas en un espacio dedicado llamado \"Importado YYYY-MM-DD\". Los datos existentes no se tocan.",
+      "modeEphemeralTitle": "Sesión efímera",
+      "modeEphemeralDesc": "No persiste nada — solo muestra las filas parseadas en esta sesión. Útil para logins de una sola vez (cliente externo, etc.).",
+      "modeOverwriteTitle": "⚠ Sobrescritura total",
+      "modeOverwriteDesc": "REEMPLAZA la bóveda entera con el contenido del archivo. Primero hacé un snapshot de Time Machine — esto es destructivo.",
+      "cancelBtn": "Cancelar",
+      "importBtn": "Importar",
+      "importingBtn": "Importando…",
+      "errorNoFile": "Ningún archivo seleccionado.",
+      "confirmOverwriteTotal": "⚠ SOBRESCRITURA TOTAL\n\nEsto REEMPLAZA la bóveda entera con el contenido del archivo Excel. Las cuentas existentes se pierden permanentemente a menos que tengas un backup.\n\nAsegurate de que Time Machine tenga un snapshot reciente. ¿Continuar?",
+      "errorImportFailed": "Falló la importación. Revisá el log.",
+      "summaryHeader": "✓ {{mode}}: {{n}} cuenta(s) importada(s).",
+      "summaryIdentitiesCreated": "↳ Identidades creadas automáticamente: {{list}}",
+      "summaryWorkspacesCreated": "↳ Espacios creados automáticamente: {{list}}"
+    },
+    "statusBadge": {
+      "active": "activa",
+      "needsRelogin": "necesita relogin",
+      "inactive": "inactiva"
+    },
+    "actions": {
+      "edit": "Editar",
+      "delete": "Eliminar"
+    },
+    "errors": {
+      "vaultStatus": "Falló la lectura del estado de la bóveda. Revisá el log.",
+      "loadAccounts": "No se pudieron cargar las cuentas.",
+      "unlockFailed": "Falló el desbloqueo. Revisá el acceso al Llavero.",
+      "lockFailed": "Falló el bloqueo de la bóveda.",
+      "destroyFailed": "Falló el reset de la bóveda.",
+      "deleteFailed": "Falló la eliminación de la cuenta.",
+      "editorRequired": "Sitio, usuario, contraseña e identidad son obligatorios.",
+      "saveFailed": "Falló el guardado de la cuenta.",
+      "exportFailed": "Falló la exportación. Revisá el log."
+    },
+    "confirms": {
+      "destroyVault": "¿RESETEAR la bóveda?\n\nEsto borra el archivo cifrado Y elimina la master key del Llavero. Las cuentas viejas quedan irrecuperables. El próximo desbloqueo empieza con una bóveda nueva y vacía.\n\nEsto no se puede deshacer.",
+      "deleteAccount": "¿Eliminar la cuenta \"{{username}}\" en {{site}}?\n\nEsto no se puede deshacer."
+    },
+    "exportAlert": "✓ Exportadas {{n}} cuenta(s) a:\n{{path}}\n\n⚠ Este archivo contiene contraseñas y secretos 2FA en texto plano. Tratalo como material sensible."
+  },
   "bulkOpener": {
     "title": "🎯 Abrir en masa",
     "closeAria": "Cerrar",

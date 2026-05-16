@@ -17,6 +17,12 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
+  // v1.5.12: i18n — lazy lookup via window.OZ.i18n.t() so locale switches
+  // pick up automatically. account-manager.js loads BEFORE i18n.js (line
+  // 6055 vs 6062 in webui.html) but every t() call is inside an async
+  // user-triggered path that runs after the catalog fetch completes.
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
   class AccountManager {
     constructor() {
@@ -62,6 +68,7 @@
 
       // Import view
       this.$importFilename = document.getElementById('oz-am-import-filename')
+      this.$importIntro = document.getElementById('oz-am-import-intro')
       this.$btnImportCancel = document.getElementById('oz-am-import-cancel')
       this.$btnImportConfirm = document.getElementById('oz-am-import-confirm')
 
@@ -75,6 +82,40 @@
 
       this._wire()
       this._wireBackgroundListeners()
+
+      // v1.5.12: re-render dynamic content on locale switch. translatePage()
+      // covers static markup (button labels, column headers, filter
+      // placeholders, status options) but the dynamic textContent values
+      // — lock title/desc swap, counts pill, status badges, edit/delete
+      // tooltips, import-intro <strong> wrapper — need a manual refresh.
+      if (window.OZ?.i18n?.onChange) {
+        window.OZ.i18n.onChange(() => {
+          if (this.$modal.hidden) return
+          this._refreshAndShow().catch(() => {
+            // swallow — locale switch must never throw out of i18n callback
+          })
+          // If we're currently in the import view with a filename loaded,
+          // re-render the intro <p> so the surrounding phrase updates too.
+          if (this.state.importPendingPath && !this.$viewImport.hidden) {
+            this._renderImportIntro()
+          }
+        })
+      }
+    }
+
+    _renderImportIntro() {
+      if (!this.$importIntro) return
+      const filename = this.state.importPendingPath
+        ? this.state.importPendingPath.split('/').pop()
+        : ''
+      // Escape the filename before injecting into innerHTML (defensive — paths
+      // come from Electron's dialog, but still).
+      const escaped = String(filename).replace(/[&<>"]/g, (c) =>
+        c === '&' ? '&amp;' : c === '<' ? '&lt;' : c === '>' ? '&gt;' : '&quot;',
+      )
+      this.$importIntro.innerHTML = t('accountManager.import.filenameIntro', {
+        filename: escaped,
+      })
     }
 
     // ---------- wiring ----------
@@ -171,21 +212,19 @@
     async _refreshAndShow() {
       const status = await safe(window.oz.vault.status(), 'vault.status')
       if (!status || status.__error) {
-        this._showError('Failed to read vault status. Check the log.')
+        this._showError(t('accountManager.errors.vaultStatus'))
         return
       }
       this._updateOpenBtnDot(status.isUnlocked)
       if (!status.isUnlocked) {
         this._showView('lock')
         if (!status.exists) {
-          this.$lockTitle.textContent = 'Set up your vault'
-          this.$lockDesc.textContent =
-            'On first unlock, OZ generates a 256-bit master key, stores it in your macOS Keychain, and creates an empty vault. Click Unlock to begin — you may see a Keychain prompt.'
+          this.$lockTitle.textContent = t('accountManager.lock.setupTitle')
+          this.$lockDesc.textContent = t('accountManager.lock.setupDesc')
           this.$btnDestroy.hidden = true
         } else {
-          this.$lockTitle.textContent = 'Vault is locked'
-          this.$lockDesc.textContent =
-            'Unlock the vault to access your saved accounts. The master key is stored in your macOS Keychain — you may be prompted to allow access.'
+          this.$lockTitle.textContent = t('accountManager.lock.title')
+          this.$lockDesc.textContent = t('accountManager.lock.desc')
           this.$btnDestroy.hidden = false
         }
         return
@@ -201,7 +240,7 @@
         safe(window.oz.workspaces.list(), 'workspaces.list'),
       ])
       if (!accounts || accounts.__error) {
-        this._showError('Could not load accounts.')
+        this._showError(t('accountManager.errors.loadAccounts'))
         return
       }
       this.state.accounts = Array.isArray(accounts) ? accounts : []
@@ -250,14 +289,14 @@
     async _doUnlock() {
       this._clearError()
       this.$btnUnlock.disabled = true
-      this.$btnUnlock.textContent = 'Unlocking…'
+      this.$btnUnlock.textContent = t('accountManager.lock.unlockingBtn')
       const r = await safe(window.oz.vault.unlock(), 'vault.unlock')
       this.$btnUnlock.disabled = false
-      this.$btnUnlock.textContent = 'Unlock vault'
+      this.$btnUnlock.textContent = t('accountManager.lock.unlockBtn')
       if (!r || r.__error) {
         this._showError(
           (r && r.__error && r.__error.message) ||
-            'Unlock failed. Check Keychain access.',
+            t('accountManager.errors.unlockFailed'),
         )
         return
       }
@@ -267,20 +306,18 @@
     async _doLock() {
       const r = await safe(window.oz.vault.lock(), 'vault.lock')
       if (!r || r.__error) {
-        this._showError('Failed to lock vault.')
+        this._showError(t('accountManager.errors.lockFailed'))
         return
       }
       await this._refreshAndShow()
     }
 
     async _doDestroy() {
-      const ok = window.confirm(
-        'DESTROY the vault?\n\nThis deletes the encrypted file AND removes the master key from Keychain. Old accounts become unrecoverable. The next unlock will start a fresh, empty vault.\n\nThis cannot be undone.',
-      )
+      const ok = window.confirm(t('accountManager.confirms.destroyVault'))
       if (!ok) return
       const r = await safe(window.oz.vault.destroy(), 'vault.destroy')
       if (!r || r.__error) {
-        this._showError('Failed to destroy vault.')
+        this._showError(t('accountManager.errors.destroyFailed'))
         return
       }
       await this._refreshAndShow()
@@ -294,13 +331,13 @@
         this.$filterIdentity,
         this.state.identities.map((i) => ({ value: i.id, label: i.name })),
         null,
-        'All identities',
+        t('accountManager.list.filterAllIdentities'),
       )
       R.populateSelect(
         this.$filterWorkspace,
         this.state.workspaces.map((w) => ({ value: w.id, label: w.name })),
         null,
-        'All workspaces',
+        t('accountManager.list.filterAllWorkspaces'),
       )
     }
 
@@ -316,7 +353,15 @@
         workspaceId: this.$filterWorkspace.value,
         status: this.$filterStatus.value,
       })
-      const totalLbl = `${filtered.length} of ${this.state.accounts.length} account${this.state.accounts.length === 1 ? '' : 's'}`
+      const totalLbl =
+        this.state.accounts.length === 0
+          ? t('accountManager.list.countsZero')
+          : this.state.accounts.length === 1
+            ? t('accountManager.list.countsSingular', { filtered: filtered.length })
+            : t('accountManager.list.countsPlural', {
+                filtered: filtered.length,
+                total: this.state.accounts.length,
+              })
       this.$counts.textContent = totalLbl
       if (filtered.length === 0) {
         this.$empty.hidden = false
@@ -337,12 +382,15 @@
 
     async _confirmDelete(account) {
       const ok = window.confirm(
-        `Delete account "${account.username}" on ${account.site}?\n\nThis cannot be undone.`,
+        t('accountManager.confirms.deleteAccount', {
+          username: account.username,
+          site: account.site,
+        }),
       )
       if (!ok) return
       const r = await safe(window.oz.accounts.remove(account.id), 'accounts.remove')
       if (r === false || (r && r.__error)) {
-        this._showError('Failed to delete account.')
+        this._showError(t('accountManager.errors.deleteFailed'))
       }
     }
 
@@ -385,7 +433,7 @@
         f.workspaceId,
         this.state.workspaces.map((w) => ({ value: w.id, label: w.name })),
         null,
-        '— None —',
+        t('accountManager.editor.placeholderWorkspaceNone'),
       )
     }
 
@@ -408,7 +456,7 @@
         !payload.password ||
         !payload.identityId
       ) {
-        this._showError('Site, username, password and identity are required.')
+        this._showError(t('accountManager.errors.editorRequired'))
         return
       }
       let r
@@ -422,7 +470,7 @@
       }
       if (!r || r.__error) {
         this._showError(
-          (r && r.__error && r.__error.message) || 'Failed to save account.',
+          (r && r.__error && r.__error.message) || t('accountManager.errors.saveFailed'),
         )
         return
       }
@@ -441,13 +489,12 @@
       )
       if (!r || r.__error) {
         this._showError(
-          (r && r.__error && r.__error.message) || 'Export failed. Check the log.',
+          (r && r.__error && r.__error.message) ||
+            t('accountManager.errors.exportFailed'),
         )
         return
       }
-      window.alert(
-        `✓ Exported ${r.rows} account${r.rows === 1 ? '' : 's'} to:\n${r.filePath}\n\n⚠ This file contains plaintext passwords and 2FA secrets. Treat as sensitive material.`,
-      )
+      window.alert(t('accountManager.exportAlert', { n: r.rows, path: r.filePath }))
     }
 
     async _doImportPick() {
@@ -455,7 +502,10 @@
       const pick = await safe(window.oz.excel.pickImportPath(), 'excel.pickImportPath')
       if (!pick || pick.__error || pick.canceled) return
       this.state.importPendingPath = pick.filePath
-      this.$importFilename.textContent = pick.filePath.split('/').pop()
+      // Render the full intro paragraph (with localized phrase wrapping the
+      // <strong>{{filename}}</strong>). This replaces the legacy direct
+      // textContent assignment to the <strong> child.
+      this._renderImportIntro()
       this._showView('import')
     }
 
@@ -463,38 +513,47 @@
       const mode = this.$modal.querySelector('input[name="import-mode"]:checked').value
       const path = this.state.importPendingPath
       if (!path) {
-        this._showError('No file selected.')
+        this._showError(t('accountManager.import.errorNoFile'))
         this._showView('list')
         return
       }
       if (mode === 'OVERWRITE_TOTAL') {
-        const ok = window.confirm(
-          '⚠ OVERWRITE TOTAL\n\nThis REPLACES the entire vault with the contents of the Excel file. Existing accounts will be permanently lost unless you have a backup.\n\nMake sure Time Machine has a recent snapshot. Proceed?',
-        )
+        const ok = window.confirm(t('accountManager.import.confirmOverwriteTotal'))
         if (!ok) return
       }
       this.$btnImportConfirm.disabled = true
-      this.$btnImportConfirm.textContent = 'Importing…'
+      this.$btnImportConfirm.textContent = t('accountManager.import.importingBtn')
       const r = await safe(
         window.oz.excel.importFromFile(path, mode),
         'excel.importFromFile',
       )
       this.$btnImportConfirm.disabled = false
-      this.$btnImportConfirm.textContent = 'Import'
+      this.$btnImportConfirm.textContent = t('accountManager.import.importBtn')
       if (!r || r.__error) {
         this._showError(
-          (r && r.__error && r.__error.message) || 'Import failed. Check the log.',
+          (r && r.__error && r.__error.message) ||
+            t('accountManager.import.errorImportFailed'),
         )
         return
       }
       this.state.importPendingPath = null
       const summary = []
-      summary.push(`✓ ${r.mode}: ${r.importedCount} account(s) imported.`)
+      summary.push(
+        t('accountManager.import.summaryHeader', { mode: r.mode, n: r.importedCount }),
+      )
       if (r.identitiesCreated && r.identitiesCreated.length) {
-        summary.push(`↳ Identities auto-created: ${r.identitiesCreated.join(', ')}`)
+        summary.push(
+          t('accountManager.import.summaryIdentitiesCreated', {
+            list: r.identitiesCreated.join(', '),
+          }),
+        )
       }
       if (r.workspacesCreated && r.workspacesCreated.length) {
-        summary.push(`↳ Workspaces auto-created: ${r.workspacesCreated.join(', ')}`)
+        summary.push(
+          t('accountManager.import.summaryWorkspacesCreated', {
+            list: r.workspacesCreated.join(', '),
+          }),
+        )
       }
       window.alert(summary.join('\n'))
       this._showView('list')

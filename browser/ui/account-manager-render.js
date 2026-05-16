@@ -8,6 +8,21 @@
 // Doc: docs/modules/ui-account-manager.md (extracción ADR 0005, <500 LOC).
 
 ;(function () {
+  // v1.5.12: i18n — lazy lookup with fallback to the key string. This module
+  // loads before i18n.js but renderRow / statusBadge / actionsCell only run
+  // when a user opens the modal (async path), so the catalog is loaded by
+  // the time t() executes.
+  const t = (key, params) =>
+    window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
+
+  // Map backend status enum values to their i18n leaf key. Unknown values
+  // fall through to the raw status string (legacy behavior).
+  const STATUS_KEYS = {
+    active: 'active',
+    needs_relogin: 'needsRelogin',
+    inactive: 'inactive',
+  }
+
   function chip(label, color) {
     const el = document.createElement('span')
     el.className = 'am-chip'
@@ -33,7 +48,8 @@
     const s = status || 'active'
     const el = document.createElement('span')
     el.className = `am-status ${s}`
-    el.textContent = s.replace('_', ' ')
+    const sub = STATUS_KEYS[s]
+    el.textContent = sub ? t(`accountManager.statusBadge.${sub}`) : s.replace('_', ' ')
     return el
   }
 
@@ -42,7 +58,7 @@
     wrap.className = 'am-row-actions'
     const editBtn = document.createElement('button')
     editBtn.type = 'button'
-    editBtn.title = 'Edit'
+    editBtn.title = t('accountManager.actions.edit')
     editBtn.textContent = '✎'
     editBtn.addEventListener('click', (e) => {
       e.stopPropagation()
@@ -51,7 +67,7 @@
     const delBtn = document.createElement('button')
     delBtn.type = 'button'
     delBtn.className = 'danger'
-    delBtn.title = 'Delete'
+    delBtn.title = t('accountManager.actions.delete')
     delBtn.textContent = '✕'
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation()
