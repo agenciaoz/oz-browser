@@ -41,6 +41,7 @@ const { buildHealthHandlers } = require('./anti-detect-health-handlers')
 const { buildExtensionShareHandlers } = require('./extensions-share-handlers')
 const { buildSyncHandlers } = require('./sync-handlers')
 const { buildHudHandlers } = require('./hud-handlers')
+const { buildMcpHandlers } = require('./mcp-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
@@ -85,6 +86,7 @@ function registerIpcHandlers(browser) {
     extensions: buildExtensionShareHandlers(browser),
     sync: buildSyncHandlers(browser),
     hud: buildHudHandlers(browser, { app: require('electron').app }),
+    mcp: buildMcpHandlers(browser),
   })
 
   registerLogHandlers(browser)
@@ -102,6 +104,7 @@ function registerIpcHandlers(browser) {
   registerUiHandlers(browser)
   registerHudHandlersIPC(browser)
   registerAutoUpdaterHandlersIPC(browser)
+  // v1.6.1: oz:mcp:* channels live in ipc-handlers-extra.js per ADR 0005.
 
   log.info('ipc', 'All IPC handlers registered')
 }

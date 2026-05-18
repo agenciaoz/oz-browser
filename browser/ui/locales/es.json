@@ -60,7 +60,22 @@
       "languageDesc": "Idioma de la interfaz. Automático usa el idioma del sistema de tu Mac."
     },
     "privacy": { "title": "Privacidad" },
-    "automation": { "title": "Automatización" },
+    "automation": {
+      "title": "Automatización (servidor MCP)",
+      "statusRunning": "Activo en {{host}}:{{port}} — {{tools}} herramientas",
+      "statusStopped": "Detenido",
+      "statusError": "Error: {{message}}",
+      "enableLabel": "Activar servidor MCP",
+      "enableDesc": "Expone la API MCP de OZ en localhost para que agentes externos (Claude Cowork, Cursor, Claude Code) puedan controlar el navegador. Desactivado por defecto por seguridad.",
+      "portLabel": "Puerto MCP",
+      "portDesc": "Por defecto 9223.",
+      "tokenLabel": "Token bearer MCP (opcional)",
+      "tokenDesc": "Si se define, todas las solicitudes MCP deben incluir este token.",
+      "coworkLabel": "Configuración para Claude Cowork",
+      "coworkDesc": "Copiá este fragmento y pegalo en tu archivo de configuración de Claude Desktop. Las herramientas de OZ aparecerán en cualquier sesión de Cowork.",
+      "coworkCopy": "Copiar fragmento",
+      "coworkCopied": "¡Copiado!"
+    },
     "backup": { "title": "Respaldo" },
     "performance": { "title": "Rendimiento" },
     "notifications": { "title": "Notificaciones" },

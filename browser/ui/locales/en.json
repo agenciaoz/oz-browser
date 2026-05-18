@@ -60,7 +60,22 @@
       "languageDesc": "UI language. Auto uses your Mac's system language."
     },
     "privacy": { "title": "Privacy" },
-    "automation": { "title": "Automation" },
+    "automation": {
+      "title": "Automation (MCP server)",
+      "statusRunning": "Running on {{host}}:{{port}} — {{tools}} tools",
+      "statusStopped": "Stopped",
+      "statusError": "Error: {{message}}",
+      "enableLabel": "Enable MCP server",
+      "enableDesc": "Exposes the OZ MCP API on localhost so external agents (Claude Cowork, Cursor, Claude Code) can drive the browser. Off by default for security.",
+      "portLabel": "MCP port",
+      "portDesc": "Default 9223.",
+      "tokenLabel": "MCP bearer token (optional)",
+      "tokenDesc": "If set, MCP requests must include this token.",
+      "coworkLabel": "Claude Cowork config",
+      "coworkDesc": "Copy this snippet, then paste it into your Claude Desktop config file. OZ tools will appear in every Cowork session.",
+      "coworkCopy": "Copy snippet",
+      "coworkCopied": "Copied!"
+    },
     "backup": { "title": "Backup" },
     "performance": { "title": "Performance" },
     "notifications": { "title": "Notifications" },

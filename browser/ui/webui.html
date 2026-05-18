@@ -2194,6 +2194,66 @@
         opacity: 0.45;
         cursor: not-allowed;
       }
+      /* v1.6.1: generic settings button (used by Copy Cowork snippet). */
+      .stg-btn {
+        padding: 5px 12px;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        border-radius: 4px;
+        color: var(--text-color);
+        font: inherit;
+        font-size: 12px;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+      .stg-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .stg-btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      .stg-btn.copied {
+        background: rgba(80, 200, 120, 0.18);
+        border-color: rgba(80, 200, 120, 0.42);
+        color: #5acb89;
+      }
+      /* v1.6.1: MCP runtime status banner inside Automation panel. */
+      .stg-mcp-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 8px 12px;
+        margin-bottom: 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        background: rgba(180, 180, 180, 0.08);
+        border: 1px solid rgba(180, 180, 180, 0.22);
+      }
+      .stg-mcp-status .stg-mcp-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #9a9a9a;
+        flex-shrink: 0;
+      }
+      .stg-mcp-status[data-state='running'] {
+        background: rgba(80, 200, 120, 0.1);
+        border-color: rgba(80, 200, 120, 0.34);
+        color: #8edaa6;
+      }
+      .stg-mcp-status[data-state='running'] .stg-mcp-dot {
+        background: #5acb89;
+        box-shadow: 0 0 6px rgba(90, 203, 137, 0.6);
+      }
+      .stg-mcp-status[data-state='error'] {
+        background: rgba(232, 80, 60, 0.1);
+        border-color: rgba(232, 80, 60, 0.34);
+        color: #f29888;
+      }
+      .stg-mcp-status[data-state='error'] .stg-mcp-dot {
+        background: #e8503c;
+      }
       /* D-3c-3c: sync status pill — green running / gray stopped / yellow needs-attention */
       .oz-sync-pill {
         display: inline-block;
@@ -4804,32 +4864,78 @@
 
             <!-- Automation -->
             <section class="stg-section" data-section="automation" hidden>
-              <h3>Automation (MCP server)</h3>
+              <h3 data-i18n="settings.automation.title">Automation (MCP server)</h3>
+
+              <!-- v1.6.1: live status banner. Auto-refresh on modal open + when
+                   the toggle changes. Shows running port + tool count when up,
+                   stopped or error reason when down. -->
+              <div class="stg-mcp-status" id="oz-stg-mcpStatus" data-state="stopped">
+                <span class="stg-mcp-dot" aria-hidden="true"></span>
+                <span
+                  class="stg-mcp-status-text"
+                  id="oz-stg-mcpStatusText"
+                  data-i18n="settings.automation.statusStopped"
+                  >Stopped</span
+                >
+              </div>
+
               <div class="stg-row">
                 <div>
-                  <div class="stg-label">Enable MCP server</div>
-                  <div class="stg-desc">
-                    Exposes the OZ MCP API on localhost so external agents can drive the
-                    browser. Off by default for security.
+                  <div class="stg-label" data-i18n="settings.automation.enableLabel">
+                    Enable MCP server
+                  </div>
+                  <div class="stg-desc" data-i18n="settings.automation.enableDesc">
+                    Exposes the OZ MCP API on localhost so external agents (Claude Cowork,
+                    Cursor, Claude Code) can drive the browser. Off by default for
+                    security.
                   </div>
                 </div>
                 <input type="checkbox" id="oz-stg-mcpEnabled" />
               </div>
               <div class="stg-row">
                 <div>
-                  <div class="stg-label">MCP port</div>
-                  <div class="stg-desc">Default 9223.</div>
+                  <div class="stg-label" data-i18n="settings.automation.portLabel">
+                    MCP port
+                  </div>
+                  <div class="stg-desc" data-i18n="settings.automation.portDesc">
+                    Default 9223.
+                  </div>
                 </div>
                 <input type="number" id="oz-stg-mcpPort" min="1" max="65535" />
               </div>
               <div class="stg-row">
                 <div>
-                  <div class="stg-label">MCP bearer token (optional)</div>
-                  <div class="stg-desc">
+                  <div class="stg-label" data-i18n="settings.automation.tokenLabel">
+                    MCP bearer token (optional)
+                  </div>
+                  <div class="stg-desc" data-i18n="settings.automation.tokenDesc">
                     If set, MCP requests must include this token.
                   </div>
                 </div>
                 <input type="text" id="oz-stg-mcpToken" placeholder="(none)" />
+              </div>
+
+              <!-- v1.6.1: Cowork config snippet — one-click copy to clipboard.
+                   User pastes the JSON into Claude Desktop config and OZ tools
+                   become available in every Cowork session. -->
+              <div class="stg-row stg-mcp-cowork-row">
+                <div>
+                  <div class="stg-label" data-i18n="settings.automation.coworkLabel">
+                    Claude Cowork config
+                  </div>
+                  <div class="stg-desc" data-i18n="settings.automation.coworkDesc">
+                    Copy this snippet, then paste it into your Claude Desktop config file.
+                    OZ tools will appear in every Cowork session.
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  class="stg-btn"
+                  id="oz-stg-mcpCopyCowork"
+                  data-i18n="settings.automation.coworkCopy"
+                >
+                  Copy snippet
+                </button>
               </div>
             </section>
 
@@ -6249,6 +6355,10 @@
     <!-- v1.5.5: identity-editor.js must load AFTER i18n.js — constructor wires
          onChange + does initial _applyUaHint that depends on window.OZ.i18n. -->
     <script src="./identity-editor.js"></script>
+    <!-- v1.6.1: MCP pane helpers must load BEFORE settings.js — settings.js
+         delegates refreshMcpStatus/renderMcpStatusPill/handleCopyCoworkSnippet
+         to window.OZ.settingsMcpPane which this script registers. -->
+    <script src="./settings-mcp-pane.js"></script>
     <script src="./settings.js"></script>
     <script src="./onboarding.js"></script>
     <script src="./onboarding-wizard.js"></script>

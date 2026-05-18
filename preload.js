@@ -416,18 +416,8 @@ if (isWebUI) {
     // v1.1.2: proxy health + actions bindings live in preload-proxy.js
     // (ADR 0005 — preload.js kept under 500 LOC). Spread merges into oz.
     ...require('./preload-proxy').buildProxyBindings(ipcRenderer),
-    settings: {
-      getAll: () => ipcRenderer.invoke('oz:settings:getAll'),
-      get: (section) => ipcRenderer.invoke('oz:settings:get', section),
-      set: (section, patch) => ipcRenderer.invoke('oz:settings:set', section, patch),
-      resetSection: (section) => ipcRenderer.invoke('oz:settings:resetSection', section),
-      resetAll: () => ipcRenderer.invoke('oz:settings:resetAll'),
-      onChanged(cb) {
-        const listener = (_e, payload) => cb(payload)
-        ipcRenderer.on('oz:settings:changed', listener)
-        return () => ipcRenderer.off('oz:settings:changed', listener)
-      },
-    },
+    ...require('./preload-settings').buildSettingsBindings(ipcRenderer),
+    ...require('./preload-mcp').buildMcpBindings(ipcRenderer),
     downloads: {
       list: (filter) => ipcRenderer.invoke('oz:downloads:list', filter),
       get: (id) => ipcRenderer.invoke('oz:downloads:get', id),

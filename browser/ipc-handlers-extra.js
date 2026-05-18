@@ -61,6 +61,19 @@ function registerExtraIpcHandlers(browser) {
     registerGhostMigrationHandlersIPC,
     browser,
   )
+  _safeRegister('registerMcpHandlersIPC', registerMcpHandlersIPC, browser)
+}
+
+// ----- MCP server status / config snippet (v1.6.1) --------------------------
+// Read-mostly: status pill + copy-pasteable claude_desktop_config.json entry.
+// Start/stop is driven by Settings → Automation toggle (see settings-handlers).
+
+function registerMcpHandlersIPC(browser) {
+  const h = browser.handlers && browser.handlers.mcp
+  if (!h) return
+  ipcMain.handle('oz:mcp:status', () => h.status())
+  ipcMain.handle('oz:mcp:getCoworkConfigSnippet', () => h.getCoworkConfigSnippet())
+  ipcMain.handle('oz:mcp:retry', () => h.retry())
 }
 
 // ----- App info (1.0.0) -----------------------------------------------------

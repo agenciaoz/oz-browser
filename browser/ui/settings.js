@@ -107,6 +107,9 @@
       this.settings = null
       this._syncStatus = null
       this._syncUnsubscribe = null
+      // v1.6.1: MCP runtime status pill + Cowork snippet copy button.
+      this._mcpStatus = null
+      this._mcpUnsubscribe = null
       this._wire()
     }
 
@@ -146,6 +149,18 @@
       if (window.oz && window.oz.sync && typeof window.oz.sync.onChanged === 'function') {
         this._syncUnsubscribe = window.oz.sync.onChanged(() => {
           if (!this.$modal.hidden) this.refreshSyncStatus()
+        })
+      }
+      // v1.6.1: MCP status pill + Cowork copy button. Same subscription
+      // pattern as sync — main pushes oz:mcp:status after reconcileMcpRuntime.
+      const copyBtn = document.getElementById('oz-stg-mcpCopyCowork')
+      if (copyBtn) {
+        copyBtn.addEventListener('click', () => this.handleCopyCoworkSnippet(copyBtn))
+      }
+      if (window.oz && window.oz.mcp && typeof window.oz.mcp.onStatus === 'function') {
+        this._mcpUnsubscribe = window.oz.mcp.onStatus((status) => {
+          this._mcpStatus = status
+          if (!this.$modal.hidden) this.renderMcpStatusPill()
         })
       }
     }
@@ -235,6 +250,24 @@
       }
       // D-3c-3c: Sync status (computed live, NOT persisted in settings).
       await this.refreshSyncStatus()
+      // v1.6.1: MCP runtime status (also computed live).
+      await this.refreshMcpStatus()
+    }
+
+    // v1.6.1: MCP pane logic lives in settings-mcp-pane.js (ADR 0005). These
+    // wrappers stay so existing call sites in this class keep working.
+    async refreshMcpStatus() {
+      const pane = window.OZ && window.OZ.settingsMcpPane
+      if (!pane) return
+      this._mcpStatus = await pane.refresh()
+    }
+    renderMcpStatusPill() {
+      const pane = window.OZ && window.OZ.settingsMcpPane
+      if (pane && this._mcpStatus) pane.render(this._mcpStatus)
+    }
+    async handleCopyCoworkSnippet(btn) {
+      const pane = window.OZ && window.OZ.settingsMcpPane
+      if (pane) await pane.copy(btn, (msg) => this.showError(msg))
     }
 
     async refreshSyncStatus() {
