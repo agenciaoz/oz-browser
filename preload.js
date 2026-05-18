@@ -1,16 +1,33 @@
 // OZ Browser preload — runs in every WebContents.
-// Exposes window.oz to the browser chrome (webui.html) only.
+// Exposes window.oz to OZ's own chrome-extension pages (webui.html + the
+// dashboards that need to call into the browser internals).
+//
+// v1.6.5 fix: previously the guard only allowed webui.html. proxy-dashboard.html
+// is a separate chrome-extension page that NEEDS window.oz to call
+// oz.proxyHealth.getDashboard()/getGlobalStatus()/etc. — without it, the
+// dashboard showed "Status unavailable" forever and the bulk-assign modal
+// stayed empty ("(0) proxies, (0) identities"). Latent since H-2b (dashboard
+// introduction). Safe to expand: the path check still pins us to OZ's own
+// chrome-extension ID + a known pathname list, so third-party extensions
+// can't get access.
 
 const { contextBridge, ipcRenderer } = require('electron')
 const { injectBrowserAction } = require('electron-chrome-extensions/browser-action')
 const { buildAutoUpdaterApi } = require('./browser/preload-autoupdater-api')
 
-const isWebUI =
-  location.protocol === 'chrome-extension:' && location.pathname === '/webui.html'
+// OZ-owned chrome-extension pages that need window.oz. webui.html is the
+// main browser chrome; proxy-dashboard.html is the H-2b dashboard tab.
+const OZ_OWNED_PATHS = new Set(['/webui.html', '/proxy-dashboard.html'])
+const isOzPage =
+  location.protocol === 'chrome-extension:' && OZ_OWNED_PATHS.has(location.pathname)
+// Browser-action dropdown only goes in the main chrome (webui.html), not in
+// dashboard tabs — otherwise the dropdown would render inside the dashboard.
+const isWebUI = isOzPage && location.pathname === '/webui.html'
 
 if (isWebUI) {
   injectBrowserAction()
-
+}
+if (isOzPage) {
   // Forward unhandled errors from the renderer (browser chrome) to the main
   // process so they hit the unified logger and the user-visible error popup.
   window.addEventListener('error', (event) => {
