@@ -663,12 +663,47 @@ class IdentityManager extends EventEmitter {
    * 1.9b: also used to wire FingerprintEngine. Multiple callers OK — see
    * addSessionInitHook for the multi-hook variant. setProxyResolutionHook
    * REPLACES the single hook (legacy behavior); addSessionInitHook APPENDS.
+   *
+   * v1.6.3 CRITICAL FIX: when the hook is installed AFTER sessions have
+   * already been cached (which happens at every boot — AntiLogout.install()
+   * pre-creates all per-identity sessions before main.js wires ProxyManager),
+   * the hook would never fire for those cached sessions, leaving them with
+   * 'direct://' as their proxy rule (= REAL IP LEAK). The fix: when a new
+   * hook is set, retroactively apply it to every session already in the
+   * cache. Idempotent — session.setProxy() can be called repeatedly with
+   * the same rules safely.
    */
   setProxyResolutionHook(fn) {
     this._proxyResolutionHook = fn
     log.info('identity-manager', 'proxy resolution hook installed', {
       installed: typeof fn === 'function',
+      cachedSessionsToRetroApply: this.sessionCache ? this.sessionCache.size : 0,
     })
+    if (typeof fn !== 'function') return
+    // Retro-apply to every session already cached. Without this, identities
+    // whose sessions were created by AntiLogout / FingerprintEngine pre-warm
+    // at boot leak the user's real IP because the hook ran AFTER caching.
+    if (this.sessionCache && this.sessionCache.size > 0) {
+      let applied = 0
+      let errored = 0
+      for (const [id, ses] of this.sessionCache.entries()) {
+        try {
+          fn(id, ses)
+          applied++
+        } catch (err) {
+          errored++
+          log.warn('identity-manager', 'retro-apply proxy hook failed', {
+            id,
+            message: err.message,
+          })
+        }
+      }
+      log.info('identity-manager', 'retro-applied proxy hook to cached sessions', {
+        applied,
+        errored,
+        totalCached: this.sessionCache.size,
+      })
+    }
   }
 
   /**
