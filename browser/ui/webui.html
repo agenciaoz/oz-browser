@@ -61,6 +61,54 @@
         height: var(--toolbar-height);
       }
 
+      /*----- v1.6.4 Quick Access Bar — bookmark-style row below the toolbar -----*/
+      .oz-qab {
+        background: var(--bg-color);
+        flex: 0 0 auto;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 12px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      }
+      .oz-qab-btn {
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        cursor: pointer;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        font: inherit;
+        transition:
+          transform 0.12s ease,
+          box-shadow 0.12s ease,
+          border-color 0.12s ease;
+        flex-shrink: 0;
+      }
+      .oz-qab-btn:hover {
+        transform: translateY(-1px);
+        border-color: rgba(255, 255, 255, 0.32);
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      }
+      .oz-qab-btn:active,
+      .oz-qab-btn.clicked {
+        transform: translateY(0);
+        box-shadow: inset 0 1px 4px rgba(0, 0, 0, 0.4);
+      }
+      .oz-qab-btn .oz-qab-abbrev {
+        color: #fff;
+        font-size: 11px;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+        user-select: none;
+        pointer-events: none;
+      }
+
       #tabstrip {
         width: 100%;
         height: calc(env(titlebar-area-height, 31px) + 1px);
@@ -3743,6 +3791,12 @@
       </div>
     </div>
 
+    <!-- v1.6.4: Quick Access Bar — horizontal row of branded buttons that open
+         common sites (whatsmyip + IG + X + FB + TT + YT + LinkedIn + Threads)
+         in the active identity. Populated by quick-access-bar.js. Sits below
+         the toolbar/URL-bar like a classic browser bookmark bar. -->
+    <div id="oz-quick-access-bar" class="oz-qab"></div>
+
     <div class="bottom">
       <aside id="oz-sidebar">
         <div id="oz-workspace-switcher">
@@ -6343,6 +6397,12 @@
     <script src="./sidebar-events.js"></script>
     <script src="./sidebar-health.js"></script>
     <script src="./sidebar.js"></script>
+    <!-- v1.6.4 fix: load the proxy health badge script. Without this line the
+         toolbar badge stays gray forever (data-status="gray" hardcoded in HTML
+         until the JS sets it). Latent since H-2a v1.1.1. -->
+    <script src="./proxy-health-badge.js"></script>
+    <!-- v1.6.4: Quick Access Bar (whatsmyip + 7 social networks). -->
+    <script src="./quick-access-bar.js"></script>
     <script src="./account-manager-render.js"></script>
     <script src="./account-manager.js"></script>
     <script src="./time-machine.js"></script>

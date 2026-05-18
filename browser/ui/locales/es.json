@@ -146,6 +146,16 @@
       "tooltipGray": "Salud de proxies: no hay proxies configurados"
     }
   },
+  "quickAccess": {
+    "tooltipWhatsmyip": "Verificar tu IP y ubicación (abre en la identidad activa)",
+    "tooltipInstagram": "Abrir Instagram en la identidad activa",
+    "tooltipX": "Abrir X / Twitter en la identidad activa",
+    "tooltipFacebook": "Abrir Facebook en la identidad activa",
+    "tooltipTiktok": "Abrir TikTok en la identidad activa",
+    "tooltipYoutube": "Abrir YouTube en la identidad activa",
+    "tooltipLinkedin": "Abrir LinkedIn en la identidad activa",
+    "tooltipThreads": "Abrir Threads en la identidad activa"
+  },
   "proxyDashboard": {
     "title": "Panel de salud de proxies",
     "loading": "Cargando…",
