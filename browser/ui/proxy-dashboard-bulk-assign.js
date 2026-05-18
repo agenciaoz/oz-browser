@@ -74,6 +74,11 @@
         display: flex; align-items: center; justify-content: center;
         z-index: 100;
       }
+      /* v1.6.6 fix: HTML [hidden] uses display:none from the UA stylesheet,
+         but our explicit display:flex above wins on specificity, so
+         _modalEl.hidden=true silently failed to dismiss the modal. The user
+         experienced this as Close/✕ buttons being broken. */
+      .oz-bulk-assign-backdrop[hidden] { display: none !important; }
       .oz-bulk-assign-modal {
         background: var(--panel); color: var(--text);
         border: 1px solid var(--border); border-radius: 8px;

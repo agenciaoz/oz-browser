@@ -62,6 +62,8 @@
         display: flex; align-items: center; justify-content: center;
         z-index: 100;
       }
+      /* v1.6.6 fix: same display:flex-vs-[hidden] bug as bulk-assign. */
+      .oz-import-modal-backdrop[hidden] { display: none !important; }
       .oz-import-modal {
         background: var(--panel); color: var(--text);
         border: 1px solid var(--border); border-radius: 8px;
