@@ -80,9 +80,17 @@
         const btn = document.getElementById('oz-pm-button')
         if (btn) btn.click()
       }
-      // H-2b will provide oz.proxyHealth.openDashboard(). Fallback to modal.
+      // v1.6.2 fix: openDashboard resolves with {ok:false, reason} on failure
+      // (it does NOT reject). The old code only caught rejections, so a
+      // {ok:false} response made the click die silently. Check the shape
+      // explicitly and fall back to the modal.
       if (oz.proxyHealth && typeof oz.proxyHealth.openDashboard === 'function') {
-        oz.proxyHealth.openDashboard().catch(() => openModal())
+        oz.proxyHealth
+          .openDashboard()
+          .then((r) => {
+            if (!r || r.ok === false) openModal()
+          })
+          .catch(() => openModal())
       } else {
         openModal()
       }

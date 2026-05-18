@@ -36,6 +36,8 @@
 //   - Si toggle off, no se programa el poll periódico pero el manual
 //     "Check now" sigue funcionando.
 
+const fs = require('fs')
+const path = require('path')
 const log = require('./logger')
 
 // Período del poll: 4 horas. Compromiso entre "notar updates rápido" y
@@ -62,6 +64,36 @@ function setupAutoUpdater(browser) {
       'auto-updater-setup',
       'dev mode — skip (set OZ_FORCE_AUTO_UPDATER=1 to test)',
     )
+    return null
+  }
+
+  // v1.6.2: Skip si app-update.yml no existe. Este archivo solo lo genera
+  // `electron-forge publish` cuando hay publisher GitHub + Apple signing
+  // configurados. Una build local con `npm run make` (sin publish, sin
+  // OZ_APPLE_* env vars) produce un .app empaquetado pero SIN el yml — y
+  // cuando autoUpdater.checkForUpdates() corre, electron-updater intenta
+  // leer el yml y throws ENOENT como unhandled promise rejection (el
+  // error handler global lo agarra y muestra un dialog molesto al user).
+  //
+  // Cubre el path "DMG buildeado para uso interno mientras Apple approval
+  // pending" — sin esto, cada launch popea un error dialog.
+  //
+  // Cuando Apple firme + corramos `npm run publish` → el yml viaja con el
+  // .app y este guard pasa.
+  try {
+    const ymlPath = path.join(process.resourcesPath || '', 'app-update.yml')
+    if (!fs.existsSync(ymlPath)) {
+      log.warn(
+        'auto-updater-setup',
+        'app-update.yml not found in Resources/ — skip (build sin publisher)',
+        { ymlPath },
+      )
+      return null
+    }
+  } catch (err) {
+    log.warn('auto-updater-setup', 'app-update.yml existence check failed', {
+      message: err.message,
+    })
     return null
   }
 
