@@ -352,19 +352,19 @@ if (isOzPage) {
         return () => ipcRenderer.off('oz:migration:done', listener)
       },
     },
-    cookies: {
-      exportContent: (identityId, format) =>
-        ipcRenderer.invoke('oz:cookies:exportContent', identityId, format),
-      exportToFile: (identityId, format, filePath) =>
-        ipcRenderer.invoke('oz:cookies:exportToFile', identityId, format, filePath),
-      importContent: (identityId, format, content) =>
-        ipcRenderer.invoke('oz:cookies:importContent', identityId, format, content),
-      importFromFile: (identityId, format, filePath) =>
-        ipcRenderer.invoke('oz:cookies:importFromFile', identityId, format, filePath),
-      pickExportPath: (identityId, format) =>
-        ipcRenderer.invoke('oz:cookies:pickExportPath', identityId, format),
-      pickImportPath: (format) => ipcRenderer.invoke('oz:cookies:pickImportPath', format),
-    },
+    // cookies.* — 1.7.0+: import* gain a 4th `options` arg pass-through
+    // (defaultDomain etc); pre-1.7.0 callers stay compat (3 args → undefined).
+    cookies: (() => {
+      const inv = (ch, ...a) => ipcRenderer.invoke(ch, ...a)
+      return {
+        exportContent: (id, f) => inv('oz:cookies:exportContent', id, f),
+        exportToFile: (id, f, p) => inv('oz:cookies:exportToFile', id, f, p),
+        importContent: (id, f, c, o) => inv('oz:cookies:importContent', id, f, c, o),
+        importFromFile: (id, f, p, o) => inv('oz:cookies:importFromFile', id, f, p, o),
+        pickExportPath: (id, f) => inv('oz:cookies:pickExportPath', id, f),
+        pickImportPath: (f) => inv('oz:cookies:pickImportPath', f),
+      }
+    })(),
     proxies: {
       list: () => ipcRenderer.invoke('oz:proxies:list'),
       listAssignable: () => ipcRenderer.invoke('oz:proxies:listAssignable'),

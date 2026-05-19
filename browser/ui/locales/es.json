@@ -59,7 +59,9 @@
       "language": "Idioma",
       "languageDesc": "Idioma de la interfaz. Automático usa el idioma del sistema de tu Mac."
     },
-    "privacy": { "title": "Privacidad" },
+    "privacy": {
+      "title": "Privacidad"
+    },
     "automation": {
       "title": "Automatización (servidor MCP)",
       "statusRunning": "Activo en {{host}}:{{port}} — {{tools}} herramientas",
@@ -76,11 +78,21 @@
       "coworkCopy": "Copiar fragmento",
       "coworkCopied": "¡Copiado!"
     },
-    "backup": { "title": "Respaldo" },
-    "performance": { "title": "Rendimiento" },
-    "notifications": { "title": "Notificaciones" },
-    "sync": { "title": "Sincronización" },
-    "scheduled": { "title": "Acciones programadas" },
+    "backup": {
+      "title": "Respaldo"
+    },
+    "performance": {
+      "title": "Rendimiento"
+    },
+    "notifications": {
+      "title": "Notificaciones"
+    },
+    "sync": {
+      "title": "Sincronización"
+    },
+    "scheduled": {
+      "title": "Acciones programadas"
+    },
     "migration": {
       "title": "Migración — Ghost Browser",
       "intro": "Importa identidades, espacios, cookies y contraseñas guardadas desde Ghost Browser. macOS pedirá acceso al Llavero la primera vez — haz clic en \"Permitir siempre\" para que las próximas corridas no vuelvan a pedirlo.",
@@ -410,6 +422,7 @@
       "statusInactive": "Inactiva",
       "exportBtn": "⬇ Exportar…",
       "importBtn": "⬆ Importar…",
+      "sessionBtn": "🍪 Sesión…",
       "newBtn": "＋ Nueva",
       "colSite": "Sitio",
       "colUsername": "Usuario",
@@ -481,7 +494,23 @@
       "destroyVault": "¿RESETEAR la bóveda?\n\nEsto borra el archivo cifrado Y elimina la master key del Llavero. Las cuentas viejas quedan irrecuperables. El próximo desbloqueo empieza con una bóveda nueva y vacía.\n\nEsto no se puede deshacer.",
       "deleteAccount": "¿Eliminar la cuenta \"{{username}}\" en {{site}}?\n\nEsto no se puede deshacer."
     },
-    "exportAlert": "✓ Exportadas {{n}} cuenta(s) a:\n{{path}}\n\n⚠ Este archivo contiene contraseñas y secretos 2FA en texto plano. Tratalo como material sensible."
+    "exportAlert": "✓ Exportadas {{n}} cuenta(s) a:\n{{path}}\n\n⚠ Este archivo contiene contraseñas y secretos 2FA en texto plano. Tratalo como material sensible.",
+    "session": {
+      "title": "Importar cookies de sesión",
+      "desc": "Pegá un string `name=value; name=value; …` (header Cookie de DevTools o export de Cookie-Editor) y bindealo a una identidad + dominio. La próxima vez que abras una tab en esa identidad, vas a estar logueado.",
+      "identityLabel": "Identidad",
+      "domainLabel": "Dominio",
+      "domainPlaceholder": ".tiktok.com",
+      "cookiesLabel": "Cadena de cookies",
+      "cookiesPlaceholder": "sessionid=...; csrf=...; remember_token=...",
+      "cancelBtn": "Cancelar",
+      "importBtn": "Importar cookies",
+      "importingBtn": "Importando…",
+      "errorRequired": "Identidad, dominio y string de cookies son todos requeridos.",
+      "errorMissingDomain": "Dominio es requerido (el formato header de cookies no carga dominio).",
+      "errorFailed": "Falló import: {{reason}}",
+      "successCount": "✓ Importadas {{n}} de {{total}} cookies ({{errors}} errores)."
+    }
   },
   "bulkOpener": {
     "title": "🎯 Abrir en masa",
@@ -610,7 +639,10 @@
         "label": "Nueva identidad",
         "keywords": "crear persona perfil cuenta"
       },
-      "duplicateTab": { "label": "Duplicar pestaña", "keywords": "clonar copiar" },
+      "duplicateTab": {
+        "label": "Duplicar pestaña",
+        "keywords": "clonar copiar"
+      },
       "reopenClosedTab": {
         "label": "Reabrir pestaña cerrada",
         "keywords": "deshacer restaurar última"
@@ -639,7 +671,10 @@
         "label": "Abrir Bóveda de Cuentas",
         "keywords": "cuentas contraseñas credenciales autocompletar vault"
       },
-      "openProxies": { "label": "Abrir Proxies", "keywords": "proxy oxylabs ip red" },
+      "openProxies": {
+        "label": "Abrir Proxies",
+        "keywords": "proxy oxylabs ip red"
+      },
       "openBrowsingData": {
         "label": "Abrir Datos de Navegación",
         "keywords": "marcadores historial descargas"

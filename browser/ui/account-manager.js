@@ -72,6 +72,16 @@
       this.$btnImportCancel = document.getElementById('oz-am-import-cancel')
       this.$btnImportConfirm = document.getElementById('oz-am-import-confirm')
 
+      // 1.7.1: Session-token import view (header cookie format)
+      this.$viewSession = document.getElementById('oz-am-session-view')
+      this.$btnSession = document.getElementById('oz-am-session-btn')
+      this.$sessionIdentity = document.getElementById('oz-am-session-identity')
+      this.$sessionDomain = document.getElementById('oz-am-session-domain')
+      this.$sessionCookies = document.getElementById('oz-am-session-cookies')
+      this.$sessionResult = document.getElementById('oz-am-session-result')
+      this.$btnSessionCancel = document.getElementById('oz-am-session-cancel')
+      this.$btnSessionImport = document.getElementById('oz-am-session-import')
+
       this.state = {
         accounts: [],
         identities: [],
@@ -165,6 +175,12 @@
       // Import confirm / cancel
       this.$btnImportCancel.addEventListener('click', () => this._showView('list'))
       this.$btnImportConfirm.addEventListener('click', () => this._doImportConfirm())
+
+      // 1.7.1: Session-token import view wired by sibling module
+      // (account-manager-session.js, ADR 0005 — 500 LOC budget).
+      if (window.OZ && window.OZ.AccountManagerSession) {
+        window.OZ.AccountManagerSession.attach(this)
+      }
     }
 
     _wireBackgroundListeners() {
@@ -258,6 +274,7 @@
       this.$viewList.hidden = name !== 'list'
       this.$viewEditor.hidden = name !== 'editor'
       this.$viewImport.hidden = name !== 'import'
+      if (this.$viewSession) this.$viewSession.hidden = name !== 'session'
       this._clearError()
     }
 
@@ -558,6 +575,9 @@
       window.alert(summary.join('\n'))
       this._showView('list')
     }
+
+    // session-token view methods live in account-manager-session.js sibling
+    // module per ADR 0005. Attached in _wire() if the helper is loaded.
   }
 
   window.OZ = window.OZ || {}

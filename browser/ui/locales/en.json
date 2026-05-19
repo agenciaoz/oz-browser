@@ -59,7 +59,9 @@
       "language": "Language",
       "languageDesc": "UI language. Auto uses your Mac's system language."
     },
-    "privacy": { "title": "Privacy" },
+    "privacy": {
+      "title": "Privacy"
+    },
     "automation": {
       "title": "Automation (MCP server)",
       "statusRunning": "Running on {{host}}:{{port}} — {{tools}} tools",
@@ -76,11 +78,21 @@
       "coworkCopy": "Copy snippet",
       "coworkCopied": "Copied!"
     },
-    "backup": { "title": "Backup" },
-    "performance": { "title": "Performance" },
-    "notifications": { "title": "Notifications" },
-    "sync": { "title": "Sync" },
-    "scheduled": { "title": "Scheduled actions" },
+    "backup": {
+      "title": "Backup"
+    },
+    "performance": {
+      "title": "Performance"
+    },
+    "notifications": {
+      "title": "Notifications"
+    },
+    "sync": {
+      "title": "Sync"
+    },
+    "scheduled": {
+      "title": "Scheduled actions"
+    },
     "migration": {
       "title": "Migration — Ghost Browser",
       "intro": "Import identities, workspaces, cookies, and saved passwords from Ghost Browser. macOS will prompt for Keychain access the first time — click Always Allow so future runs do not ask again.",
@@ -410,6 +422,7 @@
       "statusInactive": "Inactive",
       "exportBtn": "⬇ Export…",
       "importBtn": "⬆ Import…",
+      "sessionBtn": "🍪 Session…",
       "newBtn": "＋ New",
       "colSite": "Site",
       "colUsername": "Username",
@@ -481,7 +494,23 @@
       "destroyVault": "DESTROY the vault?\n\nThis deletes the encrypted file AND removes the master key from Keychain. Old accounts become unrecoverable. The next unlock will start a fresh, empty vault.\n\nThis cannot be undone.",
       "deleteAccount": "Delete account \"{{username}}\" on {{site}}?\n\nThis cannot be undone."
     },
-    "exportAlert": "✓ Exported {{n}} account(s) to:\n{{path}}\n\n⚠ This file contains plaintext passwords and 2FA secrets. Treat as sensitive material."
+    "exportAlert": "✓ Exported {{n}} account(s) to:\n{{path}}\n\n⚠ This file contains plaintext passwords and 2FA secrets. Treat as sensitive material.",
+    "session": {
+      "title": "Import session cookies",
+      "desc": "Paste a `name=value; name=value; …` string (DevTools Cookie header or Cookie-Editor export) and bind it to an identity + domain. Next time you open a tab in that identity, you will be logged in.",
+      "identityLabel": "Identity",
+      "domainLabel": "Domain",
+      "domainPlaceholder": ".tiktok.com",
+      "cookiesLabel": "Cookie string",
+      "cookiesPlaceholder": "sessionid=...; csrf=...; remember_token=...",
+      "cancelBtn": "Cancel",
+      "importBtn": "Import cookies",
+      "importingBtn": "Importing…",
+      "errorRequired": "Identity, domain and cookie string are all required.",
+      "errorMissingDomain": "Domain is required (cookie header format carries no domain).",
+      "errorFailed": "Import failed: {{reason}}",
+      "successCount": "✓ Imported {{n}} of {{total}} cookies ({{errors}} errors)."
+    }
   },
   "bulkOpener": {
     "title": "🎯 Bulk Open",
@@ -602,17 +631,26 @@
     },
     "newIdentityDefaultName": "New Identity",
     "actions": {
-      "newTab": { "label": "New Tab", "keywords": "open create blank" },
+      "newTab": {
+        "label": "New Tab",
+        "keywords": "open create blank"
+      },
       "newIdentity": {
         "label": "New Identity",
         "keywords": "create persona profile account"
       },
-      "duplicateTab": { "label": "Duplicate Tab", "keywords": "clone copy" },
+      "duplicateTab": {
+        "label": "Duplicate Tab",
+        "keywords": "clone copy"
+      },
       "reopenClosedTab": {
         "label": "Reopen Closed Tab",
         "keywords": "undo restore last"
       },
-      "togglePin": { "label": "Pin / Unpin Tab", "keywords": "fix sticky" },
+      "togglePin": {
+        "label": "Pin / Unpin Tab",
+        "keywords": "fix sticky"
+      },
       "toggleLock": {
         "label": "Lock / Unlock Tab",
         "keywords": "protect freeze prevent close"
@@ -633,7 +671,10 @@
         "label": "Open Account Vault",
         "keywords": "accounts passwords credentials autofill"
       },
-      "openProxies": { "label": "Open Proxies", "keywords": "proxy oxylabs ip network" },
+      "openProxies": {
+        "label": "Open Proxies",
+        "keywords": "proxy oxylabs ip network"
+      },
       "openBrowsingData": {
         "label": "Open Browsing Data",
         "keywords": "bookmarks history downloads"
@@ -662,7 +703,10 @@
         "label": "Notifications",
         "keywords": "alerts log history bell warnings"
       },
-      "toggleDevtools": { "label": "Toggle DevTools", "keywords": "inspector debug" }
+      "toggleDevtools": {
+        "label": "Toggle DevTools",
+        "keywords": "inspector debug"
+      }
     },
     "hints": {
       "active": "active",

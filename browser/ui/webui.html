@@ -4105,6 +4105,14 @@
             </button>
             <button
               type="button"
+              class="am-action-btn"
+              id="oz-am-session-btn"
+              data-i18n="accountManager.list.sessionBtn"
+            >
+              🍪 Session…
+            </button>
+            <button
+              type="button"
               class="am-action-btn am-primary"
               id="oz-am-new-btn"
               data-i18n="accountManager.list.newBtn"
@@ -4332,6 +4340,73 @@
               data-i18n="accountManager.import.importBtn"
             >
               Import
+            </button>
+          </div>
+        </section>
+
+        <!-- 1.7.1: Session-token import view. Paste a Cookie request header
+             string (name=value; name=value...) and bind it to a domain + an
+             existing identity. Calls window.oz.cookies.importContent with
+             format='header'. -->
+        <section class="am-section" id="oz-am-session-view" hidden>
+          <h3
+            style="margin: 0 0 4px 0; font-size: 14px"
+            data-i18n="accountManager.session.title"
+          >
+            Import session cookies
+          </h3>
+          <p
+            style="font-size: 12px; color: var(--text-muted); margin: 0 0 12px 0"
+            data-i18n="accountManager.session.desc"
+          >
+            Paste a `name=value; name=value; …` string (DevTools Cookie header or
+            Cookie-Editor export) and bind it to an identity + domain.
+          </p>
+          <div class="am-editor">
+            <label class="am-full">
+              <span data-i18n="accountManager.session.identityLabel">Identity</span>
+              <select id="oz-am-session-identity"></select>
+            </label>
+            <label class="am-full">
+              <span data-i18n="accountManager.session.domainLabel">Domain</span>
+              <input
+                type="text"
+                id="oz-am-session-domain"
+                data-i18n-attr="placeholder:accountManager.session.domainPlaceholder"
+                placeholder=".tiktok.com"
+              />
+            </label>
+            <label class="am-full">
+              <span data-i18n="accountManager.session.cookiesLabel">Cookie string</span>
+              <textarea
+                id="oz-am-session-cookies"
+                rows="8"
+                data-i18n-attr="placeholder:accountManager.session.cookiesPlaceholder"
+                placeholder="sessionid=...; csrf=...; remember_token=..."
+              ></textarea>
+            </label>
+          </div>
+          <div
+            id="oz-am-session-result"
+            style="font-size: 12px; margin-top: 8px"
+            hidden
+          ></div>
+          <div class="oz-modal-actions">
+            <button
+              type="button"
+              class="oz-btn-cancel"
+              id="oz-am-session-cancel"
+              data-i18n="accountManager.session.cancelBtn"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              class="oz-btn-save"
+              id="oz-am-session-import"
+              data-i18n="accountManager.session.importBtn"
+            >
+              Import cookies
             </button>
           </div>
         </section>
@@ -6404,6 +6479,8 @@
     <!-- v1.6.4: Quick Access Bar (whatsmyip + 7 social networks). -->
     <script src="./quick-access-bar.js"></script>
     <script src="./account-manager-render.js"></script>
+    <!-- 1.7.1: session-token import view sibling (ADR 0005 LOC split). -->
+    <script src="./account-manager-session.js"></script>
     <script src="./account-manager.js"></script>
     <script src="./time-machine.js"></script>
     <script src="./cloud-backup.js"></script>
