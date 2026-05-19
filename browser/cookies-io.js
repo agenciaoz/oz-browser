@@ -1,16 +1,23 @@
-// OZ Browser — Cookies I/O en 4 formatos (1.7c).
+// OZ Browser — Cookies I/O en 5 formatos (1.7c + 1.7.0 header).
 //
-// Qué hace: encode/decode de jars de cookies en 4 formatos compatibles para
-// que un usuario pueda migrar entre OZ ↔ AdsPower ↔ Multilogin ↔ curl/wget.
+// Qué hace: encode/decode de jars de cookies en 5 formatos compatibles para
+// que un usuario pueda migrar entre OZ ↔ AdsPower ↔ Multilogin ↔ curl/wget ↔
+// DevTools "Cookie:" header paste (session-token login flow 1.7.0).
 //
 // Formatos soportados:
-//   1. 'oz'        — JSON nativo OZ (round-trip lossless con session.cookies.get())
-//   2. 'netscape'  — texto plano cookies.txt (estándar curl/wget/Firefox)
-//   3. 'adspower' — JSON AdsPower-compat (devtools-style con storeId)
+//   1. 'oz'         — JSON nativo OZ (round-trip lossless con session.cookies.get())
+//   2. 'netscape'   — texto plano cookies.txt (estándar curl/wget/Firefox)
+//   3. 'adspower'   — JSON AdsPower-compat (devtools-style con storeId)
 //   4. 'multilogin' — JSON Multilogin-compat (devtools-style sin storeId)
+//   5. 'header'     — string `name=value; name=value; ...` (DevTools Cookie header /
+//                     copy-from-browser flow / session-token login 1.7.0).
+//                     LOSSY: solo nombre y valor, sin domain/path/expiry.
+//                     decode() requiere options.defaultDomain (sin él, los
+//                     cookies no se pueden hidratar al jar de Chromium).
 //
 // Doc: docs/modules/cookies-io.md
 // ADR: docs/architecture/0016-tab-context-menu.md (sección Cookies I/O)
+// ADR-1.7.0: docs/architecture/0031-session-token-login.md (to write)
 //
 // Modelo "canónico" interno (lo que devuelve session.cookies.get() en
 // Electron 42; ver https://www.electronjs.org/docs/latest/api/structures/cookie):
@@ -20,13 +27,13 @@
 //   }
 //
 // El encode toma un array canónico y devuelve string/file content.
-// El decode toma string y devuelve array canónico.
+// El decode toma string + options opcionales y devuelve array canónico.
 //
 // IMPORTANTE: este módulo NO toca Electron — los handlers en cookies-handlers.js
 // hacen el bridge a session.cookies.{get,set}. Esto permite testear formatos
 // 100% sync sin GUI.
 
-const SUPPORTED_FORMATS = ['oz', 'netscape', 'adspower', 'multilogin']
+const SUPPORTED_FORMATS = ['oz', 'netscape', 'adspower', 'multilogin', 'header']
 
 class CookiesFormatError extends Error {
   constructor(format, message) {
@@ -54,6 +61,8 @@ function encode(format, cookies) {
       return encodeAdsPower(cookies)
     case 'multilogin':
       return encodeMultilogin(cookies)
+    case 'header':
+      return encodeHeader(cookies)
     default:
       throw new CookiesFormatError(format, 'unreachable')
   }
@@ -144,9 +153,26 @@ function encodeMultilogin(cookies) {
   return JSON.stringify(out, null, 2)
 }
 
+function encodeHeader(cookies) {
+  // LOSSY format: only name=value pairs joined by `; `. Used for paste-into-
+  // DevTools / copy-from-browser flows. Domain/path/secure/etc are discarded
+  // because the Cookie request header format doesn't carry them.
+  // We do NOT URL-encode values here — real browsers send raw bytes inside
+  // cookie headers, and most servers expect what they originally Set-Cookie'd.
+  // If a value contains `;` or whitespace control chars, the receiver will
+  // truncate it; that's a property of the format, not a bug here.
+  const parts = []
+  for (const c of cookies || []) {
+    const can = toCanonical(c)
+    if (!can.name) continue
+    parts.push(`${can.name}=${can.value == null ? '' : can.value}`)
+  }
+  return parts.join('; ')
+}
+
 // ======================== DECODE ============================================
 
-function decode(format, content) {
+function decode(format, content, options = {}) {
   if (!SUPPORTED_FORMATS.includes(format)) {
     throw new CookiesFormatError(
       format,
@@ -162,6 +188,8 @@ function decode(format, content) {
       return decodeAdsPower(content)
     case 'multilogin':
       return decodeMultilogin(content)
+    case 'header':
+      return decodeHeader(content, options)
     default:
       throw new CookiesFormatError(format, 'unreachable')
   }
@@ -268,6 +296,69 @@ function decodeMultilogin(content) {
   }))
 }
 
+function decodeHeader(content, options = {}) {
+  // Parse the `Cookie:` request header format: `name=value; name=value; ...`.
+  // The format does NOT carry domain, path, secure, etc — those must come
+  // from `options.defaultDomain`. Without a domain we cannot hydrate the jar
+  // because Electron's cookies.set() rejects domain-less cookies.
+  const defaultDomain = options.defaultDomain
+  if (!defaultDomain || typeof defaultDomain !== 'string') {
+    throw new CookiesFormatError(
+      'header',
+      'options.defaultDomain is required (header format carries no domain)',
+    )
+  }
+  // Normalize domain: leading-dot means "host + subdomains", no leading dot
+  // means hostOnly. We accept both and infer hostOnly from the presence/
+  // absence of the dot, matching what cookies-io's toCanonical does.
+  const domain = defaultDomain.trim()
+  const hostOnly = !domain.startsWith('.')
+
+  // Defensive: empty / whitespace-only input → empty jar (no throw).
+  const trimmed = String(content == null ? '' : content).trim()
+  if (!trimmed) return []
+
+  // Some pastes include the leading "Cookie: " prefix from DevTools' raw header
+  // view. Strip it tolerantly (case-insensitive).
+  const stripped = trimmed.replace(/^cookie\s*:\s*/i, '')
+
+  const out = []
+  const pairs = stripped.split(';')
+  for (const raw of pairs) {
+    const pair = raw.trim()
+    if (!pair) continue
+    // Split on FIRST `=` only — values may contain `=` (base64 padding, JWTs,
+    // signed tokens, AdsPower's `KGUxMzRjZDdmYmVlMzE2NjBmNzJmNGU0Njk2NGU2YzhhMWMyNTE4MjUKIgi...`).
+    const eq = pair.indexOf('=')
+    if (eq <= 0) continue // skip `=value` (no name) and bare names
+    const name = pair.slice(0, eq).trim()
+    let value = pair.slice(eq + 1).trim()
+    // Strip surrounding double quotes if present (Cookie header spec RFC 6265
+    // §4.1.1 allows quoted-string values).
+    if (value.length >= 2 && value[0] === '"' && value[value.length - 1] === '"') {
+      value = value.slice(1, -1)
+    }
+    if (!name) continue
+    out.push({
+      name,
+      value,
+      domain,
+      path: '/',
+      // Conservative defaults for the inferred cookie. Most sites that paste
+      // cookies want them to be sent on https — the cookies they were Set-
+      // Cookie'd with originally probably had secure=true. Marking secure
+      // also avoids the Electron quirk where http URLs reject some same-site
+      // cookies from being written.
+      secure: true,
+      httpOnly: false,
+      hostOnly,
+      session: true,
+      sameSite: 'no_restriction',
+    })
+  }
+  return out
+}
+
 // ======================== HELPERS ===========================================
 
 function toCanonical(c) {
@@ -325,10 +416,12 @@ module.exports = {
   encodeNetscape,
   encodeAdsPower,
   encodeMultilogin,
+  encodeHeader,
   decodeOz,
   decodeNetscape,
   decodeAdsPower,
   decodeMultilogin,
+  decodeHeader,
   toCanonical,
   normalizeSameSite,
 }

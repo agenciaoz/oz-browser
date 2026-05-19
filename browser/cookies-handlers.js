@@ -1,10 +1,11 @@
-// OZ Browser — Cookies handlers (export / import) (1.7c).
+// OZ Browser — Cookies handlers (export / import) (1.7c, extended 1.7.0).
 //
 // Qué hace: handler map para exportar e importar cookies de una identity en
-// los 4 formatos soportados (oz | netscape | adspower | multilogin).
+// los 5 formatos soportados (oz | netscape | adspower | multilogin | header).
 //
 // Doc: docs/modules/cookies-handlers.md
 // ADR: docs/architecture/0016-tab-context-menu.md (sección Cookies I/O)
+// ADR-1.7.0: docs/architecture/0031-session-token-login.md (to write)
 //
 // Exports: buildCookieHandlers(browser) -> Record<string, fn>
 //
@@ -15,8 +16,11 @@
 // IPC channels (registrados en ipc-handlers.js):
 //   - oz:cookies:export(identityId, format)         → { ok, content }
 //   - oz:cookies:exportToFile(identityId, format, filePath)
-//   - oz:cookies:import(identityId, format, content) → { ok, count }
-//   - oz:cookies:importFromFile(identityId, format, filePath)
+//   - oz:cookies:import(identityId, format, content, options?) → { ok, count }
+//   - oz:cookies:importFromFile(identityId, format, filePath, options?)
+//
+// 1.7.0 — Session-token login: el formato 'header' acepta un options.defaultDomain
+// para hidratar `name=value; name=value; ...` (DevTools Cookie header paste).
 
 const fs = require('fs')
 const log = require('./logger')
@@ -118,8 +122,18 @@ function buildCookieHandlers(browser) {
       return { ok: true, identityId, format, filePath, cookieCount: r.cookieCount }
     },
 
-    /** Import cookies from string content. Returns { ok, written, errors }. */
-    async importContent(identityId, format, content) {
+    /**
+     * Import cookies from string content. Returns { ok, written, errors }.
+     *
+     * @param {string} identityId
+     * @param {string} format     One of cookies-io's SUPPORTED_FORMATS.
+     * @param {string} content
+     * @param {object} [options]  Format-specific options. The 'header' format
+     *   requires { defaultDomain: 'domain.tld' or '.domain.tld' } because
+     *   the Cookie request header carries no domain info. The other formats
+     *   ignore options.
+     */
+    async importContent(identityId, format, content, options) {
       if (!SUPPORTED_FORMATS.includes(format)) {
         return { ok: false, reason: 'unsupported-format', format }
       }
@@ -129,13 +143,20 @@ function buildCookieHandlers(browser) {
       }
       let parsed
       try {
-        parsed = decode(format, content)
+        parsed = decode(format, content, options || {})
       } catch (err) {
         log.warn('cookies-handlers', 'importContent decode failed', {
           format,
           message: err.message,
         })
-        return { ok: false, reason: 'parse-failed', message: err.message }
+        // Surface options-related errors with a distinct reason so callers
+        // (UI, MCP) can prompt the user for a defaultDomain instead of
+        // claiming the cookie string itself is malformed.
+        const reason =
+          err.code === 'COOKIES_FORMAT_ERROR' && /defaultDomain/.test(err.message)
+            ? 'missing-default-domain'
+            : 'parse-failed'
+        return { ok: false, reason, message: err.message }
       }
       const { written, errors } = await writeJar(identityId, parsed)
       log.info('cookies-handlers', 'importContent ok', {
@@ -156,14 +177,14 @@ function buildCookieHandlers(browser) {
     },
 
     /** Import cookies from file. */
-    async importFromFile(identityId, format, filePath) {
+    async importFromFile(identityId, format, filePath, options) {
       let content
       try {
         content = fs.readFileSync(filePath, 'utf-8')
       } catch (err) {
         return { ok: false, reason: 'read-failed', message: err.message }
       }
-      return this.importContent(identityId, format, content)
+      return this.importContent(identityId, format, content, options)
     },
   }
 }

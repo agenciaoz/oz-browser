@@ -194,6 +194,136 @@ section('format: multilogin — round-trip + no storeId')
   ok('csrf path preserved', decoded.find((c) => c.name === 'csrf').path === '/api')
 }
 
+section('format: header — encode (lossy)')
+{
+  const { encode } = require('../browser/cookies-io.js')
+  const text = encode('header', SAMPLE_JAR)
+  ok('returns plain string', typeof text === 'string')
+  ok('joins with `; ` separator', text === 'sid=abc123; csrf=xyz789')
+  // No domain/path/secure leakage
+  ok('no domain in header output', !text.includes('x.com'))
+  ok('no path in header output', !text.includes('/api'))
+  // Empty input → empty string (not crash)
+  ok('empty array → empty string', encode('header', []) === '')
+  ok('null array → empty string', encode('header', null) === '')
+  // Cookie with no name skipped
+  const skipped = encode('header', [{ value: 'orphan' }, { name: 'k', value: 'v' }])
+  ok('cookie with no name is skipped', skipped === 'k=v')
+  // null value → empty string after `=`
+  const nullVal = encode('header', [{ name: 'sid', value: null }])
+  ok('null value → empty', nullVal === 'sid=')
+}
+
+section('format: header — decode requires defaultDomain')
+{
+  const { decode, CookiesFormatError } = require('../browser/cookies-io.js')
+  let threw = false
+  try {
+    decode('header', 'sid=abc')
+  } catch (e) {
+    threw = e instanceof CookiesFormatError && /defaultDomain/.test(e.message)
+  }
+  ok('decode header without defaultDomain throws', threw)
+
+  threw = false
+  try {
+    decode('header', 'sid=abc', {})
+  } catch (e) {
+    threw = e instanceof CookiesFormatError && /defaultDomain/.test(e.message)
+  }
+  ok('decode header with empty options throws', threw)
+}
+
+section('format: header — decode basic')
+{
+  const { decode } = require('../browser/cookies-io.js')
+  const out = decode('header', 'sid=abc123; csrf=xyz789', {
+    defaultDomain: '.tiktok.com',
+  })
+  ok('parses 2 pairs', out.length === 2)
+  ok('first name correct', out[0].name === 'sid')
+  ok('first value correct', out[0].value === 'abc123')
+  ok('second name correct', out[1].name === 'csrf')
+  ok('domain bound from defaultDomain', out[0].domain === '.tiktok.com')
+  ok('leading-dot → hostOnly=false', out[0].hostOnly === false)
+  ok('path defaults to /', out[0].path === '/')
+  ok('secure default true', out[0].secure === true)
+  ok('session default true', out[0].session === true)
+  ok('sameSite default no_restriction', out[0].sameSite === 'no_restriction')
+  // hostOnly inferred from absence of leading dot
+  const noDot = decode('header', 'a=b', { defaultDomain: 'instagram.com' })
+  ok('no leading dot → hostOnly=true', noDot[0].hostOnly === true)
+}
+
+section('format: header — decode edge cases')
+{
+  const { decode } = require('../browser/cookies-io.js')
+  // Empty + whitespace
+  ok('empty string → []', decode('header', '', { defaultDomain: '.x.com' }).length === 0)
+  ok(
+    'whitespace string → []',
+    decode('header', '   \n   ', { defaultDomain: '.x.com' }).length === 0,
+  )
+  // Leading "Cookie: " prefix (DevTools raw header copy)
+  const prefixed = decode('header', 'Cookie: sid=abc; csrf=xyz', {
+    defaultDomain: '.x.com',
+  })
+  ok(
+    'strips leading "Cookie: " prefix',
+    prefixed.length === 2 && prefixed[0].name === 'sid',
+  )
+  // Case-insensitive prefix strip
+  const prefixedUpper = decode('header', 'COOKIE: sid=abc', { defaultDomain: '.x.com' })
+  ok('strips uppercase prefix', prefixedUpper.length === 1)
+  // Values with `=` (base64, JWT, signed tokens — common in real TikTok/IG sessions)
+  const b64 = decode('header', 'tok=eyJhbGc=.eyJzdWI=.sig==', {
+    defaultDomain: '.x.com',
+  })
+  ok('splits on FIRST `=` only', b64[0].value === 'eyJhbGc=.eyJzdWI=.sig==')
+  // Quoted values (RFC 6265 §4.1.1 allows double-quoted)
+  const quoted = decode('header', 'sid="abc 123"', { defaultDomain: '.x.com' })
+  ok('strips surrounding double quotes', quoted[0].value === 'abc 123')
+  // Inner quotes preserved
+  const inner = decode('header', 'sid=a"b"c', { defaultDomain: '.x.com' })
+  ok('inner quotes preserved', inner[0].value === 'a"b"c')
+  // Defensive: bare names (no =) skipped, =-only also skipped
+  const bareNames = decode('header', 'orphan; =value; valid=ok', {
+    defaultDomain: '.x.com',
+  })
+  ok('skips bare names and =value entries', bareNames.length === 1)
+  ok('keeps the valid one', bareNames[0].name === 'valid')
+  // Trailing semicolon tolerated
+  const trailing = decode('header', 'a=1; b=2;', { defaultDomain: '.x.com' })
+  ok('trailing `;` tolerated', trailing.length === 2)
+  // Lots of whitespace around tokens
+  const messy = decode('header', '  a = 1 ;   b=2', { defaultDomain: '.x.com' })
+  ok('whitespace around tokens trimmed (count)', messy.length === 2)
+  ok('whitespace around tokens trimmed (name)', messy[0].name === 'a')
+  ok('whitespace around tokens trimmed (value)', messy[0].value === '1')
+  // Single cookie, no semicolon
+  const single = decode('header', 'sid=abc', { defaultDomain: '.x.com' })
+  ok('single cookie no `;` works', single.length === 1)
+  // Empty value (logout sentinel)
+  const empty = decode('header', 'sid=', { defaultDomain: '.x.com' })
+  ok('empty value parsed as empty string', empty.length === 1 && empty[0].value === '')
+}
+
+section('format: header — round-trip (with domain re-bind)')
+{
+  const { encode, decode } = require('../browser/cookies-io.js')
+  const encoded = encode('header', SAMPLE_JAR)
+  const decoded = decode('header', encoded, { defaultDomain: '.x.com' })
+  ok('round-trip length match', decoded.length === SAMPLE_JAR.length)
+  // Note: this is LOSSY — only name+value survive
+  ok('name preserved', decoded[0].name === SAMPLE_JAR[0].name)
+  ok('value preserved', decoded[0].value === SAMPLE_JAR[0].value)
+  ok('domain re-bound from option', decoded[0].domain === '.x.com')
+  // The original SAMPLE_JAR[1] had domain 'x.com' (no dot, hostOnly) but
+  // round-trip rebinds everything to defaultDomain — that's the format's
+  // contract, not a bug.
+  ok('domain rebind applies to ALL cookies', decoded[1].domain === '.x.com')
+}
+
 section('error handling: unsupported / malformed')
 {
   const { encode, decode, CookiesFormatError } = require('../browser/cookies-io.js')
@@ -318,6 +448,34 @@ function runRoundTripTest() {
     const impF = await h.importFromFile('id-1', 'oz', tmpFile)
     ok('importFromFile ok', impF.ok === true)
     ok('written === 2', impF.written === 2)
+
+    // ---- 1.7.0 header format — handler pass-through of options ----------
+    setCalls.length = 0
+    // 4th arg passes through to decode()
+    const impH = await h.importContent('id-1', 'header', 'sid=abc123; csrf=xyz789', {
+      defaultDomain: '.tiktok.com',
+    })
+    ok('header import ok', impH.ok === true)
+    ok('header parsedCount === 2', impH.parsedCount === 2)
+    ok('header written === 2', impH.written === 2)
+    ok('setCalls captured 2', setCalls.length === 2)
+    ok(
+      'domain bound from option',
+      setCalls[0].domain === '.tiktok.com' && setCalls[1].domain === '.tiktok.com',
+    )
+    ok('https url used (secure default)', setCalls[0].url.startsWith('https://'))
+
+    // Missing defaultDomain → ok:false with explicit reason
+    const impHbad = await h.importContent('id-1', 'header', 'sid=abc')
+    ok('header w/o domain → ok:false', impHbad.ok === false)
+    ok('reason missing-default-domain', impHbad.reason === 'missing-default-domain')
+
+    // exportContent header
+    setCalls.length = 0
+    const expH = await h.exportContent('id-1', 'header')
+    ok('header export ok', expH.ok === true)
+    ok('header export content non-empty', expH.content.length > 0)
+    ok('header export includes name=value', expH.content.includes('sid=abc123'))
 
     Module._load = originalLoad
     console.log(`\n=== ${passed} passed · ${failed} failed ===`)

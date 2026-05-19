@@ -288,14 +288,14 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
     {
       name: 'oz.cookies.exportContent',
       description:
-        "Export an identity's cookie jar as a string in the requested format. format ∈ {oz, netscape, adspower, multilogin}. Returns {ok, content, cookieCount}.",
+        "Export an identity's cookie jar as a string in the requested format. format ∈ {oz, netscape, adspower, multilogin, header}. The 'header' format is LOSSY (only name=value pairs, no domain/path/expiry) — use it to round-trip a session to DevTools or to copy a Cookie request header. Returns {ok, content, cookieCount}.",
       inputSchema: {
         type: 'object',
         properties: {
           identityId: { type: 'string' },
           format: {
             type: 'string',
-            enum: ['oz', 'netscape', 'adspower', 'multilogin'],
+            enum: ['oz', 'netscape', 'adspower', 'multilogin', 'header'],
           },
         },
         required: ['identityId', 'format'],
@@ -312,7 +312,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
           identityId: { type: 'string' },
           format: {
             type: 'string',
-            enum: ['oz', 'netscape', 'adspower', 'multilogin'],
+            enum: ['oz', 'netscape', 'adspower', 'multilogin', 'header'],
           },
           filePath: { type: 'string' },
         },
@@ -325,42 +325,86 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
     {
       name: 'oz.cookies.importContent',
       description:
-        "Import cookies from a string content into an identity's session. Returns {ok, parsedCount, written, errors}.",
+        "Import cookies from a string content into an identity's session. Returns {ok, parsedCount, written, errors}. For format='header' (DevTools Cookie header paste, name=value; name=value), pass defaultDomain (e.g. '.tiktok.com' or 'instagram.com') so the cookies can be bound to a host.",
       inputSchema: {
         type: 'object',
         properties: {
           identityId: { type: 'string' },
           format: {
             type: 'string',
-            enum: ['oz', 'netscape', 'adspower', 'multilogin'],
+            enum: ['oz', 'netscape', 'adspower', 'multilogin', 'header'],
           },
           content: { type: 'string' },
+          defaultDomain: {
+            type: 'string',
+            description:
+              "Required for format='header'. Domain to bind cookies to. Leading dot ('.example.com') means host + subdomains; no dot means hostOnly.",
+          },
         },
         required: ['identityId', 'format', 'content'],
         additionalProperties: false,
       },
-      call: ({ identityId, format, content }) =>
-        cookies().importContent(identityId, format, content),
+      call: ({ identityId, format, content, defaultDomain }) =>
+        cookies().importContent(
+          identityId,
+          format,
+          content,
+          defaultDomain ? { defaultDomain } : undefined,
+        ),
     },
     {
       name: 'oz.cookies.importFromFile',
       description:
-        "Read a cookies file from disk and import it into an identity's session.",
+        "Read a cookies file from disk and import it into an identity's session. For format='header', pass defaultDomain.",
       inputSchema: {
         type: 'object',
         properties: {
           identityId: { type: 'string' },
           format: {
             type: 'string',
-            enum: ['oz', 'netscape', 'adspower', 'multilogin'],
+            enum: ['oz', 'netscape', 'adspower', 'multilogin', 'header'],
           },
           filePath: { type: 'string' },
+          defaultDomain: { type: 'string' },
         },
         required: ['identityId', 'format', 'filePath'],
         additionalProperties: false,
       },
-      call: ({ identityId, format, filePath }) =>
-        cookies().importFromFile(identityId, format, filePath),
+      call: ({ identityId, format, filePath, defaultDomain }) =>
+        cookies().importFromFile(
+          identityId,
+          format,
+          filePath,
+          defaultDomain ? { defaultDomain } : undefined,
+        ),
+    },
+    // -------------------- session-token login (1.7.0) ------------------
+    {
+      name: 'oz.sessions.importCookies',
+      description:
+        "Session-token login: drop a `name=value; name=value; ...` cookie string (as copied from DevTools Network panel) into an identity's jar bound to a domain. Convenience wrapper around oz.cookies.importContent with format='header'. Use for sites where the user already has an active session in another browser and wants to clone it into an OZ identity without re-entering credentials.",
+      inputSchema: {
+        type: 'object',
+        properties: {
+          identityId: { type: 'string' },
+          cookieString: {
+            type: 'string',
+            description:
+              "Raw `name=value; name=value` string. Leading 'Cookie: ' prefix is tolerated.",
+          },
+          domain: {
+            type: 'string',
+            description:
+              "Target domain ('.tiktok.com', 'instagram.com', etc). Leading dot = host + subdomains.",
+          },
+        },
+        required: ['identityId', 'cookieString', 'domain'],
+        additionalProperties: false,
+      },
+      call: ({ identityId, cookieString, domain }) =>
+        cookies().importContent(identityId, 'header', cookieString, {
+          defaultDomain: domain,
+        }),
     },
   ]
 }

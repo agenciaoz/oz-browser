@@ -228,25 +228,27 @@ function registerCookieHandlersIPC(browser) {
     netscape: 'Netscape cookies.txt',
     adspower: 'AdsPower JSON',
     multilogin: 'Multilogin JSON',
+    header: 'Cookie header string',
   }
   const FORMAT_EXT = {
     oz: 'json',
     netscape: 'txt',
     adspower: 'json',
     multilogin: 'json',
+    header: 'txt',
   }
 
-  ipcMain.handle('oz:cookies:exportContent', (_e, identityId, format) =>
-    h.exportContent(identityId, format),
+  // 1.7.0: import* gain a 4th `options` arg (pass-through, e.g. defaultDomain
+  // for header format). Pre-1.7.0 callers send 3 args → options is undefined
+  // → handlers default to {} → fully backward-compat.
+  const c = h
+  ipcMain.handle('oz:cookies:exportContent', (_e, id, f) => c.exportContent(id, f))
+  ipcMain.handle('oz:cookies:exportToFile', (_e, id, f, p) => c.exportToFile(id, f, p))
+  ipcMain.handle('oz:cookies:importContent', (_e, id, f, x, o) =>
+    c.importContent(id, f, x, o),
   )
-  ipcMain.handle('oz:cookies:exportToFile', (_e, identityId, format, filePath) =>
-    h.exportToFile(identityId, format, filePath),
-  )
-  ipcMain.handle('oz:cookies:importContent', (_e, identityId, format, content) =>
-    h.importContent(identityId, format, content),
-  )
-  ipcMain.handle('oz:cookies:importFromFile', (_e, identityId, format, filePath) =>
-    h.importFromFile(identityId, format, filePath),
+  ipcMain.handle('oz:cookies:importFromFile', (_e, id, f, p, o) =>
+    c.importFromFile(id, f, p, o),
   )
 
   // Native file dialogs (renderer cannot reach dialog API directly).
