@@ -488,6 +488,13 @@
     document.body.addEventListener('click', (ev) => {
       const tt = ev.target
       if (!tt || !tt.dataset || !tt.dataset.act) return
+      // v1.6.7 fix: reassign-select <select> elements are handled by the
+      // delegated 'change' listener below, not 'click'. If we let the click
+      // path run, performAction() unconditionally sets el.disabled = true,
+      // which Chromium interprets as "cancel the dropdown open" — net result:
+      // the user clicks the dropdown and nothing visible happens, while the
+      // select becomes silently disabled (greyed out).
+      if (tt.tagName === 'SELECT') return
       const act = tt.dataset.act
       // H-2f: bulk actions handled by the bulk module first.
       if (bulkApi) {
