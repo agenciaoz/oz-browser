@@ -189,17 +189,34 @@ class MCPServer {
           }
     }
 
+    // v1.6.8: MCP spec says receivers MUST silently ignore unknown
+    // notifications. Claude Desktop sends notifications/roots/list_changed
+    // (and similar lifecycle pings) that the OZ server doesn't implement —
+    // previously these threw METHOD_NOT_FOUND inside _callMethod and were
+    // logged as ERROR with full stack, flooding the log. Short-circuit known
+    // notification-namespace methods to a debug log + null response.
+    if (isNotification && method.startsWith('notifications/')) {
+      log.debug('mcp-server', 'ignored unknown notification', { method })
+      return null
+    }
+
     try {
       const result = await this._callMethod(method, params || {})
       log.info('mcp-server', 'rpc ok', { method, id })
       return isNotification ? null : { jsonrpc: '2.0', id, result }
     } catch (err) {
-      log.error('mcp-server', 'rpc error', {
-        method,
-        id,
-        message: err.message,
-        stack: err.stack,
-      })
+      // v1.6.8: log level depends on what kind of error this is. Notifications
+      // don't get a response so logging as ERROR is misleading; METHOD_NOT_FOUND
+      // on a real request is a client bug worth WARN but not ERROR; anything
+      // else (server-side throw) stays ERROR with stack.
+      const logCtx = { method, id, message: err.message }
+      if (isNotification) {
+        log.debug('mcp-server', 'rpc error in notification (ignored)', logCtx)
+      } else if (err.code === 'METHOD_NOT_FOUND') {
+        log.warn('mcp-server', 'rpc method not found', logCtx)
+      } else {
+        log.error('mcp-server', 'rpc error', { ...logCtx, stack: err.stack })
+      }
       return isNotification
         ? null
         : {
