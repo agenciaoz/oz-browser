@@ -20,6 +20,55 @@ const { setupErrorHandlers } = require('./error-handler')
 log.init()
 setupErrorHandlers()
 
+// =============================================================================
+// v1.9.0 — Mac performance flags. Must be set BEFORE app.whenReady().
+//
+// Target: M1/M2/M3/M4 arm64 Macs (Jose's use case). These improve rendering
+// smoothness and lift artificial caps that hurt heavy social/marketing
+// tools (TikTok Studio, Meta Ads Manager, Canva, Photoshop Web, etc).
+//
+// Each flag is documented with WHY — these are tradeoffs, not free wins.
+// =============================================================================
+
+// GPU rasterization moves layer painting to the GPU (Metal on macOS). For
+// media-heavy social apps with lots of scrolling video this is a noticeable
+// smoothness improvement. Default-off in Chromium because of historical
+// driver bugs; safe on modern macOS Metal.
+app.commandLine.appendSwitch('enable-gpu-rasterization')
+
+// Zero-copy lets the GPU consume tiles directly from the renderer without an
+// intermediate copy through main memory. Cuts CPU usage during scroll and
+// reduces frame jitter on long feeds.
+app.commandLine.appendSwitch('enable-zero-copy')
+
+// 2D canvas acceleration — relevant for sites that draw to <canvas> for
+// graphs / video controls / photo editors. Big win on Canva, Photopea, etc.
+app.commandLine.appendSwitch('enable-accelerated-2d-canvas')
+
+// Some macOS GPU/driver combinations are still on the historical blocklist
+// inherited from Chromium. On Apple Silicon Macs the blocklist is overly
+// conservative — overriding it gives us full hardware acceleration on every
+// Apple Silicon machine in the wild.
+app.commandLine.appendSwitch('ignore-gpu-blocklist')
+
+// V8 heap cap. Electron's default is ~1.4GB per renderer, which heavy
+// marketing tools (TikTok Studio, Meta Ads Manager with several open
+// campaigns, Canva with large designs) routinely blow through — the
+// symptom is a sudden tab crash with no clear cause. 4GB is generous for
+// arm64 Macs with 16GB+ RAM and still well below total system RAM.
+app.commandLine.appendSwitch('js-flags', '--max-old-space-size=4096')
+
+// Disable features that just add idle overhead for a multi-identity
+// browser with many session-isolated tabs:
+//  - HardwareMediaKeyHandling: we don't intercept the Now Playing widget /
+//    F7/F8/F9 media keys (those should pass through to Music/Spotify).
+//  - MediaSessionService: per-tab "now playing" metadata is wasted work
+//    when most tabs are dashboards / feeds, not media players.
+app.commandLine.appendSwitch(
+  'disable-features',
+  'HardwareMediaKeyHandling,MediaSessionService',
+)
+
 const { IdentityManager } = require('./identity-manager')
 const { WorkspaceManager } = require('./workspace-manager')
 const { Vault } = require('./account-vault')
