@@ -14,9 +14,15 @@ const { WebContentsView } = require('electron')
 const crypto = require('crypto')
 const log = require('./logger')
 
-// Layout constants — must match CSS in browser/ui/webui.html
+// Layout constants — must match CSS in browser/ui/webui.html.
+// v1.8.2: FOOTER_HEIGHT added for the v1.8.1 quick-access bookmarks bar
+// that sits at the bottom of the window (`.oz-qab` min-height 46px in
+// webui.html). Without this, invalidateLayout() let the WebContentsView
+// overlap the footer bar — visible as the content area covering the
+// right side of the bookmarks bar.
 const TOOLBAR_HEIGHT = 64
 const SIDEBAR_WIDTH = 220
+const FOOTER_HEIGHT = 46
 
 function uuid() {
   return crypto.randomBytes(8).toString('hex')
@@ -252,7 +258,9 @@ class Tab extends EventEmitter {
       x: SIDEBAR_WIDTH + padding,
       y: TOOLBAR_HEIGHT,
       width: width - SIDEBAR_WIDTH - padding * 2,
-      height: height - TOOLBAR_HEIGHT - padding,
+      // v1.8.2: subtract FOOTER_HEIGHT so the WebContentsView doesn't
+      // overlap the bookmarks bar at the bottom (v1.8.1).
+      height: height - TOOLBAR_HEIGHT - FOOTER_HEIGHT - padding,
     })
     this.view.setBorderRadius(8)
   }
