@@ -61,26 +61,28 @@
         height: var(--toolbar-height);
       }
 
-      /*----- v1.6.4 Quick Access Bar — bookmark-style row below the toolbar
-              v1.8.0: confirmed full-width via body flex-column stretch.
-              Tweaks for visual prominence as the primary bookmarks bar:
-              slightly taller min-height, denser border for separation
-              from content area, hover gleam carries (set on .oz-qab-btn). -----*/
+      /*----- v1.8.1 Quick Access Bar — footer bookmarks bar.
+              Moved from below-the-URL-bar (v1.6.4-v1.8.0) to absolute
+              footer position (last child of body). As body's terminal
+              flex-column child it's guaranteed full-window-width via
+              align-items:stretch (default). border-top separates from
+              content; explicit width:100% defensively in case some
+              ancestor flex rule misbehaves. -----*/
       .oz-qab {
+        width: 100%;
         background: var(--bg-color);
         flex: 0 0 auto;
         display: flex;
-        flex-wrap: wrap; /* 1.7.3: kept in case window is narrow / sidebar
-                            grows wider. With full-width row at desktop
-                            sizes this is irrelevant — all entries fit
-                            in a single row even with 20+ bookmarks. */
+        flex-wrap: wrap; /* For ultra-narrow windows; at normal desktop
+                            widths all entries fit in a single row even
+                            with 20+ bookmarks. */
         align-items: center;
-        gap: 10px; /* 1.8.0: slightly wider for breath at full-width. */
-        padding: 8px 14px;
-        min-height: 44px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* 1.8.0:
-          stronger than the 0.06 of v1.6.4 — was barely visible. Bookmark
-          bar deserves a clearer divider from the content area below. */
+        justify-content: flex-start;
+        gap: 12px;
+        padding: 8px 16px;
+        min-height: 46px;
+        box-sizing: border-box;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
       }
       .oz-qab-btn {
         width: 28px;
@@ -3809,12 +3811,6 @@
       </div>
     </div>
 
-    <!-- v1.6.4: Quick Access Bar — horizontal row of branded buttons that open
-         common sites (whatsmyip + IG + X + FB + TT + YT + LinkedIn + Threads)
-         in the active identity. Populated by quick-access-bar.js. Sits below
-         the toolbar/URL-bar like a classic browser bookmark bar. -->
-    <div id="oz-quick-access-bar" class="oz-qab"></div>
-
     <div class="bottom">
       <aside id="oz-sidebar">
         <div id="oz-workspace-switcher">
@@ -3942,6 +3938,14 @@
       </aside>
       <div id="oz-content"></div>
     </div>
+
+    <!-- v1.8.1: Quick Access Bar moved to footer position (was above .bottom
+         in v1.6.4-v1.8.0 — got visually clipped by content-area overlap or
+         z-index/overflow shenanigans, debug was a tar pit). As body's last
+         flex-column child it now naturally spans full window width, sits
+         below sidebar+content, and stays visible regardless of sidebar
+         width or content overflow. Populated by quick-access-bar.js. -->
+    <div id="oz-quick-access-bar" class="oz-qab"></div>
 
     <!-- Identity editor modal — managed by identity-editor.js -->
     <div class="oz-modal" id="oz-identity-modal" hidden>
