@@ -61,28 +61,33 @@
         height: var(--toolbar-height);
       }
 
-      /*----- v1.8.1 Quick Access Bar — footer bookmarks bar.
-              Moved from below-the-URL-bar (v1.6.4-v1.8.0) to absolute
-              footer position (last child of body). As body's terminal
-              flex-column child it's guaranteed full-window-width via
-              align-items:stretch (default). border-top separates from
-              content; explicit width:100% defensively in case some
-              ancestor flex rule misbehaves. -----*/
-      .oz-qab {
+      /*----- v1.8.3 Footer bar — combines quick-access (social shortcuts)
+              and sidebar-toolbar (utility buttons) into a single full-width
+              row at the bottom of the window. Outer #oz-footer-bar is the
+              actual full-width container with border-top + bg + padding.
+              Inner .oz-qab and #oz-sidebar-toolbar lose their own bg/border
+              and just act as flex sub-groups. -----*/
+      #oz-footer-bar {
+        flex: 0 0 auto;
         width: 100%;
         background: var(--bg-color);
-        flex: 0 0 auto;
-        display: flex;
-        flex-wrap: wrap; /* For ultra-narrow windows; at normal desktop
-                            widths all entries fit in a single row even
-                            with 20+ bookmarks. */
-        align-items: center;
-        justify-content: flex-start;
-        gap: 12px;
+        border-top: 1px solid rgba(255, 255, 255, 0.1);
         padding: 8px 16px;
         min-height: 46px;
         box-sizing: border-box;
-        border-top: 1px solid rgba(255, 255, 255, 0.1);
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      .oz-qab {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 12px;
+        /* No background / border / padding here — those are on the outer
+           #oz-footer-bar in v1.8.3. */
       }
       .oz-qab-btn {
         width: 28px;
@@ -3598,33 +3603,31 @@
         min-height: 0;
       }
 
-      /* Footer toolbar — 8-10 íconos compactos.
-         v1.8.0: flex-wrap added so when icon count exceeds horizontal
-         capacity (~7-8 buttons at default sidebar width) extras land in
-         a second row instead of being silently clipped. Symptoms before
-         the fix: #oz-health-button (🩺) was invisible in production for
-         months — confirmed in v1.7.3 smoke. justify-content kept as
-         space-between so buttons distribute evenly per row. */
+      /* v1.8.3: sidebar-toolbar relocated from the bottom of the sidebar
+         to the right side of the footer bar. No more space-between (the
+         outer #oz-footer-bar handles spacing between the two sub-groups).
+         Compact gap between adjacent utility buttons. */
       #oz-sidebar-toolbar {
-        flex: 0 0 auto;
         display: flex;
         flex-wrap: wrap;
         align-items: center;
-        justify-content: space-between;
         gap: 4px;
-        padding: 8px 4px 4px;
-        margin-top: 6px;
-        border-top: 1px solid rgba(255, 255, 255, 0.08);
       }
 
       .oz-toolbar-btn {
         position: relative;
-        flex: 1 1 0;
-        min-width: 0;
-        height: 32px;
+        /* v1.8.3: fixed-size icon buttons (no flex:1 stretch — they used
+           to share the sidebar footer width but now live in the footer
+           bar where shared width would just make them lopsided next to
+           the round 28px social shortcuts). Slightly larger than the
+           old 32px-tall sidebar version because horizontal layout has
+           more room. */
+        width: 30px;
+        height: 30px;
+        flex: 0 0 auto;
         background: transparent;
         border: 1px solid transparent;
-        border-radius: 5px;
+        border-radius: 6px;
         cursor: pointer;
         color: var(--text);
         font: inherit;
@@ -3841,111 +3844,116 @@
         </div>
         <div id="oz-identity-list"></div>
 
-        <!-- C-8: footer toolbar — 8 íconos compactos reemplazan los botones
-             grandes anteriores. Misma funcionalidad, ~70% menos espacio
-             vertical. IDs preservados para compat con account-manager.js,
-             time-machine.js, proxy-manager.js, settings.js, browsing-data.js,
-             bulk-opener.js, notifications.js (cada uno hace
-             document.getElementById('oz-X-button')). -->
-        <div id="oz-sidebar-toolbar">
-          <button
-            id="oz-accounts-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-vault="unknown"
-            data-tooltip="Accounts"
-            aria-label="Accounts"
-          >
-            <span class="vault-status-dot"></span>
-            <span class="oz-toolbar-icon">🔐</span>
-          </button>
-          <button
-            id="oz-tm-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Time Machine"
-            aria-label="Time Machine"
-          >
-            <span class="oz-toolbar-icon">⏱</span>
-            <span class="tm-count toolbar-count" id="oz-tm-count"></span>
-          </button>
-          <button
-            id="oz-team-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Team"
-            aria-label="Team"
-          >
-            <span class="oz-toolbar-icon">👥</span>
-          </button>
-          <button
-            id="oz-pm-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Proxies"
-            aria-label="Proxies"
-          >
-            <span class="oz-toolbar-icon">🌐</span>
-            <span class="pm-count toolbar-count" id="oz-pm-count"></span>
-          </button>
-          <button
-            id="oz-bd-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Browsing Data"
-            aria-label="Browsing Data"
-          >
-            <span class="oz-toolbar-icon">📚</span>
-          </button>
-          <button
-            id="oz-bo-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Bulk Open"
-            aria-label="Bulk Open"
-          >
-            <span class="oz-toolbar-icon">🎯</span>
-          </button>
-          <button
-            id="oz-health-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Anti-Detect Health"
-            aria-label="Anti-Detect Health"
-          >
-            <span class="oz-toolbar-icon">🩺</span>
-          </button>
-          <button
-            id="oz-notif-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Notifications"
-            aria-label="Notifications"
-          >
-            <span class="oz-toolbar-icon">🔔</span>
-            <span class="notif-badge toolbar-badge" id="oz-notif-badge" hidden>0</span>
-          </button>
-          <button
-            id="oz-settings-button"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Settings"
-            aria-label="Settings"
-          >
-            <span class="oz-toolbar-icon">⚙️</span>
-          </button>
-        </div>
+        <!-- v1.8.3: sidebar-toolbar moved to footer bar. Sidebar is now
+             just workspaces tree (cleaner, more room for identities). -->
       </aside>
       <div id="oz-content"></div>
     </div>
 
-    <!-- v1.8.1: Quick Access Bar moved to footer position (was above .bottom
-         in v1.6.4-v1.8.0 — got visually clipped by content-area overlap or
-         z-index/overflow shenanigans, debug was a tar pit). As body's last
-         flex-column child it now naturally spans full window width, sits
-         below sidebar+content, and stays visible regardless of sidebar
-         width or content overflow. Populated by quick-access-bar.js. -->
-    <div id="oz-quick-access-bar" class="oz-qab"></div>
+    <!-- v1.8.3: Footer bar — two sections side by side, full window width.
+         LEFT  → #oz-quick-access-bar (social shortcuts: 🍪 IP IG X f TT ▶ in @,
+                 populated dynamically by quick-access-bar.js).
+         RIGHT → #oz-sidebar-toolbar (utility buttons relocated from inside
+                 the sidebar: 🔐 ⏱ 👥 🌐 📚 🎯 🩺 🔔 ⚙️). IDs preserved so
+                 every module (account-manager.js, time-machine.js,
+                 proxy-manager.js, browsing-data.js, bulk-opener.js,
+                 health-modal.js, team.js, notifications.js, settings.js)
+                 still finds its button via document.getElementById.
+         History: v1.6.4 introduced the quick-access bar below the URL bar,
+         v1.8.1 moved it to footer position to get reliable full-width,
+         v1.8.2 fixed the WebContentsView bounds overlap (FOOTER_HEIGHT),
+         v1.8.3 absorbed the sidebar-toolbar into the footer too. -->
+    <div id="oz-footer-bar">
+      <div id="oz-quick-access-bar" class="oz-qab"></div>
+      <div id="oz-sidebar-toolbar">
+        <button
+          id="oz-accounts-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-vault="unknown"
+          data-tooltip="Accounts"
+          aria-label="Accounts"
+        >
+          <span class="vault-status-dot"></span>
+          <span class="oz-toolbar-icon">🔐</span>
+        </button>
+        <button
+          id="oz-tm-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-tooltip="Time Machine"
+          aria-label="Time Machine"
+        >
+          <span class="oz-toolbar-icon">⏱</span>
+          <span class="tm-count toolbar-count" id="oz-tm-count"></span>
+        </button>
+        <button
+          id="oz-team-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-tooltip="Team"
+          aria-label="Team"
+        >
+          <span class="oz-toolbar-icon">👥</span>
+        </button>
+        <button
+          id="oz-pm-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-tooltip="Proxies"
+          aria-label="Proxies"
+        >
+          <span class="oz-toolbar-icon">🌐</span>
+          <span class="pm-count toolbar-count" id="oz-pm-count"></span>
+        </button>
+        <button
+          id="oz-bd-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-tooltip="Browsing Data"
+          aria-label="Browsing Data"
+        >
+          <span class="oz-toolbar-icon">📚</span>
+        </button>
+        <button
+          id="oz-bo-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-tooltip="Bulk Open"
+          aria-label="Bulk Open"
+        >
+          <span class="oz-toolbar-icon">🎯</span>
+        </button>
+        <button
+          id="oz-health-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-tooltip="Anti-Detect Health"
+          aria-label="Anti-Detect Health"
+        >
+          <span class="oz-toolbar-icon">🩺</span>
+        </button>
+        <button
+          id="oz-notif-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-tooltip="Notifications"
+          aria-label="Notifications"
+        >
+          <span class="oz-toolbar-icon">🔔</span>
+          <span class="notif-badge toolbar-badge" id="oz-notif-badge" hidden>0</span>
+        </button>
+        <button
+          id="oz-settings-button"
+          class="oz-toolbar-btn"
+          type="button"
+          data-tooltip="Settings"
+          aria-label="Settings"
+        >
+          <span class="oz-toolbar-icon">⚙️</span>
+        </button>
+      </div>
+    </div>
 
     <!-- Identity editor modal — managed by identity-editor.js -->
     <div class="oz-modal" id="oz-identity-modal" hidden>
@@ -6490,6 +6498,9 @@
 
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
+    <!-- v1.8.3: ui-prompt loaded BEFORE sidebar.js so handleNewWorkspace
+         can use window.OZ.ui.prompt() instead of broken window.prompt(). -->
+    <script src="./ui-prompt.js"></script>
     <script src="./workspace-switcher.js"></script>
     <script src="./sidebar-events.js"></script>
     <script src="./sidebar-health.js"></script>

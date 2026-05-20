@@ -169,7 +169,14 @@
     // _inlineRename de ~40 LOC).
 
     async handleNewWorkspace() {
-      const name = window.prompt('Workspace name')
+      // v1.8.3: window.prompt() is disabled in chrome-extension pages in
+      // recent Electron (silently returns null). Use the OZ custom prompt
+      // helper that renders an HTML modal.
+      const promptFn = (window.OZ && window.OZ.ui && window.OZ.ui.prompt) || window.prompt
+      const name = await promptFn('Workspace name', {
+        placeholder: 'e.g. Client X',
+        okLabel: 'Create',
+      })
       if (!name || !name.trim()) return
       const ws = await safe(
         window.oz.workspaces.create({ name: name.trim() }),
@@ -185,7 +192,13 @@
      * inline button on each workspace row.
      */
     async handleNewIdentityInWorkspace(workspaceId) {
-      const name = window.prompt('Identity name')
+      // v1.8.3: see handleNewWorkspace — window.prompt() doesn't render
+      // in chrome-extension pages in recent Electron.
+      const promptFn = (window.OZ && window.OZ.ui && window.OZ.ui.prompt) || window.prompt
+      const name = await promptFn('Identity name', {
+        placeholder: 'e.g. IG_Maria',
+        okLabel: 'Create',
+      })
       if (!name || !name.trim()) return
       const ident = await safe(
         window.oz.identities.create({ name: name.trim(), workspaceId }),
