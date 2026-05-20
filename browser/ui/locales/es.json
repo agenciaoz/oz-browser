@@ -166,7 +166,8 @@
     "tooltipTiktok": "Abrir TikTok en la identidad activa",
     "tooltipYoutube": "Abrir YouTube en la identidad activa",
     "tooltipLinkedin": "Abrir LinkedIn en la identidad activa",
-    "tooltipThreads": "Abrir Threads en la identidad activa"
+    "tooltipThreads": "Abrir Threads en la identidad activa",
+    "tooltipSessionToken": "Importar cookies de sesión a la identidad activa (pegá el cookie header para clonar una sesión ya logueada)"
   },
   "proxyDashboard": {
     "title": "Panel de salud de proxies",

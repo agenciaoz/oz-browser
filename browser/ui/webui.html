@@ -66,6 +66,9 @@
         background: var(--bg-color);
         flex: 0 0 auto;
         display: flex;
+        flex-wrap: wrap; /* 1.7.3: wrap so all entries are visible when
+                            sidebar is narrow (avoids truncation that hid
+                            the last 2-3 entries in 1.6.4+). */
         align-items: center;
         gap: 8px;
         padding: 6px 12px;
@@ -3873,15 +3876,6 @@
           >
             <span class="oz-toolbar-icon">🌐</span>
             <span class="pm-count toolbar-count" id="oz-pm-count"></span>
-          </button>
-          <button
-            id="oz-am-session-shortcut"
-            class="oz-toolbar-btn"
-            type="button"
-            data-tooltip="Session Token"
-            aria-label="Session Token"
-          >
-            <span class="oz-toolbar-icon">🍪</span>
           </button>
           <button
             id="oz-bd-button"

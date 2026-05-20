@@ -166,7 +166,8 @@
     "tooltipTiktok": "Open TikTok in active identity",
     "tooltipYoutube": "Open YouTube in active identity",
     "tooltipLinkedin": "Open LinkedIn in active identity",
-    "tooltipThreads": "Open Threads in active identity"
+    "tooltipThreads": "Open Threads in active identity",
+    "tooltipSessionToken": "Import session cookies for active identity (paste cookie header to clone a logged-in session)"
   },
   "proxyDashboard": {
     "title": "Proxy Health Dashboard",

@@ -1,23 +1,38 @@
-// OZ Browser — Quick Access Bar (v1.6.4).
+// OZ Browser — Quick Access Bar (v1.6.4, extended v1.7.3 con actions).
 //
 // Horizontal toolbar de iconos chicos debajo del URL bar. Click → abre la URL
-// en la identity activa via oz.tabs.openInIdentity. Hardcoded el preset
-// "Agencia full" por ahora (whatsmyip + IG + X + FB + TT + YT + LinkedIn +
-// Threads) — si se necesita customización, mover a settings.quickAccess.urls
+// en la identity activa via oz.tabs.openInIdentity, OR dispara una acción
+// interna (v1.7.3 — session-token shortcut). Hardcoded el preset "Agencia full"
+// por ahora (whatsmyip + IG + X + FB + TT + YT + LinkedIn + Threads + 🍪
+// Session) — si se necesita customización, mover a settings.quickAccess.urls
 // y exponer panel en Settings.
 //
 // Pattern: IIFE registra window.OZ.quickAccessBar para consistencia con el
 // resto de UI singletons (settingsMcpPane, scheduledActionsUI, etc).
 
 ;(function () {
-  // Each entry: {key, label (i18n), url, abbrev, bg}.
+  // Each entry: {key, label (i18n), url | action, abbrev, bg}.
   //  - `key`: stable id for i18n + DOM data-attribute.
   //  - `label`: i18n key (full descriptor for accessibility / tooltip).
-  //  - `url`: target URL opened in the active identity.
+  //  - `url`: target URL opened in the active identity. Exclusive con `action`.
+  //  - `action`: internal action id (v1.7.3 — 'session-token' dispatches to
+  //    window.OZ.AccountManager.openSessionShortcut()). Exclusive con `url`.
   //  - `abbrev`: 1-3 char fallback shown when icon SVG is not used (avoids
-  //    bundling third-party logos that have trademark restrictions).
+  //    bundling third-party logos that have trademark restrictions). Para
+  //    'action' entries puede ser emoji (no trademark issue).
   //  - `bg`: brand-colored background so the user recognizes by color.
   const SITES = [
+    // 1.7.3: Session-token shortcut FIRST so it's always visible regardless
+    // of sidebar width (the bar truncates last entries when it overflows).
+    // NO url — dispatches to AccountManager.openSessionShortcut() which
+    // opens AM directly on the session view with active identity selected.
+    {
+      key: 'session-token',
+      label: 'quickAccess.tooltipSessionToken',
+      action: 'session-token',
+      abbrev: '🍪',
+      bg: 'linear-gradient(135deg, #f59e0b, #c2410c)',
+    },
     {
       key: 'whatsmyip',
       label: 'quickAccess.tooltipWhatsmyip',
@@ -98,7 +113,12 @@
         btn.type = 'button'
         btn.className = 'oz-qab-btn'
         btn.dataset.siteKey = site.key
-        btn.dataset.url = site.url
+        // 1.7.3: entries are mutually exclusive — `url` (open in identity)
+        // or `action` (dispatch internal handler). We set whichever the
+        // entry provides; click handler routes based on which dataset prop
+        // is present.
+        if (site.url) btn.dataset.url = site.url
+        if (site.action) btn.dataset.action = site.action
         btn.style.background = site.bg
         btn.setAttribute('aria-label', t(site.label))
         btn.title = t(site.label)
@@ -116,10 +136,43 @@
       this.$bar.addEventListener('click', (ev) => {
         const btn = ev.target.closest('.oz-qab-btn')
         if (!btn) return
+        // 1.7.3: action entries take precedence — internal dispatch.
+        const action = btn.dataset.action
+        if (action) {
+          this._dispatchAction(action, btn)
+          return
+        }
         const url = btn.dataset.url
         if (!url) return
         this._openInActiveIdentity(url, btn)
       })
+    }
+
+    _dispatchAction(action, btn) {
+      // 1.7.3: internal action dispatcher. Adding new actions = new
+      // case here + new SITES entry with {action} instead of {url}.
+      // Visual feedback (click flash) mirrors the URL path for parity.
+      if (action === 'session-token') {
+        if (
+          window.OZ &&
+          window.OZ.AccountManager &&
+          typeof window.OZ.AccountManager.openSessionShortcut === 'function'
+        ) {
+          window.OZ.AccountManager.openSessionShortcut().catch((err) => {
+            window.oz &&
+              window.oz.log &&
+              window.oz.log.warn('quick-access', 'session-token failed', {
+                message: err && err.message,
+              })
+          })
+          btn.classList.add('clicked')
+          setTimeout(() => btn.classList.remove('clicked'), 250)
+        }
+        return
+      }
+      window.oz &&
+        window.oz.log &&
+        window.oz.log.warn('quick-access', 'unknown action', { action })
     }
 
     async _openInActiveIdentity(url, btn) {

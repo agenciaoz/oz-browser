@@ -182,24 +182,19 @@
         window.OZ.AccountManagerSession.attach(this)
       }
 
-      // 1.7.2: Toolbar shortcut (#oz-am-session-shortcut) — abre AM directo
-      // en vista session con la identity activa pre-seleccionada. Si el
-      // vault está locked, el modal aterriza en lock view normalmente y
-      // luego de unlock muestra list (comportamiento estándar — el shortcut
-      // no fuerza skip de unlock por seguridad).
-      const $shortcut = document.getElementById('oz-am-session-shortcut')
-      if ($shortcut) {
-        $shortcut.addEventListener('click', () =>
-          this.openSessionShortcut().catch(() => {}),
-        )
-      }
+      // 1.7.3: openSessionShortcut() exposed below — sin DOM wiring aquí.
+      // El quick-access-bar (top toolbar) llama directamente
+      // `window.OZ.AccountManager.openSessionShortcut()` cuando el user
+      // clickea el botón 🍪. Movido de sidebar-toolbar a top porque la
+      // sidebar-toolbar inferior estaba saturada (8 íconos compactos
+      // máximo en práctica — el #oz-health-button ya no rendea bien).
     }
 
-    // 1.7.2: programmatic open con view='session' + identity activa.
-    // Exportado para callers externos (toolbar shortcut, command palette
-    // futuro). Si el vault está locked, _refreshAndShow lo lleva a lock
-    // y este método no fuerza salto — el usuario unlockea y desde el
-    // botón "🍪 Session…" interno entra normalmente.
+    // 1.7.2/1.7.3: programmatic open con view='session' + identity activa.
+    // Exportado para callers externos (quick-access-bar 🍪 top toolbar,
+    // command palette futuro). Si el vault está locked, _refreshAndShow
+    // lo lleva a lock y este método no fuerza salto — el usuario unlockea
+    // y desde el botón "🍪 Session…" interno (AM list view) entra normal.
     async openSessionShortcut() {
       // Capturar identity activa ANTES de abrir (el modal puede tardar en
       // poblar state.identities y queremos el id real del browser, no el
