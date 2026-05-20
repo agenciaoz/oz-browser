@@ -29,6 +29,21 @@
   function ozPrompt(message, opts) {
     opts = opts || {}
     return new Promise((resolve) => {
+      // v1.9.2: per ADR 0011 (modals hide content view), we MUST hide the
+      // WebContentsView before showing any HTML modal — otherwise the
+      // WebContentsView (which lives in a separate Chromium layer above
+      // the HTML) covers the entire center of the window and the modal
+      // is invisible regardless of z-index. Fire-and-forget; restore on
+      // close. The .catch silences the (rare) IPC error so the prompt
+      // still functions even if the IPC is briefly unavailable.
+      if (window.oz && window.oz.ui && window.oz.ui.setContentVisible) {
+        try {
+          window.oz.ui.setContentVisible(false).catch(() => {})
+        } catch (_e) {
+          /* defensive */
+        }
+      }
+
       // Build modal DOM dynamically — no HTML markup required in webui.html.
       const backdrop = document.createElement('div')
       backdrop.className = 'oz-prompt-backdrop'
@@ -143,6 +158,15 @@
         resolved = true
         document.removeEventListener('keydown', onKeyDown, true)
         if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop)
+        // v1.9.2: restore the WebContentsView. Pairs with the hide call at
+        // the top of ozPrompt — keeps the tab content visible again.
+        if (window.oz && window.oz.ui && window.oz.ui.setContentVisible) {
+          try {
+            window.oz.ui.setContentVisible(true).catch(() => {})
+          } catch (_e) {
+            /* defensive */
+          }
+        }
         resolve(value)
       }
 

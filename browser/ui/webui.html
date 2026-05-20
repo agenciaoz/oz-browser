@@ -3643,12 +3643,74 @@
       /* v1.8.3: sidebar-toolbar relocated from the bottom of the sidebar
          to the right side of the footer bar. No more space-between (the
          outer #oz-footer-bar handles spacing between the two sub-groups).
-         Compact gap between adjacent utility buttons. */
+         Compact gap between adjacent utility buttons.
+         v1.9.2: override the per-button color themes (#oz-tm-button green,
+         #oz-pm-button blue, etc) so they look uniform in the footer. Those
+         themes made sense when each button was a label-button in the
+         sidebar; in the compact footer they're just noise. We keep the
+         functional indicators (vault dot, counters, notif badge). */
       #oz-sidebar-toolbar {
         display: flex;
         flex-wrap: wrap;
         align-items: center;
         gap: 4px;
+      }
+      #oz-sidebar-toolbar .oz-toolbar-btn,
+      #oz-sidebar-toolbar #oz-accounts-button,
+      #oz-sidebar-toolbar #oz-tm-button,
+      #oz-sidebar-toolbar #oz-pm-button,
+      #oz-sidebar-toolbar #oz-bd-button,
+      #oz-sidebar-toolbar #oz-bo-button,
+      #oz-sidebar-toolbar #oz-team-button,
+      #oz-sidebar-toolbar #oz-health-button,
+      #oz-sidebar-toolbar #oz-notif-button,
+      #oz-sidebar-toolbar #oz-settings-button {
+        width: 30px;
+        height: 30px;
+        flex: 0 0 auto;
+        background: transparent;
+        border: 1px solid transparent;
+        border-radius: 6px;
+        color: var(--text);
+        padding: 0;
+        margin: 0;
+        gap: 0;
+        font-size: inherit;
+        font-weight: normal;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #oz-sidebar-toolbar .oz-toolbar-btn:hover,
+      #oz-sidebar-toolbar #oz-accounts-button:hover,
+      #oz-sidebar-toolbar #oz-tm-button:hover,
+      #oz-sidebar-toolbar #oz-pm-button:hover,
+      #oz-sidebar-toolbar #oz-bd-button:hover,
+      #oz-sidebar-toolbar #oz-bo-button:hover,
+      #oz-sidebar-toolbar #oz-team-button:hover,
+      #oz-sidebar-toolbar #oz-health-button:hover,
+      #oz-sidebar-toolbar #oz-notif-button:hover,
+      #oz-sidebar-toolbar #oz-settings-button:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(255, 255, 255, 0.1);
+      }
+      /* Functional indicators kept: counters get tucked into the corner. */
+      #oz-sidebar-toolbar .toolbar-count,
+      #oz-sidebar-toolbar .toolbar-badge {
+        position: absolute;
+        top: -2px;
+        right: -2px;
+        min-width: 14px;
+        height: 14px;
+        padding: 0 3px;
+        font-size: 9px;
+        font-weight: 700;
+        line-height: 14px;
+        text-align: center;
+        border-radius: 7px;
+        background: var(--accent, #6488ff);
+        color: #fff;
+        box-shadow: 0 0 0 1.5px var(--bg-color);
       }
 
       .oz-toolbar-btn {
