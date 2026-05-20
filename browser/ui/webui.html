@@ -160,18 +160,55 @@
         background: rgba(255, 255, 255, 0.2);
       }
 
+      /*----- v1.9.1 Tabs — Chrome/Arc-style redesign.
+              Bordes superiores redondeados, tab activo destacado con color
+              más claro y "elevated" (sin separador alrededor), separadores
+              verticales finos SOLO entre tabs inactivos consecutivos. -----*/
       .tab {
-        padding: 0.2rem 0.4rem;
+        position: relative;
+        padding: 0.2rem 0.6rem;
         height: 100%;
         overflow: hidden;
         display: flex;
         flex-wrap: nowrap;
         align-items: center;
         width: 12rem;
-        box-shadow: inset -1px 0 0 0 rgba(0, 0, 0, 0.33);
+        /* v1.9.1: bordes superiores redondeados estilo Chrome/Arc. */
+        border-top-left-radius: 8px;
+        border-top-right-radius: 8px;
+        /* Smooth color transition al switchear tabs. */
+        transition: background 0.12s ease;
+      }
+      /* Separador vertical fino a la IZQUIERDA de cada tab. Excluye el
+         primer tab y el tab inmediatamente posterior al activo (para que
+         el activo no tenga línea vecina, "rompiendo" la fila de seps). */
+      .tab:not(:first-child)::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: 25%;
+        bottom: 25%;
+        width: 1px;
+        background: rgba(255, 255, 255, 0.12);
+        pointer-events: none;
+      }
+      /* El tab activo no tiene separador propio... */
+      .tab[data-active]::before {
+        display: none;
+      }
+      /* ...y tampoco el tab que viene inmediatamente después del activo. */
+      .tab[data-active] + .tab::before {
+        display: none;
       }
       .tab[data-active] {
+        /* Background más claro que el strip — "elevated", como si flotara
+           encima de los inactivos. Color matchea el toolbar/URL bar para
+           dar continuidad visual hacia abajo. */
         background: var(--tab-color);
+        z-index: 2;
+      }
+      .tab:not([data-active]):hover {
+        background: rgba(255, 255, 255, 0.06);
       }
       .tab .favicon[src] {
         display: none;
