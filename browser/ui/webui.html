@@ -61,18 +61,26 @@
         height: var(--toolbar-height);
       }
 
-      /*----- v1.6.4 Quick Access Bar — bookmark-style row below the toolbar -----*/
+      /*----- v1.6.4 Quick Access Bar — bookmark-style row below the toolbar
+              v1.8.0: confirmed full-width via body flex-column stretch.
+              Tweaks for visual prominence as the primary bookmarks bar:
+              slightly taller min-height, denser border for separation
+              from content area, hover gleam carries (set on .oz-qab-btn). -----*/
       .oz-qab {
         background: var(--bg-color);
         flex: 0 0 auto;
         display: flex;
-        flex-wrap: wrap; /* 1.7.3: wrap so all entries are visible when
-                            sidebar is narrow (avoids truncation that hid
-                            the last 2-3 entries in 1.6.4+). */
+        flex-wrap: wrap; /* 1.7.3: kept in case window is narrow / sidebar
+                            grows wider. With full-width row at desktop
+                            sizes this is irrelevant — all entries fit
+                            in a single row even with 20+ bookmarks. */
         align-items: center;
-        gap: 8px;
-        padding: 6px 12px;
-        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        gap: 10px; /* 1.8.0: slightly wider for breath at full-width. */
+        padding: 8px 14px;
+        min-height: 44px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1); /* 1.8.0:
+          stronger than the 0.06 of v1.6.4 — was barely visible. Bookmark
+          bar deserves a clearer divider from the content area below. */
       }
       .oz-qab-btn {
         width: 28px;
@@ -3588,13 +3596,20 @@
         min-height: 0;
       }
 
-      /* Footer toolbar — 8 íconos compactos */
+      /* Footer toolbar — 8-10 íconos compactos.
+         v1.8.0: flex-wrap added so when icon count exceeds horizontal
+         capacity (~7-8 buttons at default sidebar width) extras land in
+         a second row instead of being silently clipped. Symptoms before
+         the fix: #oz-health-button (🩺) was invisible in production for
+         months — confirmed in v1.7.3 smoke. justify-content kept as
+         space-between so buttons distribute evenly per row. */
       #oz-sidebar-toolbar {
         flex: 0 0 auto;
         display: flex;
+        flex-wrap: wrap;
         align-items: center;
         justify-content: space-between;
-        gap: 2px;
+        gap: 4px;
         padding: 8px 4px 4px;
         margin-top: 6px;
         border-top: 1px solid rgba(255, 255, 255, 0.08);
