@@ -7,9 +7,12 @@
 //
 // Sibling de account-manager.js (split por ADR 0005 — 500 LOC budget).
 //
-// Exports: window.OZ.AccountManagerSession.attach(am)
+// Exports: window.OZ.AccountManagerSession.attach(am), openView(am, opts?)
 //   donde `am` es la instancia AccountManager. Lee de am.$session*, am.state,
 //   am._showView. Llama am.$btnSessionImport para feedback de busy state.
+//   openView se exporta para que callers externos (ej. shortcut toolbar
+//   #oz-am-session-shortcut) puedan abrir la vista session con identity
+//   pre-seleccionada via opts = { identityId }.
 //
 // IPC: window.oz.cookies.importContent (1.7.0+ con 4to options.defaultDomain).
 
@@ -26,7 +29,7 @@
     am.$btnSessionImport.addEventListener('click', () => doImport(am))
   }
 
-  function openView(am) {
+  function openView(am, opts) {
     // Populate identity dropdown with current identities. Accept all
     // (user picks); future iteration could filter archived/locked.
     am.$sessionIdentity.innerHTML = ''
@@ -35,6 +38,17 @@
       opt.value = id.id
       opt.textContent = id.isDefault ? `${id.name} (Default)` : id.name || id.id
       am.$sessionIdentity.appendChild(opt)
+    }
+    // 1.7.2: opcional pre-select para el shortcut toolbar — si llega un
+    // identityId existente en la lista, lo seteamos como selected. Si el id
+    // no existe (raro: identity eliminada entre getActive y attach), no-op
+    // y el dropdown queda en la primera identity disponible.
+    const preselectId = opts && opts.identityId
+    if (preselectId) {
+      const exists = Array.from(am.$sessionIdentity.options).some(
+        (o) => o.value === preselectId,
+      )
+      if (exists) am.$sessionIdentity.value = preselectId
     }
     // Reset form state on each open — don't leak previous attempt's values.
     am.$sessionDomain.value = ''
@@ -101,5 +115,5 @@
   }
 
   window.OZ = window.OZ || {}
-  window.OZ.AccountManagerSession = { attach }
+  window.OZ.AccountManagerSession = { attach, openView }
 })()
