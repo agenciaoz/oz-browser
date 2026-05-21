@@ -30,24 +30,38 @@ curl -X POST http://localhost:9223/mcp \
 | POST   | `/mcp`        | JSON-RPC 2.0. Métodos: `initialize`, `tools/list`, `tools/call`, `ping`. |
 | GET    | `/mcp/events` | Server-Sent Events. Filtro `?channels=tabs.*,identities.*`.              |
 
+## Nombres de tools — underscore-as-separator
+
+Desde **v1.9.3** el server expone los nombres de tools con `_` en lugar de `.` como separador, para cumplir con el regex `^[a-zA-Z0-9_-]{1,64}$` que Anthropic frontend (Claude.ai chat, Claude Desktop) enforce-a. Ejemplos:
+
+```
+oz_identities_list       (forma canónica)
+oz_tabs_openInIdentity
+oz_system_getMetrics
+```
+
+La forma legacy con puntos (`oz.identities.list`) **sigue funcionando en `tools/call`** como backwards-compat para Cowork, scripts internos y el contract test. Pero **`tools/list` solo devuelve la forma sanitizada**, y cualquier cliente nuevo debería usar underscore form.
+
+Ver ADR 0012 "Update 2026-05-20" para el detalle.
+
 ## Tools v1 (13)
 
 ```
-oz.identities.list
-oz.identities.get(id)
-oz.identities.getActive
-oz.identities.setActive(id)
-oz.identities.create({name?, color?, userAgent?})
-oz.identities.update(id, patch)
-oz.identities.remove(id)
+oz_identities_list
+oz_identities_get(id)
+oz_identities_getActive
+oz_identities_setActive(id)
+oz_identities_create({name?, color?, userAgent?})
+oz_identities_update(id, patch)
+oz_identities_remove(id)
 
-oz.tabs.list
-oz.tabs.openInIdentity(identityId, url?)
-oz.tabs.select(tabId)
-oz.tabs.close(tabId)
+oz_tabs_list
+oz_tabs_openInIdentity(identityId, url?)
+oz_tabs_select(tabId)
+oz_tabs_close(tabId)
 
-oz.system.getMetrics
-oz.events.subscribe (redirige a GET /mcp/events)
+oz_system_getMetrics
+oz_events_subscribe (redirige a GET /mcp/events)
 ```
 
 Para detalle completo de schemas: `tools/list` o ver [`../modules/mcp-tools.md`](../modules/mcp-tools.md).
@@ -78,7 +92,7 @@ Si setteás `OZ_MCP_TOKEN`, sumalo al `env`:
 "env": { "OZ_MCP_URL": "http://localhost:9223", "OZ_MCP_TOKEN": "tu-secret" }
 ```
 
-Reiniciá Claude Code → veras `oz-browser` en la lista de servers MCP. Las tools aparecen con prefijo `oz.*`.
+Reiniciá Claude Code → veras `oz-browser` en la lista de servers MCP. Las tools aparecen con prefijo `oz_*` (underscore form — ver sección "Nombres de tools" arriba).
 
 ## Setup en Cursor
 
@@ -105,8 +119,8 @@ def call_tool(name, args=None):
     return response["result"]["_meta"]["value"]
 
 # Uso
-print(call_tool("oz.identities.list"))
-new_ident = call_tool("oz.identities.create", {"name": "Bot 1", "color": "#5b8def"})
+print(call_tool("oz_identities_list"))
+new_ident = call_tool("oz_identities_create", {"name": "Bot 1", "color": "#5b8def"})
 print(new_ident["id"])
 ```
 
@@ -134,7 +148,7 @@ async function callTool(name, args = {}) {
   return j.result._meta.value
 }
 
-console.log(await callTool('oz.identities.list'))
+console.log(await callTool('oz_identities_list'))
 ```
 
 ## Suscribirse a eventos en vivo (SSE)
@@ -174,7 +188,7 @@ curl -N "http://localhost:9223/mcp/events?channels=identities.*"
 import pandas as pd
 df = pd.read_excel("clientes.xlsx")
 for _, row in df.iterrows():
-    call_tool("oz.identities.create", {
+    call_tool("oz_identities_create", {
         "name": row["nombre"],
         "color": row.get("color", None),
     })
@@ -183,11 +197,11 @@ for _, row in df.iterrows():
 ### Smoke test: validar que crear → listar → eliminar funciona
 
 ```python
-created = call_tool("oz.identities.create", {"name": "smoke"})
+created = call_tool("oz_identities_create", {"name": "smoke"})
 assert created["id"], "no id"
-listed = call_tool("oz.identities.list")
+listed = call_tool("oz_identities_list")
 assert any(i["id"] == created["id"] for i in listed)
-ok = call_tool("oz.identities.remove", {"id": created["id"]})
+ok = call_tool("oz_identities_remove", {"id": created["id"]})
 assert ok is True
 ```
 
@@ -206,13 +220,15 @@ watch -n 2 'curl -s http://localhost:9223/health | jq'
 
 ## Troubleshooting
 
-| Síntoma                       | Causa                                    | Fix                                                      |
-| ----------------------------- | ---------------------------------------- | -------------------------------------------------------- |
-| `ECONNREFUSED localhost:9223` | OZ no corriendo o `OZ_MCP_ENABLED` unset | `OZ_MCP_ENABLED=1 npm start`                             |
-| `EADDRINUSE :9223`            | otro proceso ocupa el puerto             | `lsof -i :9223 -t \| xargs kill -9` o `OZ_MCP_PORT=9224` |
-| `401 unauthorized`            | falta `OZ_MCP_TOKEN` o difiere           | exportá el token correcto en el cliente                  |
-| Bridge errors en Claude Code  | path al bridge.js incorrecto             | edita `args[0]` del JSON config                          |
-| `tools/list` devuelve []      | server no terminó de arrancar            | retry con backoff de 500ms                               |
+| Síntoma                                    | Causa                                                  | Fix                                                                     |
+| ------------------------------------------ | ------------------------------------------------------ | ----------------------------------------------------------------------- |
+| `ECONNREFUSED localhost:9223`              | OZ no corriendo o `OZ_MCP_ENABLED` unset               | `OZ_MCP_ENABLED=1 npm start`                                            |
+| `EADDRINUSE :9223`                         | otro proceso ocupa el puerto                           | `lsof -i :9223 -t \| xargs kill -9` o `OZ_MCP_PORT=9224`                |
+| `401 unauthorized`                         | falta `OZ_MCP_TOKEN` o difiere                         | exportá el token correcto en el cliente                                 |
+| Bridge errors en Claude Code               | path al bridge.js incorrecto                           | edita `args[0]` del JSON config                                         |
+| `tools/list` devuelve []                   | server no terminó de arrancar                          | retry con backoff de 500ms                                              |
+| Claude.ai chat se rompe al conectar OZ     | regresión del sanitizer del server (v1.9.2 o anterior) | actualizar a v1.9.3+ — el server ahora sanitiza nombres en `tools/list` |
+| `Unknown tool: oz.X.Y` desde cliente nuevo | cliente usa dot form contra server muy viejo           | usar underscore form (`oz_X_Y`) o actualizar OZ a v1.9.3+               |
 
 ## Referencias
 

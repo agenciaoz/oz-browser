@@ -6,7 +6,12 @@
 // HTTP localhost (default :9223), escribe respuestas a stdout. Hace que
 // nuestro server MCP-vía-HTTP se comporte como un MCP stdio convencional.
 //
-// Cómo configurarlo en Claude Code:
+// Pass-through completo: desde v1.9.3 el server HTTP ya sanitiza los nombres
+// de tools (`oz.X.Y` → `oz_X_Y`) en tools/list y acepta ambos formatos en
+// tools/call. El bridge no toca el payload — sólo pipea stdio↔HTTP. Ver
+// ADR 0012 para la decisión de naming.
+//
+// Cómo configurarlo en Claude Code / Claude Desktop:
 //   "mcpServers": {
 //     "oz-browser": {
 //       "command": "node",
@@ -17,7 +22,8 @@
 //
 // Cómo configurarlo en Cursor: idéntico, en .cursor/mcp.json.
 //
-// Pre-requisito: OZ Browser corriendo con OZ_MCP_ENABLED=1 npm start.
+// Pre-requisito: OZ Browser corriendo con OZ_MCP_ENABLED=1 npm start
+// (o Settings → Automation → Enable MCP server desde v1.6.1).
 //
 // Doc: docs/guides/mcp-automation.md
 // ADR: docs/architecture/0012-oz-mcp-server.md
@@ -142,5 +148,5 @@ function writeError(id, code, message, data) {
 process.stderr.write(
   `[oz-mcp-bridge] forwarding stdio → ${URL_BASE}${MCP_PATH}` +
     (TOKEN ? ' (with bearer token)' : '') +
-    '\n',
+    ' [pass-through; server sanitizes tool names]\n',
 )

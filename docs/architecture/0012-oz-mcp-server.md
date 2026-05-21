@@ -125,8 +125,37 @@ Una vez implementado, las **futuras validaciones de bloque** las hace Claude ví
 
 Eso convierte el smoke test del Bloque 1.X en un script reproducible, no en una sesión interactiva con clicks.
 
+## Update 2026-05-20 — Tool name sanitization (underscore-as-separator)
+
+**Contexto del bug:** el server publicaba los 124 tools con nombres dot-namespaced (`oz.identities.list`, `oz.tabs.list`, …). El estándar MCP no prohíbe los puntos, pero el frontend de Anthropic (Claude.ai chat + Claude Desktop) valida `tool.name` contra el regex `^[a-zA-Z0-9_-]{1,64}$`. Zod rechazaba la respuesta de `tools/list` con `tools.185.FrontendRemoteMcpToolDefinition.name: String should match pattern '^[a-zA-Z0-9_-]{1,64}$'` y el chat completo quedaba inutilizable mientras OZ estuviera conectado.
+
+Cowork no exhibía el bug porque su capa de hosting hacía la conversión `.` → `_` transparente. Claude.ai no.
+
+**Decisión:** `_` como separador de namespace para nombres de tools MCP. Sanitización en el server HTTP (no en el bridge stdio):
+
+- `tools/list` mapea cada `t.name` con `name.replace(/\./g, '_')` al serializar. El catálogo interno (`mcp-tools*.js`) conserva los nombres dot-form para que sigan reflejando los IPC channels (`oz:identities:list` ↔ `oz.identities.list`) — útil cuando se debuggea cross-layer.
+- `tools/call` acepta **ambos formatos**: el canónico (`oz_identities_list`) y la forma legacy con puntos (`oz.identities.list`). Backwards-compat para Cowork, scripts internos pre-v1.9.3 y el contract test. Hay un `Map<sanitized, original>` construido en `start()` que hace el lookup inverso.
+- El bridge `tools/mcp-stdio-bridge.js` quedó reducido a pass-through. Cualquier cliente que hable directo con el HTTP también obtiene los nombres sanitizados desde la fuente.
+
+**Audit de colisiones:** los 124 tools siguen el patrón `oz.<domain>.<action>` con exactamente dos puntos cada uno. Cero tools con `_` como separador previo. La sanitización es bijectiva → sin colisiones. El server además assert-ea en `start()` que no haya colisiones y throw-ea si alguien introduce una a futuro.
+
+**Cambios:**
+
+- `browser/mcp-server.js` — helper `sanitizeToolName`, `sanitizedToOriginal` map, asserts en `start()`, lookup dual en `tools/call`.
+- `tools/mcp-stdio-bridge.js` — eliminado el Map y la lógica de sanitización; quedó pure pass-through.
+- `tests/mcp-server.smoketest.js` — asserts actualizados a underscore form + asserts nuevos (toda name matchea el pattern, ningún name tiene `.`, ambos formatos resuelven en `tools/call`, sanitizeToolName helper).
+- `docs/guides/mcp-automation.md` — examples actualizados.
+
+**Consecuencias:**
+
+- ✅ Claude.ai (web chat) ya no se rompe al conectar OZ via Cowork o stdio.
+- ✅ Cualquier cliente MCP futuro que valide el pattern (Cursor en algunas versiones, ChatGPT MCP, clientes propios) funciona out-of-the-box.
+- ✅ Bridge simplificado — menos lógica que mantener, menos sitios donde el sanitizer puede divergir.
+- ⚠️ Convención nueva a respetar: tools agregados a futuro pueden seguir nombrados con dots en el catálogo (legacy), pero los **clientes deben usar underscore form**. La doc oficial del SDK público (Bloque 1.10+) debe documentar solo underscore.
+
 ## Referencias
 
 - Diferenciador #9 en `OVERVIEW.md` y `PLAN-MAESTRO.md`.
 - Plan ahora cita esto como puente hacia Etapa 2 / Bloque 1.10.
 - Inspiraciones: Playwright MCP, Chrome DevTools Protocol, Puppeteer.
+- Pattern restriction: https://spec.modelcontextprotocol.io/ + Anthropic frontend validator.

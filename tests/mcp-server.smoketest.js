@@ -8,7 +8,9 @@
 //   - GET /health responde con shape esperado
 //   - POST /mcp initialize → protocolVersion + serverInfo
 //   - POST /mcp tools/list → todos los tools v1 con schemas
-//   - POST /mcp tools/call oz.identities.list → array
+//   - POST /mcp tools/list → todos los nombres cumplen ^[a-zA-Z0-9_-]{1,64}$
+//   - POST /mcp tools/call oz_identities_list (sanitized) → array
+//   - POST /mcp tools/call oz.identities.list (legacy dot form) → array
 //   - POST /mcp tools/call oz.identities.create → identity object
 //   - POST /mcp tools/call oz.identities.create con cap → __error
 //   - POST /mcp tools/call oz.system.getMetrics → shape esperado
@@ -16,6 +18,7 @@
 //   - bearer token: 401 si no se manda, 200 si se manda
 //   - SSE GET /mcp/events: hello + evento al broadcast
 //   - contract test: cada IPC channel oz:identities:* o oz:tabs:* tiene tool MCP
+//   - sanitizeToolName helper: dots → underscores, idempotent
 //
 // NO cubre (requiere GUI):
 //   - WebContentsView creation, materialization de tabs
@@ -92,7 +95,10 @@ delete require.cache[require.resolve('../browser/logger.js')]
 const { IdentityManager } = require('../browser/identity-manager.js')
 const { buildIdentityHandlers } = require('../browser/identity-handlers.js')
 const { buildTabHandlers } = require('../browser/tab-handlers.js')
-const { MCPServer } = require('../browser/mcp-server.js')
+const { MCPServer, sanitizeToolName } = require('../browser/mcp-server.js')
+
+// MCP spec pattern enforced by Anthropic clients (Claude.ai, Claude Desktop).
+const MCP_TOOL_NAME_PATTERN = /^[a-zA-Z0-9_-]{1,64}$/
 
 // ---------- Test runner ------------------------------------------------------
 
@@ -249,11 +255,23 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     })
     ok('result.tools is array', r.body && Array.isArray(r.body.result.tools))
     toolNames = r.body.result.tools.map((t) => t.name)
-    ok('contains oz.identities.list', toolNames.includes('oz.identities.list'))
-    ok('contains oz.identities.create', toolNames.includes('oz.identities.create'))
-    ok('contains oz.tabs.list', toolNames.includes('oz.tabs.list'))
-    ok('contains oz.system.getMetrics', toolNames.includes('oz.system.getMetrics'))
-    ok('contains oz.events.subscribe', toolNames.includes('oz.events.subscribe'))
+    // v1.9.3: tools are exposed with sanitized names (underscore-as-separator)
+    // so they match the MCP pattern Anthropic clients enforce.
+    ok('contains oz_identities_list', toolNames.includes('oz_identities_list'))
+    ok('contains oz_identities_create', toolNames.includes('oz_identities_create'))
+    ok('contains oz_tabs_list', toolNames.includes('oz_tabs_list'))
+    ok('contains oz_system_getMetrics', toolNames.includes('oz_system_getMetrics'))
+    ok('contains oz_events_subscribe', toolNames.includes('oz_events_subscribe'))
+    ok(
+      'every tool name matches MCP pattern ^[a-zA-Z0-9_-]{1,64}$',
+      toolNames.every((n) => MCP_TOOL_NAME_PATTERN.test(n)),
+      `Offenders: ${toolNames.filter((n) => !MCP_TOOL_NAME_PATTERN.test(n)).join(', ') || '(none)'}`,
+    )
+    ok(
+      'no tool name contains a dot (would break Claude.ai)',
+      toolNames.every((n) => !n.includes('.')),
+      `Dot offenders: ${toolNames.filter((n) => n.includes('.')).join(', ') || '(none)'}`,
+    )
     ok(
       'every tool has inputSchema',
       r.body.result.tools.every((t) => t.inputSchema),
@@ -266,14 +284,14 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     )
   }
 
-  // 5. tools/call oz.identities.list
-  section('POST /mcp tools/call oz.identities.list')
+  // 5a. tools/call con el nombre sanitizado (forma canónica desde v1.9.3)
+  section('POST /mcp tools/call oz_identities_list (sanitized form)')
   {
     const r = await postRpc(port, {
       jsonrpc: '2.0',
       id: 3,
       method: 'tools/call',
-      params: { name: 'oz.identities.list', arguments: {} },
+      params: { name: 'oz_identities_list', arguments: {} },
     })
     ok('result.content[0].type === text', r.body.result.content[0].type === 'text')
     ok('isError === false', r.body.result.isError === false)
@@ -283,6 +301,22 @@ console.log(`Test userData: ${TEST_USERDATA}`)
       Array.isArray(meta) && meta.length === 1,
     )
     ok('Default identity returned', meta && meta[0] && meta[0].isDefault === true)
+  }
+
+  // 5b. tools/call con el nombre dot-form (backwards compat para Cowork +
+  // scripts internos pre-v1.9.3).
+  section('POST /mcp tools/call oz.identities.list (legacy dot form)')
+  {
+    const r = await postRpc(port, {
+      jsonrpc: '2.0',
+      id: 31,
+      method: 'tools/call',
+      params: { name: 'oz.identities.list', arguments: {} },
+    })
+    ok(
+      'legacy dot form still routes to handler',
+      r.body.result && r.body.result._meta && Array.isArray(r.body.result._meta.value),
+    )
   }
 
   // 6. tools/call oz.identities.create
@@ -502,15 +536,15 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     // (e.g. legacy rename/setColor wrappers — covered by *.update which is
     // the canonical version).
     const exempt = new Set([
-      'oz:identities:rename', // wrapper of oz.identities.update
-      'oz:identities:setColor', // wrapper of oz.identities.update
-      'oz:tabs:getIdentity', // info available via oz.tabs.list
+      'oz:identities:rename', // wrapper of oz_identities_update
+      'oz:identities:setColor', // wrapper of oz_identities_update
+      'oz:tabs:getIdentity', // info available via oz_tabs_list
       'oz:tabs:bulkCreateLazy', // power-user, reduce v1 surface
       'oz:tabs:contextMenu', // 1.7d UI-only — pops native menu via Menu.popup
       'oz:identities:contextMenu', // HX4 UI-only — native ctx menu sidebar
       'oz:workspaces:contextMenu', // HX4 UI-only — native ctx menu sidebar
-      'oz:workspaces:rename', // wrapper of oz.workspaces.update
-      'oz:workspaces:setColor', // wrapper of oz.workspaces.update
+      'oz:workspaces:rename', // wrapper of oz_workspaces_update
+      'oz:workspaces:setColor', // wrapper of oz_workspaces_update
       'oz:excel:pickExportPath', // 1.5f UI-only file dialog wrapper
       'oz:excel:pickImportPath', // 1.5f UI-only file dialog wrapper
       'oz:cookies:pickExportPath', // 1.7c UI-only file dialog wrapper
@@ -521,13 +555,38 @@ console.log(`Test userData: ${TEST_USERDATA}`)
 
     for (const channel of found) {
       if (exempt.has(channel)) continue
-      const expectedTool = channel.replace(/^oz:/, 'oz.').replace(/:/, '.')
+      // v1.9.3: MCP tool names use underscore-as-separator (oz_X_Y) instead of
+      // the dot form mirroring IPC (oz:X:Y → oz.X.Y). Server sanitizes at
+      // tools/list boundary; we assert against the sanitized form here.
+      const expectedTool = channel.replace(/^oz:/, 'oz_').replace(/:/g, '_')
       ok(
         `IPC ${channel} has matching MCP tool ${expectedTool}`,
         toolNames.includes(expectedTool),
         `Missing tool: ${expectedTool}`,
       )
     }
+  }
+
+  // 15. sanitizeToolName helper — pure-function unit assertions
+  section('sanitizeToolName helper')
+  {
+    ok(
+      'dot form sanitizes to underscore',
+      sanitizeToolName('oz.identities.list') === 'oz_identities_list',
+    )
+    ok(
+      'already-sanitized name is idempotent',
+      sanitizeToolName('oz_identities_list') === 'oz_identities_list',
+    )
+    ok(
+      'name without dots is unchanged',
+      sanitizeToolName('healthcheck') === 'healthcheck',
+    )
+    ok(
+      'non-string input passes through',
+      sanitizeToolName(null) === null && sanitizeToolName(undefined) === undefined,
+    )
+    ok('multi-dot name fully sanitizes', sanitizeToolName('a.b.c.d.e') === 'a_b_c_d_e')
   }
 
   // ---------- Done -----------------------------------------------------------

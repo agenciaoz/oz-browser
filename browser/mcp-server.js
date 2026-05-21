@@ -27,6 +27,18 @@ const { buildToolCatalog, buildMetrics } = require('./mcp-tools')
 const DEFAULT_PORT = 9223
 const PROTOCOL_VERSION = '2024-11-05' // MCP spec version we implement
 
+// MCP tool names must match ^[a-zA-Z0-9_-]{1,64}$ per the Anthropic frontend
+// (Claude.ai, Claude Desktop). The OZ catalog uses dot-namespaced names that
+// mirror the IPC channels (oz.identities.list ↔ oz:identities:list) — internally
+// useful, but rejected by the validator. We sanitize at this boundary so:
+//   - tools/list exposes oz_identities_list to every client
+//   - tools/call accepts both oz_identities_list AND oz.identities.list
+//     (backwards compat for in-house scripts, Cowork, contract tests)
+// See ADR 0012 — "Tool naming and the underscore-as-separator decision".
+function sanitizeToolName(name) {
+  return typeof name === 'string' ? name.replace(/\./g, '_') : name
+}
+
 class MCPServer {
   constructor(browser, options = {}) {
     this.browser = browser
@@ -47,6 +59,29 @@ class MCPServer {
 
     this.tools = buildToolCatalog(this.browser)
     this.toolByName = new Map(this.tools.map((t) => [t.name, t]))
+
+    // v1.9.3: build sanitized→original lookup so tools/call accepts the
+    // underscore form (oz_identities_list) returned by tools/list. We also
+    // assert no collision: a tool's sanitized name must not clash with any
+    // existing tool name (would silently shadow the wrong handler). Catalog
+    // audit at 2026-05-20 confirmed zero collisions across 124 tools.
+    this.sanitizedToOriginal = new Map()
+    for (const tool of this.tools) {
+      const sanitized = sanitizeToolName(tool.name)
+      if (sanitized === tool.name) continue
+      if (this.toolByName.has(sanitized)) {
+        throw new Error(
+          `MCP tool name collision: sanitized form '${sanitized}' clashes with existing tool name`,
+        )
+      }
+      const prev = this.sanitizedToOriginal.get(sanitized)
+      if (prev && prev !== tool.name) {
+        throw new Error(
+          `MCP tool name collision: both '${prev}' and '${tool.name}' sanitize to '${sanitized}'`,
+        )
+      }
+      this.sanitizedToOriginal.set(sanitized, tool.name)
+    }
 
     this._wireBrowserEvents()
 
@@ -251,9 +286,12 @@ class MCPServer {
         return {}
 
       case 'tools/list':
+        // Names are sanitized at this boundary so they satisfy the
+        // ^[a-zA-Z0-9_-]{1,64}$ pattern enforced by Anthropic clients
+        // (Claude.ai, Claude Desktop). Internal catalog keeps dots.
         return {
           tools: this.tools.map((t) => ({
-            name: t.name,
+            name: sanitizeToolName(t.name),
             description: t.description,
             inputSchema: t.inputSchema,
           })),
@@ -264,7 +302,14 @@ class MCPServer {
         if (!name) {
           throw withCode('METHOD_NOT_FOUND', 'tools/call missing name')
         }
-        const tool = this.toolByName.get(name)
+        // Accept both the sanitized form (what tools/list returns) and the
+        // original dot form (backwards compat for Cowork, scripts, and any
+        // pre-v1.9.3 client). sanitizedToOriginal is populated in start().
+        let tool = this.toolByName.get(name)
+        if (!tool) {
+          const original = this.sanitizedToOriginal.get(name)
+          if (original) tool = this.toolByName.get(original)
+        }
         if (!tool) {
           throw withCode('METHOD_NOT_FOUND', `Unknown tool: ${name}`)
         }
@@ -383,4 +428,4 @@ function withCode(code, message) {
   return e
 }
 
-module.exports = { MCPServer }
+module.exports = { MCPServer, sanitizeToolName }
