@@ -15,6 +15,7 @@ const log = require('./logger')
 const registry = require('./bulk-actions-registry')
 const { echoAction } = require('./bulk-actions-echo')
 const { buildNavigateAction } = require('./bulk-actions-navigate')
+const { buildIgCommentAction } = require('./bulk-actions-ig-comment')
 const { BulkRunner } = require('./bulk-runner')
 
 function setupBulkRunner(browser, opts = {}) {
@@ -42,6 +43,14 @@ function setupBulkRunner(browser, opts = {}) {
   if (!registry.get('navigate')) {
     registry.register(
       buildNavigateAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
+  }
+  if (!registry.get('ig_comment')) {
+    registry.register(
+      buildIgCommentAction({
         identityManager: browser.identityManager,
         electron: opts.electron || _safeRequireElectron(),
       }),
