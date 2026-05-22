@@ -70,6 +70,73 @@ oz_events_subscribe (redirige a GET /mcp/events)
 
 Para detalle completo de schemas: `tools/list` o ver [`../modules/mcp-tools.md`](../modules/mcp-tools.md).
 
+## Bulk Runner — `oz_bulk_*` (v2.0.0-alpha.1+)
+
+A partir de v2 el motor de automation expone 7 tools nuevos. Ver [ADR 0030](../architecture/0030-bulk-runner.md) y [`../modules/bulk-runner.md`](../modules/bulk-runner.md) para detalle completo.
+
+```
+oz_bulk_actions                                       # lista actions disponibles
+oz_bulk_run({actionId, identityIds, params, options}) # crea + arranca
+oz_bulk_create({...})                                 # crea sin arrancar
+oz_bulk_start(runId)                                  # arranca un run creado
+oz_bulk_cancel(runId)                                 # gentle cancel
+oz_bulk_get(runId)                                    # estado completo (meta + items)
+oz_bulk_list                                          # historial de runs
+```
+
+**Modelo mental:** un agente define una acción + un set de identities + le da play. OZ ejecuta secuencialmente con delays anti-detect (default 30-90s entre identities), reporta progreso item-por-item, persiste resultados.
+
+**Actions disponibles en alpha.1:** solo `echo` (test action que valida el motor sin tocar plataformas reales). Actions reales (`igPost`, `igComment`, etc.) en sub-bloques siguientes del MVP.
+
+### Ejemplo: correr echo en todas las identities
+
+```bash
+# Discover qué actions hay
+curl -s -X POST http://localhost:9223/mcp -H "Content-Type: application/json" -d '{
+  "jsonrpc":"2.0","id":1,"method":"tools/call",
+  "params":{"name":"oz_bulk_actions","arguments":{}}
+}' | jq '.result._meta.value'
+
+# Listar identities para saber sus ids
+curl -s -X POST http://localhost:9223/mcp -H "Content-Type: application/json" -d '{
+  "jsonrpc":"2.0","id":2,"method":"tools/call",
+  "params":{"name":"oz_ids_list","arguments":{}}
+}' | jq '.result._meta.value[] | {id, name}'
+
+# Disparar bulk run con delays instantáneos
+curl -s -X POST http://localhost:9223/mcp -H "Content-Type: application/json" -d '{
+  "jsonrpc":"2.0","id":3,"method":"tools/call",
+  "params":{"name":"oz_bulk_run","arguments":{
+    "actionId":"echo",
+    "identityIds":["id-1","id-2","id-3"],
+    "params":{"message":"hola"},
+    "options":{"minDelayMs":0,"maxDelayMs":0}
+  }}
+}' | jq '.result._meta.value'
+# → {"ok":true,"runId":"br-abc123..."}
+
+# Poll status
+curl -s -X POST http://localhost:9223/mcp -H "Content-Type: application/json" -d '{
+  "jsonrpc":"2.0","id":4,"method":"tools/call",
+  "params":{"name":"oz_bulk_get","arguments":{"runId":"br-abc123..."}}
+}' | jq '.result._meta.value.meta.status'
+```
+
+### Defaults importantes
+
+- Delays default `30000-90000` ms (30-90s) — pensados para anti-detect en plataformas reales. Para tests / iteraciones rápidas pasar `options.minDelayMs:0, maxDelayMs:0`.
+- Cap `200` identities por run, `5` runs concurrentes.
+- Si una identity falla, el run sigue con las siguientes (skip+continue).
+- No hay retry automático — el operador relanza manual sobre las que fallaron.
+
+### Live events vía SSE
+
+Los eventos `oz:bulk:progress` / `oz:bulk:completed` también fluyen por el stream `/mcp/events` con prefix `bulk.`:
+
+```bash
+curl -N "http://localhost:9223/mcp/events?channels=bulk.*"
+```
+
 ## Setup en Claude Code
 
 `~/Library/Application Support/Claude/claude-code-config.json` (o donde guarde tu versión):
