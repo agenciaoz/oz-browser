@@ -63,6 +63,39 @@ const {
 // ---------- Login flow registry --------------------------------------------
 
 const LOGIN_FLOWS = {
+  'facebook.com': {
+    site: 'facebook.com',
+    url: 'https://www.facebook.com/login',
+    usernameSelectors: [
+      'input[name="email"]',
+      'input[type="email"]',
+      'input[id="email"]',
+    ],
+    passwordSelectors: [
+      'input[name="pass"]',
+      'input[type="password"]',
+      'input[autocomplete="current-password"]',
+    ],
+    submitSelectors: [
+      'button[name="login"]',
+      'button[type="submit"]',
+      '[data-testid="royal_login_button"]',
+    ],
+    // FB 2FA via auth app or SMS code.
+    totpInputSelectors: [
+      'input[name="approvals_code"]',
+      'input[autocomplete="one-time-code"]',
+    ],
+    totpSubmitSelectors: ['button[id="checkpointSubmitButton"]', 'button[type="submit"]'],
+    loggedInIndicators: [
+      'div[aria-label="Account"]',
+      'a[aria-label="Home" i]',
+      'a[aria-label="Inicio" i]',
+      'div[role="banner"][data-pagelet="Stories"]',
+      'a[href="/marketplace/"]',
+    ],
+    stillLoggedOutIndicators: ['input[name="email"]', 'a[href*="/login"]'],
+  },
   'tiktok.com': {
     site: 'tiktok.com',
     url: 'https://www.tiktok.com/login/phone-or-email/email',
