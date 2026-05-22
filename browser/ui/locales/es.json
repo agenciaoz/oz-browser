@@ -560,6 +560,38 @@
       "moreErrors": "…y {{n}} más"
     }
   },
+  "bulkRunner": {
+    "title": "⚡ Ejecución masiva",
+    "closeAria": "Cerrar",
+    "cancel": "Cancelar",
+    "compose": {
+      "actionLabel": "Acción",
+      "identitiesLegend": "Identities donde ejecutar",
+      "searchPlaceholder": "Buscar identities…",
+      "selectVisible": "Seleccionar visibles",
+      "countLabel": "{{n}} seleccionadas",
+      "optionsSummary": "Delays anti-detección (avanzado)",
+      "minDelayLabel": "Delay mínimo entre identities (segundos)",
+      "maxDelayLabel": "Delay máximo entre identities (segundos)",
+      "delaysHint": "Delay aleatorio entre min y max antes de cada identity. Usá 0/0 para correr instantáneo. Default 30-90s imita cadencia humana.",
+      "submit": "Ejecutar ahora"
+    },
+    "running": {
+      "colIdentity": "Identity",
+      "colStatus": "Estado",
+      "colResult": "Resultado",
+      "statsText": "{{total}} total · {{done}} listas · {{failed}} fallaron · {{cancelled}} canceladas",
+      "cancelRun": "Cancelar ejecución",
+      "newRun": "Nueva ejecución"
+    },
+    "error": {
+      "noAction": "Elegí una acción primero.",
+      "noIdentities": "Seleccioná al menos una identity.",
+      "missingParam": "Falta param requerido: {{param}}",
+      "badDelays": "Los delays deben ser números válidos con max ≥ min."
+    },
+    "paletteEntry": "Ejecución masiva…"
+  },
   "team": {
     "title": "👥 Equipo",
     "closeAria": "Cerrar",
@@ -683,6 +715,10 @@
       "openSettings": {
         "label": "Abrir Configuración",
         "keywords": "preferencias opciones ajustes"
+      },
+      "openBulkRunner": {
+        "label": "Ejecución masiva…",
+        "keywords": "bulk run automatizacion accion masivo lote echo"
       },
       "openBulkOpener": {
         "label": "Abrir en masa…",

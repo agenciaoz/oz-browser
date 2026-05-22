@@ -285,6 +285,7 @@
           notifications: window.OZ && window.OZ.Notifications,
           healthCheck: window.OZ && window.OZ.HealthCheck,
           extensionsManager: window.OZ && window.OZ.ExtensionsManager,
+          bulkRunner: window.OZ && window.OZ.bulkRunnerUI,
         }
         const ui = modalMap[payload.modal]
         if (ui && typeof ui.open === 'function') ui.open()

@@ -201,6 +201,16 @@ function buildCommands(sources) {
       emoji: '⚙️',
       payload: { action: 'open-modal', modal: 'settings' },
     },
+    // v2 sub-bloque 2: Bulk Runner — also opens via Cmd+Shift+B.
+    {
+      id: 'action:open-bulk-runner',
+      label: 'Bulk Run…',
+      labelKey: 'commandPalette.actions.openBulkRunner.label',
+      keywords: 'bulk run automation action mass batch',
+      keywordsKey: 'commandPalette.actions.openBulkRunner.keywords',
+      emoji: '⚡',
+      payload: { action: 'open-modal', modal: 'bulkRunner' },
+    },
     {
       id: 'action:open-bulk-opener',
       label: 'Bulk Open Identities…',

@@ -560,6 +560,38 @@
       "moreErrors": "…and {{n}} more"
     }
   },
+  "bulkRunner": {
+    "title": "⚡ Bulk Run",
+    "closeAria": "Close",
+    "cancel": "Cancel",
+    "compose": {
+      "actionLabel": "Action",
+      "identitiesLegend": "Identities to run on",
+      "searchPlaceholder": "Search identities…",
+      "selectVisible": "Select visible",
+      "countLabel": "{{n}} selected",
+      "optionsSummary": "Anti-detect delays (advanced)",
+      "minDelayLabel": "Min delay between identities (seconds)",
+      "maxDelayLabel": "Max delay between identities (seconds)",
+      "delaysHint": "Random delay between min and max before each identity. Use 0/0 for instant. Default 30-90s matches human-like cadence.",
+      "submit": "Run now"
+    },
+    "running": {
+      "colIdentity": "Identity",
+      "colStatus": "Status",
+      "colResult": "Result",
+      "statsText": "{{total}} total · {{done}} done · {{failed}} failed · {{cancelled}} cancelled",
+      "cancelRun": "Cancel run",
+      "newRun": "New run"
+    },
+    "error": {
+      "noAction": "Pick an action first.",
+      "noIdentities": "Select at least one identity.",
+      "missingParam": "Missing required param: {{param}}",
+      "badDelays": "Delays must be valid numbers, with max ≥ min."
+    },
+    "paletteEntry": "Bulk Run…"
+  },
   "team": {
     "title": "👥 Team",
     "closeAria": "Close",
@@ -683,6 +715,10 @@
       "openSettings": {
         "label": "Open Settings",
         "keywords": "preferences config options"
+      },
+      "openBulkRunner": {
+        "label": "Bulk Run…",
+        "keywords": "bulk run automation action mass batch echo"
       },
       "openBulkOpener": {
         "label": "Bulk Open Identities…",
