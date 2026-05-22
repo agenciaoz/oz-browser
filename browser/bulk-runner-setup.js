@@ -19,6 +19,8 @@ const { buildIgCommentAction } = require('./bulk-actions-ig-comment')
 const { buildIgPostAction } = require('./bulk-actions-ig-post')
 const { buildIgLikeAction } = require('./bulk-actions-ig-like')
 const { buildIgFollowAction } = require('./bulk-actions-ig-follow')
+const { buildXPostAction } = require('./bulk-actions-x-post')
+const { buildXLikeAction } = require('./bulk-actions-x-like')
 const { BulkRunner } = require('./bulk-runner')
 
 function setupBulkRunner(browser, opts = {}) {
@@ -78,6 +80,22 @@ function setupBulkRunner(browser, opts = {}) {
   if (!registry.get('ig_follow')) {
     registry.register(
       buildIgFollowAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
+  }
+  if (!registry.get('x_post')) {
+    registry.register(
+      buildXPostAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
+  }
+  if (!registry.get('x_like')) {
+    registry.register(
+      buildXLikeAction({
         identityManager: browser.identityManager,
         electron: opts.electron || _safeRequireElectron(),
       }),

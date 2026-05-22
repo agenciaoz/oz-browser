@@ -63,6 +63,48 @@ const {
 // ---------- Login flow registry --------------------------------------------
 
 const LOGIN_FLOWS = {
+  'x.com': {
+    site: 'x.com',
+    url: 'https://x.com/i/flow/login',
+    // X (formerly Twitter) login: username on screen 1, password on screen 2.
+    // The submit button between screens has the same selector pattern, so we
+    // just bash all submitSelectors at every step.
+    usernameSelectors: [
+      'input[autocomplete="username"]',
+      'input[name="text"]',
+      'input[type="text"][autocapitalize="sentences"]',
+    ],
+    passwordSelectors: [
+      'input[autocomplete="current-password"]',
+      'input[name="password"]',
+      'input[type="password"]',
+    ],
+    submitSelectors: [
+      '[data-testid="LoginForm_Login_Button"]',
+      'button[type="submit"]',
+      '[role="button"][data-testid*="ogin"]',
+    ],
+    totpInputSelectors: [
+      'input[data-testid="ocfEnterTextTextInput"]',
+      'input[name="text"]',
+      'input[autocomplete="one-time-code"]',
+    ],
+    totpSubmitSelectors: [
+      '[data-testid="ocfEnterTextNextButton"]',
+      'button[type="submit"]',
+    ],
+    loggedInIndicators: [
+      'a[data-testid="AppTabBar_Home_Link"]',
+      'a[href="/home"]',
+      '[data-testid="primaryColumn"]',
+      'a[aria-label="Home" i]',
+      'a[aria-label="Inicio" i]',
+    ],
+    stillLoggedOutIndicators: [
+      'input[autocomplete="username"]',
+      'a[href="/i/flow/login"]',
+    ],
+  },
   'instagram.com': {
     site: 'instagram.com',
     url: 'https://www.instagram.com/accounts/login/',
