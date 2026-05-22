@@ -25,6 +25,7 @@ const { buildTiktokLikeAction } = require('./bulk-actions-tiktok-like')
 const { buildTiktokFollowAction } = require('./bulk-actions-tiktok-follow')
 const { buildFbLikeAction } = require('./bulk-actions-fb-like')
 const { BulkRunner } = require('./bulk-runner')
+const { BulkRateLimit } = require('./bulk-rate-limit')
 
 function setupBulkRunner(browser, opts = {}) {
   if (browser.bulkRunner) return browser.bulkRunner
@@ -129,6 +130,12 @@ function setupBulkRunner(browser, opts = {}) {
     )
   }
 
+  // v2 sub-bloque 6: rate-limit registry. Persists per-identity per-platform
+  // counters; runner consults before each item to skip when daily caps are
+  // hit. Purges entries older than 30 days at boot.
+  const rateLimit = new BulkRateLimit({ userDataDir })
+  rateLimit.purgeOldEntries(30)
+
   const runner = new BulkRunner({
     userDataDir,
     identityManager: browser.identityManager,
@@ -139,7 +146,10 @@ function setupBulkRunner(browser, opts = {}) {
     // moment we actually need it (on needs_login auto-login retry).
     accountsAPI: () => (browser.handlers && browser.handlers.accounts) || null,
     electron,
+    rateLimit,
   })
+
+  browser.bulkRateLimit = rateLimit
 
   // Surface lifecycle events to the central log without flooding.
   runner.on('created', (e) => log.info('bulk-runner', 'created', { runId: e.runId }))

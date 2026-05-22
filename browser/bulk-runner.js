@@ -102,6 +102,11 @@ class BulkRunner extends EventEmitter {
     this.accountsAPI = opts.accountsAPI || null
     this.electron = opts.electron || null
     this.autoLoginFn = opts.autoLoginFn || null // override for tests
+    // v2 sub-bloque 6: optional rate-limit registry. When set, the runner
+    // skips items whose (identity, platform, action) would exceed the daily
+    // cap (item.status='skipped', error.code='rate-limit'). Successful runs
+    // call increment() to track usage.
+    this.rateLimit = opts.rateLimit || null
     fs.mkdirSync(this.runsDir, { recursive: true })
     // Cache: runId → { meta, items, controller? }
     this._runs = new Map()
@@ -361,6 +366,22 @@ class BulkRunner extends EventEmitter {
           break
         }
       }
+      // v2 sub-bloque 6: rate-limit check BEFORE marking running.
+      const rlGate = _rateLimitCheck(this.rateLimit, item, action)
+      if (rlGate && rlGate.skip) {
+        item.status = STATUS_SKIPPED
+        item.error = rlGate.error
+        item.finishedAt = new Date().toISOString()
+        r.meta.stats.skipped++
+        this._persist(runId)
+        this.emit('progress', {
+          runId,
+          item: { ...item },
+          index: i,
+          total: r.items.length,
+        })
+        continue
+      }
       item.status = STATUS_RUNNING
       item.startedAt = new Date().toISOString()
       this._persist(runId)
@@ -415,6 +436,7 @@ class BulkRunner extends EventEmitter {
         }
       }
       if (!runErr) {
+        _rateLimitIncrement(this.rateLimit, item, action, this.logger)
         item.status = STATUS_DONE
         item.result = result == null ? null : result
         item.finishedAt = new Date().toISOString()
@@ -547,6 +569,19 @@ function _silentLogger() {
     error() {},
     debug() {},
   }
+}
+
+function _rateLimitCheck(rateLimit, item, action) {
+  return require('./bulk-runner-rate-limit').checkBeforeItem(rateLimit, item, action)
+}
+
+function _rateLimitIncrement(rateLimit, item, action, logger) {
+  return require('./bulk-runner-rate-limit').incrementAfterSuccess(
+    rateLimit,
+    item,
+    action,
+    logger,
+  )
 }
 
 function _defaultAutoLoginFn() {
