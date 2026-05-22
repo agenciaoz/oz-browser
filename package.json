@@ -14,6 +14,7 @@
     "package": "electron-forge package",
     "make": "electron-forge make",
     "publish": "electron-forge publish",
+    "postpublish": "node scripts/publish-yml.js",
     "test": "for t in tests/*.smoketest.js; do node \"$t\" || exit 1; done",
     "test:safe": "bash scripts/safe-test.sh",
     "check:loc": "node scripts/check-loc.js",
