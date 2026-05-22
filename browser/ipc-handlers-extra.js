@@ -77,6 +77,7 @@ function registerBulkHandlersIPC(browser) {
   ipcMain.handle('oz:bulk:cancel', (_e, runId) => h.cancel(runId))
   ipcMain.handle('oz:bulk:get', (_e, runId) => h.get(runId))
   ipcMain.handle('oz:bulk:list', () => h.list())
+  ipcMain.handle('oz:bulk:rlStats', (_e, opts) => h.rateLimitStats(opts))
 }
 
 // ----- MCP server status / config snippet (v1.6.1) --------------------------

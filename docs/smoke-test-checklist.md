@@ -37,6 +37,7 @@ Si algún punto falla → me decís y miramos juntos. **No avances** hasta que e
 5. Run
 
 **Esperado:**
+
 - Tabla muestra cada identity con `running ▶︎` → `done ✓`
 - Result column dice algo tipo `{ "message": "hola", ... }`
 - Stats line: `2 done · 0 failed`
@@ -53,6 +54,7 @@ Si esto falla → me decís. **No avances**.
 4. Run
 
 **Esperado:**
+
 - Cada identity abre una window oculta, navega, cierra.
 - Result column: `{ "url": "...", "durationMs": ... }`
 
@@ -71,6 +73,7 @@ Si una identity tiene proxy asignado, el IP que reporta whatsmyip debería ser e
 5. Run
 
 **Outcomes posibles:**
+
 - ✅ `done` + `action: 'liked'` → **funciona perfecto**. Andá al post en IG manual y verificá el ♥ está prendido.
 - ⚠️ `done` + `action: 'already-liked'` → ya tenía like. Tested OK, no clickeó.
 - ❌ `failed` + `needs_login` → la identity NO está logueada. Logueala manual y reintentá.
@@ -87,6 +90,7 @@ Si una identity tiene proxy asignado, el IP que reporta whatsmyip debería ser e
 Mismo pattern que Test 3 pero con `profileUrl` (perfil ajeno, NO el tuyo).
 
 **Outcomes:**
+
 - `followed` ✅ (público) o `requested` ✅ (privado) → andá a IG manual y confirmá
 - `already-following` → ya seguías. Tested OK.
 - Otros errors → mismo flujo que test 3
@@ -135,6 +139,7 @@ URL de perfil TikTok (o solo el username). Mismo pattern.
 URL de un post FB público. 1 identity FB logueada.
 
 **Si falla:**
+
 - `not-found` muy probable — FB cambia DOM frecuente. Me mandás screenshot + URL del post.
 - `captcha` también probable. Hacé scroll manual en la identity y aceptá cookies, etc, antes de retry.
 - `click-failed` = FB action-block. Espera 1+ hora.
@@ -144,6 +149,7 @@ URL de un post FB público. 1 identity FB logueada.
 ## ✅ Test 10: Auto-login (lo más importante)
 
 **Setup:**
+
 1. Account Manager (Cmd+Shift+A) → Unlock vault
 2. New account:
    - identity = la que vas a usar
@@ -153,16 +159,19 @@ URL de un post FB público. 1 identity FB logueada.
 3. **Deslogueate manualmente de esa cuenta en la identity** (para forzar `needs_login`)
 
 **Test:**
+
 1. Bulk Runner → IG Like + esa identity + un post URL
 2. Run
 
 **Esperado:**
+
 - Item entra a `running`
 - Internamente falla con `needs_login`
 - OZ spawnea una window, va a `/accounts/login/`, llena user + pass, si pide 2FA llena el TOTP, vuelve, verifica login
 - Item flippe a `done` con badge `🔐 re-logged` antes del result
 
 **Si falla:**
+
 - `vault-locked` → desbloqueá el vault
 - `no-credentials` → revisá que el account esté guardado con el site correcto
 - `totp-needed-no-secret` → la cuenta tiene 2FA y vos no guardaste el totpSecret
@@ -175,6 +184,7 @@ URL de un post FB público. 1 identity FB logueada.
 **Setup:** Bajá el cap temporal a 1 para testear sin gastar 200 likes.
 
 No tenés UI para esto todavía. Manual:
+
 1. Abrir DevTools de OZ (Cmd+Option+I en el bg de la app, no en un tab)
 2. Console: `await window.oz.bulk.run({actionId:'echo', identityIds:[...], params:{message:'x'}, options:{minDelayMs:0,maxDelayMs:0}})`
 

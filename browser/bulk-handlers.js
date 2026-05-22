@@ -36,6 +36,57 @@ function buildBulkHandlers(browser) {
     listActions() {
       return registry.list()
     },
+    // v2 Etapa 2.2 — rate-limit stats exposed for UI / MCP.
+    // Returns: { asOf, entries:[{identityId, platform, actionId, day, count, cap, remaining}] }
+    // If opts.identityId is set, filter to that identity.
+    rateLimitStats(opts = {}) {
+      const rl = browser.bulkRateLimit
+      if (!rl) {
+        return {
+          __error: {
+            code: 'NOT_AVAILABLE',
+            message: 'rate-limit registry not initialized',
+          },
+        }
+      }
+      const identityId =
+        opts && typeof opts === 'object' && typeof opts.identityId === 'string'
+          ? opts.identityId
+          : undefined
+      let raw
+      try {
+        raw = rl.stats(identityId)
+      } catch (err) {
+        return {
+          __error: { code: err.code || 'ERROR', message: err.message },
+        }
+      }
+      const entries = []
+      for (const e of Object.values(raw || {})) {
+        const platform = e.platform === '_' ? null : e.platform
+        const actionId = e.actionId === '_' ? null : e.actionId
+        const cap = rl.getCap(platform, actionId)
+        const isFinite = cap !== Infinity && Number.isFinite(cap)
+        entries.push({
+          identityId: e.identityId,
+          platform,
+          actionId,
+          day: e.day,
+          count: e.count,
+          cap: isFinite ? cap : null,
+          remaining: isFinite ? Math.max(0, cap - e.count) : null,
+        })
+      }
+      entries.sort(
+        (a, b) =>
+          (a.identityId || '').localeCompare(b.identityId || '') ||
+          (a.platform || '').localeCompare(b.platform || '') ||
+          (a.actionId || '').localeCompare(b.actionId || '') ||
+          (a.day || '').localeCompare(b.day || ''),
+      )
+      const today = new Date().toISOString().slice(0, 10)
+      return { asOf: today, entries }
+    },
     async create(spec) {
       try {
         return await runner.create(spec || {})

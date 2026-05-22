@@ -104,6 +104,19 @@ function buildBulkTools({ bulk }) {
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => bulk().list(),
     },
+    {
+      name: 'oz.bulk.rlStats',
+      description:
+        'Get per-identity per-platform rate-limit stats for today (and any prior unpurged days). Returns { asOf, entries:[{identityId, platform, actionId, day, count, cap, remaining}] }. cap/remaining are null for platform-agnostic actions (echo, navigate). Filter to a single identity with { identityId }. Use this before launching big bulk runs to know how many actions an identity still has before hitting the daily safety cap.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          identityId: { type: 'string' },
+        },
+        additionalProperties: false,
+      },
+      call: (args = {}) => bulk().rateLimitStats(args),
+    },
   ]
 }
 

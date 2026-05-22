@@ -14,6 +14,7 @@ function buildBulkApi(ipcRenderer) {
     cancel: (runId) => ipcRenderer.invoke('oz:bulk:cancel', runId),
     get: (runId) => ipcRenderer.invoke('oz:bulk:get', runId),
     list: () => ipcRenderer.invoke('oz:bulk:list'),
+    rlStats: (opts) => ipcRenderer.invoke('oz:bulk:rlStats', opts),
     onProgress(cb) {
       const listener = (_e, payload) => cb(payload)
       ipcRenderer.on('oz:bulk:progress', listener)
