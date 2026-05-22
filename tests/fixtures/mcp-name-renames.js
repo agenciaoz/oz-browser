@@ -56,6 +56,8 @@ const ACTION_RENAME_FOR_MCP = {
   'oz:excel:exportToFile': 'exportFile',
   'oz:excel:importFromFile': 'importFile',
   'oz:fingerprint:applyGeoSuggestion': 'applyGeo',
+  // v2 sub-bloque 1 — bulk runner action rename:
+  'oz:bulk:listActions': 'actions',
 }
 
 // Resolve an IPC channel to its expected MCP tool name (sanitized form).

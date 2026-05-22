@@ -92,6 +92,7 @@ const { setupTeamMode } = require('./team-setup')
 const autoUpdaterSetup = require('./auto-updater-setup')
 const syncBootstrapSetup = require('./sync-bootstrap-setup')
 const scheduledSetup = require('./scheduled-setup')
+const bulkRunnerSetup = require('./bulk-runner-setup')
 const ghostMigrationSetup = require('./ghost-migration-setup')
 const { setupCrashRecovery } = require('./crash-recovery-setup')
 const { AlertManager } = require('./alert-manager')
@@ -587,6 +588,12 @@ class Browser {
     // Handlers registered: open-workspace (via workspaceManager), sync-push
     // (via syncBootstrap.pullNow), backup-snapshot (via backupManager).
     scheduledSetup.setupScheduledActions(this)
+
+    // v2 sub-bloque 1: Bulk Runner. Setup ANTES de registerIpcHandlers para
+    // que `browser.handlers.bulk` quede wired al registrar las rutas IPC.
+    // Sin lifecycle start() — el runner ejecuta on-demand cuando UI/MCP
+    // llaman `oz.bulk.run`.
+    bulkRunnerSetup.setupBulkRunner(this)
 
     // G-3: Ghost Browser migration handlers. One-shot per click, no
     // lifecycle. setup() just attaches browser.handlers.ghostMigration so

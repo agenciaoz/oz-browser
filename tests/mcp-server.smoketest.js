@@ -479,7 +479,15 @@ console.log(`Test userData: ${TEST_USERDATA}`)
   section('Contract test IPC↔MCP')
   {
     const preloadPath = path.resolve(__dirname, '../preload.js')
-    const preload = fs.readFileSync(preloadPath, 'utf-8')
+    let preload = fs.readFileSync(preloadPath, 'utf-8')
+    // v2 sub-bloque 1: API modules extraídos de preload.js (autoupdater,
+    // bulk, etc.). Concatenamos sus fuentes para que el regex los vea.
+    const browserDir = path.resolve(__dirname, '../browser')
+    for (const f of fs.readdirSync(browserDir)) {
+      if (/^preload-.*-api\.js$/.test(f)) {
+        preload += '\n' + fs.readFileSync(path.join(browserDir, f), 'utf-8')
+      }
+    }
 
     // Channels the preload bridge invokes for all tool-bearing domains. We
     // extract them from the preload.js source so we don't drift.
@@ -487,7 +495,7 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     // 1.10a: settings NOT included — UI-internal preferences (no agent needs
     // them via MCP). If we ever expose them, add 'settings' to the regex.
     const re =
-      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine|bookmarks|cookies|proxies|fingerprint):[a-zA-Z]+)'/g
+      /ipcRenderer\.invoke\('(oz:(identities|tabs|workspaces|vault|accounts|excel|timemachine|bookmarks|cookies|proxies|fingerprint|bulk):[a-zA-Z]+)'/g
     let m
     while ((m = re.exec(preload)) !== null) found.add(m[1])
 

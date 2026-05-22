@@ -24,6 +24,7 @@ const { buildAlertTools } = require('./mcp-tools-alerts')
 const { buildHealthTools } = require('./mcp-tools-health')
 const { buildExtensionTools } = require('./mcp-tools-extensions')
 const { buildSyncTools } = require('./mcp-tools-sync')
+const { buildBulkTools } = require('./mcp-tools-bulk')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -466,6 +467,9 @@ function buildToolCatalog(browser) {
 
     // D-3c-3c: Cross-device sync tools.
     ...buildSyncTools({ sync: () => browser.handlers && browser.handlers.sync }),
+
+    // v2 sub-bloque 1: Bulk runner tools.
+    ...buildBulkTools({ bulk: () => browser.handlers && browser.handlers.bulk }),
 
     // -------------------- system metrics --------------------
     {

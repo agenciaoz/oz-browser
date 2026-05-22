@@ -42,6 +42,7 @@ const { buildExtensionShareHandlers } = require('./extensions-share-handlers')
 const { buildSyncHandlers } = require('./sync-handlers')
 const { buildHudHandlers } = require('./hud-handlers')
 const { buildMcpHandlers } = require('./mcp-handlers')
+const { buildBulkHandlers } = require('./bulk-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
@@ -87,6 +88,7 @@ function registerIpcHandlers(browser) {
     sync: buildSyncHandlers(browser),
     hud: buildHudHandlers(browser, { app: require('electron').app }),
     mcp: buildMcpHandlers(browser),
+    bulk: browser.bulkRunner ? buildBulkHandlers(browser) : undefined,
   })
 
   registerLogHandlers(browser)

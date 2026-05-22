@@ -50,6 +50,9 @@ module.exports = [
         queueMicrotask: 'readonly',
         URL: 'readonly',
         URLSearchParams: 'readonly',
+        // v2 bulk-runner uses AbortController (Node 16+ global).
+        AbortController: 'readonly',
+        AbortSignal: 'readonly',
         // Browser globals (para classic scripts del WebUI extension)
         window: 'readonly',
         document: 'readonly',

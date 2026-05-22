@@ -62,6 +62,21 @@ function registerExtraIpcHandlers(browser) {
     browser,
   )
   _safeRegister('registerMcpHandlersIPC', registerMcpHandlersIPC, browser)
+  _safeRegister('registerBulkHandlersIPC', registerBulkHandlersIPC, browser)
+}
+
+// ----- Bulk Runner (v2 sub-bloque 1) ---------------------------------------
+
+function registerBulkHandlersIPC(browser) {
+  const h = browser.handlers && browser.handlers.bulk
+  if (!h) return
+  ipcMain.handle('oz:bulk:listActions', () => h.listActions())
+  ipcMain.handle('oz:bulk:create', (_e, spec) => h.create(spec))
+  ipcMain.handle('oz:bulk:start', (_e, runId) => h.start(runId))
+  ipcMain.handle('oz:bulk:run', (_e, spec) => h.run(spec))
+  ipcMain.handle('oz:bulk:cancel', (_e, runId) => h.cancel(runId))
+  ipcMain.handle('oz:bulk:get', (_e, runId) => h.get(runId))
+  ipcMain.handle('oz:bulk:list', () => h.list())
 }
 
 // ----- MCP server status / config snippet (v1.6.1) --------------------------

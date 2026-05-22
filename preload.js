@@ -14,6 +14,7 @@
 const { contextBridge, ipcRenderer } = require('electron')
 const { injectBrowserAction } = require('electron-chrome-extensions/browser-action')
 const { buildAutoUpdaterApi } = require('./browser/preload-autoupdater-api')
+const { buildBulkApi } = require('./browser/preload-bulk-api')
 
 // OZ-owned chrome-extension pages that need window.oz. webui.html is the
 // main browser chrome; proxy-dashboard.html is the H-2b dashboard tab.
@@ -583,5 +584,7 @@ if (isOzPage) {
     },
     // I-2 (v1.6.0): auto-updater — impl en browser/preload-autoupdater-api.js.
     autoUpdater: buildAutoUpdaterApi(ipcRenderer),
+    // v2 sub-bloque 1: Bulk Runner — impl en browser/preload-bulk-api.js.
+    bulk: buildBulkApi(ipcRenderer),
   })
 }
