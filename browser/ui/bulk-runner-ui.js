@@ -27,6 +27,36 @@
       .replace(/'/g, '&#39;')
   }
 
+  // Friendly explanations per error code. Shown as tooltip on hover so
+  // Jose no needs to read source to understand what failed.
+  const ERROR_CODE_EXPLAIN = {
+    needs_login:
+      'Identity is not logged in to the platform. Auto-login retry will use vault credentials if wired.',
+    captcha: 'Platform showed a captcha/security challenge. Solve manually then retry.',
+    'not-found':
+      'Target element (button/post/profile) not found. Selectors may be stale or URL invalid.',
+    'click-failed':
+      'Click registered but state did not flip. Usually rate-limit or action-block.',
+    'submit-failed':
+      'Form submit clicked but no confirmation. Usually rate-limit or platform-side reject.',
+    'rate-limit':
+      'Identity hit the daily cap for this action. Will reset at UTC midnight.',
+    'image-missing': 'imagePath does not exist on disk.',
+    aborted: 'Run was cancelled mid-action.',
+  }
+
+  const LOGIN_CODE_EXPLAIN = {
+    'vault-locked': 'Vault is locked. Open Account Manager and unlock it.',
+    'no-credentials':
+      'No account stored for this (identity, platform). Add one in Account Manager.',
+    'totp-needed-no-secret':
+      'Platform asked for 2FA code but the account has no totpSecret stored. Add it in Account Manager.',
+    'login-failed':
+      'Filled the form + submitted but page still shows login. Wrong password / rate-limited / captcha.',
+    'unsupported-platform': 'No login flow registered for this platform yet.',
+    aborted: 'Login attempt was cancelled by the run signal.',
+  }
+
   // Map de status → label corto + clase CSS.
   const STATUS_LABELS = {
     pending: { text: '⏳', cls: 'oz-br-st-pending' },
@@ -423,22 +453,26 @@
         tdSt.innerHTML = `<span class="oz-br-st ${st.cls}">${st.text}</span> ${it.status}`
         const tdRes = document.createElement('td')
         if (it.status === 'skipped' && it.error && it.error.code === 'rate-limit') {
+          const tip = ERROR_CODE_EXPLAIN['rate-limit'] || ''
           tdRes.innerHTML =
-            '<strong>⏱️ rate-limit</strong> · ' +
+            `<strong title="${_escapeHtml(tip)}">⏱️ rate-limit</strong> · ` +
             _escapeHtml(it.error.message || 'daily cap reached')
           tdRes.className = 'oz-br-cell-error'
         } else if (it.status === 'failed' && it.error) {
-          // Surface error.code as a bold prefix when present.
-          const codePart = it.error.code
-            ? `<strong>${_escapeHtml(it.error.code)}</strong> · `
-            : ''
+          // Surface error.code as a bold prefix with explain tooltip.
+          let codePart = ''
+          if (it.error.code) {
+            const tip = ERROR_CODE_EXPLAIN[it.error.code] || ''
+            codePart = `<strong title="${_escapeHtml(tip)}">${_escapeHtml(it.error.code)}</strong> · `
+          }
           let inner = codePart + _escapeHtml(it.error.message || 'error')
           // Surface loginAttempt info if the runner tried auto-login and it failed.
           if (it.loginAttempt && it.loginAttempt.ok === false) {
             const la = it.loginAttempt
+            const laTip = LOGIN_CODE_EXPLAIN[la.code] || ''
             inner +=
               `<br /><span class="oz-br-loginattempt">🔐 ` +
-              `auto-login: <strong>${_escapeHtml(la.code || 'unknown')}</strong>` +
+              `auto-login: <strong title="${_escapeHtml(laTip)}">${_escapeHtml(la.code || 'unknown')}</strong>` +
               (la.message ? ` — ${_escapeHtml(la.message)}` : '') +
               `</span>`
           }
