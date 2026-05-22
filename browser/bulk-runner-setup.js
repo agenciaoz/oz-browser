@@ -14,6 +14,7 @@
 const log = require('./logger')
 const registry = require('./bulk-actions-registry')
 const { echoAction } = require('./bulk-actions-echo')
+const { buildNavigateAction } = require('./bulk-actions-navigate')
 const { BulkRunner } = require('./bulk-runner')
 
 function setupBulkRunner(browser, opts = {}) {
@@ -37,6 +38,14 @@ function setupBulkRunner(browser, opts = {}) {
   // module-level singleton, so we guard with a flag.
   if (!registry.get('echo')) {
     registry.register(echoAction)
+  }
+  if (!registry.get('navigate')) {
+    registry.register(
+      buildNavigateAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
   }
 
   const runner = new BulkRunner({
