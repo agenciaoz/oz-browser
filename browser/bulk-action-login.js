@@ -63,6 +63,40 @@ const {
 // ---------- Login flow registry --------------------------------------------
 
 const LOGIN_FLOWS = {
+  'tiktok.com': {
+    site: 'tiktok.com',
+    url: 'https://www.tiktok.com/login/phone-or-email/email',
+    // TikTok login: phone/email + password on same screen.
+    usernameSelectors: [
+      'input[name="username"]',
+      'input[type="text"][placeholder*="mail" i]',
+      'input[type="text"][placeholder*="orreo" i]',
+    ],
+    passwordSelectors: [
+      'input[type="password"]',
+      'input[autocomplete="current-password"]',
+    ],
+    submitSelectors: [
+      'button[type="submit"]',
+      'button[data-e2e="login-button"]',
+      '[data-e2e="login-button"]',
+    ],
+    // TikTok 2FA via SMS/email code OR authenticator code.
+    totpInputSelectors: [
+      'input[name="code"]',
+      'input[autocomplete="one-time-code"]',
+      'input[placeholder*="code" i]',
+      'input[placeholder*="código" i]',
+    ],
+    totpSubmitSelectors: ['button[type="submit"]', '[data-e2e="verify-button"]'],
+    loggedInIndicators: [
+      'a[data-e2e="nav-foryou"]',
+      'a[href="/"]',
+      '[data-e2e="profile-icon"]',
+      '[data-e2e="recommend-list-item-container"]',
+    ],
+    stillLoggedOutIndicators: ['input[type="password"]', 'a[href*="/login"]'],
+  },
   'x.com': {
     site: 'x.com',
     url: 'https://x.com/i/flow/login',

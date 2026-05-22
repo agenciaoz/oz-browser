@@ -21,6 +21,8 @@ const { buildIgLikeAction } = require('./bulk-actions-ig-like')
 const { buildIgFollowAction } = require('./bulk-actions-ig-follow')
 const { buildXPostAction } = require('./bulk-actions-x-post')
 const { buildXLikeAction } = require('./bulk-actions-x-like')
+const { buildTiktokLikeAction } = require('./bulk-actions-tiktok-like')
+const { buildTiktokFollowAction } = require('./bulk-actions-tiktok-follow')
 const { BulkRunner } = require('./bulk-runner')
 
 function setupBulkRunner(browser, opts = {}) {
@@ -96,6 +98,22 @@ function setupBulkRunner(browser, opts = {}) {
   if (!registry.get('x_like')) {
     registry.register(
       buildXLikeAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
+  }
+  if (!registry.get('tiktok_like')) {
+    registry.register(
+      buildTiktokLikeAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
+  }
+  if (!registry.get('tiktok_follow')) {
+    registry.register(
+      buildTiktokFollowAction({
         identityManager: browser.identityManager,
         electron: opts.electron || _safeRequireElectron(),
       }),
