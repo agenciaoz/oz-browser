@@ -67,6 +67,12 @@ module.exports = {
       // and ship the bundled output. Source files above are kept for
       // historical/test reasons but NOT used at runtime in v1.4.4+.
       'browser/.bundled',
+      // v2.0.0-alpha.7: app-update.yml para electron-updater. Sin este file
+      // el autoUpdater no sabe que provider usar (GitHub Releases) y
+      // auto-updater-setup.js falla con "app-update.yml not found".
+      // electron-forge NO lo genera automáticamente — lo curamos manual
+      // en build/app-update.yml y lo copiamos a Resources/ via extraResource.
+      'build/app-update.yml',
     ],
     // afterCopy hook: el plugin-webpack de Forge bundlea index.js + sus deps
     // pero NO copia node_modules de los externals al bundle. webpack.main.config

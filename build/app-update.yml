@@ -1,0 +1,4 @@
+provider: github
+owner: agenciaoz
+repo: oz-browser
+updaterCacheDirName: oz-browser-updater
