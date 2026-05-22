@@ -17,6 +17,16 @@
   const t = (key, params) =>
     window.OZ && window.OZ.i18n ? window.OZ.i18n.t(key, params) : key
 
+  function _escapeHtml(s) {
+    if (s == null) return ''
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;')
+  }
+
   // Map de status → label corto + clase CSS.
   const STATUS_LABELS = {
     pending: { text: '⏳', cls: 'oz-br-st-pending' },
@@ -412,14 +422,40 @@
         const st = STATUS_LABELS[it.status] || { text: it.status, cls: '' }
         tdSt.innerHTML = `<span class="oz-br-st ${st.cls}">${st.text}</span> ${it.status}`
         const tdRes = document.createElement('td')
-        if (it.status === 'failed' && it.error) {
-          tdRes.textContent = it.error.message || 'error'
+        if (it.status === 'skipped' && it.error && it.error.code === 'rate-limit') {
+          tdRes.innerHTML =
+            '<strong>⏱️ rate-limit</strong> · ' +
+            _escapeHtml(it.error.message || 'daily cap reached')
+          tdRes.className = 'oz-br-cell-error'
+        } else if (it.status === 'failed' && it.error) {
+          // Surface error.code as a bold prefix when present.
+          const codePart = it.error.code
+            ? `<strong>${_escapeHtml(it.error.code)}</strong> · `
+            : ''
+          let inner = codePart + _escapeHtml(it.error.message || 'error')
+          // Surface loginAttempt info if the runner tried auto-login and it failed.
+          if (it.loginAttempt && it.loginAttempt.ok === false) {
+            const la = it.loginAttempt
+            inner +=
+              `<br /><span class="oz-br-loginattempt">🔐 ` +
+              `auto-login: <strong>${_escapeHtml(la.code || 'unknown')}</strong>` +
+              (la.message ? ` — ${_escapeHtml(la.message)}` : '') +
+              `</span>`
+          }
+          tdRes.innerHTML = inner
           tdRes.className = 'oz-br-cell-error'
         } else if (it.result) {
-          tdRes.textContent =
+          let inner =
             typeof it.result === 'string'
-              ? it.result
-              : JSON.stringify(it.result).slice(0, 120)
+              ? _escapeHtml(it.result)
+              : _escapeHtml(JSON.stringify(it.result).slice(0, 120))
+          // Surface successful auto-login retry as a small badge.
+          if (it.loginAttempt && it.loginAttempt.ok === true) {
+            inner =
+              `<span class="oz-br-loginattempt-ok" title="Auto-login retry succeeded">🔐 re-logged</span> ` +
+              inner
+          }
+          tdRes.innerHTML = inner
         } else {
           tdRes.textContent = '—'
         }
