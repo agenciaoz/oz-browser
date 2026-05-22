@@ -82,6 +82,7 @@ function buildIgCommentAction({ identityManager, electron }) {
   return {
     id: 'ig_comment',
     label: 'Instagram: Comment on a post',
+    platform: 'instagram.com',
     description:
       'Post a comment on an Instagram post URL using each identity\'s session. Requires the identity is already logged in to IG (no auto-login in this version). Returns {postUrl, comment, identityName, durationMs} or throws with error.code: needs_login | captcha | not-found | submit-failed. NOTE: IG changes its DOM frequently — if this fails with "not-found" but the URL is valid, the selectors likely need updating.',
     paramsSchema: {

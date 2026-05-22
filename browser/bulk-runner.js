@@ -96,6 +96,12 @@ class BulkRunner extends EventEmitter {
     this.logger = opts.logger || _silentLogger()
     // `clock` allows tests to fake delay timers.
     this.clock = opts.clock || _realClock()
+    // v2 sub-bloque 4: optional auto-login dependencies. When set, the runner
+    // will attempt vault-backed login + retry once on err.code='needs_login'.
+    // If unset, the original needs_login error surfaces as item.failed.
+    this.accountsAPI = opts.accountsAPI || null
+    this.electron = opts.electron || null
+    this.autoLoginFn = opts.autoLoginFn || null // override for tests
     fs.mkdirSync(this.runsDir, { recursive: true })
     // Cache: runId → { meta, items, controller? }
     this._runs = new Map()
@@ -364,25 +370,65 @@ class BulkRunner extends EventEmitter {
         index: i,
         total: r.items.length,
       })
+      const ctx = {
+        runId,
+        identityIndex: i,
+        totalIdentities: r.items.length,
+        logger: this.logger,
+        signal: r.controller.signal,
+      }
+      let result
+      let runErr
       try {
-        const result = await action.run(identity, r.meta.params, {
-          runId,
-          identityIndex: i,
-          totalIdentities: r.items.length,
-          logger: this.logger,
-          signal: r.controller.signal,
+        result = await action.run(identity, r.meta.params, ctx)
+      } catch (err) {
+        runErr = err
+      }
+      // v2 sub-bloque 4: auto-login retry on needs_login error. Only
+      // attempts when accountsAPI is wired AND action declared a platform.
+      if (
+        runErr &&
+        runErr.code === 'needs_login' &&
+        this.accountsAPI &&
+        action.platform &&
+        !r.controller.signal.aborted
+      ) {
+        const autoLoginFn = this.autoLoginFn || _defaultAutoLoginFn()
+        const retry = await autoLoginFn({
+          action,
+          identity,
+          params: r.meta.params,
+          ctx,
+          deps: {
+            identityManager: this.identityManager,
+            accountsAPI: this.accountsAPI,
+            electron: this.electron,
+            logger: this.logger,
+          },
         })
+        item.loginAttempt = retry.loginAttempt
+        if (retry.retried && !retry.retryError) {
+          result = retry.result
+          runErr = null
+        } else if (retry.retried && retry.retryError) {
+          runErr = retry.retryError
+        }
+      }
+      if (!runErr) {
         item.status = STATUS_DONE
         item.result = result == null ? null : result
         item.finishedAt = new Date().toISOString()
         r.meta.stats.done++
-      } catch (err) {
+      } else {
         const aborted =
-          (err && err.name === 'AbortError') ||
-          (err && err.message === 'aborted') ||
+          (runErr && runErr.name === 'AbortError') ||
+          (runErr && runErr.message === 'aborted') ||
           r.controller.signal.aborted
         item.status = aborted ? STATUS_CANCELLED : STATUS_FAILED
-        item.error = { message: err && err.message ? err.message : String(err) }
+        item.error = {
+          message: runErr && runErr.message ? runErr.message : String(runErr),
+          code: runErr && runErr.code ? runErr.code : undefined,
+        }
         item.finishedAt = new Date().toISOString()
         if (aborted) r.meta.stats.cancelled++
         else r.meta.stats.failed++
@@ -501,6 +547,14 @@ function _silentLogger() {
     error() {},
     debug() {},
   }
+}
+
+function _defaultAutoLoginFn() {
+  // Lazy require so test contexts without electron don't break loading
+  // bulk-runner.js. The autologin module pulls in browser-helpers which
+  // imports electron at call time only.
+  const { tryLoginAndRetry } = require('./bulk-runner-autologin')
+  return tryLoginAndRetry
 }
 
 module.exports = {

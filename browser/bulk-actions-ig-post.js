@@ -106,6 +106,7 @@ function buildIgPostAction({ identityManager, electron }) {
   return {
     id: 'ig_post',
     label: 'Instagram: Post image with caption',
+    platform: 'instagram.com',
     description:
       "Post an image (with optional caption) to Instagram using each identity's session. Requires identity is logged in. imagePath must be an absolute path to a local image file (jpg, png, webp). Returns {imagePath, caption, identityName, durationMs} or throws with error.code: needs_login | captcha | not-found | image-missing | submit-failed. IG image processing is slow — default timeout 120s. NOTE: IG DOM changes frequently — selectors may need updates.",
     paramsSchema: {

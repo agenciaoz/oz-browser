@@ -519,6 +519,9 @@ async function main() {
     r9.get(id9).meta.status === RUN_STATUS_COMPLETED,
   )
 
+  // Auto-login retry tests live in tests/bulk-runner-autologin.smoketest.js
+  // (extracted per ADR 0005 — 500-LOC budget).
+
   // ---------- Done ----------------------------------------------------------
   console.log(`\n=== ${passed} passed · ${failed} failed ===`)
   if (failed > 0) {

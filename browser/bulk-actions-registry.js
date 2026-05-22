@@ -52,6 +52,9 @@ function register(action) {
       type: 'object',
       additionalProperties: true,
     },
+    // v2 sub-bloque 4: optional platform field used by auto-login retry.
+    // If unset, action is treated as platform-agnostic (no auto-login attempt).
+    platform: action.platform || null,
     run,
   })
 }

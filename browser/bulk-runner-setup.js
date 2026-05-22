@@ -71,6 +71,11 @@ function setupBulkRunner(browser, opts = {}) {
     identityManager: browser.identityManager,
     registry,
     logger: log,
+    // v2 sub-bloque 4: lazy accountsAPI thunk — account handlers are built
+    // by ipc-handlers.js AFTER setupBulkRunner runs, so we resolve at the
+    // moment we actually need it (on needs_login auto-login retry).
+    accountsAPI: () => (browser.handlers && browser.handlers.accounts) || null,
+    electron,
   })
 
   // Surface lifecycle events to the central log without flooding.
