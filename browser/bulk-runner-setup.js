@@ -17,6 +17,7 @@ const { echoAction } = require('./bulk-actions-echo')
 const { buildNavigateAction } = require('./bulk-actions-navigate')
 const { buildIgCommentAction } = require('./bulk-actions-ig-comment')
 const { buildIgPostAction } = require('./bulk-actions-ig-post')
+const { buildIgLikeAction } = require('./bulk-actions-ig-like')
 const { BulkRunner } = require('./bulk-runner')
 
 function setupBulkRunner(browser, opts = {}) {
@@ -60,6 +61,14 @@ function setupBulkRunner(browser, opts = {}) {
   if (!registry.get('ig_post')) {
     registry.register(
       buildIgPostAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
+  }
+  if (!registry.get('ig_like')) {
+    registry.register(
+      buildIgLikeAction({
         identityManager: browser.identityManager,
         electron: opts.electron || _safeRequireElectron(),
       }),
