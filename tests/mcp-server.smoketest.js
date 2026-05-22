@@ -9,7 +9,7 @@
 //   - POST /mcp initialize → protocolVersion + serverInfo
 //   - POST /mcp tools/list → todos los tools v1 con schemas
 //   - POST /mcp tools/list → todos los nombres cumplen ^[a-zA-Z0-9_-]{1,64}$
-//   - POST /mcp tools/call oz_identities_list (sanitized) → array
+//   - POST /mcp tools/call oz_ids_list (sanitized) → array
 //   - POST /mcp tools/call oz.identities.list (legacy dot form) → array
 //   - POST /mcp tools/call oz.identities.create → identity object
 //   - POST /mcp tools/call oz.identities.create con cap → __error
@@ -144,58 +144,7 @@ function makeMockBrowser() {
   return browser
 }
 
-// ---------- HTTP helpers ----------------------------------------------------
-
-function postRpc(port, body, token) {
-  return new Promise((resolve, reject) => {
-    const data = typeof body === 'string' ? body : JSON.stringify(body)
-    const headers = {
-      'Content-Type': 'application/json',
-      'Content-Length': Buffer.byteLength(data),
-    }
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    const req = http.request(
-      { hostname: '127.0.0.1', port, path: '/mcp', method: 'POST', headers },
-      (res) => {
-        let d = ''
-        res.on('data', (c) => (d += c))
-        res.on('end', () => {
-          try {
-            resolve({ status: res.statusCode, body: JSON.parse(d || 'null') })
-          } catch (e) {
-            resolve({ status: res.statusCode, body: d, parseError: e.message })
-          }
-        })
-      },
-    )
-    req.on('error', reject)
-    req.write(data)
-    req.end()
-  })
-}
-
-function getJSON(port, p, token) {
-  return new Promise((resolve, reject) => {
-    const headers = {}
-    if (token) headers['Authorization'] = `Bearer ${token}`
-    const req = http.request(
-      { hostname: '127.0.0.1', port, path: p, method: 'GET', headers },
-      (res) => {
-        let d = ''
-        res.on('data', (c) => (d += c))
-        res.on('end', () => {
-          try {
-            resolve({ status: res.statusCode, body: JSON.parse(d || 'null') })
-          } catch (e) {
-            resolve({ status: res.statusCode, body: d })
-          }
-        })
-      },
-    )
-    req.on('error', reject)
-    req.end()
-  })
-}
+const { postRpc, getJSON } = require('./fixtures/mcp-test-helpers')
 
 // ---------- Tests -----------------------------------------------------------
 
@@ -255,10 +204,11 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     })
     ok('result.tools is array', r.body && Array.isArray(r.body.result.tools))
     toolNames = r.body.result.tools.map((t) => t.name)
-    // v1.9.3: tools are exposed with sanitized names (underscore-as-separator)
-    // so they match the MCP pattern Anthropic clients enforce.
-    ok('contains oz_identities_list', toolNames.includes('oz_identities_list'))
-    ok('contains oz_identities_create', toolNames.includes('oz_identities_create'))
+    // v1.9.3+1.9.4: names use underscore-as-separator and are ≤21 chars
+    // (Claude Desktop mcp__<uuid-36>__<name> prefix is 43 chars; budget=21).
+    // Domain renames: identities→ids, workspaces→ws, fingerprint→fp, etc.
+    ok('contains oz_ids_list', toolNames.includes('oz_ids_list'))
+    ok('contains oz_ids_create', toolNames.includes('oz_ids_create'))
     ok('contains oz_tabs_list', toolNames.includes('oz_tabs_list'))
     ok('contains oz_system_getMetrics', toolNames.includes('oz_system_getMetrics'))
     ok('contains oz_events_subscribe', toolNames.includes('oz_events_subscribe'))
@@ -271,6 +221,16 @@ console.log(`Test userData: ${TEST_USERDATA}`)
       'no tool name contains a dot (would break Claude.ai)',
       toolNames.every((n) => !n.includes('.')),
       `Dot offenders: ${toolNames.filter((n) => n.includes('.')).join(', ') || '(none)'}`,
+    )
+    // v1.9.4 guard: Claude Desktop prepends mcp__<uuid-36>__ (43 chars) so
+    // the registered name caps at 21. Any longer breaks the chat on connect.
+    const longOnes = toolNames.filter((n) => n.length > 21)
+    ok(
+      `every tool name ≤21 chars (Claude Desktop 64-char limit)`,
+      longOnes.length === 0,
+      longOnes.length
+        ? `Offenders: ${longOnes.map((n) => `${n}(${n.length})`).join(', ')}`
+        : '',
     )
     ok(
       'every tool has inputSchema',
@@ -285,13 +245,13 @@ console.log(`Test userData: ${TEST_USERDATA}`)
   }
 
   // 5a. tools/call con el nombre sanitizado (forma canónica desde v1.9.3)
-  section('POST /mcp tools/call oz_identities_list (sanitized form)')
+  section('POST /mcp tools/call oz_ids_list (sanitized form)')
   {
     const r = await postRpc(port, {
       jsonrpc: '2.0',
       id: 3,
       method: 'tools/call',
-      params: { name: 'oz_identities_list', arguments: {} },
+      params: { name: 'oz_ids_list', arguments: {} },
     })
     ok('result.content[0].type === text', r.body.result.content[0].type === 'text')
     ok('isError === false', r.body.result.isError === false)
@@ -303,31 +263,30 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     ok('Default identity returned', meta && meta[0] && meta[0].isDefault === true)
   }
 
-  // 5b. tools/call con el nombre dot-form (backwards compat para Cowork +
-  // scripts internos pre-v1.9.3).
-  section('POST /mcp tools/call oz.identities.list (legacy dot form)')
+  // 5b. tools/call con dot-form también resuelve (lookup acepta ambos).
+  section('POST /mcp tools/call oz.ids.list (dot form)')
   {
     const r = await postRpc(port, {
       jsonrpc: '2.0',
       id: 31,
       method: 'tools/call',
-      params: { name: 'oz.identities.list', arguments: {} },
+      params: { name: 'oz.ids.list', arguments: {} },
     })
     ok(
-      'legacy dot form still routes to handler',
+      'dot form still routes to handler',
       r.body.result && r.body.result._meta && Array.isArray(r.body.result._meta.value),
     )
   }
 
-  // 6. tools/call oz.identities.create
-  section('POST /mcp tools/call oz.identities.create')
+  // 6. tools/call oz.ids.create
+  section('POST /mcp tools/call oz.ids.create')
   {
     const r = await postRpc(port, {
       jsonrpc: '2.0',
       id: 4,
       method: 'tools/call',
       params: {
-        name: 'oz.identities.create',
+        name: 'oz.ids.create',
         arguments: { name: 'MCP Test', color: '#abcdef' },
       },
     })
@@ -536,15 +495,15 @@ console.log(`Test userData: ${TEST_USERDATA}`)
     // (e.g. legacy rename/setColor wrappers — covered by *.update which is
     // the canonical version).
     const exempt = new Set([
-      'oz:identities:rename', // wrapper of oz_identities_update
-      'oz:identities:setColor', // wrapper of oz_identities_update
+      'oz:identities:rename', // wrapper of oz_ids_update
+      'oz:identities:setColor', // wrapper of oz_ids_update
       'oz:tabs:getIdentity', // info available via oz_tabs_list
       'oz:tabs:bulkCreateLazy', // power-user, reduce v1 surface
       'oz:tabs:contextMenu', // 1.7d UI-only — pops native menu via Menu.popup
       'oz:identities:contextMenu', // HX4 UI-only — native ctx menu sidebar
       'oz:workspaces:contextMenu', // HX4 UI-only — native ctx menu sidebar
-      'oz:workspaces:rename', // wrapper of oz_workspaces_update
-      'oz:workspaces:setColor', // wrapper of oz_workspaces_update
+      'oz:workspaces:rename', // wrapper of oz_ws_update
+      'oz:workspaces:setColor', // wrapper of oz_ws_update
       'oz:excel:pickExportPath', // 1.5f UI-only file dialog wrapper
       'oz:excel:pickImportPath', // 1.5f UI-only file dialog wrapper
       'oz:cookies:pickExportPath', // 1.7c UI-only file dialog wrapper
@@ -553,12 +512,15 @@ console.log(`Test userData: ${TEST_USERDATA}`)
       'oz:proxies:pickCsvExportPath', // 1.8d UI-only
     ])
 
+    // v1.9.4: MCP tool names diverged from IPC channels for 5 domains and
+    // ~30 verbose actions to fit ≤21 chars (Claude Desktop 64-char prefix
+    // limit). Mappings live in tests/fixtures/mcp-name-renames.js so this
+    // file stays under the 500 LOC budget (ADR 0005).
+    const { ipcToMcpToolName } = require('./fixtures/mcp-name-renames')
+
     for (const channel of found) {
       if (exempt.has(channel)) continue
-      // v1.9.3: MCP tool names use underscore-as-separator (oz_X_Y) instead of
-      // the dot form mirroring IPC (oz:X:Y → oz.X.Y). Server sanitizes at
-      // tools/list boundary; we assert against the sanitized form here.
-      const expectedTool = channel.replace(/^oz:/, 'oz_').replace(/:/g, '_')
+      const expectedTool = ipcToMcpToolName(channel)
       ok(
         `IPC ${channel} has matching MCP tool ${expectedTool}`,
         toolNames.includes(expectedTool),
@@ -572,11 +534,11 @@ console.log(`Test userData: ${TEST_USERDATA}`)
   {
     ok(
       'dot form sanitizes to underscore',
-      sanitizeToolName('oz.identities.list') === 'oz_identities_list',
+      sanitizeToolName('oz.ids.list') === 'oz_ids_list',
     )
     ok(
       'already-sanitized name is idempotent',
-      sanitizeToolName('oz_identities_list') === 'oz_identities_list',
+      sanitizeToolName('oz_ids_list') === 'oz_ids_list',
     )
     ok(
       'name without dots is unchanged',

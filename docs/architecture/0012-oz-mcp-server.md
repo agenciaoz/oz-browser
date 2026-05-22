@@ -153,6 +153,51 @@ Cowork no exhibía el bug porque su capa de hosting hacía la conversión `.` �
 - ✅ Bridge simplificado — menos lógica que mantener, menos sitios donde el sanitizer puede divergir.
 - ⚠️ Convención nueva a respetar: tools agregados a futuro pueden seguir nombrados con dots en el catálogo (legacy), pero los **clientes deben usar underscore form**. La doc oficial del SDK público (Bloque 1.10+) debe documentar solo underscore.
 
+## Update 2026-05-21 — Tool name shortening (Claude Desktop 64-char prefix)
+
+**Contexto del bug:** la sanitización de v1.9.3 hizo que los nombres de tools cumplieran el regex `^[a-zA-Z0-9_-]{1,64}$`, pero el bug volvió bajo otra forma cuando Jose conectó OZ MCP a Claude Desktop. La razón: el cliente registra cada tool con el prefijo `mcp__<uuid-del-server-36-chars>__<nombre>` que consume 43 chars (`5 + 36 + 2`) y deja solo **21 chars disponibles** para el nombre del tool. 47 tools tenían nombres más largos que eso (`oz.fingerprint.applyGeoSuggestion` → 33 chars sanitizado `oz_fingerprint_applyGeoSuggestion`) y el chat fallaba con el mismo error de validación de regex antes de mandar el primer mensaje, bloqueando todo el chat hasta desconectar el connector.
+
+**Decisión:** rename hard-break de los nombres en `mcp-tools*.js` para que el sanitized form quede ≤21 chars. Estrategia:
+
+1. **Acortar 5 dominios largos** a abreviaturas estándar:
+   - `fingerprint` → `fp`
+   - `identities` → `ids`
+   - `workspaces` → `ws`
+   - `timemachine` → `tm`
+   - `extensions` → `ext`
+2. **Acortar acciones verbosas** donde sea necesario (mayormente para domains con dominio ≥8 chars que no se acortaron):
+   - `getCredentialsForSite` → `getCreds`
+   - `proposeAutoSave` → `autoSave`
+   - `applyGeoSuggestion` → `applyGeo`
+   - `clearBrowsingData` → `wipeData`
+   - `previewCloneName` → `previewName`
+   - `importCsvFromFile` → `importFile`, `exportCsvToFile` → `exportFile`, `importCsvContent` → `importStr`, etc.
+   - Family pattern `*ToFile` → `*File`, `*Content` → `*Str` (string)
+3. **Hard break sin alias.** OZ-Browser tiene un solo deployer (agencia + Jose). Un alias con el nombre viejo seguiría exhibiendo el mismo bug del prefijo, así que no es un workaround real — habría que diferir el alias post-sanitization, lo cual confunde más que ayuda. Tabla completa de renames en el commit message.
+
+**Carveout — IPC channels NO se renombran:** los handler maps en `ipc-handlers.js` y el bridge `window.oz.<domain>.<action>` del preload mantienen los nombres largos (`oz:identities:list`, `window.oz.fingerprint.applyGeoSuggestion`). Son strings internos al renderer/main process y no van por el protocolo MCP. La consecuencia: se rompe el paralelismo IPC ↔ MCP que esta misma ADR documentó en el update 2026-05-20.
+
+**Contract test actualizado:** `tests/mcp-server.smoketest.js` mantiene el assert "every IPC channel tiene matching MCP tool" pero ahora aplica dos mapas de renombrado:
+
+- `DOMAIN_RENAME_FOR_MCP` — `{identities: 'ids', workspaces: 'ws', ...}`
+- `ACTION_RENAME_FOR_MCP` — keyed por IPC channel completo para las ~30 acciones que se renombraron.
+
+Si en el futuro se agrega un IPC handler nuevo, el test guía qué nombre debe llevar el MCP tool correspondiente (o le falla con un mensaje de "Missing tool: oz_xxx_yyy" que sugiere el nombre esperado).
+
+**Guard rail nuevo:** test "every tool name ≤21 chars" itera el catálogo entero post-sanitization y rompe con la lista de offenders si alguien introduce un nombre largo. Pegar este check al CI evita re-incidencia silenciosa.
+
+**Cambios:**
+
+- `browser/mcp-tools*.js` — 47 renames + cambios incidentales en `mcp-tools.js`, `mcp-tools-fingerprint.js`, `mcp-tools-vault.js`, `mcp-tools-tab-context.js`, `mcp-tools-proxies.js`, `mcp-tools-extensions.js`, `mcp-tools-identity-clone.js`.
+- `tests/mcp-server.smoketest.js` — assertions actualizadas + maps de renombrado en contract test + guard ≤21 chars.
+- `docs/guides/mcp-automation.md`, `docs/modules/mcp-tools.md`, `CHANGELOG.md` — sincronizados.
+
+**Consecuencias:**
+
+- ✅ Claude Desktop ya no rompe al conectar el connector.
+- ✅ 124 tools, todos ≤21 chars (9 al límite exacto en 21, el resto con margen).
+- ⚠️ La convención nueva para futuros tools es: nombre dot-form `oz.<short-domain>.<short-action>` con length ≤21 al sanitizar. Si el dominio nuevo es muy verboso, abreviar antes de agregar el primer tool.
+
 ## Referencias
 
 - Diferenciador #9 en `OVERVIEW.md` y `PLAN-MAESTRO.md`.

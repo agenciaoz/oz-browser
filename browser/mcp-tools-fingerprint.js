@@ -10,7 +10,7 @@ const { listCountries } = require('./country-locale')
 function buildFingerprintTools({ fingerprint }) {
   return [
     {
-      name: 'oz.fingerprint.get',
+      name: 'oz.fp.get',
       description:
         'Get the fingerprint profile for an identity (creating it if missing). Returns the full profile (UA, platform, screen, hardware, languages, timezone, plugins, battery, speech voices, canvasNoiseSeed, webgl vendor/renderer).',
       inputSchema: {
@@ -22,7 +22,7 @@ function buildFingerprintTools({ fingerprint }) {
       call: ({ identityId }) => fingerprint().get(identityId),
     },
     {
-      name: 'oz.fingerprint.regenerate',
+      name: 'oz.fp.regenerate',
       description:
         'Force-regenerate the fingerprint for an identity. Optional newSeed; if absent, mints a random one. After regenerate, reload tabs of this identity to apply.',
       inputSchema: {
@@ -37,7 +37,7 @@ function buildFingerprintTools({ fingerprint }) {
       call: ({ identityId, newSeed }) => fingerprint().regenerate(identityId, newSeed),
     },
     {
-      name: 'oz.fingerprint.applyGeoSuggestion',
+      name: 'oz.fp.applyGeo',
       description:
         'Apply a GeoIP-derived suggestion to an identity\'s fingerprint. Two ways to call: (a) {country: "JP"} — resolved via the country-locale table; (b) {timezone, languages, locale} — applied verbatim. Mutates ONLY the locale fields; UA/screen/blueprint stay constant. Returns updated profile or {__error}.',
       inputSchema: {
@@ -62,7 +62,7 @@ function buildFingerprintTools({ fingerprint }) {
         fingerprint().applyGeoSuggestion(identityId, suggestion),
     },
     {
-      name: 'oz.fingerprint.resolveCountry',
+      name: 'oz.fp.resolveCountry',
       description:
         'Resolve an ISO 3166-1 alpha-2 country code into a locale profile (timezone, languages, locale). Pure function (no mutation). Returns null for unknown codes.',
       inputSchema: {
@@ -74,13 +74,13 @@ function buildFingerprintTools({ fingerprint }) {
       call: ({ countryCode }) => fingerprint().resolveCountry(countryCode),
     },
     {
-      name: 'oz.fingerprint.listCountries',
+      name: 'oz.fp.listCountries',
       description: 'List all country codes supported by the country-locale table.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => listCountries(),
     },
     {
-      name: 'oz.fingerprint.remove',
+      name: 'oz.fp.remove',
       description:
         'Remove the cached fingerprint for an identity (called automatically when the identity is deleted, exposed for testing / regeneration flows).',
       inputSchema: {

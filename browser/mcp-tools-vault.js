@@ -140,7 +140,7 @@ function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
       call: ({ accounts: arr }) => accounts().setAll(arr),
     },
     {
-      name: 'oz.accounts.getCredentialsForSite',
+      name: 'oz.accounts.getCreds',
       description:
         'Auto-fill primitive (1.5c). Returns {accountId, username, password, totpSecret} for the given site canonical id and identityId. Picks most recent if multiple. Returns null if no match. Vault-gated.',
       inputSchema: {
@@ -155,7 +155,7 @@ function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
       call: ({ site, identityId }) => accounts().getCredentialsForSite(site, identityId),
     },
     {
-      name: 'oz.accounts.proposeAutoSave',
+      name: 'oz.accounts.autoSave',
       description:
         'Auto-save primitive (1.5c). Called by content script when login form is submitted. Broadcasts oz:autofill:propose-save to UI which shows dialog. Returns {ok, action: "create"|"update", existingAccountId?}.',
       inputSchema: {
@@ -175,7 +175,7 @@ function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
 
     // -------------------- excel I/O (1.5e) --------------------
     {
-      name: 'oz.excel.exportToFile',
+      name: 'oz.excel.exportFile',
       description:
         'Export all vault accounts to .xlsx file. Columns: Workspace, Identity, Site, Username, Password, 2FA Secret, Last Login, Status, Cookies Count, Last IP, Notes. Vault-gated. Returns {ok, filePath, rows}.',
       inputSchema: {
@@ -189,7 +189,7 @@ function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
       call: ({ filePath }) => excel().exportToFile(filePath),
     },
     {
-      name: 'oz.excel.importFromFile',
+      name: 'oz.excel.importFile',
       description:
         'Import accounts from .xlsx with mode selection. Modes: PERMANENT_MERGE (update by identity+site+username, add rest), EPHEMERAL_SESSION (parse only, no persist — caller handles in-memory), NEW_WORKSPACE (creates dedicated workspace, all rows go there), OVERWRITE_TOTAL (REPLACE entire vault — caller MUST snapshot Time Machine first). Bulk identity/workspace creation: missing names get auto-created. Returns {ok, mode, importedCount, identitiesCreated, workspacesCreated, ...}.',
       inputSchema: {
@@ -214,7 +214,7 @@ function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
 
     // -------------------- time machine (1.6) --------------------
     {
-      name: 'oz.timemachine.create',
+      name: 'oz.tm.create',
       description:
         'Create a Time Machine snapshot. Vault must be unlocked (snapshots are encrypted with the master key). Reasons: manual / pre-quit / pre-overwrite-total / daily-3am / pre-restore. Returns {ok, id, header}.',
       inputSchema: {
@@ -237,14 +237,14 @@ function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
       call: (opts = {}) => timemachine().create(opts),
     },
     {
-      name: 'oz.timemachine.list',
+      name: 'oz.tm.list',
       description:
         'List all snapshot metadata, newest first. Cheap (no decrypt — only reads headers). Returns array of {id, label, reason, createdAt, sizeBytes, fileCount, ...}.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => timemachine().list(),
     },
     {
-      name: 'oz.timemachine.restore',
+      name: 'oz.tm.restore',
       description:
         'Restore a snapshot by id. Vault must be unlocked. ALWAYS auto-creates a pre-restore snapshot first (rollback path). After restore, vault is locked + an event fires; UI must instruct user to restart the app for identities/workspaces to reload from disk. Returns {ok, restoredCount, preRestoreId, requiresRestart}.',
       inputSchema: {
@@ -256,7 +256,7 @@ function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
       call: ({ id }) => timemachine().restore(id),
     },
     {
-      name: 'oz.timemachine.remove',
+      name: 'oz.tm.remove',
       description: 'Permanently delete a snapshot file. Returns {ok, deleted: bool}.',
       inputSchema: {
         type: 'object',
@@ -267,7 +267,7 @@ function buildVaultAccountsTools({ vault, accounts, excel, timemachine }) {
       call: ({ id }) => timemachine().remove(id),
     },
     {
-      name: 'oz.timemachine.applyRetention',
+      name: 'oz.tm.applyRetention',
       description:
         'Run the retention policy now: keep all snapshots from the last N days (default 30) + 1 per ISO week forever for older. Returns {ok, deletedCount, deletedIds}.',
       inputSchema: {

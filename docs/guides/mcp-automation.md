@@ -32,31 +32,35 @@ curl -X POST http://localhost:9223/mcp \
 
 ## Nombres de tools — underscore-as-separator
 
-Desde **v1.9.3** el server expone los nombres de tools con `_` en lugar de `.` como separador, para cumplir con el regex `^[a-zA-Z0-9_-]{1,64}$` que Anthropic frontend (Claude.ai chat, Claude Desktop) enforce-a. Ejemplos:
+Desde **v1.9.3** el server expone los nombres de tools con `_` en lugar de `.` como separador (regex `^[a-zA-Z0-9_-]{1,64}$` que el frontend de Anthropic enforce-a). Desde **v1.9.4** los nombres además están todos ≤21 chars, porque Claude Desktop registra cada tool con un prefijo `mcp__<uuid-36>__<name>` que consume 43 chars y deja solo 21 para el nombre. Ejemplos:
 
 ```
-oz_identities_list       (forma canónica)
-oz_tabs_openInIdentity
+oz_ids_list              (forma canónica — antes oz_identities_list)
+oz_tabs_openInId         (antes oz_tabs_openInIdentity)
 oz_system_getMetrics
+oz_fp_applyGeo           (antes oz_fingerprint_applyGeoSuggestion)
+oz_proxies_setDefault    (antes oz_proxies_setDefaultStrategy)
 ```
 
-La forma legacy con puntos (`oz.identities.list`) **sigue funcionando en `tools/call`** como backwards-compat para Cowork, scripts internos y el contract test. Pero **`tools/list` solo devuelve la forma sanitizada**, y cualquier cliente nuevo debería usar underscore form.
+**Dominios cortos a tener en cuenta:** `ids` (identities), `ws` (workspaces), `fp` (fingerprint), `tm` (timemachine), `ext` (extensions). El resto (`accounts`, `bookmarks`, `cookies`, `proxies`, `tabs`, `excel`, `alerts`, `events`, `health`, `system`, `sync`, `vault`, `sessions`) están sin abreviar.
 
-Ver ADR 0012 "Update 2026-05-20" para el detalle.
+La forma con puntos (`oz.ids.list`) sigue funcionando en `tools/call` para clientes que prefieran ese estilo, pero **`tools/list` solo devuelve la forma sanitizada con underscore**.
+
+Ver ADR 0012 "Update 2026-05-21" para el detalle del rename y la tabla completa.
 
 ## Tools v1 (13)
 
 ```
-oz_identities_list
-oz_identities_get(id)
-oz_identities_getActive
-oz_identities_setActive(id)
-oz_identities_create({name?, color?, userAgent?})
-oz_identities_update(id, patch)
-oz_identities_remove(id)
+oz_ids_list
+oz_ids_get(id)
+oz_ids_getActive
+oz_ids_setActive(id)
+oz_ids_create({name?, color?, userAgent?})
+oz_ids_update(id, patch)
+oz_ids_remove(id)
 
 oz_tabs_list
-oz_tabs_openInIdentity(identityId, url?)
+oz_tabs_openInId(identityId, url?)
 oz_tabs_select(tabId)
 oz_tabs_close(tabId)
 

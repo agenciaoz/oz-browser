@@ -54,14 +54,14 @@ function buildToolCatalog(browser) {
   return [
     // -------------------- identities --------------------
     {
-      name: 'oz.identities.list',
+      name: 'oz.ids.list',
       description:
         'List all identities (Default + custom). Returns array of {id,name,color,fingerprintSeed,createdAt,userAgent,isDefault?}.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => identities().list(),
     },
     {
-      name: 'oz.identities.get',
+      name: 'oz.ids.get',
       description: 'Get a single identity by id. Returns the identity object or null.',
       inputSchema: {
         type: 'object',
@@ -74,14 +74,14 @@ function buildToolCatalog(browser) {
       call: ({ id }) => identities().get(id),
     },
     {
-      name: 'oz.identities.getActive',
+      name: 'oz.ids.getActive',
       description:
         'Get the id of the currently active identity (the one that new tabs default to).',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => identities().getActive(),
     },
     {
-      name: 'oz.identities.setActive',
+      name: 'oz.ids.setActive',
       description:
         'Set the active identity by id. Returns true on success, false if id not found.',
       inputSchema: {
@@ -93,7 +93,7 @@ function buildToolCatalog(browser) {
       call: ({ id }) => identities().setActive(id),
     },
     {
-      name: 'oz.identities.create',
+      name: 'oz.ids.create',
       description:
         'Create a new identity. Free tier max is 3 (bypass with OZ_TIER=paid env). Returns identity object or {__error:{code:"IDENTITY_CAP_REACHED",...}} if cap hit.',
       inputSchema: {
@@ -115,7 +115,7 @@ function buildToolCatalog(browser) {
       call: (args = {}) => identities().create(args),
     },
     {
-      name: 'oz.identities.update',
+      name: 'oz.ids.update',
       description:
         'Update identity fields. Whitelisted: name, color, userAgent. Default identity rejects userAgent (ADR 0010).',
       inputSchema: {
@@ -138,7 +138,7 @@ function buildToolCatalog(browser) {
       call: ({ id, patch }) => identities().update(id, patch),
     },
     {
-      name: 'oz.identities.remove',
+      name: 'oz.ids.remove',
       description:
         'Delete an identity by id. Default identity is protected — returns false if attempted. H2: locked identities are also protected; unlock first via oz.identities.setLocked.',
       inputSchema: {
@@ -150,7 +150,7 @@ function buildToolCatalog(browser) {
       call: ({ id }) => identities().remove(id),
     },
     {
-      name: 'oz.identities.setLocked',
+      name: 'oz.ids.setLocked',
       description:
         'H2: toggle Identity.locked. Locked identities reject remove + clearBrowsingData but still accept rename, color and userAgent edits. Returns the updated identity, or null if id not found.',
       inputSchema: {
@@ -165,7 +165,7 @@ function buildToolCatalog(browser) {
       call: ({ id, locked }) => identities().setLocked(id, locked),
     },
     {
-      name: 'oz.identities.listByWorkspace',
+      name: 'oz.ids.byWorkspace',
       description:
         'H3a — list identities scoped to a workspace. Returns array of identities whose workspaceId === provided workspaceId. Default identity only appears under workspaceId="general".',
       inputSchema: {
@@ -177,7 +177,7 @@ function buildToolCatalog(browser) {
       call: ({ workspaceId }) => identities().listByWorkspace(workspaceId),
     },
     {
-      name: 'oz.identities.moveToWorkspace',
+      name: 'oz.ids.moveToWs',
       description:
         "H3a — move an identity from its current workspace to another. Default identity rejects (pinned to 'general' per ADR 0023 D2). Locked identities reject. Returns { ok, id, from, to } or { ok: false, reason } where reason can be: identity-not-found, default-pinned-to-general, identity-locked.",
       inputSchema: {
@@ -209,7 +209,7 @@ function buildToolCatalog(browser) {
       call: () => tabs().reopenClosed(),
     },
     {
-      name: 'oz.tabs.openInIdentity',
+      name: 'oz.tabs.openInId',
       description:
         'Open a new tab bound to the given identity, navigating to url. Returns the new tab id (null if no focused window).',
       inputSchema: {
@@ -250,7 +250,7 @@ function buildToolCatalog(browser) {
       call: ({ tabId }) => tabs().close(tabId),
     },
     {
-      name: 'oz.tabs.moveToWorkspace',
+      name: 'oz.tabs.moveToWs',
       description:
         'Move a tab to another workspace (1.4d). If the target workspace is currently active in some window, the tab is recreated lazy there. Otherwise the tab spec is appended to the target workspace storage and the live tab is destroyed in the source. Returns {ok, tabId, from, to} or {ok:false, reason} where reason is one of: target-not-found, target-archived, tab-not-found, no-workspace-manager, cannot-serialize-tab.',
       inputSchema: {
@@ -268,21 +268,21 @@ function buildToolCatalog(browser) {
 
     // -------------------- workspaces (1.4-WS) --------------------
     {
-      name: 'oz.workspaces.list',
+      name: 'oz.ws.list',
       description:
         'List all workspaces (including archived and frozen). Each workspace includes id, name, color, isDefault, isArchived, isFrozen, quickTabsMode, createdAt, updatedAt, tabSpecs, activeTabId.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => workspaces().list(),
     },
     {
-      name: 'oz.workspaces.listActive',
+      name: 'oz.ws.listActive',
       description:
         'List only non-archived workspaces. This is what the UI shows by default.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => workspaces().listActive(),
     },
     {
-      name: 'oz.workspaces.get',
+      name: 'oz.ws.get',
       description: 'Get a single workspace by id. Returns workspace object or null.',
       inputSchema: {
         type: 'object',
@@ -293,7 +293,7 @@ function buildToolCatalog(browser) {
       call: ({ id }) => workspaces().get(id),
     },
     {
-      name: 'oz.workspaces.getActive',
+      name: 'oz.ws.getActive',
       description:
         'Get the workspace id active in the focused window (or in the window referenced by windowId if provided). Returns workspaceId string or null.',
       inputSchema: {
@@ -304,7 +304,7 @@ function buildToolCatalog(browser) {
       call: ({ windowId } = {}) => workspaces().getActive(windowId),
     },
     {
-      name: 'oz.workspaces.setActive',
+      name: 'oz.ws.setActive',
       description:
         'Switch the focused window (or referenced window) to the given workspace. Returns {ok, workspaceId, ...} where ok=false carries reason: not-found / already-open / no-window. ADR 0015 lock exclusivo: 1 ventana = 1 workspace.',
       inputSchema: {
@@ -319,7 +319,7 @@ function buildToolCatalog(browser) {
       call: ({ workspaceId, windowId }) => workspaces().setActive(workspaceId, windowId),
     },
     {
-      name: 'oz.workspaces.create',
+      name: 'oz.ws.create',
       description:
         'Create a new workspace. Color auto-picked if omitted. quickTabsMode is one of load-all, one-by-one, on-click (default), on-click-confirm.',
       inputSchema: {
@@ -337,7 +337,7 @@ function buildToolCatalog(browser) {
       call: (args = {}) => workspaces().create(args),
     },
     {
-      name: 'oz.workspaces.update',
+      name: 'oz.ws.update',
       description:
         'Update workspace fields. Whitelisted: name, color, quickTabsMode. Frozen workspaces reject updates (returns null).',
       inputSchema: {
@@ -363,7 +363,7 @@ function buildToolCatalog(browser) {
       call: ({ id, patch }) => workspaces().update(id, patch),
     },
     {
-      name: 'oz.workspaces.duplicate',
+      name: 'oz.ws.duplicate',
       description:
         'Deep clone a workspace with fresh tab spec ids. The duplicate is never default/archived/frozen and gets name suffixed " (copy)".',
       inputSchema: {
@@ -375,7 +375,7 @@ function buildToolCatalog(browser) {
       call: ({ id }) => workspaces().duplicate(id),
     },
     {
-      name: 'oz.workspaces.archive',
+      name: 'oz.ws.archive',
       description:
         'Archive a workspace (hides from listActive but preserves data). Default workspace is protected — returns false if attempted.',
       inputSchema: {
@@ -387,7 +387,7 @@ function buildToolCatalog(browser) {
       call: ({ id }) => workspaces().archive(id),
     },
     {
-      name: 'oz.workspaces.restore',
+      name: 'oz.ws.restore',
       description: 'Unarchive a workspace.',
       inputSchema: {
         type: 'object',
@@ -398,7 +398,7 @@ function buildToolCatalog(browser) {
       call: ({ id }) => workspaces().restore(id),
     },
     {
-      name: 'oz.workspaces.freeze',
+      name: 'oz.ws.freeze',
       description:
         'Freeze a workspace — blocks user CRUD (update returns null) but runtime navigation still works. Snapshot path (setTabSpecs) also bypasses freeze.',
       inputSchema: {
@@ -410,7 +410,7 @@ function buildToolCatalog(browser) {
       call: ({ id }) => workspaces().freeze(id),
     },
     {
-      name: 'oz.workspaces.unfreeze',
+      name: 'oz.ws.unfreeze',
       description: 'Unfreeze a workspace — restores CRUD permissions.',
       inputSchema: {
         type: 'object',
@@ -421,7 +421,7 @@ function buildToolCatalog(browser) {
       call: ({ id }) => workspaces().unfreeze(id),
     },
     {
-      name: 'oz.workspaces.remove',
+      name: 'oz.ws.remove',
       description:
         "Delete a workspace by id. Default workspace ('general') is protected — returns false if attempted. H3a: if the workspace has identities, the default behavior rejects with { ok: false, reason: 'has-identities', count, lockedCount }. Pass options.cascade=true to move all unlocked identities to 'general' before removing the workspace; if any identity is locked, rejects with { ok: false, reason: 'has-locked-identities' } and aborts the cascade.",
       inputSchema: {

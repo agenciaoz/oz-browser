@@ -19,7 +19,7 @@ function buildProxyTools({ proxies }) {
       call: () => proxies().list(),
     },
     {
-      name: 'oz.proxies.listAssignable',
+      name: 'oz.proxies.assignable',
       description:
         'List only proxies usable for assignment (isActive AND NOT isDisabled).',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
@@ -132,7 +132,7 @@ function buildProxyTools({ proxies }) {
 
     // -------------------- Assignment ---------------------------------------
     {
-      name: 'oz.proxies.assignToIdentity',
+      name: 'oz.proxies.assignId',
       description:
         'Bind a proxy to an identity. value can be a proxyId, "auto-random", "auto-round-robin", or null (clears the binding).',
       inputSchema: {
@@ -147,7 +147,7 @@ function buildProxyTools({ proxies }) {
       call: ({ identityId, value }) => proxies().assignToIdentity(identityId, value),
     },
     {
-      name: 'oz.proxies.assignToWorkspace',
+      name: 'oz.proxies.assignWs',
       description:
         'Bind a proxy to a workspace (same value semantics as assignToIdentity).',
       inputSchema: {
@@ -162,7 +162,7 @@ function buildProxyTools({ proxies }) {
       call: ({ workspaceId, value }) => proxies().assignToWorkspace(workspaceId, value),
     },
     {
-      name: 'oz.proxies.setDefaultStrategy',
+      name: 'oz.proxies.setDefault',
       description:
         'Set the global fallback strategy when neither identity nor workspace has a binding. Pass "auto-random", "auto-round-robin", or null.',
       inputSchema: {
@@ -178,13 +178,13 @@ function buildProxyTools({ proxies }) {
       call: ({ strategy }) => proxies().setDefaultStrategy(strategy),
     },
     {
-      name: 'oz.proxies.listAssignments',
+      name: 'oz.proxies.assigns',
       description: 'Snapshot of all current proxy bindings.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => proxies().listAssignments(),
     },
     {
-      name: 'oz.proxies.resolveForIdentity',
+      name: 'oz.proxies.resolveId',
       description:
         'Resolve which proxy an identity (and optionally workspace) would use right now. Returns the proxy object or null.',
       inputSchema: {
@@ -202,7 +202,7 @@ function buildProxyTools({ proxies }) {
 
     // -------------------- Health -------------------------------------------
     {
-      name: 'oz.proxies.testConnectivity',
+      name: 'oz.proxies.testConn',
       description:
         'Run a single TCP/CONNECT health check. Returns {ok, latencyMs, reason?, autoDisabled?}.',
       inputSchema: {
@@ -229,7 +229,7 @@ function buildProxyTools({ proxies }) {
 
     // -------------------- CSV + Providers ----------------------------------
     {
-      name: 'oz.proxies.importCsvContent',
+      name: 'oz.proxies.importStr',
       description:
         'Bulk-import proxies from CSV string content. Format: protocol,host,port,username,password,tags,country,name (header tolerant; tags split by | or ;).',
       inputSchema: {
@@ -241,7 +241,7 @@ function buildProxyTools({ proxies }) {
       call: ({ content }) => proxies().importCsvContent(content),
     },
     {
-      name: 'oz.proxies.importCsvFromFile',
+      name: 'oz.proxies.importFile',
       description: 'Read a CSV file from disk and bulk-import proxies.',
       inputSchema: {
         type: 'object',
@@ -252,13 +252,13 @@ function buildProxyTools({ proxies }) {
       call: ({ filePath }) => proxies().importCsvFromFile(filePath),
     },
     {
-      name: 'oz.proxies.exportCsvContent',
+      name: 'oz.proxies.exportStr',
       description: 'Serialize all proxies to a CSV string.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => proxies().exportCsvContent(),
     },
     {
-      name: 'oz.proxies.exportCsvToFile',
+      name: 'oz.proxies.exportFile',
       description: 'Write all proxies to a CSV file on disk.',
       inputSchema: {
         type: 'object',
@@ -269,14 +269,14 @@ function buildProxyTools({ proxies }) {
       call: ({ filePath }) => proxies().exportCsvToFile(filePath),
     },
     {
-      name: 'oz.proxies.listProviders',
+      name: 'oz.proxies.providers',
       description:
         'List provider templates (id, label, status, fields). v1: oxylabs available, brightdata/smartproxy/iproyal coming-soon.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => proxies().listProviders(),
     },
     {
-      name: 'oz.proxies.expandProvider',
+      name: 'oz.proxies.expand',
       description:
         'Expand a provider template into N proxies and add them. Oxylabs example: {endpoint:"us-pr.oxylabs.io:10001",customer:"mzewama",password:"...",count:10,country:"US",sesstimeMin:30}. The 3 stubs return {__error:{code:"COMING_SOON"}}.',
       inputSchema: {

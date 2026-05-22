@@ -37,7 +37,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
       call: ({ tabId }) => tabs().duplicate(tabId),
     },
     {
-      name: 'oz.tabs.duplicateInTemporary',
+      name: 'oz.tabs.dupTemp',
       description:
         'Clone a tab into a freshly-created "Temp <timestamp>" identity (gray). Useful for sandboxed re-checking of a page without touching the original session.',
       inputSchema: {
@@ -49,7 +49,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
       call: ({ tabId }) => tabs().duplicateInTemporary(tabId),
     },
     {
-      name: 'oz.tabs.duplicateInIdentity',
+      name: 'oz.tabs.dupInId',
       description: 'Clone a tab into an existing identity by id.',
       inputSchema: {
         type: 'object',
@@ -63,7 +63,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
       call: ({ tabId, identityId }) => tabs().duplicateInIdentity(tabId, identityId),
     },
     {
-      name: 'oz.tabs.duplicateInNewIdentity',
+      name: 'oz.tabs.dupNewId',
       description:
         'Create a brand-new identity (with optional name) and clone the tab into it.',
       inputSchema: {
@@ -78,7 +78,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
       call: ({ tabId, name }) => tabs().duplicateInNewIdentity(tabId, name),
     },
     {
-      name: 'oz.tabs.refreshAllInIdentity',
+      name: 'oz.tabs.refreshId',
       description:
         'Reload every materialized tab whose identity matches identityId, across all windows. Lazy tabs are skipped (they reload on materialize). Returns {ok, count}.',
       inputSchema: {
@@ -90,7 +90,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
       call: ({ identityId }) => tabs().refreshAllInIdentity(identityId),
     },
     {
-      name: 'oz.tabs.moveToNewWindow',
+      name: 'oz.tabs.moveNew',
       description:
         'Move a tab to a brand-new window. Auto-creates a workspace named "Window N" because of the 1-1 lock (ADR 0015). Returns {ok, newWindowId, newWorkspaceId}.',
       inputSchema: {
@@ -241,7 +241,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
       call: (args = {}) => bookmarks().add(args),
     },
     {
-      name: 'oz.bookmarks.addFromTab',
+      name: 'oz.bookmarks.addTab',
       description:
         "Resolve a tab by id and bookmark its current url+title+favicon for the tab's identity.",
       inputSchema: {
@@ -266,7 +266,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
 
     // -------------------- identities — clear browsing data (1.7b) ------
     {
-      name: 'oz.identities.clearBrowsingData',
+      name: 'oz.ids.wipeData',
       description:
         'Clear browsing data for an identity. scope is one of: cookies (cookie jar only), storage (localStorage/IndexedDB/cache, no cookies), both. Live tabs are not destroyed; refresh them after to see the clean state.',
       inputSchema: {
@@ -286,7 +286,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
 
     // -------------------- cookies I/O (1.7c) ---------------------------
     {
-      name: 'oz.cookies.exportContent',
+      name: 'oz.cookies.exportStr',
       description:
         "Export an identity's cookie jar as a string in the requested format. format ∈ {oz, netscape, adspower, multilogin, header}. The 'header' format is LOSSY (only name=value pairs, no domain/path/expiry) — use it to round-trip a session to DevTools or to copy a Cookie request header. Returns {ok, content, cookieCount}.",
       inputSchema: {
@@ -304,7 +304,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
       call: ({ identityId, format }) => cookies().exportContent(identityId, format),
     },
     {
-      name: 'oz.cookies.exportToFile',
+      name: 'oz.cookies.exportFile',
       description: "Export an identity's cookie jar to disk in the requested format.",
       inputSchema: {
         type: 'object',
@@ -323,7 +323,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
         cookies().exportToFile(identityId, format, filePath),
     },
     {
-      name: 'oz.cookies.importContent',
+      name: 'oz.cookies.importStr',
       description:
         "Import cookies from a string content into an identity's session. Returns {ok, parsedCount, written, errors}. For format='header' (DevTools Cookie header paste, name=value; name=value), pass defaultDomain (e.g. '.tiktok.com' or 'instagram.com') so the cookies can be bound to a host.",
       inputSchema: {
@@ -353,7 +353,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
         ),
     },
     {
-      name: 'oz.cookies.importFromFile',
+      name: 'oz.cookies.importFile',
       description:
         "Read a cookies file from disk and import it into an identity's session. For format='header', pass defaultDomain.",
       inputSchema: {
@@ -380,7 +380,7 @@ function buildTabContextTools({ tabs, bookmarks, cookies, identities }) {
     },
     // -------------------- session-token login (1.7.0) ------------------
     {
-      name: 'oz.sessions.importCookies',
+      name: 'oz.sessions.import',
       description:
         "Session-token login: drop a `name=value; name=value; ...` cookie string (as copied from DevTools Network panel) into an identity's jar bound to a domain. Convenience wrapper around oz.cookies.importContent with format='header'. Use for sites where the user already has an active session in another browser and wants to clone it into an OZ identity without re-entering credentials.",
       inputSchema: {
