@@ -22,7 +22,7 @@ await window.oz.scheduledActions.create({
   params: {
     spec: {
       actionId: 'ig_like',
-      identityIds: ['id-1', 'id-2', 'id-3', /* ... */],
+      identityIds: ['id-1', 'id-2', 'id-3' /* ... */],
       params: { postUrl: 'https://instagram.com/p/abc' },
       options: { minDelayMs: 30000, maxDelayMs: 90000 },
     },
@@ -38,22 +38,22 @@ Cuando dispara cada lunes 9am local, `bulkRunner.run(spec)` arranca un run que e
 
 Throws con `err.code`:
 
-| Code | Causa |
-| ---- | ----- |
-| `BAD_DEP` | `bulkRunner` no provisto (boot-time, no debería pasar en prod) |
-| `BAD_PARAMS` | `params.spec` falta o no es objeto |
-| `BAD_ACTION_ID` | `spec.actionId` no es string no-vacío |
-| `BAD_IDENTITY_IDS` | `spec.identityIds` no es array no-vacío |
-| `TOO_MANY_IDENTITIES` | `>200` identityIds |
-| `BAD_IDENTITY_ID` | algún id no es string |
-| `BAD_SPEC_PARAMS` | `spec.params` no es plain object |
-| `BAD_SPEC_OPTIONS` | `spec.options` no es plain object |
+| Code                  | Causa                                                          |
+| --------------------- | -------------------------------------------------------------- |
+| `BAD_DEP`             | `bulkRunner` no provisto (boot-time, no debería pasar en prod) |
+| `BAD_PARAMS`          | `params.spec` falta o no es objeto                             |
+| `BAD_ACTION_ID`       | `spec.actionId` no es string no-vacío                          |
+| `BAD_IDENTITY_IDS`    | `spec.identityIds` no es array no-vacío                        |
+| `TOO_MANY_IDENTITIES` | `>200` identityIds                                             |
+| `BAD_IDENTITY_ID`     | algún id no es string                                          |
+| `BAD_SPEC_PARAMS`     | `spec.params` no es plain object                               |
+| `BAD_SPEC_OPTIONS`    | `spec.options` no es plain object                              |
 | `UNKNOWN_BULK_ACTION` | actionId no en registry (solo si registry está wired como dep) |
 
 Skip (no throw):
 
-| Reason | Causa |
-| ------ | ----- |
+| Reason         | Causa                                                    |
+| -------------- | -------------------------------------------------------- |
 | `vault-locked` | el accountVault está locked; no podemos auto-login retry |
 
 ## Boot wiring
@@ -61,8 +61,8 @@ Skip (no throw):
 En `main.js`:
 
 ```js
-bulkRunnerSetup.setupBulkRunner(this)   // ANTES — wirea browser.bulkRunner
-scheduledSetup.setupScheduledActions(this)  // DESPUÉS — lee browser.bulkRunner
+bulkRunnerSetup.setupBulkRunner(this) // ANTES — wirea browser.bulkRunner
+scheduledSetup.setupScheduledActions(this) // DESPUÉS — lee browser.bulkRunner
 ```
 
 Si el orden se invierte, `_buildDeps` ve `browser.bulkRunner === undefined` y el handler 'bulk' nunca se registra. El scheduled action al fire-ear retorna `lastResult.error = "NO_HANDLER"`.

@@ -23,6 +23,7 @@ Hito: el cierre de alpha.18 deja **v2 MVP feature-complete** en backend. 18 alph
 - **alpha.18**: scheduling integration — wirea el Bulk Runner al F-1 Scheduled Actions runner como action type `'bulk'`. Etapa 2.1 cerrada. **El caso de uso "automation engine real" queda funcional**: "todos los lunes 9am, IG Like en estas 20 identities" se programa desde UI o desde Claude vía nueva familia `oz.sched.*`.
 
 Pendiente del MVP que depende de testing real (no de código):
+
 - **Etapa 1.1** — smoke test con cuentas reales en cada plataforma (Jose, `docs/smoke-test-checklist.md`).
 - **Etapa 1.2** — patches a selectores cuando las plataformas cambien DOM (reactivo, ~5-10 min cada uno).
 

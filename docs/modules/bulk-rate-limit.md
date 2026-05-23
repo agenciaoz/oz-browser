@@ -31,19 +31,19 @@ reg.stats(identityId?)                          // → { [key]: {…} }
 
 Conservadores — reflejan umbrales típicos antes de soft-ban observados en la práctica (no son cifras oficiales de las plataformas).
 
-| Plataforma | Action | Cap diario |
-| --- | --- | --- |
-| instagram.com | `ig_like` | 200 |
-| instagram.com | `ig_follow` | 150 |
-| instagram.com | `ig_comment` | 50 |
-| instagram.com | `ig_post` | 10 |
-| x.com | `x_like` | 500 |
-| x.com | `x_post` | 100 |
-| tiktok.com | `tiktok_like` | 500 |
-| tiktok.com | `tiktok_follow` | 200 |
-| facebook.com | `fb_like` | 300 |
-| facebook.com | `fb_follow` | 100 |
-| facebook.com | `fb_post` | 25 |
+| Plataforma          | Action             | Cap diario        |
+| ------------------- | ------------------ | ----------------- |
+| instagram.com       | `ig_like`          | 200               |
+| instagram.com       | `ig_follow`        | 150               |
+| instagram.com       | `ig_comment`       | 50                |
+| instagram.com       | `ig_post`          | 10                |
+| x.com               | `x_like`           | 500               |
+| x.com               | `x_post`           | 100               |
+| tiktok.com          | `tiktok_like`      | 500               |
+| tiktok.com          | `tiktok_follow`    | 200               |
+| facebook.com        | `fb_like`          | 300               |
+| facebook.com        | `fb_follow`        | 100               |
+| facebook.com        | `fb_post`          | 25                |
 | _platform-agnostic_ | `echo`, `navigate` | Infinity (no cap) |
 
 Override: pasar `caps: { 'instagram.com': { ig_like: 50 } }` al constructor, o setear `OZ_BULK_CAP_<platform>_<action>=N` env var en dev/test.
