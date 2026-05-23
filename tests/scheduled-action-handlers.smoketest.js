@@ -100,12 +100,13 @@ function makeVault(locked) {
 console.log('\n[constants]')
 
 ok(
-  'ACTION_TYPES has the v1 three + session-warmer (v1.4.1)',
-  ACTION_TYPES.length === 4 &&
+  'ACTION_TYPES has v1 three + session-warmer (v1.4.1) + bulk (v2 Etapa 2.1)',
+  ACTION_TYPES.length === 5 &&
     ACTION_TYPES.includes(ACTION_OPEN_WORKSPACE) &&
     ACTION_TYPES.includes(ACTION_SYNC_PUSH) &&
     ACTION_TYPES.includes(ACTION_BACKUP_SNAPSHOT) &&
-    ACTION_TYPES.includes('session-warmer'),
+    ACTION_TYPES.includes('session-warmer') &&
+    ACTION_TYPES.includes('bulk'),
 )
 ok('ACTION_TYPES is frozen', Object.isFrozen(ACTION_TYPES))
 
