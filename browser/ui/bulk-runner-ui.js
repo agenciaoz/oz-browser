@@ -578,7 +578,16 @@
     close: () => getInstance().close(),
   }
 
-  // Cmd+Shift+B accelerator.
+  // alpha.20: trigger from the main-process menu (⇧⌘B → "Bulk Run…").
+  // Previously this file installed a `document.addEventListener('keydown')`
+  // for Cmd+Shift+B, but Electron's menu accelerator (then bound to Time
+  // Machine snapshot) swallowed the chord before the WebUI ever saw it.
+  // alpha.20 fix: menu.js owns the accelerator + sends an IPC, and we
+  // subscribe via the preload bridge. Backstop keydown listener stays for
+  // edge cases where the menu chord doesn't fire (e.g. focused DevTools).
+  if (window.oz?.bulk?.onOpen) {
+    window.oz.bulk.onOpen(() => window.OZ.bulkRunnerUI.open())
+  }
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'B') {
       e.preventDefault()

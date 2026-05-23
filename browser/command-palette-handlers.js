@@ -33,7 +33,14 @@ function buildCommandPaletteHandlers(browser) {
       // Tabs come from the focused window's Tabs container. Each tab might
       // not be materialized (lazy) — toSpec() / props on Tab cover both
       // cases; we read what we can without forcing materialization.
-      const tabs = win && win.tabs ? win.tabs.list().map(tabSummary) : []
+      // 2.0.0-alpha.20: Tabs exposes `tabList` (array prop), NOT `list()`.
+      // Bug fix: the prior code threw "win.tabs.list is not a function" in
+      // production, breaking the whole Cmd+K palette. CI smoke never
+      // instantiated a real Window, so the wire-up bug shipped.
+      const tabs =
+        win && win.tabs && Array.isArray(win.tabs.tabList)
+          ? win.tabs.tabList.map(tabSummary)
+          : []
       const focusedTab = win && win.getFocusedTab ? win.getFocusedTab() : null
 
       const activeWorkspaceId = win ? win.workspaceId : null

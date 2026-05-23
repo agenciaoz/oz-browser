@@ -35,6 +35,14 @@ function buildBulkApi(ipcRenderer) {
       ipcRenderer.on('oz:bulk:started', listener)
       return () => ipcRenderer.off('oz:bulk:started', listener)
     },
+    // alpha.20: open the Bulk Runner modal. Fired by the main process when
+    // the user invokes the "Bulk Run…" menu item (⇧⌘B) or, eventually, the
+    // Cmd+K palette entry. Same pattern as commands.onOpen / bulkOpen.onOpen.
+    onOpen(cb) {
+      const listener = () => cb()
+      ipcRenderer.on('oz:bulk-runner:open', listener)
+      return () => ipcRenderer.off('oz:bulk-runner:open', listener)
+    },
   }
 }
 

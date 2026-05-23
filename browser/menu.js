@@ -98,6 +98,18 @@ const setupMenu = (browser) => {
     }
   }
 
+  // v2 sub-bloque 2 — ⇧⌘B opens the Bulk Runner modal (compose actions to
+  // run across N identities). Same focused-window routing as Cmd+K. Wired
+  // here in alpha.20 to fix bug: previously the keydown listener inside
+  // bulk-runner-ui.js never fired because Electron's menu accelerator
+  // (then bound to Time Machine snapshot) swallowed the event.
+  const openBulkRunner = () => {
+    const win = browser.getFocusedWindow()
+    if (win && win.webContents && !win.webContents.isDestroyed()) {
+      win.webContents.send('oz:bulk-runner:open')
+    }
+  }
+
   const template = [
     ...(isMac ? [{ role: 'appMenu' }] : []),
     { role: 'fileMenu' },
@@ -136,7 +148,11 @@ const setupMenu = (browser) => {
       submenu: [
         {
           label: 'Take snapshot now',
-          accelerator: 'Shift+CmdOrCtrl+B',
+          // alpha.20: was Shift+CmdOrCtrl+B which conflicted with the
+          // Bulk Runner shortcut (Bulk Runner's keydown listener never
+          // fired because this menu item swallowed the chord). Moved to
+          // Shift+CmdOrCtrl+M ("Memory snapshot") — still mnemonic.
+          accelerator: 'Shift+CmdOrCtrl+M',
           click: manualSnapshot,
         },
       ],
@@ -215,6 +231,14 @@ const setupMenu = (browser) => {
           label: 'Bulk Open Identities…',
           accelerator: 'Alt+Shift+O',
           click: openBulkOpener,
+        },
+        {
+          // v2 sub-bloque 2 — Bulk Runner. Compose an action (echo,
+          // navigate, IG/X/TikTok/FB acciones) + select identities + run
+          // sequentially with anti-detect delays. alpha.20: wired here.
+          label: 'Bulk Run…',
+          accelerator: 'Shift+CmdOrCtrl+B',
+          click: openBulkRunner,
         },
       ],
     },
