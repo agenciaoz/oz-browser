@@ -33,12 +33,16 @@ const ACTION_BACKUP_SNAPSHOT = 'backup-snapshot'
 // K1-extras (v1.4.1): session warmer — per-identity HTTP touch to keep
 // social platform session cookies fresh. Lightweight (no BrowserWindows).
 const ACTION_SESSION_WARMER = 'session-warmer'
+// v2 Etapa 2.1: bulk — wires the v2 Bulk Runner into the scheduler so
+// users can schedule "every Monday 9am, IG Like on these 20 identities".
+const { createBulkHandler, ACTION_BULK } = require('./scheduled-action-bulk')
 
 const ACTION_TYPES = Object.freeze([
   ACTION_OPEN_WORKSPACE,
   ACTION_SYNC_PUSH,
   ACTION_BACKUP_SNAPSHOT,
   ACTION_SESSION_WARMER,
+  ACTION_BULK,
 ])
 
 class ScheduledHandlerError extends Error {
@@ -477,6 +481,20 @@ function registerScheduledActionHandlers(scheduled, deps = {}) {
     )
     registered.push(ACTION_SESSION_WARMER)
   }
+  // v2 Etapa 2.1: bulk handler — only registered when bulkRunner is wired
+  // (post-v2 alpha). The handler itself is in scheduled-action-bulk.js to
+  // keep this file under the 500-LOC budget.
+  if (deps.bulkRunner && typeof deps.bulkRunner.run === 'function') {
+    scheduled.setHandler(
+      ACTION_BULK,
+      createBulkHandler({
+        bulkRunner: deps.bulkRunner,
+        bulkActionsRegistry: deps.bulkActionsRegistry,
+        vault: deps.vault,
+      }),
+    )
+    registered.push(ACTION_BULK)
+  }
   return registered
 }
 
@@ -492,6 +510,7 @@ module.exports = {
   ACTION_SYNC_PUSH,
   ACTION_BACKUP_SNAPSHOT,
   ACTION_SESSION_WARMER,
+  ACTION_BULK,
   ACTION_TYPES,
   // tunables exposed for test pinning
   WARMER_PER_REQ_TIMEOUT_MS,

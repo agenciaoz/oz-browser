@@ -55,8 +55,21 @@ function makeBrowser({ rateLimit }) {
 
 async function main() {
   const TEST_HOME = fs.mkdtempSync(path.join(os.tmpdir(), 'oz-bulk-rlstats-'))
-  const T = Date.UTC(2026, 4, 22, 12, 0, 0) // 2026-05-22 12:00 UTC
-  const TODAY = '2026-05-22'
+  // Use real "today" so asOf assertion matches the handler's real-time
+  // call to new Date().toISOString() (handler doesn't take a test clock).
+  // The BulkRateLimit clock is pinned separately for deterministic day keys.
+  const TODAY = new Date().toISOString().slice(0, 10)
+  // Pin BulkRateLimit clock to today at 12:00 UTC so increment day keys
+  // line up with the real TODAY.
+  const todayDate = new Date()
+  const T = Date.UTC(
+    todayDate.getUTCFullYear(),
+    todayDate.getUTCMonth(),
+    todayDate.getUTCDate(),
+    12,
+    0,
+    0,
+  )
 
   section('returns empty entries when registry has no counters')
   {

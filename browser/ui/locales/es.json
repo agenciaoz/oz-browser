@@ -574,7 +574,8 @@
       "minDelayLabel": "Delay mínimo entre identities (segundos)",
       "maxDelayLabel": "Delay máximo entre identities (segundos)",
       "delaysHint": "Delay aleatorio entre min y max antes de cada identity. Usá 0/0 para correr instantáneo. Default 30-90s imita cadencia humana.",
-      "submit": "Ejecutar ahora"
+      "submit": "Ejecutar ahora",
+      "schedule": "Programar…"
     },
     "running": {
       "colIdentity": "Identity",

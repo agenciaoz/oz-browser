@@ -113,6 +113,16 @@ function _buildDeps(browser, electron) {
     if (browser.accountVault) deps.accountVault = browser.accountVault
   }
 
+  // v2 Etapa 2.1: bulk handler needs bulkRunner; the registry is best-effort
+  // for early actionId validation. Both are populated by setupBulkRunner
+  // (which main.js calls before setupScheduledActions in v2).
+  if (browser.bulkRunner && typeof browser.bulkRunner.run === 'function') {
+    deps.bulkRunner = browser.bulkRunner
+    if (browser.bulkActionsRegistry) {
+      deps.bulkActionsRegistry = browser.bulkActionsRegistry
+    }
+  }
+
   return deps
 }
 

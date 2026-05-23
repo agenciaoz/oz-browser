@@ -91,6 +91,7 @@
       this.$minDelay = document.getElementById('oz-br-min-delay')
       this.$maxDelay = document.getElementById('oz-br-max-delay')
       this.$submit = document.getElementById('oz-br-submit')
+      this.$schedule = document.getElementById('oz-br-schedule')
 
       // Running phase elements.
       this.$runActionLabel = document.getElementById('oz-br-run-action-label')
@@ -162,6 +163,9 @@
       })
 
       this.$submit.addEventListener('click', () => this._submit())
+      if (this.$schedule) {
+        this.$schedule.addEventListener('click', () => this._schedule())
+      }
       this.$cancelRun.addEventListener('click', () => this._cancelRun())
       this.$newRun.addEventListener('click', () => this._setPhase('compose'))
 
@@ -320,36 +324,61 @@
       })
     }
 
-    async _submit() {
+    // v2 Etapa 2.1 — delegate to bulk-runner-schedule.js helper.
+    async _schedule() {
       this.$error.hidden = true
+      const spec = this._buildSpec()
+      if (!spec) return
+      const helper = window.OZ && window.OZ.bulkRunnerSchedule
+      if (!helper) return this._showError('Schedule helper not loaded.')
+      await helper.scheduleBulkRun({
+        spec,
+        onError: (msg) => this._showError(msg),
+        onSuccess: (name, sched) =>
+          window.alert(
+            `Scheduled "${name}".\nNext run: ${helper.describeSchedule(sched)}.\nManage in Settings → Scheduled Actions.`,
+          ),
+      })
+    }
+
+    _buildSpec() {
       if (!this.currentAction) {
-        return this._showError(t('bulkRunner.error.noAction'))
+        this._showError(t('bulkRunner.error.noAction'))
+        return null
       }
       if (this.selected.size === 0) {
-        return this._showError(t('bulkRunner.error.noIdentities'))
+        this._showError(t('bulkRunner.error.noIdentities'))
+        return null
       }
       const params = this._collectParams()
-      // Validate required params against schema.
       const required = new Set(
         (this.currentAction.paramsSchema && this.currentAction.paramsSchema.required) ||
           [],
       )
       for (const req of required) {
         if (!(req in params) || params[req] === '') {
-          return this._showError(t('bulkRunner.error.missingParam', { param: req }))
+          this._showError(t('bulkRunner.error.missingParam', { param: req }))
+          return null
         }
       }
       const minS = Number(this.$minDelay.value)
       const maxS = Number(this.$maxDelay.value)
       if (!Number.isFinite(minS) || !Number.isFinite(maxS) || minS < 0 || maxS < minS) {
-        return this._showError(t('bulkRunner.error.badDelays'))
+        this._showError(t('bulkRunner.error.badDelays'))
+        return null
       }
-      const spec = {
+      return {
         actionId: this.currentAction.id,
         identityIds: Array.from(this.selected),
         params,
         options: { minDelayMs: minS * 1000, maxDelayMs: maxS * 1000 },
       }
+    }
+
+    async _submit() {
+      this.$error.hidden = true
+      const spec = this._buildSpec()
+      if (!spec) return
       this.$submit.disabled = true
       try {
         const res = await window.oz.bulk.run(spec)

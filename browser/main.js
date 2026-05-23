@@ -581,19 +581,22 @@ class Browser {
     // + alertManager. Default OFF — user opts in from Settings → Sync.
     syncBootstrapSetup.setupSyncBootstrap(this)
 
+    // v2 sub-bloque 1: Bulk Runner. Setup ANTES de registerIpcHandlers para
+    // que `browser.handlers.bulk` quede wired al registrar las rutas IPC.
+    // Sin lifecycle start() — el runner ejecuta on-demand cuando UI/MCP
+    // llaman `oz.bulk.run`. Setup BEFORE scheduledActions so the bulk
+    // handler (v2 Etapa 2.1) is registered when _buildDeps reads
+    // browser.bulkRunner.
+    bulkRunnerSetup.setupBulkRunner(this)
+
     // F-4a: Scheduled Actions (cron-lite v1). Setup BEFORE registerIpcHandlers
     // so browser.handlers.scheduled is wired when IPC routes register. The
     // runner is NOT started here — startScheduledActions runs AFTER IPC + sync
     // are ready so the first tick can broadcast / use sync surfaces if needed.
     // Handlers registered: open-workspace (via workspaceManager), sync-push
-    // (via syncBootstrap.pullNow), backup-snapshot (via backupManager).
+    // (via syncBootstrap.pullNow), backup-snapshot (via backupManager),
+    // session-warmer (via identityManager), bulk (via bulkRunner — v2 Etapa 2.1).
     scheduledSetup.setupScheduledActions(this)
-
-    // v2 sub-bloque 1: Bulk Runner. Setup ANTES de registerIpcHandlers para
-    // que `browser.handlers.bulk` quede wired al registrar las rutas IPC.
-    // Sin lifecycle start() — el runner ejecuta on-demand cuando UI/MCP
-    // llaman `oz.bulk.run`.
-    bulkRunnerSetup.setupBulkRunner(this)
 
     // G-3: Ghost Browser migration handlers. One-shot per click, no
     // lifecycle. setup() just attaches browser.handlers.ghostMigration so

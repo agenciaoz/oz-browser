@@ -25,6 +25,7 @@ const { buildHealthTools } = require('./mcp-tools-health')
 const { buildExtensionTools } = require('./mcp-tools-extensions')
 const { buildSyncTools } = require('./mcp-tools-sync')
 const { buildBulkTools } = require('./mcp-tools-bulk')
+const { buildScheduledTools } = require('./mcp-tools-scheduled')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -470,6 +471,12 @@ function buildToolCatalog(browser) {
 
     // v2 sub-bloque 1: Bulk runner tools.
     ...buildBulkTools({ bulk: () => browser.handlers && browser.handlers.bulk }),
+
+    // v2 Etapa 2.1: Scheduled actions tools (enables Claude to create
+    // scheduled bulk runs end-to-end via oz.sched.create + action='bulk').
+    ...buildScheduledTools({
+      scheduled: () => browser.handlers && browser.handlers.scheduled,
+    }),
 
     // -------------------- system metrics --------------------
     {
