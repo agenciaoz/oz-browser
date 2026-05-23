@@ -27,35 +27,18 @@
       .replace(/'/g, '&#39;')
   }
 
-  // Friendly explanations per error code. Shown as tooltip on hover so
-  // Jose no needs to read source to understand what failed.
-  const ERROR_CODE_EXPLAIN = {
-    needs_login:
-      'Identity is not logged in to the platform. Auto-login retry will use vault credentials if wired.',
-    captcha: 'Platform showed a captcha/security challenge. Solve manually then retry.',
-    'not-found':
-      'Target element (button/post/profile) not found. Selectors may be stale or URL invalid.',
-    'click-failed':
-      'Click registered but state did not flip. Usually rate-limit or action-block.',
-    'submit-failed':
-      'Form submit clicked but no confirmation. Usually rate-limit or platform-side reject.',
-    'rate-limit':
-      'Identity hit the daily cap for this action. Will reset at UTC midnight.',
-    'image-missing': 'imagePath does not exist on disk.',
-    aborted: 'Run was cancelled mid-action.',
-  }
-
-  const LOGIN_CODE_EXPLAIN = {
-    'vault-locked': 'Vault is locked. Open Account Manager and unlock it.',
-    'no-credentials':
-      'No account stored for this (identity, platform). Add one in Account Manager.',
-    'totp-needed-no-secret':
-      'Platform asked for 2FA code but the account has no totpSecret stored. Add it in Account Manager.',
-    'login-failed':
-      'Filled the form + submitted but page still shows login. Wrong password / rate-limited / captcha.',
-    'unsupported-platform': 'No login flow registered for this platform yet.',
-    aborted: 'Login attempt was cancelled by the run signal.',
-  }
+  // Friendly explanations per error/login code — extracted to bulk-runner-codes.js
+  // in alpha.20 to keep this file under the 500 LOC rule (ADR 0005).
+  const ERROR_CODE_EXPLAIN =
+    (window.OZ &&
+      window.OZ.bulkRunnerCodes &&
+      window.OZ.bulkRunnerCodes.ERROR_CODE_EXPLAIN) ||
+    {}
+  const LOGIN_CODE_EXPLAIN =
+    (window.OZ &&
+      window.OZ.bulkRunnerCodes &&
+      window.OZ.bulkRunnerCodes.LOGIN_CODE_EXPLAIN) ||
+    {}
 
   // Map de status → label corto + clase CSS.
   const STATUS_LABELS = {
@@ -578,16 +561,8 @@
     close: () => getInstance().close(),
   }
 
-  // alpha.20: trigger from the main-process menu (⇧⌘B → "Bulk Run…").
-  // Previously this file installed a `document.addEventListener('keydown')`
-  // for Cmd+Shift+B, but Electron's menu accelerator (then bound to Time
-  // Machine snapshot) swallowed the chord before the WebUI ever saw it.
-  // alpha.20 fix: menu.js owns the accelerator + sends an IPC, and we
-  // subscribe via the preload bridge. Backstop keydown listener stays for
-  // edge cases where the menu chord doesn't fire (e.g. focused DevTools).
-  if (window.oz?.bulk?.onOpen) {
-    window.oz.bulk.onOpen(() => window.OZ.bulkRunnerUI.open())
-  }
+  // alpha.20: trigger via menu.js → IPC oz:bulk-runner:open + keydown backstop.
+  if (window.oz?.bulk?.onOpen) window.oz.bulk.onOpen(() => window.OZ.bulkRunnerUI.open())
   document.addEventListener('keydown', (e) => {
     if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'B') {
       e.preventDefault()
