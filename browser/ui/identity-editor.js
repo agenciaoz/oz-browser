@@ -45,6 +45,9 @@
       this.$uaDefault = document.getElementById('oz-identity-ua-default')
       this.$uaHint = document.getElementById('oz-identity-ua-hint')
       this.$title = document.getElementById('oz-identity-modal-title')
+      // v2.0.0-alpha.22: yellow "no proxy assigned" warning. Created lazily
+      // on first open() so we don't depend on extra HTML markup in webui.html.
+      this.$noProxyWarn = null
       this.current = null
       this.selectedColor = COLOR_PALETTE[0]
 
@@ -147,6 +150,10 @@
 
       this.$form.elements.name.value = identity.name || ''
       this.$form.elements.userAgent.value = identity.userAgent || ''
+      // v2.0.0-alpha.22: surface a yellow inline warning when this identity
+      // is going to navigate with the real IP. Fire-and-forget — failures
+      // (e.g. preload not loaded) just leave the warning hidden.
+      this._refreshNoProxyWarning(identity).catch(() => {})
 
       // Default identity disables UA editing per ADR 0010.
       const isDefault = !!identity.isDefault
@@ -190,6 +197,61 @@
       if (window.oz && window.oz.ui) {
         window.oz.ui.setContentVisible(true).catch(() => {})
       }
+    }
+
+    /**
+     * v2.0.0-alpha.22 — show/hide an inline yellow warning when this
+     * identity has no proxy assigned AND there ARE proxies in the pool
+     * (otherwise the warning would just be noise — user has nothing to
+     * fix). The default identity is exempt (ADR 0010: it uses the shared
+     * session intentionally).
+     */
+    async _ensureNoProxyWarningEl() {
+      if (this.$noProxyWarn) return this.$noProxyWarn
+      const el = document.createElement('div')
+      el.id = 'oz-identity-no-proxy-warn'
+      el.style.cssText = `
+        padding: 8px 12px;
+        margin: 0 0 10px;
+        background: rgba(255, 191, 0, 0.12);
+        border: 1px solid rgba(255, 191, 0, 0.5);
+        border-radius: 6px;
+        font-size: 12px;
+        color: #ffbf00;
+      `
+      el.hidden = true
+      // Insert before the form so it's visually right under the header/error.
+      this.$form.parentNode.insertBefore(el, this.$form)
+      this.$noProxyWarn = el
+      return el
+    }
+
+    async _refreshNoProxyWarning(identity) {
+      const el = await this._ensureNoProxyWarningEl()
+      if (!identity || identity.isDefault) {
+        el.hidden = true
+        return
+      }
+      let proxies = []
+      try {
+        proxies = window.oz && window.oz.proxies ? await window.oz.proxies.list() : []
+      } catch (_e) {
+        proxies = []
+      }
+      const enabled = (proxies || []).filter((p) => p && p.isActive && !p.isDisabled)
+      let assigned = null
+      try {
+        assigned =
+          window.oz && window.oz.proxies && window.oz.proxies.resolveForIdentity
+            ? await window.oz.proxies.resolveForIdentity(identity.id)
+            : null
+      } catch (_e) {
+        assigned = null
+      }
+      const noProxy = !assigned
+      const poolHas = enabled.length > 0
+      el.textContent = t('identityEditor.noProxyWarning')
+      el.hidden = !(noProxy && poolHas)
     }
 
     async _submit() {

@@ -70,6 +70,52 @@ function buildIdentityHandlers(browser) {
             // best-effort
           }
         }
+        // v2.0.0-alpha.22: auto-assign a proxy when the caller didn't pick
+        // one and there's something in the enabled pool. Avoids the
+        // identity-unassigned ("leak risk") alert firing on day-1.
+        //
+        // Skipped when:
+        //  - caller explicitly passed proxyId in opts (UI picked one)
+        //  - default identity (carveout — Default uses real IP for the
+        //    shared session intentionally; ADR 0010)
+        //  - settings.privacy.autoAssignProxyOnCreate === false
+        //  - no proxyManager / proxyAssignment / settingsManager
+        //  - pool is empty (listAssignable() returns [])
+        try {
+          const callerSetProxy = opts && opts.proxyId
+          const sm = browser.settingsManager
+          const privacy = sm && typeof sm.get === 'function' ? sm.get('privacy') : null
+          const autoOn = !privacy || privacy.autoAssignProxyOnCreate !== false
+          if (!callerSetProxy && !ident.isDefault && autoOn) {
+            const pm = browser.proxyManager
+            const pa = browser.proxyAssignment
+            const assignable =
+              pm && typeof pm.listAssignable === 'function' ? pm.listAssignable() : []
+            if (
+              assignable.length > 0 &&
+              pa &&
+              typeof pa.assignToIdentity === 'function'
+            ) {
+              const picked = pm.autoAssign ? pm.autoAssign('random') : assignable[0]
+              if (picked && picked.id) {
+                const ok = pa.assignToIdentity(ident.id, picked.id)
+                if (ok) {
+                  browser.broadcastToWebUI('oz:proxies:changed')
+                  log.info('identity-handlers', 'auto-assigned proxy on create', {
+                    identityId: ident.id,
+                    proxyId: picked.id,
+                  })
+                }
+              }
+            }
+          }
+        } catch (err) {
+          // Auto-assign is best-effort — never block create on a proxy error.
+          log.warn('identity-handlers', 'auto-assign proxy on create failed', {
+            identityId: ident.id,
+            message: err && err.message,
+          })
+        }
         browser.broadcastToWebUI('oz:identities:changed')
         // H3a: workspace list is also affected — its identityIds[] changed.
         browser.broadcastToWebUI('oz:workspaces:changed')

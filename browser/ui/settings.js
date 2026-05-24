@@ -47,6 +47,12 @@
           type: 'bool',
         },
         {
+          id: 'oz-stg-autoAssignProxyOnCreate',
+          section: 'privacy',
+          key: 'autoAssignProxyOnCreate',
+          type: 'bool',
+        },
+        {
           id: 'oz-stg-mcpEnabled',
           section: 'automation',
           key: 'mcpEnabled',

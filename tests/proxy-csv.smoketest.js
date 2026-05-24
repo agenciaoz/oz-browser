@@ -221,15 +221,16 @@ section('expandOxylabs: validation errors')
 }
 
 // ---------- 8. Other providers are stubs -----------------------------------
-section('listProviders + COMING_SOON for Bright Data / Smartproxy / IPRoyal')
+// v2.0.0-alpha.22: Bright Data became real. Smartproxy / IPRoyal remain stubs.
+section('listProviders + COMING_SOON for Smartproxy / IPRoyal')
 {
   const { listProviders, expandProvider } = require('../browser/proxy-providers.js')
   const ps = listProviders()
   ok('4 providers', ps.length === 4)
   ok('oxylabs available', ps.find((p) => p.id === 'oxylabs').status === 'available')
   ok(
-    'brightdata coming-soon',
-    ps.find((p) => p.id === 'brightdata').status === 'coming-soon',
+    'brightdata available (v2.0.0-alpha.22)',
+    ps.find((p) => p.id === 'brightdata').status === 'available',
   )
   ok(
     'smartproxy coming-soon',
@@ -237,8 +238,8 @@ section('listProviders + COMING_SOON for Bright Data / Smartproxy / IPRoyal')
   )
   ok('iproyal coming-soon', ps.find((p) => p.id === 'iproyal').status === 'coming-soon')
 
-  const r = expandProvider('brightdata', {})
-  ok('brightdata returns COMING_SOON', r.__error.code === 'COMING_SOON')
+  const r = expandProvider('smartproxy', {})
+  ok('smartproxy returns COMING_SOON', r.__error.code === 'COMING_SOON')
 
   const r2 = expandProvider('unknown-x', {})
   ok('unknown provider error', r2.__error.code === 'UNKNOWN_PROVIDER')

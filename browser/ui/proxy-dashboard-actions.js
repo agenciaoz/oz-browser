@@ -90,6 +90,41 @@
           }
           return
         }
+        // v2.0.0-alpha.22: inline "Assign proxy →" from a leak-risk alert.
+        // The button data-identity-id holds the identity to assign to; the
+        // ancestor <li.alert> is mutated in-place by the alerts module to
+        // surface the chooser when there's >1 proxy in the pool.
+        case 'assign-proxy': {
+          if (!alertsApi || !el) return
+          const identityId = el.dataset.identityId
+          if (!identityId) return
+          const li = el.closest('li.alert')
+          if (el) el.disabled = false // re-enable so a single-proxy autoassign re-clicks would no-op
+          r = await alertsApi.handleAssignProxy(identityId, li, {
+            t,
+            refresh: async () => {
+              await fetchData(false)
+              await fetchAlerts()
+              renderAll()
+            },
+          })
+          return
+        }
+        case 'assign-proxy-confirm': {
+          if (!alertsApi || !el) return
+          const identityId = el.dataset.identityId
+          if (!identityId) return
+          const li = el.closest('li.alert')
+          r = await alertsApi.confirmAssignProxy(identityId, li, {
+            t,
+            refresh: async () => {
+              await fetchData(false)
+              await fetchAlerts()
+              renderAll()
+            },
+          })
+          return
+        }
         // H-2i: Apply geo suggestion — copies the proxy country's TZ/locale/
         // languages into the identity's fingerprint. Backend (anti-detect-
         // health-handlers.applyFix → fingerprintEngine.applyGeoSuggestion)

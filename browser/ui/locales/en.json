@@ -233,7 +233,12 @@
       "dismissAllConfirm": "Dismiss all active alerts? They will re-fire automatically if the underlying condition persists.",
       "ago": "{{n}} ago",
       "severityUrgent": "URGENT",
-      "severityWarning": "WARNING"
+      "severityWarning": "WARNING",
+      "assignProxy": "Assign proxy →",
+      "noProxiesInPool": "No proxies in pool — import first",
+      "assignConfirm": "Confirm",
+      "assignChoose": "Choose proxy…",
+      "assignedOk": "Proxy assigned."
     },
     "coherence": {
       "vectorIpTz": "Timezone vs proxy",
@@ -904,7 +909,8 @@
     "cancel": "Cancel",
     "save": "Save",
     "errorNameRequired": "Name is required.",
-    "errorSaveFailed": "Failed to save. Check the log."
+    "errorSaveFailed": "Failed to save. Check the log.",
+    "noProxyWarning": "⚠️ This identity will browse with your real IP — sure?"
   },
   "identityClone": {
     "title": "📑 Clone identity",
@@ -1008,5 +1014,25 @@
     "count": "How many proxies",
     "preview": "Preview (first 5)",
     "insert": "Insert proxies"
+  },
+  "brightdataBuilder": {
+    "openBtn": "+ Bright Data",
+    "title": "Bright Data Proxy Builder",
+    "endpoint": "Endpoint (host:port)",
+    "customer": "Customer ID",
+    "password": "Password",
+    "zone": "Zone",
+    "country": "Country",
+    "city": "City (optional)",
+    "sticky": "Sticky session (same IP until rotated; off = rotating per request)",
+    "startSessId": "Start session #",
+    "count": "How many proxies",
+    "preview": "Preview (first 5)",
+    "insert": "Insert proxies"
+  },
+  "homeBanner": {
+    "proxyWarning": "{{n}} identities without a proxy — they are browsing with your real IP.",
+    "assignNow": "Assign now →",
+    "dismiss": "Dismiss"
   }
 }

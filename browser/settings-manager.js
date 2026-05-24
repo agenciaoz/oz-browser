@@ -57,6 +57,12 @@ const DEFAULTS = Object.freeze({
   },
   privacy: {
     autoClearOnQuit: false,
+    // v2.0.0-alpha.22: when a new identity is created without an explicit
+    // proxyId, the handler auto-assigns one from the enabled pool. Avoids
+    // the "leak risk: identity-unassigned" alert firing on day-1 for users
+    // that already imported a proxy pool. Default ON because the safe
+    // posture is "every identity has a proxy".
+    autoAssignProxyOnCreate: true,
   },
   automation: {
     mcpEnabled: false,
@@ -274,6 +280,7 @@ function validateKey(section, key, value) {
     key === 'devMode' ||
     key === 'freeTier' ||
     key === 'autoClearOnQuit' ||
+    key === 'autoAssignProxyOnCreate' ||
     key === 'mcpEnabled' ||
     key === 'dailySnapshot' ||
     key === 'completed' ||

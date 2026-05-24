@@ -5148,6 +5148,17 @@
                 </div>
                 <input type="checkbox" id="oz-stg-autoClearOnQuit" />
               </div>
+              <div class="stg-row">
+                <div>
+                  <div class="stg-label">Auto-assign proxy on new identity</div>
+                  <div class="stg-desc">
+                    When creating a new identity without picking a proxy, automatically
+                    assign one from the enabled pool. Prevents the "identity browsing with
+                    real IP" leak risk on day-1.
+                  </div>
+                </div>
+                <input type="checkbox" id="oz-stg-autoAssignProxyOnCreate" />
+              </div>
             </section>
 
             <!-- Automation -->
@@ -6831,6 +6842,8 @@
     <script src="./notifications.js"></script>
     <script src="./health-modal.js"></script>
     <script src="./extensions-modal.js"></script>
+    <!-- v2.0.0-alpha.22: home banner — "N identities sin proxy" warning. -->
+    <script src="./home-banner.js"></script>
     <script src="./webui.js"></script>
   </body>
 </html>

@@ -223,17 +223,18 @@ console.log('\nlistProviders + expandProvider')
 const provs = listProviders()
 ok('listProviders returns 4 providers', Array.isArray(provs) && provs.length === 4)
 ok(
-  'oxylabs status = available, others coming-soon',
+  'oxylabs + brightdata available, smartproxy + iproyal coming-soon (v2.0.0-alpha.22)',
   provs.find((p) => p.id === 'oxylabs').status === 'available' &&
-    provs.filter((p) => p.status === 'coming-soon').length === 3,
+    provs.find((p) => p.id === 'brightdata').status === 'available' &&
+    provs.filter((p) => p.status === 'coming-soon').length === 2,
 )
 ok(
   'oxylabs fields include city (added in H-2k)',
   provs.find((p) => p.id === 'oxylabs').fields.some((f) => f.id === 'city'),
 )
 ok(
-  'expandProvider("brightdata") → COMING_SOON',
-  expandProvider('brightdata', {}).__error.code === 'COMING_SOON',
+  'expandProvider("smartproxy") → COMING_SOON',
+  expandProvider('smartproxy', {}).__error.code === 'COMING_SOON',
 )
 ok(
   'expandProvider("nonsense") → UNKNOWN_PROVIDER',

@@ -1,23 +1,22 @@
-// OZ Browser — Proxy provider templates (1.8d).
+// OZ Browser — Proxy provider templates (1.8d + v2.0.0-alpha.22).
 //
-// Qué hace: expansión de proxies por provider. v1 implementa SÓLO Oxylabs
-// con su patrón de session ID rotativo (el caso de uso real de Jose). Los
-// otros 3 (Bright Data, Smartproxy, IPRoyal) son stubs que retornan
-// __error.code='COMING_SOON' — la UI los muestra deshabilitados con un
-// tooltip "Coming soon".
+// Qué hace: expansión de proxies por provider. Oxylabs + Bright Data son
+// providers de primera clase (real expand). Smartproxy + IPRoyal siguen
+// como stubs COMING_SOON hasta que alguien con cuenta los pida.
 //
-// Por qué solo Oxylabs en v1:
-//   - El usuario YA tiene cuenta Oxylabs (us-pr.oxylabs.io:10001 con
-//     `customer-mzewama-sessid-XXX-sesstime-30` username pattern).
-//   - Implementar las 4 APIs reales son ~3h cada una y no se pueden testear
-//     sin cuentas premium en cada provider.
-//   - Cuando un cliente real pida Bright Data / Smartproxy / IPRoyal, lo
-//     implementamos en C-11 / C-12 (post-launch).
+// Por qué Oxylabs + Bright Data ahora:
+//   - Jose YA usa Oxylabs (us-pr.oxylabs.io:10001 + `customer-X-sessid-Y-sesstime-Z`).
+//   - Bright Data es el segundo proveedor más demandado en el agency space.
+//     Patrón distinto al de Oxylabs: en lugar de `sessid-NNN-sesstime-MM`
+//     usan `session-NNN` para sticky sin time-bound (la sesión vive hasta
+//     que se rota explícitamente desde el dashboard del provider).
+//   - Smartproxy/IPRoyal quedan como stubs hasta que un cliente lo pida.
 //
 // Doc: docs/modules/proxy-providers.md
 // ADR: docs/architecture/0017-proxy-model.md
 //
-// Exports: PROVIDERS (registry), expandProvider(providerId, opts)
+// Exports: PROVIDERS (registry), expandProvider(providerId, opts),
+//          listProviders(), expandOxylabs(opts), expandBrightData(opts)
 
 const log = require('./logger')
 
@@ -130,6 +129,105 @@ const COMING_SOON = (label) => () => ({
   },
 })
 
+/**
+ * Bright Data Residential — sticky session pattern (zone-based).
+ * Bright Data exposes a single super-proxy endpoint (default
+ * `brd.superproxy.io:22225`) and the username carries customer + zone +
+ * optional geo + optional session id. Unlike Oxylabs, sessions are NOT
+ * time-bounded — they persist until rotated from the BD dashboard or until
+ * `-session-` is omitted (= rotating per request).
+ *
+ * Username pattern:
+ *   brd-customer-{customer}-zone-{zone}[-country-{cc}][-city-{slug}][-session-{sessId}]
+ *
+ * @param {object} opts
+ * @param {string} opts.endpoint - host:port, default "brd.superproxy.io:22225"
+ * @param {string} opts.customer - BD customer id, e.g. "hl_xxxxxxxx"
+ * @param {string} opts.password - zone password (from BD dashboard)
+ * @param {string} opts.zone - zone name, e.g. "residential-1"
+ * @param {number} opts.count - how many proxies to generate (1..1000)
+ * @param {boolean} [opts.sticky] - emit -session-N (default true). When false,
+ *   omits -session- so each request rotates exit IP.
+ * @param {string} [opts.country] - 2-letter ISO, e.g. "US"
+ * @param {string} [opts.city] - city slug, e.g. "new_york"
+ * @param {number} [opts.startSessId] - first session id, default 1
+ */
+function expandBrightData(opts = {}) {
+  const {
+    endpoint = 'brd.superproxy.io:22225',
+    customer,
+    password,
+    zone,
+    count,
+    sticky = true,
+    country = null,
+    city = null,
+    startSessId = 1,
+  } = opts
+  if (!customer || !password || !zone) {
+    return {
+      __error: {
+        code: 'MISSING_FIELDS',
+        message: 'Bright Data needs customer, password, zone.',
+      },
+    }
+  }
+  const n = Number(count)
+  if (!Number.isInteger(n) || n < 1 || n > 1000) {
+    return {
+      __error: {
+        code: 'INVALID_COUNT',
+        message: `Count must be 1-1000, got: ${count}`,
+      },
+    }
+  }
+  const m = String(endpoint).match(/^([^:]+):(\d+)$/)
+  if (!m) {
+    return {
+      __error: {
+        code: 'INVALID_ENDPOINT',
+        message: `Endpoint must be host:port. Got "${endpoint}".`,
+      },
+    }
+  }
+  const [, host, portStr] = m
+  const port = parseInt(portStr, 10)
+  const citySlug = city ? String(city).trim().toLowerCase().replace(/\s+/g, '_') : null
+  const items = []
+  for (let i = 0; i < n; i++) {
+    const sessId = String(startSessId + i).padStart(6, '0')
+    const userParts = [`brd-customer-${customer}`, `zone-${zone}`]
+    if (country) userParts.push(`country-${country.toLowerCase()}`)
+    if (citySlug) userParts.push(`city-${citySlug}`)
+    if (sticky) userParts.push(`session-${sessId}`)
+    const labelGeo = [country, city].filter(Boolean).join('/')
+    items.push({
+      protocol: 'http',
+      host,
+      port,
+      username: userParts.join('-'),
+      password,
+      tags: ['brightdata', zone, country, city].filter(Boolean),
+      country,
+      city: city || null,
+      name: sticky
+        ? `Bright Data ${zone} ${labelGeo || ''} #${sessId}`.replace(/\s+/g, ' ').trim()
+        : `Bright Data ${zone} ${labelGeo || ''} rot ${i + 1}`
+            .replace(/\s+/g, ' ')
+            .trim(),
+    })
+  }
+  log.info('proxy-providers', 'brightdata expanded', {
+    count: items.length,
+    endpoint,
+    zone,
+    country,
+    city: citySlug,
+    sticky,
+  })
+  return { ok: true, items }
+}
+
 const PROVIDERS = {
   oxylabs: {
     id: 'oxylabs',
@@ -158,9 +256,21 @@ const PROVIDERS = {
   brightdata: {
     id: 'brightdata',
     label: 'Bright Data',
-    status: 'coming-soon',
-    fields: [],
-    expand: COMING_SOON('Bright Data'),
+    status: 'available',
+    fields: [
+      {
+        id: 'endpoint',
+        label: 'Endpoint (host:port)',
+        placeholder: 'brd.superproxy.io:22225',
+      },
+      { id: 'customer', label: 'Customer ID', placeholder: 'hl_xxxxxxxx' },
+      { id: 'password', label: 'Password', type: 'password' },
+      { id: 'zone', label: 'Zone', placeholder: 'residential-1' },
+      { id: 'count', label: 'How many proxies?', type: 'number', placeholder: '10' },
+      { id: 'country', label: 'Country code (optional)', placeholder: 'US' },
+      { id: 'city', label: 'City (optional)', placeholder: 'new_york' },
+    ],
+    expand: expandBrightData,
   },
   smartproxy: {
     id: 'smartproxy',
@@ -197,4 +307,10 @@ function listProviders() {
   }))
 }
 
-module.exports = { PROVIDERS, expandProvider, listProviders, expandOxylabs }
+module.exports = {
+  PROVIDERS,
+  expandProvider,
+  listProviders,
+  expandOxylabs,
+  expandBrightData,
+}

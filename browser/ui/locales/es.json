@@ -233,7 +233,12 @@
       "dismissAllConfirm": "¿Descartar todas las alertas activas? Se volverán a disparar automáticamente si la condición persiste.",
       "ago": "hace {{n}}",
       "severityUrgent": "URGENTE",
-      "severityWarning": "AVISO"
+      "severityWarning": "AVISO",
+      "assignProxy": "Asignar proxy →",
+      "noProxiesInPool": "No hay proxies en el pool — importá primero",
+      "assignConfirm": "Confirmar",
+      "assignChoose": "Elegí un proxy…",
+      "assignedOk": "Proxy asignado."
     },
     "coherence": {
       "vectorIpTz": "Zona horaria vs proxy",
@@ -904,7 +909,8 @@
     "cancel": "Cancelar",
     "save": "Guardar",
     "errorNameRequired": "El nombre es obligatorio.",
-    "errorSaveFailed": "No se pudo guardar. Revisá el log."
+    "errorSaveFailed": "No se pudo guardar. Revisá el log.",
+    "noProxyWarning": "⚠️ Esta identity navegará con IP real — ¿seguro?"
   },
   "identityClone": {
     "title": "📑 Clonar identidad",
@@ -1008,5 +1014,25 @@
     "count": "Cuántos proxies",
     "preview": "Previsualización (primeros 5)",
     "insert": "Insertar proxies"
+  },
+  "brightdataBuilder": {
+    "openBtn": "+ Bright Data",
+    "title": "Generador de Proxies Bright Data",
+    "endpoint": "Endpoint (host:port)",
+    "customer": "Customer ID",
+    "password": "Contraseña",
+    "zone": "Zona",
+    "country": "País",
+    "city": "Ciudad (opcional)",
+    "sticky": "Sesión sticky (misma IP hasta rotación; apagado = rotación por request)",
+    "startSessId": "Sesión inicial #",
+    "count": "Cuántos proxies",
+    "preview": "Previsualización (primeros 5)",
+    "insert": "Insertar proxies"
+  },
+  "homeBanner": {
+    "proxyWarning": "{{n}} identities sin proxy — están navegando con tu IP real.",
+    "assignNow": "Asignar ahora →",
+    "dismiss": "Descartar"
   }
 }
