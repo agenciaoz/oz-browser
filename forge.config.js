@@ -4,14 +4,22 @@
 // Etapa I (v1.6.0 2026-05-16): signing + notarize wired via env var guards.
 // Etapa I-2 (v1.6.0 2026-05-16): publisher GitHub Releases wired para
 // auto-updater (electron-updater).
+// v2.0.0-alpha.23 (2026-05-23): notarytool keychain profile support
+// (preferred over OZ_APPLE_ID_PASSWORD env var). See docs/keychain-profile.md.
 //
 // - appBundleId estable para que el OS recuerde permisos (Camera, Mic, etc.)
 //   entre versiones, y para que electron-updater pueda matchear la app.
 // - appCategoryType "productivity" para que aparezca bien en Finder/Spotlight.
 // - icon path apunta a build/icon.icns si existe.
-// - osxSign + osxNotarize: activos solo si todas las env vars están seteadas
-//   (OZ_APPLE_SIGN_IDENTITY + OZ_APPLE_ID + OZ_APPLE_ID_PASSWORD +
-//   OZ_APPLE_TEAM_ID). Sin las vars, build queda unsigned (dev workflow OK).
+// - osxSign + osxNotarize: activos cuando hay identity + auth method válido.
+//   Auth methods (probados en orden):
+//     1. PREFERRED — Keychain profile: OZ_APPLE_SIGN_IDENTITY +
+//        OZ_APPLE_KEYCHAIN_PROFILE (default 'oz-notarize'). Una sola vez se
+//        guarda con `xcrun notarytool store-credentials oz-notarize`.
+//     2. LEGACY — Env vars directas: OZ_APPLE_SIGN_IDENTITY + OZ_APPLE_ID +
+//        OZ_APPLE_ID_PASSWORD + OZ_APPLE_TEAM_ID. Requiere exportar
+//        app-specific password en cada publish.
+//   Sin ninguno, build queda unsigned (dev workflow OK).
 // - extraResource: 'browser/ui' (HTML/CSS/JS de la UI cargada en runtime via
 //   getAppPath()) y los preloads bundled.
 // - asar: true reduce I/O al boot y oculta el source de curiosos casuales.
@@ -27,15 +35,20 @@ const ICON_PATH = path.join(__dirname, 'build', 'icon')
 const ICON_EXISTS =
   fs.existsSync(ICON_PATH + '.icns') || fs.existsSync(ICON_PATH + '.ico')
 
-// v1.6.0: signing activa cuando las 4 env vars están seteadas. Si falta
-// alguna, build queda unsigned (igual que pre-v1.6.0). Esto permite que dev
-// builds locales sigan funcionando sin Apple Developer cert.
-const APPLE_SIGN_READY = Boolean(
-  process.env.OZ_APPLE_SIGN_IDENTITY &&
+// v2.0.0-alpha.23: two auth paths for notarytool, probed in order.
+// Path 1 — Keychain profile (PREFERRED). `xcrun notarytool store-credentials`
+// guarda Apple ID + app-specific password + team ID en Keychain bajo un
+// profile name. forge.config solo necesita identity + profile name (no más
+// app-specific password en env).
+// Path 2 — Env vars directas (LEGACY). El comportamiento de v1.6.0–v2.0.0-alpha.22.
+const HAS_SIGN_IDENTITY = Boolean(process.env.OZ_APPLE_SIGN_IDENTITY)
+const NOTARIZE_VIA_PROFILE = Boolean(process.env.OZ_APPLE_KEYCHAIN_PROFILE)
+const NOTARIZE_VIA_ENV = Boolean(
   process.env.OZ_APPLE_ID &&
   process.env.OZ_APPLE_ID_PASSWORD &&
   process.env.OZ_APPLE_TEAM_ID,
 )
+const APPLE_SIGN_READY = HAS_SIGN_IDENTITY && (NOTARIZE_VIA_PROFILE || NOTARIZE_VIA_ENV)
 
 if (process.env.OZ_PACKAGING_VERBOSE === '1') {
   // forge.config.js corre en CLI context (electron-forge build pipeline),
@@ -43,10 +56,9 @@ if (process.env.OZ_PACKAGING_VERBOSE === '1') {
   // eslint-disable-next-line no-console
   console.log(
     `[forge.config] APPLE_SIGN_READY=${APPLE_SIGN_READY} ` +
-      `(identity=${!!process.env.OZ_APPLE_SIGN_IDENTITY}, ` +
-      `id=${!!process.env.OZ_APPLE_ID}, ` +
-      `pw=${!!process.env.OZ_APPLE_ID_PASSWORD}, ` +
-      `team=${!!process.env.OZ_APPLE_TEAM_ID})`,
+      `(identity=${HAS_SIGN_IDENTITY}, ` +
+      `profile=${NOTARIZE_VIA_PROFILE ? process.env.OZ_APPLE_KEYCHAIN_PROFILE : 'no'}, ` +
+      `env=${NOTARIZE_VIA_ENV})`,
   )
 }
 
@@ -103,12 +115,19 @@ module.exports = {
               'entitlements.mac.plist',
             ),
           },
-          osxNotarize: {
-            tool: 'notarytool',
-            appleId: process.env.OZ_APPLE_ID,
-            appleIdPassword: process.env.OZ_APPLE_ID_PASSWORD,
-            teamId: process.env.OZ_APPLE_TEAM_ID,
-          },
+          // v2.0.0-alpha.23: keychain profile path (preferred) o env var path
+          // (legacy). Profile evita pegar app-specific password en cada publish.
+          osxNotarize: NOTARIZE_VIA_PROFILE
+            ? {
+                tool: 'notarytool',
+                keychainProfile: process.env.OZ_APPLE_KEYCHAIN_PROFILE,
+              }
+            : {
+                tool: 'notarytool',
+                appleId: process.env.OZ_APPLE_ID,
+                appleIdPassword: process.env.OZ_APPLE_ID_PASSWORD,
+                teamId: process.env.OZ_APPLE_TEAM_ID,
+              },
         }
       : {}),
   },
