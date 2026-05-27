@@ -8,6 +8,14 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.29 — UX fix: texto seleccionable en modales (2026-05-27)
+
+Bug encontrado por Jose post-instalación de alpha.28: en Settings → About no podía seleccionar la versión para copiarla. Lo mismo aplicaba a todos los modales del WebUI (account-manager, time-machine, identity-editor, bulk-runner, bulk-history, etc.).
+
+Causa: `webui.html` línea 26 setea `user-select: none` global porque sidebar y tabstrip no deben ser seleccionables. Los modales heredaban ese estilo, pero los modales son DOCUMENTOS — el operador necesita poder copiar versiones, runIds, mensajes de error, identityIds.
+
+Fix de 1 línea: `user-select: text` en `.oz-modal-window`. Los botones y elementos internos pueden override a `none` si necesitan (ninguno lo hace en la práctica). Manifest 2.0.21→2.0.22.
+
 ### v2.0.0-alpha.28 — Per-identity activity entry point (Etapa 4.4 mini, 2026-05-25)
 
 **Quinto y último sub-bloque de Etapa 4** apilado sobre 24+25+26+27. Cierra Etapa 4 — Reliability + Observabilidad en una sola release pendiente con los 5 sub-bloques.

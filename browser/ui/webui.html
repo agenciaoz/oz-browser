@@ -926,6 +926,13 @@
         display: flex;
         flex-direction: column;
         gap: 14px;
+        /* v2.0.0-alpha.29: re-habilitar selección de texto dentro de modales.
+           webui.html línea 26 setea user-select: none global (sidebar/tabs no
+           debe ser seleccionable), pero los modales son DOCUMENTOS — el
+           usuario necesita poder copiar versiones, IDs, mensajes de error,
+           run IDs, etc. Las cells / botones internos pueden override a none
+           si lo necesitan. */
+        user-select: text;
       }
       .oz-modal-window header {
         display: flex;
