@@ -46,14 +46,14 @@ re-applies `setProxy` once the window expires.
 
 ## API
 
-| Method | Effect |
-|---|---|
-| `getOrRotateSessid(identityId, proxy)` | Returns the current sessid for the identity, rotating if stale. Returns `null` if the proxy lacks `-sessid-` pattern. |
-| `buildRulesForIdentity(identityId)` | Resolves the proxy via `proxyAssignment`, substitutes the ephemeral sessid into the username, returns `{proxy, rules, sessid}`. |
-| `applyForIdentity(identityId, session)` | Calls `session.setProxy({proxyRules})` with the rotated rules. Returns `{proxyId, sessid, rules}`. |
-| `refreshActiveSession(identityId)` | Convenience for callers that don't have the session handle — looks it up via `identityManager.getSession(identityId)` and calls `applyForIdentity`. |
-| `forget(identityId)` | Clears the ephemeral state for an identity. Call when the identity is deleted. |
-| `isStale(generatedAt)` | Predicate: true if `now - generatedAt > windowMs`. Exposed for tests. |
+| Method                                  | Effect                                                                                                                                              |
+| --------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `getOrRotateSessid(identityId, proxy)`  | Returns the current sessid for the identity, rotating if stale. Returns `null` if the proxy lacks `-sessid-` pattern.                               |
+| `buildRulesForIdentity(identityId)`     | Resolves the proxy via `proxyAssignment`, substitutes the ephemeral sessid into the username, returns `{proxy, rules, sessid}`.                     |
+| `applyForIdentity(identityId, session)` | Calls `session.setProxy({proxyRules})` with the rotated rules. Returns `{proxyId, sessid, rules}`.                                                  |
+| `refreshActiveSession(identityId)`      | Convenience for callers that don't have the session handle — looks it up via `identityManager.getSession(identityId)` and calls `applyForIdentity`. |
+| `forget(identityId)`                    | Clears the ephemeral state for an identity. Call when the identity is deleted.                                                                      |
+| `isStale(generatedAt)`                  | Predicate: true if `now - generatedAt > windowMs`. Exposed for tests.                                                                               |
 
 ## Configuration
 

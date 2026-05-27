@@ -18,6 +18,7 @@ Decisión combinada (dedicated assignment + sessid rotation):
 - **Parte 2 (este sub-bloque alpha.30):** `StickyRotation` class — capa ephemeral que reemplaza el `sessid-NNNNNN` persistido por uno random cada vez que el sticky window (30 min, match `sesstime-30`) expira. State en memoria, no disco — boot fresh = sessid fresh.
 
 Comportamiento:
+
 - Primera activación después del boot → sessid random generado, aplicado via `setProxy`.
 - Re-activación dentro de los 30 min → mismo sessid (sticky window intacto, mantiene IP).
 - Re-activación después de 30 min → sessid nuevo, Oxylabs asigna IP nueva.
