@@ -6796,6 +6796,207 @@
       </div>
     </div>
 
+    <!-- ── Bulk Run History modal (v2 Etapa 4.1) ──────────────────────── -->
+    <div class="oz-modal" id="oz-bh-modal" hidden>
+      <div class="oz-modal-backdrop" data-close></div>
+      <div
+        class="oz-modal-window am-window oz-bh-window"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="oz-bh-title"
+      >
+        <header>
+          <h2 id="oz-bh-title" data-i18n="bulkHistory.title">📜 Bulk Run History</h2>
+          <button
+            type="button"
+            class="oz-modal-close"
+            data-close
+            aria-label="Close"
+            data-i18n-attr="aria-label:bulkHistory.closeAria"
+          >
+            ✕
+          </button>
+        </header>
+
+        <!-- ── Phase: list ────────────────────────────────────────── -->
+        <section id="oz-bh-list">
+          <div class="oz-bh-stats-line" id="oz-bh-stats"></div>
+
+          <div class="oz-bh-filters">
+            <label class="oz-bh-filter">
+              <span data-i18n="bulkHistory.filterStatus">Status</span>
+              <select id="oz-bh-filter-status">
+                <option value="all" data-i18n="bulkHistory.filterAllOption">All</option>
+                <option value="completed" data-i18n="bulkHistory.status.completed">Completed</option>
+                <option value="failed" data-i18n="bulkHistory.status.failed">Failed</option>
+                <option value="cancelled" data-i18n="bulkHistory.status.cancelled">Cancelled</option>
+                <option value="running" data-i18n="bulkHistory.status.running">Running</option>
+                <option value="created" data-i18n="bulkHistory.status.created">Created</option>
+              </select>
+            </label>
+            <label class="oz-bh-filter">
+              <span data-i18n="bulkHistory.filterAction">Action</span>
+              <select id="oz-bh-filter-action">
+                <option value="all" data-i18n="bulkHistory.filterAllOption">All</option>
+              </select>
+            </label>
+            <label class="oz-bh-filter">
+              <span data-i18n="bulkHistory.filterIdentity">Identity</span>
+              <select id="oz-bh-filter-identity">
+                <option value="all" data-i18n="bulkHistory.filterAllOption">All</option>
+              </select>
+            </label>
+            <label class="oz-bh-filter">
+              <span data-i18n="bulkHistory.filterDate">Date</span>
+              <select id="oz-bh-filter-date">
+                <option value="all" data-i18n="bulkHistory.dateAll">All time</option>
+                <option value="7d" data-i18n="bulkHistory.date7d">Last 7 days</option>
+                <option value="30d" data-i18n="bulkHistory.date30d">Last 30 days</option>
+              </select>
+            </label>
+            <label class="oz-bh-filter oz-bh-filter-search">
+              <span data-i18n="bulkHistory.filterSearch">Search</span>
+              <input
+                type="search"
+                id="oz-bh-filter-search"
+                data-i18n-attr="placeholder:bulkHistory.searchPlaceholder"
+                placeholder="runId, action…"
+              />
+            </label>
+            <label class="oz-bh-filter">
+              <span data-i18n="bulkHistory.sortLabel">Sort</span>
+              <select id="oz-bh-sort">
+                <option value="newest" data-i18n="bulkHistory.sortNewest">Newest first</option>
+                <option value="oldest" data-i18n="bulkHistory.sortOldest">Oldest first</option>
+                <option value="status" data-i18n="bulkHistory.sortStatus">By status</option>
+              </select>
+            </label>
+            <button
+              type="button"
+              id="oz-bh-refresh"
+              class="oz-bh-refresh-btn"
+              data-i18n="bulkHistory.refresh"
+              data-i18n-attr="aria-label:bulkHistory.refreshAria"
+              aria-label="Refresh"
+            >
+              ↻ Refresh
+            </button>
+            <!-- v2.0.0-alpha.26 (Etapa 4.5): export filtered+sorted set as CSV. -->
+            <button
+              type="button"
+              id="oz-bh-export-list"
+              class="oz-bh-export-btn"
+              data-i18n="bulkHistory.export.listBtn"
+              data-i18n-attr="title:bulkHistory.export.listTitle"
+              title="Export the filtered list as CSV"
+            >
+              ⬇ Export CSV
+            </button>
+          </div>
+
+          <div
+            class="oz-bh-empty"
+            id="oz-bh-empty"
+            hidden
+            data-i18n="bulkHistory.emptyNoRuns"
+          ></div>
+
+          <table class="oz-bh-table">
+            <thead>
+              <tr>
+                <th data-i18n="bulkHistory.colDate">Date</th>
+                <th data-i18n="bulkHistory.colAction">Action</th>
+                <th data-i18n="bulkHistory.colIdentities">Identities</th>
+                <th data-i18n="bulkHistory.colStatus">Status</th>
+                <th data-i18n="bulkHistory.colResults">Results</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="oz-bh-table-body"></tbody>
+          </table>
+
+          <div class="oz-bh-shown-count" id="oz-bh-shown-count" hidden></div>
+        </section>
+
+        <!-- ── Phase: detail ──────────────────────────────────────── -->
+        <section id="oz-bh-detail" hidden>
+          <div class="oz-bh-detail-back-row">
+            <button
+              type="button"
+              id="oz-bh-detail-back"
+              data-i18n="bulkHistory.detail.back"
+            >
+              ← Back to list
+            </button>
+          </div>
+          <div class="oz-bh-detail-header" id="oz-bh-detail-header"></div>
+
+          <!-- Retry toolbar (v2 Etapa 4.3). Hidden when run is non-terminal
+               or has no retryable items. -->
+          <div class="oz-bh-retry-bar" id="oz-bh-retry-bar" hidden>
+            <button
+              type="button"
+              id="oz-bh-retry-failed"
+              class="primary"
+              data-i18n="bulkHistory.retry.retryFailed"
+            >
+              ↻ Retry failed items
+            </button>
+            <button
+              type="button"
+              id="oz-bh-retry-selected"
+              disabled
+              data-i18n="bulkHistory.retry.retrySelected"
+            >
+              ↻ Retry selected (0)
+            </button>
+            <small
+              class="oz-bh-retry-hint"
+              id="oz-bh-retry-hint"
+              data-i18n="bulkHistory.retry.hint"
+            >
+              Tick items below to retry a subset.
+            </small>
+            <!-- v2.0.0-alpha.26 (Etapa 4.5): export this run's items as CSV. -->
+            <button
+              type="button"
+              id="oz-bh-export-detail"
+              class="oz-bh-export-btn"
+              data-i18n="bulkHistory.export.detailBtn"
+              data-i18n-attr="title:bulkHistory.export.detailTitle"
+              title="Export this run's items as CSV"
+            >
+              ⬇ Export CSV
+            </button>
+          </div>
+          <div
+            class="oz-modal-error"
+            id="oz-bh-retry-error"
+            hidden
+          ></div>
+
+          <table class="oz-bh-table oz-bh-detail-table">
+            <thead>
+              <tr>
+                <th class="oz-bh-col-check">
+                  <input
+                    type="checkbox"
+                    id="oz-bh-check-all"
+                    aria-label="Select all retryable"
+                    data-i18n-attr="aria-label:bulkHistory.retry.selectAllAria"
+                  />
+                </th>
+                <th data-i18n="bulkHistory.detail.colIdentity">Identity</th>
+                <th data-i18n="bulkHistory.detail.colStatus">Status</th>
+                <th data-i18n="bulkHistory.detail.colResult">Result</th>
+              </tr>
+            </thead>
+            <tbody id="oz-bh-detail-body"></tbody>
+          </table>
+        </section>
+      </div>
+    </div>
+
     <script src="./oz-utils.js"></script>
     <script src="./tabstrip.js"></script>
     <!-- v1.8.3: ui-prompt loaded BEFORE sidebar.js so handleNewWorkspace
@@ -6838,6 +7039,14 @@
     <script src="./bulk-runner-schedule.js"></script>
     <script src="./bulk-runner-codes.js"></script>
     <script src="./bulk-runner-ui.js"></script>
+    <!-- v2.0.0-alpha.24 (Etapa 4.1): bulk run history dashboard. Helpers
+         module loaded BEFORE the UI module so window.OZ.bulkHistoryHelpers
+         is populated when the IIFE in bulk-history.js reads it.
+         alpha.25 (Etapa 4.3): actions module (retry workflow) extracted
+         to keep bulk-history.js under the 500 LOC budget (ADR 0005). -->
+    <script src="./bulk-history-helpers.js"></script>
+    <script src="./bulk-history-actions.js"></script>
+    <script src="./bulk-history.js"></script>
     <script src="./identity-clone.js"></script>
     <script src="./notifications.js"></script>
     <script src="./health-modal.js"></script>

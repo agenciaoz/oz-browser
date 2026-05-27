@@ -110,6 +110,16 @@ const setupMenu = (browser) => {
     }
   }
 
+  // v2 Etapa 4.1 — opens the Bulk Run History dashboard. Same routing pattern.
+  // No accelerator (Cmd+Shift+H is the macOS show/hide-window default and
+  // we don't want to override system bindings). Discoverable via Cmd+K.
+  const openBulkHistory = () => {
+    const win = browser.getFocusedWindow()
+    if (win && win.webContents && !win.webContents.isDestroyed()) {
+      win.webContents.send('oz:bulk-history:open')
+    }
+  }
+
   const template = [
     ...(isMac ? [{ role: 'appMenu' }] : []),
     { role: 'fileMenu' },
@@ -239,6 +249,13 @@ const setupMenu = (browser) => {
           label: 'Bulk Run…',
           accelerator: 'Shift+CmdOrCtrl+B',
           click: openBulkRunner,
+        },
+        {
+          // v2 Etapa 4.1 — Bulk Run History dashboard. Lista de runs
+          // pasados con filtros + drill-down. No accelerator (ver comment
+          // junto a openBulkHistory).
+          label: 'Bulk Run History…',
+          click: openBulkHistory,
         },
       ],
     },

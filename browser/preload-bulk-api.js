@@ -43,6 +43,29 @@ function buildBulkApi(ipcRenderer) {
       ipcRenderer.on('oz:bulk-runner:open', listener)
       return () => ipcRenderer.off('oz:bulk-runner:open', listener)
     },
+    // v2 Etapa 4.1: open the Bulk Run History dashboard. Fired by menu.js
+    // when the user invokes the "Bulk Run History…" menu item.
+    onOpenHistory(cb) {
+      const listener = () => cb()
+      ipcRenderer.on('oz:bulk-history:open', listener)
+      return () => ipcRenderer.off('oz:bulk-history:open', listener)
+    },
+    // v2 Etapa 4.2: open the Bulk Run History dashboard directly at the
+    // detail view of a specific run. Fired by bulk-notifications.js when
+    // the user clicks a completion toast.
+    onOpenHistoryAtRun(cb) {
+      const listener = (_e, payload) => cb(payload || {})
+      ipcRenderer.on('oz:bulk-history:open-at-run', listener)
+      return () => ipcRenderer.off('oz:bulk-history:open-at-run', listener)
+    },
+    // v2 Etapa 4.4: open the dashboard pre-filtered to a single identity.
+    // Fired by the command palette ("Activity for {identity}…") so the
+    // operator can drill into an identity's recent activity in one click.
+    onOpenHistoryForIdentity(cb) {
+      const listener = (_e, payload) => cb(payload || {})
+      ipcRenderer.on('oz:bulk-history:open-for-identity', listener)
+      return () => ipcRenderer.off('oz:bulk-history:open-for-identity', listener)
+    },
   }
 }
 

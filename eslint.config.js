@@ -103,6 +103,9 @@ module.exports = [
         // Was the lone CI lint error that's been blocking v1.5.3/1.5.4/1.5.5
         // runs (1 error + 3 pre-existing warnings = exit 1).
         FileReader: 'readonly',
+        // v2.0.0-alpha.26+ (Etapa 4.5): bulk-history-actions.js uses Blob
+        // for CSV export download. Standard browser global.
+        Blob: 'readonly',
       },
     },
     rules: {

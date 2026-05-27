@@ -286,6 +286,7 @@
           healthCheck: window.OZ && window.OZ.HealthCheck,
           extensionsManager: window.OZ && window.OZ.ExtensionsManager,
           bulkRunner: window.OZ && window.OZ.bulkRunnerUI,
+          bulkHistory: window.OZ && window.OZ.bulkHistoryUI,
         }
         const ui = modalMap[payload.modal]
         if (ui && typeof ui.open === 'function') ui.open()
@@ -301,6 +302,17 @@
           window.oz.identities.setActive(payload.identityId),
           'identities.setActive',
         )
+        return true
+      },
+      // v2 Etapa 4.4 — open Bulk Run History pre-filtered to one identity.
+      // The dashboard reads the identityId hint from window.OZ.bulkHistoryUI
+      // via the onOpenHistoryForIdentity bridge (renderer-side directly,
+      // no IPC roundtrip since both live in the WebUI).
+      'open-history-for-identity': async (payload) => {
+        const ui = window.OZ && window.OZ.bulkHistoryUI
+        if (!ui || !payload || !payload.identityId) return true
+        ui._filters.identityId = payload.identityId
+        await ui.open()
         return true
       },
       'switch-workspace': async (payload) => {

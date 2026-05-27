@@ -589,6 +589,10 @@ class Browser {
     // browser.bulkRunner.
     bulkRunnerSetup.setupBulkRunner(this)
 
+    // v2 Etapa 4.2 — native OS notifications on bulk run completion.
+    // Thin wrapper in browser/bulk-notifications-setup.js (ADR 0005 LOC).
+    require('./bulk-notifications-setup').setupBulkNotifications(this)
+
     // F-4a: Scheduled Actions (cron-lite v1). Setup BEFORE registerIpcHandlers
     // so browser.handlers.scheduled is wired when IPC routes register. The
     // runner is NOT started here — startScheduledActions runs AFTER IPC + sync

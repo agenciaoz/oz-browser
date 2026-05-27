@@ -211,6 +211,16 @@ function buildCommands(sources) {
       emoji: '⚡',
       payload: { action: 'open-modal', modal: 'bulkRunner' },
     },
+    // v2 Etapa 4.1: Bulk Run History dashboard.
+    {
+      id: 'action:open-bulk-history',
+      label: 'Bulk Run History…',
+      labelKey: 'bulkHistory.paletteEntry',
+      keywords: 'bulk run history dashboard past runs log audit results',
+      keywordsKey: 'bulkHistory.paletteKeywords',
+      emoji: '📜',
+      payload: { action: 'open-modal', modal: 'bulkHistory' },
+    },
     {
       id: 'action:open-bulk-opener',
       label: 'Bulk Open Identities…',
@@ -295,6 +305,23 @@ function buildCommands(sources) {
       keywords: `persona profile ${i.name || ''}`,
       accent: i.color || undefined,
       payload: { action: 'switch-identity', identityId: i.id },
+    })
+    // v2 Etapa 4.4 — companion entry: open Bulk Run History pre-filtered
+    // to this identity. Discoverable by typing the identity name + "activity"
+    // (keywords help) and ranks below the switch-identity entry naturally
+    // because labels share the same prefix but the activity one is longer.
+    out.push({
+      id: `identity-activity:${i.id}`,
+      type: 'action',
+      label: `Activity for ${i.name || 'Identity'}…`,
+      labelKey: 'bulkHistory.activityFor',
+      labelKeyParams: { name: i.name || 'Identity' },
+      hint: '📜',
+      keywords: `activity history bulk runs log audit ${i.name || ''}`,
+      keywordsKey: 'bulkHistory.activityForKeywords',
+      emoji: '📜',
+      accent: i.color || undefined,
+      payload: { action: 'open-history-for-identity', identityId: i.id },
     })
   }
 

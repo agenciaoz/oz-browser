@@ -8,6 +8,87 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.28 — Per-identity activity entry point (Etapa 4.4 mini, 2026-05-25)
+
+**Quinto y último sub-bloque de Etapa 4** apilado sobre 24+25+26+27. Cierra Etapa 4 — Reliability + Observabilidad en una sola release pendiente con los 5 sub-bloques.
+
+**Decisión de scope:** la doc original planeaba un tab embebido en account-manager (~2-3h, archivo grande con riesgo de regression). Después de medir el costo/beneficio — el identity filter del dashboard ya cubre el 80% del caso — Jose eligió la versión **mini (~30 min)**: solo agregar entry points para abrir el dashboard pre-filtered.
+
+Tres cambios chicos:
+
+1. **Command palette entry dinámica per identity** — por cada identity en el sistema, se inyecta "Activity for {identityName}…" 📜 al lado del entry "Switch to Identity X". Discoverable escribiendo el nombre de la identity o `activity`. Click → abre el dashboard con el filter de identity pre-aplicado.
+
+2. **IPC `oz:bulk-history:open-for-identity`** + preload bridge `window.oz.bulk.onOpenHistoryForIdentity` — paralelo a las dos rutas IPC existentes (`open` para 4.1, `open-at-run` para 4.2). Plumbing futura para deep linking, scheduled actions que linkeen a activity, etc. Sin emitter en main process por ahora — el dispatcher local del command palette es el path principal.
+
+3. **`wireOpenIntents(uiGetter)` en bulk-history-actions.js** — extracted del `_boot()` de bulk-history.js para mantener bajo el 500 LOC budget (ADR 0005). Centraliza los 3 IPC listeners (open / open-at-run / open-for-identity).
+
+Backend cero. Account-manager NO se tocó. Tests: 39/39 verde en command-palette suite (sin regresiones por la nueva entry dinámica). +2 i18n keys EN/ES (`bulkHistory.activityFor`, `bulkHistory.activityForKeywords`). Manifest 2.0.20→2.0.21.
+
+**Etapa 4 cerrada con 5 sub-bloques:** 4.1 (dashboard) + 4.2 (notifs) + 4.3 (retry) + 4.4 (per-identity entry point) + 4.5 (CSV export).
+
+### v2.0.0-alpha.27 — Push notifications (Etapa 4.2, 2026-05-25)
+
+Cuarto sub-bloque de Etapa 4 apilado sobre 24+25+26. Cuando un bulk run termina, OZ dispara una Electron Notification nativa con el título "Bulk run finished/failed/cancelled — {action}" y body con el stats summary (omitiendo buckets en cero). Click en la notif abre el Bulk History dashboard directo al detail view del run que terminó — piggyback sobre la plumbing del 4.1.
+
+Cambio de patrón vs 4.1+4.3+4.5: este sub-bloque SÍ toca main process. Nuevo módulo `browser/bulk-notifications.js` con clase `BulkNotifications` (deps inyectables, patrón sibling de anti-logout.js). Wireado en main.js DESPUÉS de bulkRunnerSetup. Suscribe a `bulkRunner.on('completed')` y dispara la toast.
+
+Gate: reutiliza `settings.notifications.showOSAlert` existente (el mismo flag que controla anti-logout). Sin key nueva — Jose mantiene una sola palanca para "molestame con OS notifs". Decisión documentada en ADR 0033 §Gating.
+
+Click handler: nuevo IPC `oz:bulk-history:open-at-run` con `{runId}` payload + preload bridge `window.oz.bulk.onOpenHistoryAtRun`. La UI escucha y chainea `ui.open() → ui._openDetail(runId)`.
+
+Edge cases: macOS permission denied (silent skip), `Notification.isSupported()=false` (skip clean), factory null (skip), meta missing (silent skip), focus-before-window-alive (fallback a broadcastToWebUI). +22 assertions en smoketest dedicado. ADR 0033 + module doc nuevos.
+
+LOC budget: `bulk-history.js` exacto en 497/500 tras compactar listeners en un loop iterativo. Manifest 2.0.19→2.0.20.
+
+### v2.0.0-alpha.26 — Export CSV (Etapa 4.5, 2026-05-25)
+
+Tercer sub-bloque apilado sobre alpha.24+25 sin publish entre medio. Cuando se shippeé saldrá un único release con las tres etapas (4.1 + 4.3 + 4.5).
+
+Dos botones nuevos en el dashboard:
+
+1. **List view → "⬇ Export CSV"** en el filter toolbar — exporta el filtered+sorted set (NO solo los 100 visibles). Permite "filtrá últimos 30 días, IG Like, failed, sort por fecha, exportar todo" en un click. Columns: createdAt, runId, actionId, actionLabel, identityCount, status, done, failed, skipped, cancelled, finishedAt. Filename `bulk-runs-<ISO-timestamp>.csv`.
+2. **Detail view → "⬇ Export CSV"** en el retry bar — exporta items per identity del run actual. Columns: runId, identityId, identityName, status, result, errorCode, errorMessage, startedAt, finishedAt. Filename `bulk-run-<runId>.csv`. `result` se JSON-stringifica para objetos.
+
+RFC 4180 compliant: fields con `,"\r\n` se escapean wrapping en `"` y doblando internal quotes (`"` → `""`). Line terminator CRLF para Excel/Numbers happy path.
+
+Backend cero — Blob + `<a download>` trigger directo en el browser. 3 helpers puros nuevos en bulk-history-helpers.js (`toCsvCell`, `runsToCSV`, `runDetailToCSV`) + 2 funciones download en bulk-history-actions.js (`exportListCsv`, `exportDetailCsv`). +30 assertions en smoketest (total 91 verde).
+
+Edge cases cubiertos: input vacío (header only), entries sin `meta.status` (skipped — mismo guard que `buildStats`), commas/quotes/CR/LF en cell values (escaped), JSON stringify de objects en result.
+
+Bug bonus: el guard de "skip invalid entries" en `runsToCSV` reveló que `buildStats` ya tenía la misma lógica pero `runsToCSV` no — ahora consistente.
+
+Manifest 2.0.18→2.0.19.
+
+### v2.0.0-alpha.25 — Retry-failed (Etapa 4.3, 2026-05-25)
+
+Apilada sobre alpha.24 sin publish entre medio (decisión Jose). Cuando se haga publish, ambos sub-bloques (4.1 + 4.3) salen juntos como alpha.25.
+
+Sub-bloque 4.3 agrega tres entry points para re-runear runs pasados sin abrir el composer:
+
+1. **Detail view → botón principal** "↻ Retry failed items (N)" — re-runea solo items con `status=failed`. Cancelled NO se incluye (la cancelación es decisión explícita del operador).
+2. **Detail view → selección manual** — checkbox per item retryable (`failed | cancelled`). Botón "Retry selected (M)" habilitado con ≥1 marcado. Permite re-runear cancelled cuando el operador así lo decide.
+3. **List view → row action** "↻ Retry" — equivalente al botón principal sin abrir detail. Visible cuando `meta.stats.failed > 0` Y run en estado terminal.
+
+Los tres funnelean por `_dispatchRetry(meta, identityIds)` que re-valida estado terminal (race-safe vs live-update), confirma con `window.confirm`, valida que la action sigue registrada (`oz.bulk.actions`), llama `oz.bulk.run`, refresca el dashboard y salta al detail del nuevo run.
+
+Backend cero — `oz.bulk.run` ya hace create+start atómico desde alpha.1. Helpers nuevos puros en `bulk-history-helpers.js`: `getRetryableIdentityIds`, `getFailedIdentityIds`, `buildRetrySpec`, `canRetryRun` + 2 sets exportados (`RETRYABLE_ITEM_STATUSES`, `TERMINAL_RUN_STATUSES`). 25 assertions nuevos en el smoketest (total 59). Manifest 2.0.17→2.0.18.
+
+Edge cases cubiertos: action removida (mensaje friendly), identity borrada (filtra), run no-terminal (block retry), backend caído (inline error).
+
+ADR 0032 actualizado — Retry-failed pasa de "non-decisions parking" a sección dedicada §Retry-failed. Module doc bulk-history.md expandido con la sección "Retry workflow".
+
+### v2.0.0-alpha.24 — Bulk Run History dashboard (Etapa 4.1, 2026-05-25)
+
+Primer sub-bloque de Etapa 4 (Reliability + Observabilidad). Modal nuevo "Bulk Run History" accesible via Cmd+K palette o View menu — muestra todos los runs pasados que el motor ya persistía en `userData/bulk-runs/` desde alpha.1 pero hasta ahora solo eran visibles por MCP `oz.bulk.list` o abriendo JSONs a mano.
+
+Dos fases en un solo modal (mismo patrón que bulk-runner-ui): **lista** con filtros (status, action, identity, date range 7d/30d/all, text search) + sorting (newest/oldest/by-status) + límite 100 visibles, y **detail** con drill-down a items per identity reusando `bulkRunnerCodes` para tooltips de error.
+
+Backend cero — el motor ya hacía todo: `BulkRunner.list()` + `.get(runId)` desde alpha.1, eventos `oz:bulk:created/started/completed` broadcasteados. Live-update mientras el modal está abierto. Identity filter hidrata items lazy via `.get()` cuando se activa (con cache).
+
+Helpers puros (`filterRuns`, `sortRuns`, `buildStats`, `buildFilterOptions`) viven en `browser/ui/bulk-history-helpers.js` como CommonJS módulo, separado del IIFE UI — patrón sibling al de `browser/command-palette.js` (data) vs `browser/ui/command-palette.js` (UI). Permite que `tests/bulk-history-helpers.smoketest.js` los importe en Node puro sin DOM stub. 34 assertions verde.
+
+ADR 0032 + docs/modules/bulk-history.md documentan la arquitectura. Etapa 4.3 (Retry-failed) y 4.5 (Export CSV) se enganchan acá después — los slots están explícitos en el ADR.
+
 ### Smoke test real arrancó (2026-05-23): 2 bugs UI fixed en alpha.20
 
 Claude corrió el smoke test del checklist por primera vez sobre alpha.19 en la Mac de Jose. La capa código (115 smoketests + CI) estaba verde, pero **ambos paths para abrir el Bulk Runner estaban rotos en producción** — clásicos silent wire-up bugs que la suite automatizada nunca ejerció.
