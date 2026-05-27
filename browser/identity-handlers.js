@@ -42,6 +42,17 @@ function buildIdentityHandlers(browser) {
       browser.activeIdentityId = id
       browser.broadcastToWebUI('oz:identities:active-changed', id)
       log.info('identity-handlers', 'setActive', { id })
+      // alpha.30: check sticky-sessid window. If expired, regenerates the
+      // ephemeral sessid + re-applies setProxy on the existing session.
+      // Within the window, no-op (same sessid, same rules). Non-blocking.
+      if (browser.stickyRotation) {
+        browser.stickyRotation.refreshActiveSession(id).catch((err) => {
+          log.warn('identity-handlers', 'sticky rotation refresh failed', {
+            id,
+            message: err && err.message,
+          })
+        })
+      }
       return true
     },
 

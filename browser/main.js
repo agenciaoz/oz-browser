@@ -621,25 +621,27 @@ class Browser {
     // created session immediately gets its proxy applied (no restart needed
     // for first-launch identities). Late binding via setter keeps
     // IdentityManager unaware of ProxyManager (loose coupling).
+    //
+    // alpha.30: StickyRotation interpose para regenerar sessid Oxylabs cuando
+    // expira el sticky window (30 min). Mantiene IP estable mientras está
+    // dentro del window; rota al re-activar identity DESPUÉS del window.
+    // El ephemeral sessid no persiste — boot fresh = sessid fresh.
     const { toProxyRulesString } = require('./proxy-assignment')
+    const { StickyRotation } = require('./proxy-sticky-rotation')
+    this.stickyRotation = new StickyRotation({
+      proxyAssignment: this.proxyAssignment,
+      toProxyRulesString,
+      identityManager: this.identityManager,
+      logger: log,
+    })
     this.identityManager.setProxyResolutionHook((identityId, session) => {
-      const proxy = this.proxyAssignment.resolve({ identityId })
-      const rules = proxy ? toProxyRulesString(proxy) : 'direct://'
-      session
-        .setProxy({ proxyRules: rules })
-        .then(() =>
-          log.debug('browser', 'session proxy applied on create', {
-            identityId,
-            proxyId: proxy && proxy.id,
-            rules,
-          }),
-        )
-        .catch((err) =>
-          log.error('browser', 'session.setProxy failed on create', {
-            identityId,
-            message: err.message,
-          }),
-        )
+      // applyForIdentity rotates if stale + setProxy en una sola llamada.
+      this.stickyRotation.applyForIdentity(identityId, session).catch((err) => {
+        log.error('browser', 'sticky rotation apply failed', {
+          identityId,
+          message: err && err.message,
+        })
+      })
     })
 
     // 1.8c: Health daemon — tests assignable proxies every 30 min,

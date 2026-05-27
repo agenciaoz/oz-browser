@@ -8,6 +8,26 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.30 — Sticky-sessid auto-rotation per identity (2026-05-27)
+
+Petición Jose post-alpha.29 después de revisar el setup de proxies: cada identity tenía un proxy Miami fijo (dedicated, no round-robin — ya aplicado vía MCP en alpha.29), pero el `sessid-NNNNNN` hardcoded en disco hacía que Oxylabs devolviera la misma IP residencial entre sesiones de OZ — incluso días después.
+
+Decisión combinada (dedicated assignment + sessid rotation):
+
+- **Parte 1 (ya aplicada vía MCP, no requiere code):** Pedro → #100, Contexto IG → #101, El Informe → #102. Sin solapamiento de IPs entre identities.
+- **Parte 2 (este sub-bloque alpha.30):** `StickyRotation` class — capa ephemeral que reemplaza el `sessid-NNNNNN` persistido por uno random cada vez que el sticky window (30 min, match `sesstime-30`) expira. State en memoria, no disco — boot fresh = sessid fresh.
+
+Comportamiento:
+- Primera activación después del boot → sessid random generado, aplicado via `setProxy`.
+- Re-activación dentro de los 30 min → mismo sessid (sticky window intacto, mantiene IP).
+- Re-activación después de 30 min → sessid nuevo, Oxylabs asigna IP nueva.
+
+Wire-up: `setProxyResolutionHook` en `main.js` ahora delega a `stickyRotation.applyForIdentity` en lugar del flow directo. `identity-handlers.setActive` llama `refreshActiveSession(id)` después de cambiar la identity activa — no-op dentro del window, rotate fuera.
+
+Stack: `browser/proxy-sticky-rotation.js` (175 LOC) + `tests/proxy-sticky-rotation.smoketest.js` (40 assertions verde) + ADR 0034 + module doc. Solo aplica a proxies con `-sessid-XXX-` en username (Oxylabs); Brightdata y otros formatos pasan through sin tocar.
+
+Edge cases cubiertos: random collisions (~2B space, vanishing), identity removed (forget API), setProxy fails (caught + logged ERROR, degrades gracefully), clock skew (irrelevante por ephemeral).
+
 ### v2.0.0-alpha.29 — UX fix: texto seleccionable en modales (2026-05-27)
 
 Bug encontrado por Jose post-instalación de alpha.28: en Settings → About no podía seleccionar la versión para copiarla. Lo mismo aplicaba a todos los modales del WebUI (account-manager, time-machine, identity-editor, bulk-runner, bulk-history, etc.).
