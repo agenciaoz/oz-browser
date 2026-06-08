@@ -204,10 +204,47 @@ function _checkRespectingPref(browser) {
       log.debug('auto-updater', 'auto-check disabled by user pref')
       return
     }
-    if (_updaterRef) _updaterRef.checkForUpdates()
+    if (_updaterRef) _safeCheck(_updaterRef)
   } catch (err) {
     log.warn('auto-updater', 'scheduled check threw', { message: err.message })
   }
+}
+
+/**
+ * Call `updater.checkForUpdates()` and swallow the promise rejection.
+ *
+ * electron-updater surfaces a failed check TWICE: once via the `'error'`
+ * event (wired above → logged + broadcast to the WebUI) and once via the
+ * promise returned by checkForUpdates(). If that promise rejection isn't
+ * caught it bubbles to the global `unhandledRejection` handler, which pops
+ * the scary "Unhandled promise rejection (main process)" dialog at the user
+ * — aunque el único "problema" sea estar offline o volver de sleep
+ * (net::ERR_INTERNET_DISCONNECTED). El try/catch sincrónico del call site NO
+ * atrapa esto, porque el rechazo es async.
+ *
+ * El evento `'error'` ya hace el logging/broadcast real, así que acá solo
+ * absorbemos el rechazo (breadcrumb debug-level). Exportado para testing —
+ * el offline path es de otro modo imposible de assertear.
+ *
+ * @param {{checkForUpdates: function}} updater
+ * @returns {Promise<void>} siempre resuelve
+ */
+function _safeCheck(updater) {
+  try {
+    const p = updater && updater.checkForUpdates()
+    if (p && typeof p.catch === 'function') {
+      return p.catch((err) => {
+        log.debug('auto-updater', 'check rejected (handled via error event)', {
+          message: (err && err.message) || String(err),
+        })
+      })
+    }
+  } catch (err) {
+    log.warn('auto-updater', 'checkForUpdates threw synchronously', {
+      message: err && err.message,
+    })
+  }
+  return Promise.resolve()
 }
 
 /**
@@ -217,7 +254,7 @@ function _checkRespectingPref(browser) {
  */
 function checkForUpdatesManual() {
   if (!_updaterRef) return false
-  _updaterRef.checkForUpdates()
+  _safeCheck(_updaterRef)
   return true
 }
 
@@ -247,4 +284,5 @@ module.exports = {
   checkForUpdatesManual,
   quitAndInstall,
   teardown,
+  _safeCheck,
 }

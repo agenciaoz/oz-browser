@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.31 — Fix: dialog "Unhandled promise rejection" offline/sleep (2026-06-08)
+
+[`2026-06-08`] [`auto-updater`] `_safeCheck()` absorbe el rechazo de `checkForUpdates()` cuando no hay internet (`net::ERR_INTERNET_DISCONNECTED`) — el error ya se maneja vía evento `'error'`, ahora la promesa no escala al handler global y no popea dialog. +4 smoketests.
+
 ### v2.0.0-alpha.30 — Sticky-sessid auto-rotation per identity (2026-05-27)
 
 Petición Jose post-alpha.29 después de revisar el setup de proxies: cada identity tenía un proxy Miami fijo (dedicated, no round-robin — ya aplicado vía MCP en alpha.29), pero el `sessid-NNNNNN` hardcoded en disco hacía que Oxylabs devolviera la misma IP residencial entre sesiones de OZ — incluso días después.
