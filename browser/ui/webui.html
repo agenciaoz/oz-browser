@@ -505,12 +505,33 @@
         color: var(--text-color);
       }
 
-      /*----- H3c: TREE SIDEBAR (workspaces > identities > tabs) -----*/
-      /* Hide the deprecated pills container — workspace rows now live in
-         the unified tree below. */
+      /*----- alpha.32: WORKSPACE SWITCHER LIST (Ghost parity) -----*/
+      /* The pills container is now a vertical list of ALL workspaces; clicking
+         one switches the active workspace. Only the active workspace's
+         identities + tabs render below in #oz-identity-list. */
       #oz-workspace-pills {
-        display: none !important;
+        flex-direction: column;
+        flex-wrap: nowrap;
+        gap: 2px;
+        max-height: 30vh;
+        overflow-y: auto;
       }
+      /* Full-width rows instead of rounded chips for the vertical list. */
+      #oz-workspace-pills .workspace-pill {
+        width: 100%;
+        border-radius: 4px;
+        padding: 4px 6px;
+        box-sizing: border-box;
+      }
+      #oz-workspace-pills .workspace-name {
+        flex: 1 1 auto;
+        max-width: none;
+      }
+      #oz-workspace-pills .workspace-pill .ws-add-identity-btn {
+        flex: 0 0 auto;
+      }
+
+      /*----- TREE SIDEBAR (active workspace > identities > tabs) -----*/
 
       .tree-row {
         display: flex;
@@ -7022,6 +7043,7 @@
          can use window.OZ.ui.prompt() instead of broken window.prompt(). -->
     <script src="./ui-prompt.js"></script>
     <script src="./workspace-switcher.js"></script>
+    <script src="./sidebar-view.js"></script>
     <script src="./sidebar-events.js"></script>
     <script src="./sidebar-health.js"></script>
     <script src="./sidebar.js"></script>

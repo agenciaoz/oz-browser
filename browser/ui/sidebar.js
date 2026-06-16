@@ -1,17 +1,20 @@
-// OZ Browser — Sidebar tree (H3c).
+// OZ Browser — Sidebar (alpha.32 — Ghost parity: one active workspace).
 //
-// Renderiza un árbol jerárquico:
-//   Workspaces (top-level, click switchea active workspace de la ventana)
-//     └ Identities (indented bajo cada workspace)
-//         └ Tabs (indented bajo cada identity)
+// Layout (decisión Jose 2026-06-16, research support.ghostbrowser.com/321):
+//   #oz-workspace-pills  — lista de TODOS los workspaces para switchear
+//                          (click = setActive). Solo navegación.
+//   #oz-tree-header      — nombre del workspace ACTIVO.
+//   #oz-identity-list    — SOLO las identities + tabs del workspace activo:
+//                            └ Identity (expand/collapse)
+//                                └ Tabs
 //
-// Cada nivel es expand/collapse con chevron. localStorage persiste el estado
-// expandido por workspace.id y por identity.id entre sesiones. Active
-// workspace / identity / tab tienen highlight visual.
+// Ghost abre un workspace a la vez; al cambiar, el viejo desaparece y aparece
+// el nuevo. Antes el sidebar dibujaba el árbol de TODOS los workspaces y
+// tabs.list() agrega las tabs de todas las ventanas, por lo que las pestañas
+// del workspace anterior quedaban visibles tras un switch. Ahora la vista se
+// limita al workspace activo (helpers puros en sidebar-view.js).
 //
-// Reemplaza el split del 1.4d (workspace-switcher pills + sidebar identities
-// flat). Decisión Jose 2026-05-10 noche bis: cambio de approach vs ADR 0023
-// D9 (era filtered, ahora tree) — ves todo el sistema de un vistazo.
+// Reemplaza el árbol H3c (todos los workspaces a la vez).
 //
 // Wrapped in IIFE — see comment in tabstrip.js for the global-lexical-scope
 // reasoning.
@@ -53,6 +56,8 @@
       }
       this.expanded = loadExpanded()
       this.$root = document.getElementById('oz-identity-list')
+      this.$pills = document.getElementById('oz-workspace-pills')
+      this.$treeHeader = document.getElementById('oz-tree-header')
       this.$newIdBtn = document.getElementById('oz-new-identity')
       this.$newWsBtn = document.getElementById('oz-new-workspace')
       this.$archivedToggle = document.getElementById('oz-workspace-show-archived')
@@ -216,27 +221,15 @@
     // --- handlers ----------------------------------------------------------------
 
     async handleSelectWorkspace(wsId) {
-      if (wsId === this.activeWorkspaceId) {
-        // Toggle expanded if already active (UX bonus).
-        this.expanded['ws:' + wsId] = !this.expanded['ws:' + wsId]
-        saveExpanded(this.expanded)
-        this.render()
-        return
-      }
+      // Clicking the already-active workspace is a no-op (its content is
+      // already shown below). Clicking another switches to it.
+      if (wsId === this.activeWorkspaceId) return
       const r = await safe(window.oz.workspaces.setActive(wsId), 'workspaces.setActive')
       if (r && r.ok === false) {
         if (r.reason === 'already-open')
           alert('This workspace is already open in another window.')
         else if (r.reason === 'not-found') alert('Workspace not found.')
       }
-    }
-
-    handleToggleWorkspaceExpanded(wsId, ev) {
-      if (ev) ev.stopPropagation()
-      const key = 'ws:' + wsId
-      this.expanded[key] = !this.expanded[key]
-      saveExpanded(this.expanded)
-      this.render()
     }
 
     handleSelectIdentity(identityId) {
@@ -319,18 +312,44 @@
     // --- rendering -------------------------------------------------------------
 
     render() {
-      if (!this.$root) return
-      this.$root.innerHTML = ''
-      // HX4 follow-up (Jose's feedback): keep workspaces in stable createdAt
-      // order. Active workspace gets a visual highlight (left accent border +
-      // filled background) but the row stays where it is — clicking should
-      // expand / collapse + switch active, never reshuffle the list.
-      const visibleWs = this.workspaces
-        .filter((w) => this.showArchived || !w.isArchived)
-        .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
-      for (const ws of visibleWs) {
-        this.$root.appendChild(this.renderWorkspaceWrapper(ws))
+      const V = window.OZ.SidebarView
+      const visibleWs = V.visibleWorkspaces(this.workspaces, this.showArchived)
+
+      // 1) Workspace switcher — ALL workspaces as a switch list (Ghost-style).
+      if (this.$pills) {
+        this.$pills.innerHTML = ''
+        for (const ws of visibleWs) {
+          this.$pills.appendChild(this.renderWorkspaceSwitchRow(ws))
+        }
       }
+
+      // 2) Active workspace content — ONLY its identities + tabs.
+      if (this.$root) {
+        this.$root.innerHTML = ''
+        const activeWs = visibleWs.find((w) => w.id === this.activeWorkspaceId)
+        if (this.$treeHeader) {
+          // Dynamic header = active workspace name. Drop data-i18n so the i18n
+          // pass doesn't overwrite it on locale change.
+          this.$treeHeader.removeAttribute('data-i18n')
+          this.$treeHeader.textContent = activeWs ? activeWs.name : '—'
+        }
+        const wsIdentities = activeWs
+          ? V.identitiesForWorkspace(this.identities, activeWs.id)
+          : []
+        if (wsIdentities.length === 0) {
+          const empty = document.createElement('div')
+          empty.className = 'tree-empty'
+          empty.textContent = activeWs
+            ? '(no identities — click ＋ on the workspace)'
+            : '(no workspace)'
+          this.$root.appendChild(empty)
+        } else {
+          for (const ident of wsIdentities) {
+            this.$root.appendChild(this.renderIdentityWrapper(ident))
+          }
+        }
+      }
+
       if (this.$archivedToggle) {
         const archivedCount = this.workspaces.filter((w) => w.isArchived).length
         if (archivedCount === 0) {
@@ -344,36 +363,34 @@
       }
     }
 
-    renderWorkspaceWrapper(ws) {
-      const wrap = document.createElement('div')
-      wrap.className = 'workspace-wrapper'
-      wrap.dataset.wsId = ws.id
-
-      const expandedKey = 'ws:' + ws.id
-      const isExpanded = !!this.expanded[expandedKey]
-
+    /**
+     * One row in the workspace switcher list. Clicking switches the active
+     * workspace (the content below re-renders to that workspace's identities
+     * + tabs). Keeps rename / context menu / drag-drop target / ＋identity.
+     */
+    renderWorkspaceSwitchRow(ws) {
       const row = document.createElement('div')
-      row.className = 'tree-row workspace-row'
+      row.className = 'workspace-pill'
+      row.dataset.wsId = ws.id
       if (ws.id === this.activeWorkspaceId) row.classList.add('active')
       if (ws.isArchived) row.classList.add('archived')
       if (ws.isFrozen) row.classList.add('frozen')
 
-      const chevron = document.createElement('span')
-      chevron.className = 'tree-chevron' + (isExpanded ? ' expanded' : '')
-      chevron.textContent = '▸'
-      chevron.addEventListener('click', (ev) =>
-        this.handleToggleWorkspaceExpanded(ws.id, ev),
-      )
-      row.appendChild(chevron)
-
       const chip = document.createElement('span')
-      chip.className = 'tree-chip'
+      chip.className = 'workspace-chip'
       chip.style.background = ws.color
       row.appendChild(chip)
 
+      if (ws.isFrozen) {
+        const lock = document.createElement('span')
+        lock.className = 'workspace-lock'
+        lock.textContent = '🔒'
+        row.appendChild(lock)
+      }
+
       const name = document.createElement('span')
-      name.className = 'tree-name'
-      name.textContent = ws.isFrozen ? `🔒 ${ws.name}` : ws.name
+      name.className = 'workspace-name'
+      name.textContent = ws.name
       row.appendChild(name)
 
       const count = document.createElement('span')
@@ -383,11 +400,7 @@
       if (idCount === 0) count.classList.add('zero')
       row.appendChild(count)
 
-      // C-8: + new identity inline (replaces the big "+ New Identity" button
-      // that lived above the tree). Contextual: creates the identity directly
-      // in THIS workspace. Hidden by default, fades in on row hover.
-      // Frozen workspaces don't get the button (frozen blocks identity move
-      // and updates per ADR 0023).
+      // ＋ new identity directly in THIS workspace (frozen/archived excluded).
       if (!ws.isFrozen && !ws.isArchived) {
         const addId = document.createElement('button')
         addId.type = 'button'
@@ -411,7 +424,7 @@
         })
       })
 
-      // Drop target: identity drag-drop into another workspace.
+      // Drop target: drag an identity / tab onto another workspace to move it.
       const isDropTarget = ws.id !== this.activeWorkspaceId && !ws.isArchived
       if (isDropTarget) {
         row.addEventListener('dragover', (ev) => {
@@ -446,29 +459,7 @@
         })
       }
 
-      wrap.appendChild(row)
-
-      if (isExpanded) {
-        const childContainer = document.createElement('div')
-        childContainer.className = 'tree-children'
-        const wsIdentities = this.identities.filter((i) => i.workspaceId === ws.id)
-        if (wsIdentities.length === 0) {
-          const empty = document.createElement('div')
-          empty.className = 'tree-empty'
-          empty.textContent =
-            ws.id === this.activeWorkspaceId
-              ? '(no identities — click + New Identity)'
-              : '(no identities)'
-          childContainer.appendChild(empty)
-        } else {
-          for (const ident of wsIdentities) {
-            childContainer.appendChild(this.renderIdentityWrapper(ident))
-          }
-        }
-        wrap.appendChild(childContainer)
-      }
-
-      return wrap
+      return row
     }
 
     renderIdentityWrapper(identity) {

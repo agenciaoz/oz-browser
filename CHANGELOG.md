@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.32 — Sidebar: un solo workspace activo (paridad Ghost) (2026-06-16)
+
+[`2026-06-16`] [`ui/sidebar`] Bug: al cambiar de workspace las pestañas del anterior quedaban visibles. Causa: el sidebar usaba `tabs.list()` (agrega TODAS las ventanas) y dibujaba el árbol de todos los workspaces. Fix paridad Ghost ("one workspace at a time"): la lista de workspaces (`#oz-workspace-pills`) ahora solo switchea, y abajo se muestran únicamente las identities + pestañas del workspace activo (header = su nombre). Helpers puros en `sidebar-view.js` + 6 smoketests. Se elimina `renderWorkspaceWrapper`; se conserva crear/renombrar/freezar/archivar/mover y ＋identity. Manifest WebUI 2.0.22→2.0.23.
+
 ### v2.0.0-alpha.31 — Fix: dialog "Unhandled promise rejection" offline/sleep (2026-06-08)
 
 [`2026-06-08`] [`auto-updater`] `_safeCheck()` absorbe el rechazo de `checkForUpdates()` cuando no hay internet (`net::ERR_INTERNET_DISCONNECTED`) — el error ya se maneja vía evento `'error'`, ahora la promesa no escala al handler global y no popea dialog. +4 smoketests.
