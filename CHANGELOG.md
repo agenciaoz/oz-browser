@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.48 — V3-A primer slice: page-control tools (scraping) (2026-06-17)
+
+[`2026-06-17`] [`mcp/scraping`] Arranca v3 (scraping/agent-control) como bleed en la línea v2 (pre-SaaS, uso agencia). Primer slice de page-control vía MCP: 6 tools nuevas `oz.page.*` scopeadas a la tab de una identity (con su fingerprint+proxy+cookies): `navigate` (crea tab si no hay), `getInfo` (url+title), `getText`, `getAttr`, `queryAll` (count+items[{text,href}], cap 500), `eval` (JS arbitrario → escape hatch del agente). Arquitectura: NUEVOS `mcp-tools-page.js` (catálogo, self-contained — no toca ipc-handlers.js que está en 500 LOC) + `page-handlers.js` (boundary DOM: resuelve identity→tab→webContents, materializa lazy) + `page-utils.js` (snippet builders puros, inyección-safe vía JSON.stringify). Nombres ≤21 (`oz_page_*`). ADR 0036 + plan `docs/PLAN-V3-SCRAPING.md`. Tests page-utils 6. Sin browser/ui (sin bump de manifest). Pendiente v3-A.2: click/type/scroll (sendInputEvent), waitFor, screenshot, extract.
+
 ### v2.0.0-alpha.47 — Confirmaciones en acciones destructivas (2026-06-17)
 
 [`2026-06-17`] [`ui`] Red de seguridad contra borrados accidentales: helper reutilizable nuevo `window.OZ.ui.confirm(message, {okLabel, cancelLabel, danger})` (modal HTML, porque `window.confirm` está deshabilitado en chrome-extension pages; reusa el chrome del prompt, botón OK rojo en modo danger). Cableado en App Dock (quitar un enlace, restablecer el dock) y en Tasks (limpiar completadas). i18n EN/ES (`appDock.confirm*`, `tasks.confirm*`). Sin lógica nueva que testear (cableado sobre mutaciones ya cubiertas). Manifest WebUI 2.0.35. Sin main process ni IPC.

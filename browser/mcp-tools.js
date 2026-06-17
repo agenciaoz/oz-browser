@@ -26,6 +26,7 @@ const { buildExtensionTools } = require('./mcp-tools-extensions')
 const { buildSyncTools } = require('./mcp-tools-sync')
 const { buildBulkTools } = require('./mcp-tools-bulk')
 const { buildScheduledTools } = require('./mcp-tools-scheduled')
+const { buildPageTools } = require('./mcp-tools-page')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -477,6 +478,10 @@ function buildToolCatalog(browser) {
     ...buildScheduledTools({
       scheduled: () => browser.handlers && browser.handlers.scheduled,
     }),
+
+    // v3-A: page-control tools for scraping/agent-control (navigate + read
+    // DOM + eval, scoped to an identity tab). Self-contained handlers.
+    ...buildPageTools(browser),
 
     // -------------------- system metrics --------------------
     {
