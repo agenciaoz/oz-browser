@@ -53,6 +53,9 @@ if (isOzPage) {
   })
 
   contextBridge.exposeInMainWorld('oz', {
+    // alpha.42 — this renderer's own OZ window id (for scoping the global
+    // Default identity's tabs to the current window). Null if undeterminable.
+    getWindowId: () => ipcRenderer.invoke('oz:window:getId'),
     identities: {
       list: () => ipcRenderer.invoke('oz:identities:list'),
       get: (id) => ipcRenderer.invoke('oz:identities:get', id),

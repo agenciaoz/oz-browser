@@ -44,6 +44,32 @@
   }
 
   /**
+   * alpha.42 — the single global Default identity (Ghost parity: the "normal
+   * browsing" jar). ADR 0035 supersedes ADR 0023 D2: instead of living only in
+   * the 'general' workspace, the Default identity is now pinned at the top of
+   * EVERY workspace. Returns null if there is no default (shouldn't happen).
+   */
+  function globalDefaultIdentity(identities) {
+    return (identities || []).find((i) => i.isDefault) || null
+  }
+
+  /**
+   * alpha.42 — tabs to list under the global Default identity row, scoped to
+   * the CURRENT window. The Default jar is global, but its tabs are still
+   * per-window (each OZ window = one workspace, ADR 0015). Scoping by windowId
+   * keeps Default tabs from other windows from leaking in (the alpha.32 fix,
+   * now extended to the always-visible Default row). When windowId is unknown
+   * (null), fall back to the caller's choice — this helper returns [] so the
+   * caller can decide; sidebar.js falls back to the unscoped list in that case.
+   */
+  function defaultTabsForWindow(tabs, defaultId, windowId) {
+    if (!defaultId || windowId == null) return []
+    return (tabs || []).filter(
+      (t) => t.identityId === defaultId && t.windowId === windowId,
+    )
+  }
+
+  /**
    * Filter identities by a free-text query against the name (case-insensitive).
    * Empty / whitespace query returns all. (Ghost: "search identities".)
    */
@@ -101,6 +127,8 @@
     scopeTabsToWorkspace,
     filterIdentities,
     sortIdentities,
+    globalDefaultIdentity,
+    defaultTabsForWindow,
   }
 
   if (typeof module !== 'undefined' && module.exports) {

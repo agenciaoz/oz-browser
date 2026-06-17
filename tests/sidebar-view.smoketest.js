@@ -159,4 +159,32 @@ ok('sortIdentities does not mutate input', () => {
   assert.strictEqual(ids.map((i) => i.id).join(','), before)
 })
 
+// --- alpha.42: global Default identity ---------------------------------------
+
+ok('globalDefaultIdentity returns the isDefault identity (or null)', () => {
+  const ids = [
+    { id: 'default', name: 'Default', isDefault: true, workspaceId: 'general' },
+    { id: 'i2', name: 'Pedro', workspaceId: 'wsA' },
+  ]
+  assert.strictEqual(V.globalDefaultIdentity(ids).id, 'default')
+  assert.strictEqual(V.globalDefaultIdentity([{ id: 'i2' }]), null)
+  assert.strictEqual(V.globalDefaultIdentity([]), null)
+  assert.strictEqual(V.globalDefaultIdentity(undefined), null)
+})
+
+ok('defaultTabsForWindow scopes Default tabs to the current window', () => {
+  const t = [
+    { id: 't1', identityId: 'default', windowId: 10 },
+    { id: 't2', identityId: 'default', windowId: 20 }, // other window
+    { id: 't3', identityId: 'i2', windowId: 10 }, // not default
+  ]
+  assert.deepStrictEqual(
+    V.defaultTabsForWindow(t, 'default', 10).map((x) => x.id),
+    ['t1'],
+  )
+  // No window id known → empty (caller falls back to the unscoped list).
+  assert.deepStrictEqual(V.defaultTabsForWindow(t, 'default', null), [])
+  assert.deepStrictEqual(V.defaultTabsForWindow(t, null, 10), [])
+})
+
 console.log(`\nsidebar-view: ${passed} checks passed ✓`)

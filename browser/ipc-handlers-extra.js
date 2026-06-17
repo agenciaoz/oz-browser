@@ -7,6 +7,7 @@
 
 const { ipcMain, dialog, BrowserWindow, app } = require('electron')
 const log = require('./logger')
+const { registerWindowIdHandlersIPC } = require('./window-id-handlers')
 
 // Smoke F+G 2026-05-13: wrap each subregister so a single throw doesn't
 // abort the entire IPC bootstrap chain silently. Surfaces the bug + keeps
@@ -63,6 +64,7 @@ function registerExtraIpcHandlers(browser) {
   )
   _safeRegister('registerMcpHandlersIPC', registerMcpHandlersIPC, browser)
   _safeRegister('registerBulkHandlersIPC', registerBulkHandlersIPC, browser)
+  _safeRegister('registerWindowIdHandlersIPC', registerWindowIdHandlersIPC, browser)
 }
 
 // ----- Bulk Runner (v2 sub-bloque 1) ---------------------------------------

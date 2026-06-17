@@ -33,6 +33,9 @@
     activeIdentityId = null
     activeOzTabId = null
     showArchived = false
+    // alpha.42 — this window's OZ id, to scope the global Default identity's
+    // tabs to the current window (null until init resolves / if unavailable).
+    windowId = null
 
     constructor() {
       if (!window.oz) {
@@ -77,9 +80,20 @@
 
     async init() {
       if (!window.oz) return
+      // alpha.42 — learn our own window id first so the Default identity's
+      // tabs can be scoped to this window from the very first render.
+      if (typeof window.oz.getWindowId === 'function') {
+        this.windowId = await safe(window.oz.getWindowId(), 'getWindowId')
+      }
       await this.refresh()
       window.oz.workspaces.onChanged(() => this.refresh())
       window.oz.workspaces.onActiveChanged((payload) => {
+        // active-changed is broadcast to every window's webUI; only react to
+        // the event for THIS window (when we know our id). Avoids a switch in
+        // another window hijacking this sidebar's active workspace.
+        if (this.windowId != null && payload && payload.windowId != null) {
+          if (payload.windowId !== this.windowId) return
+        }
         if (payload && payload.workspaceId) {
           this.activeWorkspaceId = payload.workspaceId
           // Clear the identity search when switching workspace — a stale query
@@ -365,8 +379,22 @@
       }
 
       this.$root.innerHTML = ''
+
+      // alpha.42 — pin the global Default identity at the very top of EVERY
+      // workspace (Ghost parity; ADR 0035 supersedes 0023 D2). Respects the
+      // search filter; its tabs are window-scoped in renderIdentityWrapper.
+      const def = V.globalDefaultIdentity(this.identities)
+      let pinnedDefault = false
+      if (activeWs && def && V.filterIdentities([def], this.idQuery).length) {
+        this.$root.appendChild(this.renderIdentityWrapper(def))
+        pinnedDefault = true
+      }
+
+      // Workspace members — Default excluded (rendered pinned above).
       let wsIdentities = activeWs
-        ? V.identitiesForWorkspace(this.identities, activeWs.id)
+        ? V.identitiesForWorkspace(this.identities, activeWs.id).filter(
+            (i) => !i.isDefault,
+          )
         : []
       wsIdentities = V.filterIdentities(wsIdentities, this.idQuery)
       wsIdentities = V.sortIdentities(wsIdentities, this.idSort, this.idUse)
@@ -374,12 +402,19 @@
       if (wsIdentities.length === 0) {
         const empty = document.createElement('div')
         empty.className = 'tree-empty'
-        empty.textContent = !activeWs
-          ? '(no workspace)'
-          : this.idQuery
-            ? '(no matches)'
-            : '(no identities — click ＋ on the workspace)'
-        this.$root.appendChild(empty)
+        if (!activeWs) {
+          empty.textContent = '(no workspace)'
+          this.$root.appendChild(empty)
+        } else if (this.idQuery) {
+          // Suppress "(no matches)" when the Default row already matched.
+          if (!pinnedDefault) {
+            empty.textContent = '(no matches)'
+            this.$root.appendChild(empty)
+          }
+        } else {
+          empty.textContent = '(no identities — click ＋ on the workspace)'
+          this.$root.appendChild(empty)
+        }
         return
       }
       for (const ident of wsIdentities) {
@@ -544,7 +579,14 @@
         row.appendChild(chip)
       }
 
-      const tabsOfId = this.tabs.filter((t) => t.identityId === identity.id)
+      // alpha.42 — the global Default identity shows only THIS window's tabs
+      // (its jar is global but tabs are per-window). Fall back to the unscoped
+      // list if we couldn't resolve our window id.
+      const V = window.OZ.SidebarView
+      const tabsOfId =
+        identity.isDefault && this.windowId != null
+          ? V.defaultTabsForWindow(this.tabs, identity.id, this.windowId)
+          : this.tabs.filter((t) => t.identityId === identity.id)
       const count = document.createElement('span')
       count.className = 'tree-count'
       count.textContent = `(${tabsOfId.length})`

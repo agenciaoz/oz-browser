@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.42 — Default Identity global (paridad Ghost) (2026-06-17)
+
+[`2026-06-17`] [`identity/sidebar`] La Default Identity ahora es **global**: aparece fijada arriba de **todos** los workspaces (antes solo en 'general'; ADR 0035 supersede 0023 D2). Solo cambia la vista — `Default.workspaceId` sigue 'general', un único cookie jar (ADR 0003), sin migración. Sus tabs se filtran por la **ventana actual** (`windowId`) para no reintroducir el leak cross-workspace de alpha.32 (jar global pero tabs por-ventana, ADR 0015). IPC mínimo nuevo `oz:window:getId` (`window-id-handlers.js`) para que el sidebar conozca su ventana; bonus: `active-changed` ahora se ignora si es de otra ventana (fix latente multi-ventana). Helpers puros `globalDefaultIdentity` + `defaultTabsForWindow` en `sidebar-view.js`. Fallback seguro si no se resuelve windowId. Tests sidebar-view 12 (+2). Manifest WebUI 2.0.30.
+
 ### v2.0.0-alpha.41 — Health test detecta auth rechazada (fin del verde falso) (2026-06-16)
 
 [`2026-06-16`] [`proxy-health`] Bug reportado por Jose: "no navega nada" con todos los proxies en verde. Causa: la password del proxy-user de Oxylabs se había rotado del lado del provider → cada navegación real entraba en loop infinito de 407 (`app.on('login')` reintentando) y la página quedaba en blanco, pero el panel mostraba verde. El health test (`connectViaProxy`) trataba el 407 como "ok" a propósito ("proxy vivo, falta auth") → verde falso. Fix: el CONNECT ya manda las credenciales, así que ahora un 407 CON credenciales enviadas cuenta como FALLA (auth rechazada/expirada); 407 SIN credenciales sigue ok (alcanzable, falta auth que el user no cargó). Lógica extraída a helper puro `classifyConnectStatus(status, hasCreds)` (exportado). Tests proxy-health 39/39 (+7 del helper: 200, 407±creds, 5xx). No toca browser/ui/ → sin bump de manifest. (Recuperación operativa en vivo: clave nueva aplicada a los 11 proxies vía MCP.)
