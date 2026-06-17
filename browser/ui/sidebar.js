@@ -82,6 +82,10 @@
       window.oz.workspaces.onActiveChanged((payload) => {
         if (payload && payload.workspaceId) {
           this.activeWorkspaceId = payload.workspaceId
+          // Clear the identity search when switching workspace — a stale query
+          // from the previous workspace would otherwise hide everything.
+          this.idQuery = ''
+          if (this.$idSearch) this.$idSearch.value = ''
           // Auto-expand the active workspace so the user immediately sees its
           // identities + tabs without an extra click.
           this.expanded['ws:' + payload.workspaceId] = true

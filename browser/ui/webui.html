@@ -427,6 +427,9 @@
       #oz-sidebar.collapsed > *:not(#oz-sidebar-collapse):not(#oz-sidebar-resize) {
         display: none !important;
       }
+      #oz-sidebar.collapsed #oz-sidebar-resize {
+        display: none !important;
+      }
 
       #oz-sidebar .header {
         display: flex;
@@ -836,7 +839,7 @@
         overflow: hidden;
         text-overflow: ellipsis;
       }
-      .identity-row.default .identity-name::after {
+      .identity-row.default .tree-name::after {
         content: '·';
         color: var(--text-muted);
         margin-left: 6px;

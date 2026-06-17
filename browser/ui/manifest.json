@@ -1,6 +1,6 @@
 {
   "name": "WebUI",
-  "version": "2.0.26",
+  "version": "2.0.27",
   "manifest_version": 3,
   "permissions": [],
   "chrome_url_overrides": {

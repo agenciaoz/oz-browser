@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.37 — Bughunt: 3 regresiones del refactor del sidebar (2026-06-16)
+
+[`2026-06-16`] [`ui/sidebar`] Cacería de bugs (3 agentes en paralelo; suite 125/125, ESLint 0 errores, LOC ok). Arregladas 3 regresiones chicas de alpha.32–35: (1) el marcador "·" de la Default Identity era invisible — CSS apuntaba a `.identity-name` (clase eliminada) en vez de `.tree-name`; (2) el buscador de identities no se limpiaba al cambiar de workspace → quedaba filtrando y mostraba "(no matches)" confuso (ahora se resetea en `onActiveChanged`); (3) el handle de resize quedaba como franja arrastrable muerta con el sidebar colapsado (ahora `display:none` en `.collapsed`). Verificado que Reset Identity NO deja highlight stale (tabs.remove reselecciona+emite). Manifest WebUI 2.0.27.
+
 ### v2.0.0-alpha.36 — Fix: rename + ＋identity de workspace (regresión alpha.32) (2026-06-16)
 
 [`2026-06-16`] [`ui/sidebar`] Bugfix de la regresión introducida en alpha.32 (workspaces pasaron de `.workspace-wrapper/.workspace-row` a `.workspace-pill`): (1) rename de workspace por click derecho/doble-click no funcionaba — `sidebar-events.js` buscaba el row viejo y `handleInlineRename` buscaba `.tree-name` en vez de `.workspace-name`; (2) el botón ＋identity de cada workspace estaba invisible (`opacity:0` revelado solo en `.workspace-row:hover`). Fix: selector `#oz-workspace-pills .workspace-pill[data-ws-id]`, `querySelector('.tree-name, .workspace-name')`, y revelar ＋identity en `.workspace-pill:hover`. Manifest WebUI 2.0.26.
