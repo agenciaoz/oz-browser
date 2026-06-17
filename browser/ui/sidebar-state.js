@@ -14,6 +14,10 @@
   const EXPANDED_KEY = 'oz-tree-expanded'
   const SORT_KEY = 'oz-id-sort'
   const USE_KEY = 'oz-id-use'
+  // alpha.43 — user-defined workspace order (array of workspace ids). Ghost
+  // lets you drag workspaces to reorder; ids absent from this list fall back
+  // to createdAt order (see sidebar-view.visibleWorkspaces).
+  const WS_ORDER_KEY = 'oz-ws-order'
 
   function readJSON(key, fallback) {
     try {
@@ -44,6 +48,11 @@
     saveIdSort: (mode) => writeRaw(SORT_KEY, mode),
     loadIdUse: () => readJSON(USE_KEY, {}),
     saveIdUse: (map) => writeRaw(USE_KEY, JSON.stringify(map)),
+    loadWsOrder: () => {
+      const v = readJSON(WS_ORDER_KEY, [])
+      return Array.isArray(v) ? v : []
+    },
+    saveWsOrder: (ids) => writeRaw(WS_ORDER_KEY, JSON.stringify(ids || [])),
   }
 
   window.OZ = window.OZ || {}

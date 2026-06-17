@@ -187,4 +187,35 @@ ok('defaultTabsForWindow scopes Default tabs to the current window', () => {
   assert.deepStrictEqual(V.defaultTabsForWindow(t, null, 10), [])
 })
 
+// --- alpha.43: workspace reorder --------------------------------------------
+
+ok('visibleWorkspaces honours a user order, falls back to createdAt', () => {
+  // order puts wsB before wsA; general not listed → createdAt after ordered.
+  const r = V.visibleWorkspaces(workspaces, false, ['wsB', 'wsA'])
+  assert.deepStrictEqual(
+    r.map((w) => w.id),
+    ['wsB', 'wsA', 'general'],
+  )
+  // no order → pure createdAt order (pre-alpha.43 behaviour)
+  assert.deepStrictEqual(
+    V.visibleWorkspaces(workspaces, false).map((w) => w.id),
+    ['general', 'wsA', 'wsB'],
+  )
+})
+
+ok('reorderWorkspaceIds moves before/after, no-ops on self/unknown', () => {
+  const ids = ['a', 'b', 'c', 'd']
+  assert.deepStrictEqual(V.reorderWorkspaceIds(ids, 'd', 'b', false), [
+    'a',
+    'd',
+    'b',
+    'c',
+  ])
+  assert.deepStrictEqual(V.reorderWorkspaceIds(ids, 'a', 'c', true), ['b', 'c', 'a', 'd'])
+  assert.deepStrictEqual(V.reorderWorkspaceIds(ids, 'b', 'b', false), ids)
+  assert.deepStrictEqual(V.reorderWorkspaceIds(ids, 'z', 'b', false), ids)
+  // input not mutated
+  assert.deepStrictEqual(ids, ['a', 'b', 'c', 'd'])
+})
+
 console.log(`\nsidebar-view: ${passed} checks passed ✓`)

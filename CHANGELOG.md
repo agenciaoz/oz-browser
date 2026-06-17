@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.43 — Reordenar workspaces arrastrando (paridad Ghost) (2026-06-17)
+
+[`2026-06-17`] [`sidebar`] Drag-to-reorder de workspaces en el switcher (Ghost parity): arrastrá un pill para moverlo; el orden persiste (localStorage `oz-ws-order`, UI-only, consistente con sort/expanded de alpha.33). `visibleWorkspaces` ahora respeta el orden del usuario y cae a createdAt para los que no estén en la lista (workspaces nuevos/archivados). Helper puro nuevo `reorderWorkspaceIds` (before/after según posición del drop). `renderWorkspaceSwitchRow` extraído a NUEVO `sidebar-wsrow.js` por LOC budget (ADR 0005), donde además acepta el nuevo tipo de drag `application/oz-workspace-id` sin romper los drops de identity/tab existentes. Tests sidebar-view 14 (+2). Manifest WebUI 2.0.31. (Sin cambios en el main process ni IPC.)
+
 ### v2.0.0-alpha.42 — Default Identity global (paridad Ghost) (2026-06-17)
 
 [`2026-06-17`] [`identity/sidebar`] La Default Identity ahora es **global**: aparece fijada arriba de **todos** los workspaces (antes solo en 'general'; ADR 0035 supersede 0023 D2). Solo cambia la vista — `Default.workspaceId` sigue 'general', un único cookie jar (ADR 0003), sin migración. Sus tabs se filtran por la **ventana actual** (`windowId`) para no reintroducir el leak cross-workspace de alpha.32 (jar global pero tabs por-ventana, ADR 0015). IPC mínimo nuevo `oz:window:getId` (`window-id-handlers.js`) para que el sidebar conozca su ventana; bonus: `active-changed` ahora se ignora si es de otra ventana (fix latente multi-ventana). Helpers puros `globalDefaultIdentity` + `defaultTabsForWindow` en `sidebar-view.js`. Fallback seguro si no se resuelve windowId. Tests sidebar-view 12 (+2). Manifest WebUI 2.0.30.

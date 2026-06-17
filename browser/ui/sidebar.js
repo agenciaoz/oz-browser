@@ -22,8 +22,16 @@
 ;(function () {
   const { safe } = window.OZ.utils
   // alpha.33 — localStorage persistence extracted to sidebar-state.js (ADR 0005).
-  const { loadExpanded, saveExpanded, loadIdSort, saveIdSort, loadIdUse, saveIdUse } =
-    window.OZ.SidebarState
+  const {
+    loadExpanded,
+    saveExpanded,
+    loadIdSort,
+    saveIdSort,
+    loadIdUse,
+    saveIdUse,
+    loadWsOrder,
+    saveWsOrder,
+  } = window.OZ.SidebarState
 
   class IdentitySidebar {
     workspaces = []
@@ -46,6 +54,7 @@
       this.idQuery = ''
       this.idSort = loadIdSort()
       this.idUse = loadIdUse()
+      this.wsOrder = loadWsOrder() // alpha.43 — user-defined workspace order
       this.$root = document.getElementById('oz-identity-list')
       this.$pills = document.getElementById('oz-workspace-pills')
       this.$treeHeader = document.getElementById('oz-tree-header')
@@ -334,7 +343,11 @@
 
     render() {
       const V = window.OZ.SidebarView
-      const visibleWs = V.visibleWorkspaces(this.workspaces, this.showArchived)
+      const visibleWs = V.visibleWorkspaces(
+        this.workspaces,
+        this.showArchived,
+        this.wsOrder,
+      )
 
       // 1) Workspace switcher — ALL workspaces as a switch list (Ghost-style).
       if (this.$pills) {
@@ -368,7 +381,8 @@
     renderActiveContent(visibleWs) {
       if (!this.$root) return
       const V = window.OZ.SidebarView
-      const list = visibleWs || V.visibleWorkspaces(this.workspaces, this.showArchived)
+      const list =
+        visibleWs || V.visibleWorkspaces(this.workspaces, this.showArchived, this.wsOrder)
       const activeWs = list.find((w) => w.id === this.activeWorkspaceId)
 
       if (this.$treeHeader) {
@@ -423,102 +437,27 @@
     }
 
     /**
-     * One row in the workspace switcher list. Clicking switches the active
-     * workspace (the content below re-renders to that workspace's identities
-     * + tabs). Keeps rename / context menu / drag-drop target / ＋identity.
+     * One row in the workspace switcher list. Extracted to sidebar-wsrow.js
+     * (ADR 0005 LOC budget) when adding drag-to-reorder (alpha.43).
      */
     renderWorkspaceSwitchRow(ws) {
-      const row = document.createElement('div')
-      row.className = 'workspace-pill'
-      row.dataset.wsId = ws.id
-      if (ws.id === this.activeWorkspaceId) row.classList.add('active')
-      if (ws.isArchived) row.classList.add('archived')
-      if (ws.isFrozen) row.classList.add('frozen')
+      return window.OZ.SidebarWsRow.render(this, ws)
+    }
 
-      const chip = document.createElement('span')
-      chip.className = 'workspace-chip'
-      chip.style.background = ws.color
-      row.appendChild(chip)
-
-      if (ws.isFrozen) {
-        const lock = document.createElement('span')
-        lock.className = 'workspace-lock'
-        lock.textContent = '🔒'
-        row.appendChild(lock)
-      }
-
-      const name = document.createElement('span')
-      name.className = 'workspace-name'
-      name.textContent = ws.name
-      row.appendChild(name)
-
-      const count = document.createElement('span')
-      count.className = 'tree-count'
-      const idCount = (ws.identityIds && ws.identityIds.length) || 0
-      count.textContent = `(${idCount})`
-      if (idCount === 0) count.classList.add('zero')
-      row.appendChild(count)
-
-      // ＋ new identity directly in THIS workspace (frozen/archived excluded).
-      if (!ws.isFrozen && !ws.isArchived) {
-        const addId = document.createElement('button')
-        addId.type = 'button'
-        addId.className = 'ws-add-identity-btn'
-        addId.title = `New identity in "${ws.name}"`
-        addId.textContent = '＋'
-        addId.addEventListener('click', (ev) => {
-          ev.stopPropagation()
-          this.handleNewIdentityInWorkspace(ws.id)
-        })
-        row.appendChild(addId)
-      }
-
-      row.addEventListener('click', () => this.handleSelectWorkspace(ws.id))
-      row.addEventListener('contextmenu', (e) => this.showWorkspaceContextMenu(e, ws))
-      row.addEventListener('dblclick', (e) => {
-        e.preventDefault()
-        if (ws.isFrozen) return
-        this.handleInlineRename(row, ws.name, async (v) => {
-          await safe(window.oz.workspaces.rename(ws.id, v), 'workspaces.rename')
-        })
-      })
-
-      // Drop target: drag an identity / tab onto another workspace to move it.
-      const isDropTarget = ws.id !== this.activeWorkspaceId && !ws.isArchived
-      if (isDropTarget) {
-        row.addEventListener('dragover', (ev) => {
-          if (
-            ev.dataTransfer.types.includes('application/oz-identity-id') ||
-            ev.dataTransfer.types.includes('application/oz-tab-id')
-          ) {
-            ev.preventDefault()
-            ev.dataTransfer.dropEffect = 'move'
-            row.classList.add('drop-target')
-          }
-        })
-        row.addEventListener('dragleave', () => row.classList.remove('drop-target'))
-        row.addEventListener('drop', async (ev) => {
-          ev.preventDefault()
-          row.classList.remove('drop-target')
-          const idId = ev.dataTransfer.getData('application/oz-identity-id')
-          const tabId = ev.dataTransfer.getData('application/oz-tab-id')
-          if (idId) {
-            const r = await safe(
-              window.oz.identities.moveToWorkspace(idId, ws.id),
-              'identities.moveToWorkspace',
-            )
-            if (r && r.ok === false) alert(`Move failed: ${r.reason}`)
-          } else if (tabId) {
-            const r = await safe(
-              window.oz.tabs.moveToWorkspace(tabId, ws.id),
-              'tabs.moveToWorkspace',
-            )
-            if (r && r.ok === false) alert(`Move failed: ${r.reason}`)
-          }
-        })
-      }
-
-      return row
+    /**
+     * alpha.43 — persist a new workspace order after a drag-reorder. Operates
+     * on the currently-visible order and saves it (localStorage, UI-only).
+     */
+    handleReorderWorkspaces(draggedId, targetId, placeAfter) {
+      const V = window.OZ.SidebarView
+      const current = V.visibleWorkspaces(
+        this.workspaces,
+        this.showArchived,
+        this.wsOrder,
+      ).map((w) => w.id)
+      this.wsOrder = V.reorderWorkspaceIds(current, draggedId, targetId, placeAfter)
+      saveWsOrder(this.wsOrder)
+      this.render()
     }
 
     renderIdentityWrapper(identity) {

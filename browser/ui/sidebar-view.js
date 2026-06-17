@@ -23,13 +23,39 @@
   'use strict'
 
   /**
-   * Workspaces to show in the switcher list — archived hidden unless toggled,
-   * stable createdAt order (clicking switches active; never reshuffles).
+   * Workspaces to show in the switcher list — archived hidden unless toggled.
+   * Order (alpha.43): the user-defined `order` array (workspace ids) wins; any
+   * workspace not in `order` (new / archived / first run) falls back to a
+   * stable createdAt order after the ordered ones. No `order` → pure createdAt
+   * order (the pre-alpha.43 behaviour).
    */
-  function visibleWorkspaces(workspaces, showArchived) {
+  function visibleWorkspaces(workspaces, showArchived, order) {
+    const rank = new Map((order || []).map((id, i) => [id, i]))
     return (workspaces || [])
       .filter((w) => showArchived || !w.isArchived)
-      .sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+      .sort((a, b) => {
+        const ra = rank.has(a.id) ? rank.get(a.id) : Infinity
+        const rb = rank.has(b.id) ? rank.get(b.id) : Infinity
+        if (ra !== rb) return ra - rb
+        return (a.createdAt || 0) - (b.createdAt || 0)
+      })
+  }
+
+  /**
+   * alpha.43 — compute the new workspace id order after a drag-reorder. Removes
+   * `draggedId` and re-inserts it relative to `targetId` (before by default,
+   * after when `placeAfter`). Pure; returns a new array. No-ops on self-drop or
+   * unknown ids.
+   */
+  function reorderWorkspaceIds(ids, draggedId, targetId, placeAfter) {
+    const all = (ids || []).slice()
+    if (!all.includes(draggedId) || draggedId === targetId) return all
+    const arr = all.filter((id) => id !== draggedId)
+    let idx = arr.indexOf(targetId)
+    if (idx < 0) return all
+    if (placeAfter) idx += 1
+    arr.splice(idx, 0, draggedId)
+    return arr
   }
 
   /** Identities belonging to a given workspace (identity.workspaceId model). */
@@ -129,6 +155,7 @@
     sortIdentities,
     globalDefaultIdentity,
     defaultTabsForWindow,
+    reorderWorkspaceIds,
   }
 
   if (typeof module !== 'undefined' && module.exports) {
