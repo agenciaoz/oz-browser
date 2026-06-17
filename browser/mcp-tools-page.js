@@ -104,6 +104,103 @@ function buildPageTools(browser) {
       },
       call: (a) => h.eval(a),
     },
+    {
+      name: 'oz.page.click',
+      description:
+        'Real mouse click on the first element matching a CSS selector (scrolls into view, then native sendInputEvent — not a synthetic .click()). button: left|right|middle (default left).',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          ...idTab,
+          selector: { type: 'string' },
+          button: { type: 'string', enum: ['left', 'right', 'middle'] },
+        },
+        required: ['identityId', 'selector'],
+        additionalProperties: false,
+      },
+      call: (a) => h.click(a),
+    },
+    {
+      name: 'oz.page.type',
+      description:
+        'Focus the first match and type text char-by-char via native key events. delayVarianceMs (0-500) adds a random per-char delay for human-like cadence.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          ...idTab,
+          selector: { type: 'string' },
+          text: { type: 'string' },
+          delayVarianceMs: { type: 'number' },
+        },
+        required: ['identityId', 'selector', 'text'],
+        additionalProperties: false,
+      },
+      call: (a) => h.type(a),
+    },
+    {
+      name: 'oz.page.scroll',
+      description:
+        "Scroll the page. `to`: 'top' | 'bottom' | a number of pixels (relative scrollBy). Returns {ok,result:scrollY}.",
+      inputSchema: {
+        type: 'object',
+        properties: {
+          ...idTab,
+          to: {
+            description: "'top' | 'bottom' | number of px",
+            oneOf: [{ type: 'string' }, { type: 'number' }],
+          },
+        },
+        required: ['identityId', 'to'],
+        additionalProperties: false,
+      },
+      call: (a) => h.scroll(a),
+    },
+    {
+      name: 'oz.page.waitFor',
+      description:
+        'Wait until a CSS selector appears (polls), or just wait timeoutMs if no selector. timeoutMs default 5000, max 60000. Returns {ok,found} or {__error:TIMEOUT}.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          ...idTab,
+          selector: { type: 'string' },
+          timeoutMs: { type: 'number' },
+        },
+        required: ['identityId'],
+        additionalProperties: false,
+      },
+      call: (a) => h.waitFor(a),
+    },
+    {
+      name: 'oz.page.screenshot',
+      description: 'Capture the tab viewport as a base64 PNG. Returns {ok,base64,mime}.',
+      inputSchema: {
+        type: 'object',
+        properties: { ...idTab },
+        required: ['identityId'],
+        additionalProperties: false,
+      },
+      call: (a) => h.screenshot(a),
+    },
+    {
+      name: 'oz.page.extract',
+      description:
+        'Declarative extraction: schema maps field→CSS selector (string) or {selector,attr}. Returns {ok,result:{field:value|null}}. The big token-saver for structured scraping.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          ...idTab,
+          schema: {
+            type: 'object',
+            description: 'field → selector string OR {selector, attr}',
+            additionalProperties: true,
+          },
+        },
+        required: ['identityId', 'schema'],
+        additionalProperties: false,
+      },
+      call: (a) => h.extract(a),
+    },
   ]
 }
 

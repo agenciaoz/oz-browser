@@ -35,10 +35,12 @@ Se expone `eval` (ejecuta JS arbitrario en la página y devuelve el valor) a pro
 
 `oz.page.navigate/getInfo/getText/getAttr/queryAll/eval` → sanitizados `oz_page_*` ≤21 (guard de `mcp-server.smoketest.js`). Se evita `querySelectorAll` (24) usando `queryAll`.
 
-## Alcance de este slice (alpha.48)
+## Alcance
 
-Incluye: `navigate`, `getInfo`, `getText`, `getAttr`, `queryAll`, `eval`.
-**Pendiente (próximos sub-bloques v3-A):** input-events reales (`click`/`type`/`scroll` vía `sendInputEvent`), `waitFor`, `screenshot`, `extract` declarativo, `oz.network.intercept`. Luego V3-B (humanization), V3-C (stealth), V3-D (orquestación + headless), V3-E (observabilidad), V3-F (cookie import general).
+- **Slice 1 (alpha.48):** `navigate`, `getInfo`, `getText`, `getAttr`, `queryAll`, `eval`.
+- **Slice 2 (alpha.49):** `click` (sendInputEvent real, no `.click()` sintético), `type` (char-by-char + `delayVarianceMs`), `scroll` (top/bottom/px), `waitFor` (poll selector + timeout), `screenshot` (`capturePage`→base64), `extract` (schema declarativo). Helper `resolveWC` compartido.
+
+**Pendiente (próximos sub-bloques):** `oz.network.intercept`. Luego V3-B (humanization: Bézier + delays gaussianos), V3-C (stealth), V3-D (orquestación + headless), V3-E (observabilidad), V3-F (cookie import general).
 
 ## Tests
 

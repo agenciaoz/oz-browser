@@ -70,4 +70,39 @@ ok('queryAllScript caps to limit + returns count/items shape', () => {
   assert.ok(PU.queryAllScript('x");evil(("').includes(JSON.stringify('x");evil(("')))
 })
 
+// --- slice 2: input-events / waitFor / extract builders ---------------------
+
+ok('clickCoordsScript scrolls into view + returns center coords', () => {
+  const s = PU.clickCoordsScript('button.go')
+  assert.ok(s.includes('document.querySelector("button.go")'))
+  assert.ok(s.includes('scrollIntoView'))
+  assert.ok(s.includes('getBoundingClientRect'))
+  // hostile selector stays a literal
+  assert.ok(PU.clickCoordsScript('x");evil((').includes(JSON.stringify('x");evil((')))
+})
+
+ok('focusScript + existsScript embed selector', () => {
+  assert.ok(PU.focusScript('#in').includes('document.querySelector("#in")'))
+  assert.ok(PU.focusScript('#in').includes('.focus()'))
+  assert.ok(PU.existsScript('.x').includes('!!document.querySelector(".x")'))
+})
+
+ok('scrollScript handles top / bottom / px', () => {
+  assert.ok(PU.scrollScript('top').includes('scrollTo(0,0)'))
+  assert.ok(PU.scrollScript('bottom').includes('document.body.scrollHeight'))
+  assert.ok(PU.scrollScript(400).includes('scrollBy(0,400)'))
+  // non-numeric px → 0 (safe)
+  assert.ok(PU.scrollScript('nope').includes('scrollBy(0,0)'))
+})
+
+ok('extractScript embeds schema JSON-encoded + maps fields', () => {
+  const schema = { title: 'h1', link: { selector: 'a', attr: 'href' } }
+  const s = PU.extractScript(schema)
+  assert.ok(s.includes(JSON.stringify(schema)))
+  assert.ok(s.includes('getAttribute'))
+  assert.ok(s.includes('textContent'))
+  // empty/undefined schema → safe empty object
+  assert.ok(PU.extractScript().includes('var s={}'))
+})
+
 console.log(`\npage-utils: ${passed} checks passed ✓`)

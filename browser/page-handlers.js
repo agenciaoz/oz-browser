@@ -38,15 +38,25 @@ function buildPageHandlers(browser) {
     return { __error: { code, message: message || code } }
   }
 
-  async function runJS(identityId, tabId, code) {
+  const sleep = (ms) => new Promise((r) => setTimeout(r, ms))
+
+  // Resolve a live webContents for the identity/tab (materializing lazy tabs).
+  // Returns { wc, tab } or { __error }.
+  function resolveWC(identityId, tabId) {
     const tab = resolveTab(identityId, tabId)
     if (!tab) return err('TAB_NOT_FOUND', 'No tab for the given identity/tabId')
     if (!tab.materialized) tab.materialize()
     const wc = tab.webContents
     if (!wc || wc.isDestroyed())
       return err('NO_WEBCONTENTS', 'Tab has no live webContents')
+    return { wc, tab }
+  }
+
+  async function runJS(identityId, tabId, code) {
+    const r = resolveWC(identityId, tabId)
+    if (r.__error) return r
     try {
-      const result = await wc.executeJavaScript(code, true)
+      const result = await r.wc.executeJavaScript(code, true)
       return { ok: true, result }
     } catch (e) {
       return err('EVAL_FAILED', e && e.message)
@@ -105,6 +115,115 @@ function buildPageHandlers(browser) {
     eval({ identityId, tabId, code }) {
       if (typeof code !== 'string' || !code.trim()) return err('BAD_CODE')
       return runJS(identityId, tabId, code)
+    },
+
+    /** Real mouse click on the first match (scrolls into view, sendInputEvent). */
+    async click({ identityId, tabId, selector, button }) {
+      if (!PU.isValidSelector(selector)) return err('BAD_SELECTOR')
+      const r = resolveWC(identityId, tabId)
+      if (r.__error) return r
+      let pt
+      try {
+        pt = await r.wc.executeJavaScript(PU.clickCoordsScript(selector), true)
+      } catch (e) {
+        return err('EVAL_FAILED', e && e.message)
+      }
+      if (!pt) return err('NOT_FOUND', 'Selector matched no element')
+      const btn = button === 'right' || button === 'middle' ? button : 'left'
+      try {
+        r.wc.sendInputEvent({ type: 'mouseMove', x: pt.x, y: pt.y })
+        r.wc.sendInputEvent({
+          type: 'mouseDown',
+          x: pt.x,
+          y: pt.y,
+          button: btn,
+          clickCount: 1,
+        })
+        r.wc.sendInputEvent({
+          type: 'mouseUp',
+          x: pt.x,
+          y: pt.y,
+          button: btn,
+          clickCount: 1,
+        })
+      } catch (e) {
+        return err('INPUT_FAILED', e && e.message)
+      }
+      return { ok: true, x: pt.x, y: pt.y, button: btn }
+    },
+
+    /** Focus the first match and type text char-by-char via sendInputEvent. */
+    async type({ identityId, tabId, selector, text, delayVarianceMs }) {
+      if (!PU.isValidSelector(selector)) return err('BAD_SELECTOR')
+      if (typeof text !== 'string') return err('BAD_TEXT')
+      const r = resolveWC(identityId, tabId)
+      if (r.__error) return r
+      let focused
+      try {
+        focused = await r.wc.executeJavaScript(PU.focusScript(selector), true)
+      } catch (e) {
+        return err('EVAL_FAILED', e && e.message)
+      }
+      if (!focused) return err('NOT_FOUND', 'Selector matched no element')
+      const variance = Math.max(0, Math.min(Number(delayVarianceMs) || 0, 500))
+      for (const ch of text) {
+        try {
+          r.wc.sendInputEvent({ type: 'char', keyCode: ch })
+        } catch (e) {
+          return err('INPUT_FAILED', e && e.message)
+        }
+        if (variance) await sleep(Math.floor(Math.random() * variance))
+      }
+      return { ok: true, typed: text.length }
+    },
+
+    /** Scroll the page: to = 'top' | 'bottom' | number of px. */
+    scroll({ identityId, tabId, to }) {
+      return runJS(identityId, tabId, PU.scrollScript(to))
+    },
+
+    /** Poll until `selector` exists or `timeoutMs` elapses (default 5000). */
+    async waitFor({ identityId, tabId, selector, timeoutMs }) {
+      const r = resolveWC(identityId, tabId)
+      if (r.__error) return r
+      const budget = Math.max(0, Math.min(Number(timeoutMs) || 5000, 60000))
+      if (!PU.isValidSelector(selector)) {
+        await sleep(budget)
+        return { ok: true, waited: budget }
+      }
+      const deadline = Date.now() + budget
+      const script = PU.existsScript(selector)
+      do {
+        let found = false
+        try {
+          found = await r.wc.executeJavaScript(script, true)
+        } catch (e) {
+          return err('EVAL_FAILED', e && e.message)
+        }
+        if (found) return { ok: true, found: true }
+        await sleep(150)
+      } while (Date.now() < deadline)
+      return err('TIMEOUT', `selector not found in ${budget}ms`)
+    },
+
+    /** Capture the tab viewport as a base64 PNG. */
+    async screenshot({ identityId, tabId }) {
+      const r = resolveWC(identityId, tabId)
+      if (r.__error) return r
+      try {
+        const img = await r.wc.capturePage()
+        return { ok: true, base64: img.toPNG().toString('base64'), mime: 'image/png' }
+      } catch (e) {
+        return err('CAPTURE_FAILED', e && e.message)
+      }
+    },
+
+    /** Declarative extraction: schema {field: selector | {selector,attr}} → {field: value}. */
+    extract({ identityId, tabId, schema }) {
+      if (!schema || typeof schema !== 'object' || Array.isArray(schema)) {
+        return err('BAD_SCHEMA', 'schema must be an object of field→selector')
+      }
+      return runJS(identityId, tabId, PU.extractScript(schema))
     },
   }
 }

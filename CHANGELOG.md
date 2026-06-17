@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.49 — V3-A slice 2: input-events + waitFor + screenshot + extract (2026-06-17)
+
+[`2026-06-17`] [`mcp/scraping`] Segundo slice de page-control: 6 tools nuevas `oz.page.*`. `click` (click de mouse REAL: scrollIntoView + `sendInputEvent` mouseDown/Up en el centro del elemento, no `.click()` sintético detectable; button left/right/middle), `type` (focus + `sendInputEvent` char-by-char, `delayVarianceMs` 0-500 para cadencia humana), `scroll` (top/bottom/px), `waitFor` (poll del selector hasta aparecer o timeout, default 5s max 60s), `screenshot` (`capturePage`→base64 PNG del viewport), `extract` (declarativo: schema field→selector|{selector,attr} → {field:value}, el gran ahorro de tokens). Helpers puros nuevos en `page-utils.js` (clickCoords/focus/exists/scroll/extract scripts, inyección-safe vía JSON). Helper `resolveWC` en page-handlers. Nombres `oz_page_*` ≤21. Tests page-utils 9 (+4). ADR 0036 actualizado. Sin browser/ui (sin manifest bump). Pendiente: `oz.network.intercept` + humanization (V3-B).
+
 ### v2.0.0-alpha.48 — V3-A primer slice: page-control tools (scraping) (2026-06-17)
 
 [`2026-06-17`] [`mcp/scraping`] Arranca v3 (scraping/agent-control) como bleed en la línea v2 (pre-SaaS, uso agencia). Primer slice de page-control vía MCP: 6 tools nuevas `oz.page.*` scopeadas a la tab de una identity (con su fingerprint+proxy+cookies): `navigate` (crea tab si no hay), `getInfo` (url+title), `getText`, `getAttr`, `queryAll` (count+items[{text,href}], cap 500), `eval` (JS arbitrario → escape hatch del agente). Arquitectura: NUEVOS `mcp-tools-page.js` (catálogo, self-contained — no toca ipc-handlers.js que está en 500 LOC) + `page-handlers.js` (boundary DOM: resuelve identity→tab→webContents, materializa lazy) + `page-utils.js` (snippet builders puros, inyección-safe vía JSON.stringify). Nombres ≤21 (`oz_page_*`). ADR 0036 + plan `docs/PLAN-V3-SCRAPING.md`. Tests page-utils 6. Sin browser/ui (sin bump de manifest). Pendiente v3-A.2: click/type/scroll (sendInputEvent), waitFor, screenshot, extract.

@@ -50,10 +50,74 @@ function isValidSelector(selector) {
   return typeof selector === 'string' && selector.trim().length > 0
 }
 
+// --- slice 2: input-events / waitFor / extract ------------------------------
+
+/**
+ * JS that scrolls the first match into view and returns its viewport-center
+ * coords {x,y} (CSS px), or null if not found. Coords feed sendInputEvent.
+ */
+function clickCoordsScript(selector) {
+  const sel = JSON.stringify(String(selector))
+  return (
+    `(function(){var el=document.querySelector(${sel});if(!el)return null;` +
+    `el.scrollIntoView({block:'center',inline:'center'});` +
+    `var r=el.getBoundingClientRect();` +
+    `return {x:Math.round(r.left+r.width/2),y:Math.round(r.top+r.height/2)};})()`
+  )
+}
+
+/** JS that focuses the first match; returns true if found+focused. */
+function focusScript(selector) {
+  const sel = JSON.stringify(String(selector))
+  return `(function(){var el=document.querySelector(${sel});if(!el)return false;el.focus();return true;})()`
+}
+
+/** JS boolean: does the selector currently match anything? (waitFor polling). */
+function existsScript(selector) {
+  const sel = JSON.stringify(String(selector))
+  return `(!!document.querySelector(${sel}))`
+}
+
+/**
+ * JS to scroll the page. `to`: 'top' | 'bottom' | a number of px (scrollBy).
+ * Returns the resulting scrollY.
+ */
+function scrollScript(to) {
+  if (to === 'top') return `(function(){window.scrollTo(0,0);return window.scrollY;})()`
+  if (to === 'bottom') {
+    return `(function(){window.scrollTo(0,document.body.scrollHeight);return window.scrollY;})()`
+  }
+  const px = Number(to) || 0
+  return `(function(){window.scrollBy(0,${px});return window.scrollY;})()`
+}
+
+/**
+ * JS for declarative extraction. `schema` maps field → selector string OR
+ * { selector, attr }. Returns { field: value|null }. The whole schema is
+ * embedded JSON-encoded (injection-safe) and iterated in-page.
+ */
+function extractScript(schema) {
+  const json = JSON.stringify(schema || {})
+  return (
+    `(function(){var s=${json};var out={};` +
+    `for(var k in s){var spec=s[k];` +
+    `var sel=typeof spec==='string'?spec:(spec&&spec.selector);` +
+    `var attr=(spec&&typeof spec==='object')?spec.attr:null;` +
+    `var el=sel?document.querySelector(sel):null;` +
+    `out[k]=el?(attr?el.getAttribute(attr):(el.textContent||'').trim()):null;}` +
+    `return out;})()`
+  )
+}
+
 module.exports = {
   clampLimit,
   getTextScript,
   getAttrScript,
   queryAllScript,
   isValidSelector,
+  clickCoordsScript,
+  focusScript,
+  existsScript,
+  scrollScript,
+  extractScript,
 }
