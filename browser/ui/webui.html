@@ -227,6 +227,15 @@
         overflow: hidden;
         font-size: 0.725rem;
       }
+      /* alpha.38: identity color dot on each tab */
+      .oz-tab-iddot {
+        flex: 0 0 auto;
+        width: 7px;
+        height: 7px;
+        border-radius: 50%;
+        margin: 0 5px 0 1px;
+        box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25);
+      }
       .tab .controls {
         flex: 0 0 auto;
         font-size: 0;
@@ -7142,6 +7151,7 @@
     </div>
 
     <script src="./oz-utils.js"></script>
+    <script src="./tab-label.js"></script>
     <script src="./tabstrip.js"></script>
     <!-- v1.8.3: ui-prompt loaded BEFORE sidebar.js so handleNewWorkspace
          can use window.OZ.ui.prompt() instead of broken window.prompt(). -->

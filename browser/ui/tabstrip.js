@@ -145,10 +145,17 @@
       node.dataset.tabId = tab.id
       if (tab.id === this.activeOzTabId) node.dataset.active = ''
 
-      // Identity color stripe on left edge.
+      // Identity color stripe on left edge + color dot (alpha.38).
       const color = identityColor(this.identities, tab.identityId)
+      const idName = identityName(this.identities, tab.identityId)
       node.style.boxShadow = `inset 3px 0 0 0 ${color}, inset -1px 0 0 0 rgba(0,0,0,0.33)`
-      node.title = `Identity: ${identityName(this.identities, tab.identityId)}\n${tab.url || ''}`
+      // Tooltip keeps the full page title + url (the visible label is compact).
+      node.title = `Identity: ${idName}\n${tab.title || 'New Tab'}\n${tab.url || ''}`
+
+      const dot = document.createElement('span')
+      dot.className = 'oz-tab-iddot'
+      dot.style.background = color
+      node.insertBefore(dot, node.firstChild)
 
       if (!tab.isLoaded) node.style.opacity = '0.7'
 
@@ -191,10 +198,11 @@
       // template's `.title` span already renders text content). Pinned tabs
       // already collapse to favicon-only, so the indicator only shows on
       // unpinned-locked tabs which is the common case.
-      const titleText = tab.title || 'New Tab'
-      node.querySelector('.title').textContent = tab.locked
-        ? `\u{1F512} ${titleText}`
-        : titleText
+      // alpha.38: compact label "Identity · RED" (full page title is in tooltip).
+      const label = window.OZ.TabLabel
+        ? window.OZ.TabLabel.tabDisplayLabel(idName, tab.url)
+        : tab.title || 'New Tab'
+      node.querySelector('.title').textContent = tab.locked ? `\u{1F512} ${label}` : label
       node.querySelector('.audio').disabled = true
       return node
     }

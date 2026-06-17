@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.38 — Nombre de tab "Identity · RED" + dot de color (2026-06-16)
+
+[`2026-06-16`] [`ui/tabstrip`] Pedido de Jose: el tab strip ahora muestra "Identity · RED" (ej: "Contexto · IG") para distinguir de un vistazo a qué identity pertenece cada tab; el título real de la página queda en el tooltip. + dot del color de la identity en cada tab. Módulo puro `tab-label.js` (`networkAbbrev` host-anchored IG/X/FB/TT/YT/IN/TH/WA/TG/RD/PIN/SC/TW/GM + `hostLabel` fallback + `tabDisplayLabel`) + `tests/tab-label.smoketest.js` (5 checks). Manifest WebUI 2.0.28.
+
 ### v2.0.0-alpha.37 — Bughunt: 3 regresiones del refactor del sidebar (2026-06-16)
 
 [`2026-06-16`] [`ui/sidebar`] Cacería de bugs (3 agentes en paralelo; suite 125/125, ESLint 0 errores, LOC ok). Arregladas 3 regresiones chicas de alpha.32–35: (1) el marcador "·" de la Default Identity era invisible — CSS apuntaba a `.identity-name` (clase eliminada) en vez de `.tree-name`; (2) el buscador de identities no se limpiaba al cambiar de workspace → quedaba filtrando y mostraba "(no matches)" confuso (ahora se resetea en `onActiveChanged`); (3) el handle de resize quedaba como franja arrastrable muerta con el sidebar colapsado (ahora `display:none` en `.collapsed`). Verificado que Reset Identity NO deja highlight stale (tabs.remove reselecciona+emite). Manifest WebUI 2.0.27.
