@@ -173,6 +173,13 @@
     "tooltipThreads": "Abrir Threads en la identidad activa",
     "tooltipSessionToken": "Importar cookies de sesión a la identidad activa (pegá el cookie header para clonar una sesión ya logueada)"
   },
+  "appDock": {
+    "add": "Agregar enlace al dock",
+    "promptName": "Nombre del enlace",
+    "promptUrl": "URL del enlace (https://…)",
+    "removeHint": "clic derecho para quitar",
+    "reset": "Restablecer el dock"
+  },
   "proxyDashboard": {
     "title": "Panel de salud de proxies",
     "loading": "Cargando…",

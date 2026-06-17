@@ -102,41 +102,73 @@
     constructor() {
       this.$bar = document.getElementById('oz-quick-access-bar')
       if (!this.$bar) return
+      // alpha.44 — App Dock: built-in SITES + user-added custom links, with
+      // add / remove / reorder persisted in localStorage (app-dock-state.js).
+      this.dock = (window.OZ.AppDockState && window.OZ.AppDockState.read()) || {
+        custom: [],
+        order: [],
+        hidden: [],
+      }
       this._render()
       this._wire()
     }
 
+    /** Built-ins + custom links, merged into the visible ordered dock. */
+    _entries() {
+      const U = window.OZ.AppDockUtils
+      if (!U) return SITES.slice()
+      return U.mergeDock(SITES, this.dock.custom, this.dock.order, this.dock.hidden)
+    }
+
+    _label(site) {
+      // Custom links carry a literal label; built-ins use an i18n key.
+      return site.custom ? site.label : t(site.label)
+    }
+
     _render() {
       this.$bar.innerHTML = ''
-      for (const site of SITES) {
+      for (const site of this._entries()) {
         const btn = document.createElement('button')
         btn.type = 'button'
         btn.className = 'oz-qab-btn'
         btn.dataset.siteKey = site.key
-        // 1.7.3: entries are mutually exclusive — `url` (open in identity)
-        // or `action` (dispatch internal handler). We set whichever the
-        // entry provides; click handler routes based on which dataset prop
-        // is present.
         if (site.url) btn.dataset.url = site.url
         if (site.action) btn.dataset.action = site.action
+        if (site.custom) btn.dataset.custom = '1'
         btn.style.background = site.bg
-        btn.setAttribute('aria-label', t(site.label))
-        btn.title = t(site.label)
-        // Abbreviation as visible content. White text reads well over every
-        // brand color in SITES (verified by hand).
+        const label = this._label(site)
+        btn.setAttribute('aria-label', label)
+        btn.title = label
+        btn.draggable = true
         const span = document.createElement('span')
         span.className = 'oz-qab-abbrev'
         span.textContent = site.abbrev
         btn.appendChild(span)
         this.$bar.appendChild(btn)
       }
+      // Trailing "+" to add a custom link (right-click it to reset the dock).
+      const add = document.createElement('button')
+      add.type = 'button'
+      add.className = 'oz-qab-btn oz-qab-add'
+      add.dataset.dockAdd = '1'
+      add.style.background = 'transparent'
+      add.title = t('appDock.add')
+      add.setAttribute('aria-label', t('appDock.add'))
+      const aspan = document.createElement('span')
+      aspan.className = 'oz-qab-abbrev'
+      aspan.textContent = '+'
+      add.appendChild(aspan)
+      this.$bar.appendChild(add)
     }
 
     _wire() {
       this.$bar.addEventListener('click', (ev) => {
         const btn = ev.target.closest('.oz-qab-btn')
         if (!btn) return
-        // 1.7.3: action entries take precedence — internal dispatch.
+        if (btn.dataset.dockAdd) {
+          this._addLink()
+          return
+        }
         const action = btn.dataset.action
         if (action) {
           this._dispatchAction(action, btn)
@@ -146,6 +178,94 @@
         if (!url) return
         this._openInActiveIdentity(url, btn)
       })
+      // alpha.44 — right-click a dock item to remove it (built-ins are hidden,
+      // custom links deleted); right-click the "+" to reset the dock.
+      this.$bar.addEventListener('contextmenu', (ev) => {
+        const btn = ev.target.closest('.oz-qab-btn')
+        if (!btn) return
+        ev.preventDefault()
+        if (btn.dataset.dockAdd) this._resetDock()
+        else this._removeKey(btn.dataset.siteKey)
+      })
+      this._wireDrag()
+    }
+
+    _wireDrag() {
+      this.$bar.addEventListener('dragstart', (ev) => {
+        const btn = ev.target.closest('.oz-qab-btn')
+        if (!btn || btn.dataset.dockAdd) return
+        ev.dataTransfer.setData('application/oz-dock-key', btn.dataset.siteKey)
+        ev.dataTransfer.effectAllowed = 'move'
+        btn.classList.add('dragging')
+      })
+      this.$bar.addEventListener('dragend', (ev) => {
+        const btn = ev.target.closest('.oz-qab-btn')
+        if (btn) btn.classList.remove('dragging')
+      })
+      this.$bar.addEventListener('dragover', (ev) => {
+        if (!ev.dataTransfer.types.includes('application/oz-dock-key')) return
+        const btn = ev.target.closest('.oz-qab-btn')
+        if (!btn || btn.dataset.dockAdd) return
+        ev.preventDefault()
+        ev.dataTransfer.dropEffect = 'move'
+      })
+      this.$bar.addEventListener('drop', (ev) => {
+        const dragged = ev.dataTransfer.getData('application/oz-dock-key')
+        if (!dragged) return
+        const btn = ev.target.closest('.oz-qab-btn')
+        if (!btn || btn.dataset.dockAdd) return
+        ev.preventDefault()
+        const rect = btn.getBoundingClientRect()
+        const placeAfter = ev.clientX > rect.left + rect.width / 2
+        this._reorder(dragged, btn.dataset.siteKey, placeAfter)
+      })
+    }
+
+    async _addLink() {
+      const promptFn = (window.OZ && window.OZ.ui && window.OZ.ui.prompt) || window.prompt
+      const name = await promptFn(t('appDock.promptName'), {
+        placeholder: 'e.g. Gmail',
+        okLabel: t('appDock.add'),
+      })
+      if (name === null) return
+      const url = await promptFn(t('appDock.promptUrl'), {
+        placeholder: 'https://…',
+        okLabel: t('appDock.add'),
+      })
+      const U = window.OZ.AppDockUtils
+      const link = U && U.buildCustomLink(name, url)
+      if (!link) return
+      this.dock.custom = [...(this.dock.custom || []), link]
+      this._persistAndRender()
+    }
+
+    _removeKey(key) {
+      if (!key) return
+      const isCustom = (this.dock.custom || []).some((c) => c.key === key)
+      if (isCustom) {
+        this.dock.custom = this.dock.custom.filter((c) => c.key !== key)
+      } else {
+        this.dock.hidden = [...new Set([...(this.dock.hidden || []), key])]
+      }
+      this.dock.order = (this.dock.order || []).filter((k) => k !== key)
+      this._persistAndRender()
+    }
+
+    _reorder(draggedKey, targetKey, placeAfter) {
+      const U = window.OZ.AppDockUtils
+      const current = this._entries().map((e) => e.key)
+      this.dock.order = U.reorderDock(current, draggedKey, targetKey, placeAfter)
+      this._persistAndRender()
+    }
+
+    _resetDock() {
+      this.dock = { custom: [], order: [], hidden: [] }
+      this._persistAndRender()
+    }
+
+    _persistAndRender() {
+      if (window.OZ.AppDockState) window.OZ.AppDockState.write(this.dock)
+      this._render()
     }
 
     _dispatchAction(action, btn) {

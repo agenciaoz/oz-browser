@@ -173,6 +173,13 @@
     "tooltipThreads": "Open Threads in active identity",
     "tooltipSessionToken": "Import session cookies for active identity (paste cookie header to clone a logged-in session)"
   },
+  "appDock": {
+    "add": "Add link to dock",
+    "promptName": "Link name",
+    "promptUrl": "Link URL (https://…)",
+    "removeHint": "right-click to remove",
+    "reset": "Reset dock to defaults"
+  },
   "proxyDashboard": {
     "title": "Proxy Health Dashboard",
     "loading": "Loading…",

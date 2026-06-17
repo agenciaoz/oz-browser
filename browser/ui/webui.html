@@ -126,6 +126,18 @@
         user-select: none;
         pointer-events: none;
       }
+      /* alpha.44 — App Dock: dashed "+" add button + drag feedback. */
+      .oz-qab-btn.oz-qab-add {
+        border-style: dashed;
+        border-color: rgba(255, 255, 255, 0.3);
+      }
+      .oz-qab-btn.oz-qab-add .oz-qab-abbrev {
+        color: rgba(255, 255, 255, 0.6);
+        text-shadow: none;
+      }
+      .oz-qab-btn.dragging {
+        opacity: 0.4;
+      }
 
       #tabstrip {
         width: 100%;
@@ -7197,6 +7209,9 @@
          until the JS sets it). Latent since H-2a v1.1.1. -->
     <script src="./proxy-health-badge.js"></script>
     <!-- v1.6.4: Quick Access Bar (whatsmyip + 7 social networks). -->
+    <!-- alpha.44: App Dock helpers (pure utils + localStorage) before the bar. -->
+    <script src="./app-dock-utils.js"></script>
+    <script src="./app-dock-state.js"></script>
     <script src="./quick-access-bar.js"></script>
     <script src="./account-manager-render.js"></script>
     <!-- 1.7.1: session-token import view sibling (ADR 0005 LOC split). -->

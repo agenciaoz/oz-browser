@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.44 — App Dock personalizable (paridad Ghost) (2026-06-17)
+
+[`2026-06-17`] [`sidebar/dock`] El quick-access-bar se vuelve **App Dock configurable** (Ghost parity): además de los 9 built-ins (🍪 + IP + 7 redes), el usuario puede **agregar** enlaces propios (botón "+" → prompt nombre + URL, normaliza https://), **quitar** (clic derecho: built-ins se ocultan, custom se borran), **reordenar** (drag-drop) y **restablecer** (clic derecho en "+"). Persiste en localStorage `oz-app-dock` ({custom, order, hidden}, UI-only). Lógica pura en NUEVO `app-dock-utils.js` (mergeDock/reorderDock/buildCustomLink/normalizeUrl/abbrevFromLabel) + estado en NUEVO `app-dock-state.js`. i18n EN/ES (`appDock.*`). Tests nuevos app-dock-utils 5. Manifest WebUI 2.0.32. (Sin main process ni IPC.)
+
 ### v2.0.0-alpha.43 — Reordenar workspaces arrastrando (paridad Ghost) (2026-06-17)
 
 [`2026-06-17`] [`sidebar`] Drag-to-reorder de workspaces en el switcher (Ghost parity): arrastrá un pill para moverlo; el orden persiste (localStorage `oz-ws-order`, UI-only, consistente con sort/expanded de alpha.33). `visibleWorkspaces` ahora respeta el orden del usuario y cae a createdAt para los que no estén en la lista (workspaces nuevos/archivados). Helper puro nuevo `reorderWorkspaceIds` (before/after según posición del drop). `renderWorkspaceSwitchRow` extraído a NUEVO `sidebar-wsrow.js` por LOC budget (ADR 0005), donde además acepta el nuevo tipo de drag `application/oz-workspace-id` sin romper los drops de identity/tab existentes. Tests sidebar-view 14 (+2). Manifest WebUI 2.0.31. (Sin cambios en el main process ni IPC.)
