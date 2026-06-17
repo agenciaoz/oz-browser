@@ -52,6 +52,36 @@
       .map((x) => ({ id: x.id, text: x.text, done: !!x.done }))
   }
 
+  // --- alpha.46: per-workspace store --------------------------------------
+  // Tasks are stored keyed by workspaceId: { [wsId]: Task[] }. Each project
+  // workspace gets its own checklist (Ghost: modules scoped per workspace).
+
+  /**
+   * Coerce the persisted value into a per-workspace store. Migrates the
+   * alpha.45 flat array (global list) into the 'general' workspace bucket so no
+   * data is lost. Each bucket is sanitized.
+   */
+  function migrateStore(raw) {
+    if (Array.isArray(raw)) return { general: sanitize(raw) }
+    if (raw && typeof raw === 'object') {
+      const out = {}
+      for (const k of Object.keys(raw)) out[k] = sanitize(raw[k])
+      return out
+    }
+    return {}
+  }
+
+  /** The task list for a workspace (empty array when none / no wsId). */
+  function listFor(store, wsId) {
+    if (!store || !wsId) return []
+    return Array.isArray(store[wsId]) ? store[wsId] : []
+  }
+
+  /** Return a new store with wsId's list replaced (immutable). */
+  function withList(store, wsId, list) {
+    return { ...(store || {}), [wsId]: list || [] }
+  }
+
   const api = {
     makeId,
     addTask,
@@ -60,6 +90,9 @@
     clearCompleted,
     progress,
     sanitize,
+    migrateStore,
+    listFor,
+    withList,
   }
   if (typeof module !== 'undefined' && module.exports) module.exports = api
   if (typeof window !== 'undefined') {

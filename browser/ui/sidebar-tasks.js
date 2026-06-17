@@ -21,18 +21,20 @@
     return key
   }
 
-  function load() {
+  // alpha.46: store is per-workspace ({ [wsId]: Task[] }); migrateStore lifts
+  // the alpha.45 flat array into the 'general' bucket.
+  function loadStore() {
     const U = window.OZ.SidebarTasksUtils
     try {
       const raw = localStorage.getItem(TASKS_KEY)
-      return U.sanitize(raw ? JSON.parse(raw) : [])
+      return U.migrateStore(raw ? JSON.parse(raw) : {})
     } catch (_e) {
-      return []
+      return {}
     }
   }
-  function save(tasks) {
+  function saveStore(store) {
     try {
-      localStorage.setItem(TASKS_KEY, JSON.stringify(tasks || []))
+      localStorage.setItem(TASKS_KEY, JSON.stringify(store || {}))
     } catch (_e) {
       /* ignore */
     }
@@ -48,10 +50,55 @@
       this.$form = document.getElementById('oz-tasks-add')
       this.$input = document.getElementById('oz-tasks-input')
       this.$clear = document.getElementById('oz-tasks-clear')
-      this.tasks = load()
+      // alpha.46: per-workspace store + the active workspace id (resolved async).
+      this.store = loadStore()
+      this.wsId = null
+      this.windowId = null
       this.collapsed = this._loadCollapsed()
       this._wire()
       this._render()
+      this._initWorkspace()
+    }
+
+    /** The current workspace's task list. */
+    _list() {
+      return window.OZ.SidebarTasksUtils.listFor(this.store, this.wsId)
+    }
+
+    /** Resolve our window + active workspace, and follow workspace switches. */
+    async _initWorkspace() {
+      if (!window.oz || !window.oz.workspaces) return
+      if (typeof window.oz.getWindowId === 'function') {
+        try {
+          this.windowId = await window.oz.getWindowId()
+        } catch (_e) {
+          /* ignore */
+        }
+      }
+      try {
+        this.wsId = await window.oz.workspaces.getActive()
+      } catch (_e) {
+        /* ignore */
+      }
+      this._render()
+      if (window.oz.workspaces.onActiveChanged) {
+        window.oz.workspaces.onActiveChanged((payload) => {
+          // Broadcast to every window — only react to our own (when known).
+          if (
+            this.windowId != null &&
+            payload &&
+            payload.windowId != null &&
+            payload.windowId !== this.windowId
+          ) {
+            return
+          }
+          const id = payload && payload.workspaceId
+          if (id && id !== this.wsId) {
+            this.wsId = id
+            this._render()
+          }
+        })
+      }
     }
 
     _loadCollapsed() {
@@ -80,34 +127,38 @@
       if (this.$form) {
         this.$form.addEventListener('submit', (ev) => {
           ev.preventDefault()
+          if (!this.wsId) return
           const U = window.OZ.SidebarTasksUtils
-          this.tasks = U.addTask(this.tasks, this.$input.value)
+          this._setList(U.addTask(this._list(), this.$input.value))
           this.$input.value = ''
-          this._persistAndRender()
         })
       }
       if (this.$clear) {
         this.$clear.addEventListener('click', () => {
+          if (!this.wsId) return
           const U = window.OZ.SidebarTasksUtils
-          this.tasks = U.clearCompleted(this.tasks)
-          this._persistAndRender()
+          this._setList(U.clearCompleted(this._list()))
         })
       }
     }
 
-    _persistAndRender() {
-      save(this.tasks)
+    /** Replace the current workspace's list, persist, re-render. */
+    _setList(list) {
+      const U = window.OZ.SidebarTasksUtils
+      this.store = U.withList(this.store, this.wsId, list)
+      saveStore(this.store)
       this._render()
     }
 
     _render() {
       const U = window.OZ.SidebarTasksUtils
+      const tasks = this._list()
       this.$root.classList.toggle('collapsed', this.collapsed)
 
       const chevron = this.$header && this.$header.querySelector('.oz-tasks-chevron')
       if (chevron) chevron.classList.toggle('expanded', !this.collapsed)
 
-      const p = U.progress(this.tasks)
+      const p = U.progress(tasks)
       if (this.$progress) {
         this.$progress.textContent = p.total ? `${p.done}/${p.total}` : ''
       }
@@ -115,13 +166,13 @@
       if (this.collapsed || !this.$list) return
 
       this.$list.innerHTML = ''
-      if (this.tasks.length === 0) {
+      if (tasks.length === 0) {
         const empty = document.createElement('div')
         empty.className = 'oz-tasks-empty'
         empty.textContent = t('tasks.empty')
         this.$list.appendChild(empty)
       } else {
-        for (const task of this.tasks) {
+        for (const task of tasks) {
           this.$list.appendChild(this._renderRow(task))
         }
       }
@@ -141,8 +192,7 @@
       cb.type = 'checkbox'
       cb.checked = task.done
       cb.addEventListener('change', () => {
-        this.tasks = U.toggleTask(this.tasks, task.id)
-        this._persistAndRender()
+        this._setList(U.toggleTask(this._list(), task.id))
       })
       row.appendChild(cb)
 
@@ -157,8 +207,7 @@
       del.textContent = '✕'
       del.title = t('tasks.remove')
       del.addEventListener('click', () => {
-        this.tasks = U.removeTask(this.tasks, task.id)
-        this._persistAndRender()
+        this._setList(U.removeTask(this._list(), task.id))
       })
       row.appendChild(del)
 

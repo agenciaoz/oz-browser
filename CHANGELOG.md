@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.46 — Tasks por-workspace (2026-06-17)
+
+[`2026-06-17`] [`sidebar`] El Tasks module ahora es **por-workspace**: cada workspace tiene su propia checklist (antes era una sola lista global). El módulo resuelve su workspace activo (`workspaces.getActive`), sigue los cambios de workspace (`onActiveChanged`, gateado por `windowId` como el sidebar) y muestra solo las tareas de ese workspace. Storage `oz-tasks` pasa de array plano a objeto `{ [wsId]: Task[] }`; **migración automática** del formato alpha.45 → bucket `general` (sin perder tareas). Helpers puros nuevos `migrateStore`/`listFor`/`withList`. Tests sidebar-tasks-utils 7 (+2). Manifest WebUI 2.0.34. (Sin main process ni IPC — usa el `oz:window:getId` de alpha.42.)
+
 ### v2.0.0-alpha.45 — Tasks module en el sidebar (paridad Ghost) (2026-06-17)
 
 [`2026-06-17`] [`sidebar`] Módulo de Tareas en el sidebar (Ghost parity): checklist colapsable al pie del sidebar con agregar (input + Enter), marcar/desmarcar (checkbox + tachado), eliminar (✕ en hover), limpiar completadas y contador de progreso (done/total en el header). Colapsado por defecto; estado de colapso + tareas persisten en localStorage (`oz-tasks` / `oz-tasks-collapsed`, UI-only). Lista global para v1 (por-workspace queda como futuro). Lógica pura en NUEVO `sidebar-tasks-utils.js` (addTask/toggleTask/removeTask/clearCompleted/progress/sanitize) + DOM en NUEVO `sidebar-tasks.js`. i18n EN/ES (`tasks.*`). Tests nuevos sidebar-tasks-utils 5. Manifest WebUI 2.0.33. (Sin main process ni IPC — cierra el backlog de paridad del sidebar Ghost.)

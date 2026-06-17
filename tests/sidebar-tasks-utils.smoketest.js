@@ -83,4 +83,29 @@ ok('sanitize coerces arbitrary JSON to valid tasks', () => {
   ])
 })
 
+// --- alpha.46: per-workspace store ------------------------------------------
+
+ok('migrateStore lifts legacy array into general, passes objects through', () => {
+  // legacy flat array → general bucket, sanitized
+  const m = U.migrateStore([{ id: 'a', text: 'x', done: 1 }, { bad: true }])
+  assert.deepStrictEqual(Object.keys(m), ['general'])
+  assert.deepStrictEqual(m.general, [{ id: 'a', text: 'x', done: true }])
+  // object passthrough with per-bucket sanitize
+  const obj = U.migrateStore({ wsA: [{ id: 'b', text: 'y', done: false }], wsB: 'junk' })
+  assert.deepStrictEqual(obj.wsA, [{ id: 'b', text: 'y', done: false }])
+  assert.deepStrictEqual(obj.wsB, [])
+  assert.deepStrictEqual(U.migrateStore(null), {})
+})
+
+ok('listFor / withList read + write a workspace bucket immutably', () => {
+  const store = { wsA: [{ id: 'a', text: 'x', done: false }] }
+  assert.strictEqual(U.listFor(store, 'wsA').length, 1)
+  assert.deepStrictEqual(U.listFor(store, 'wsB'), [])
+  assert.deepStrictEqual(U.listFor(store, null), [])
+  const next = U.withList(store, 'wsB', [{ id: 'c', text: 'z', done: false }])
+  assert.strictEqual(next.wsA.length, 1) // untouched
+  assert.strictEqual(next.wsB.length, 1)
+  assert.notStrictEqual(next, store) // new object
+})
+
 console.log(`\nsidebar-tasks-utils: ${passed} checks passed ✓`)
