@@ -31,7 +31,11 @@
     "showArchived": "Show archived",
     "workspacesAndIdentities": "WORKSPACES & IDENTITIES",
     "addIdentity": "+ New Identity",
-    "general": "General Browsing"
+    "general": "General Browsing",
+    "searchIdentities": "Search identities…",
+    "sortCreated": "Created",
+    "sortAlpha": "A–Z",
+    "sortFrequency": "Most used"
   },
   "settings": {
     "title": "Settings",

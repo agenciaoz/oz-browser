@@ -94,4 +94,48 @@ ok('tolerates empty / undefined inputs', () => {
   assert.deepStrictEqual(V.scopeTabsToWorkspace(undefined, undefined, 'wsA'), [])
 })
 
+ok('filterIdentities matches name case-insensitively', () => {
+  assert.deepStrictEqual(
+    V.filterIdentities(identities, 'cont').map((i) => i.id),
+    ['i2'], // "Contexto"
+  )
+  // case-insensitive
+  assert.deepStrictEqual(
+    V.filterIdentities(identities, 'PEDR').map((i) => i.id),
+    ['i1'], // "Pedro"
+  )
+  // empty query → all (new array)
+  assert.strictEqual(V.filterIdentities(identities, '   ').length, 4)
+})
+
+ok('sortIdentities: alpha / created / frequency', () => {
+  const ids = [
+    { id: 'a', name: 'Zeta', createdAt: 1 },
+    { id: 'b', name: 'alpha', createdAt: 3 },
+    { id: 'c', name: 'Mike', createdAt: 2 },
+  ]
+  assert.deepStrictEqual(
+    V.sortIdentities(ids, 'alpha').map((i) => i.id),
+    ['b', 'c', 'a'], // alpha, Mike, Zeta (case-insensitive)
+  )
+  assert.deepStrictEqual(
+    V.sortIdentities(ids, 'created').map((i) => i.id),
+    ['a', 'c', 'b'], // createdAt 1,2,3
+  )
+  assert.deepStrictEqual(
+    V.sortIdentities(ids, 'frequency', { c: 5, a: 2, b: 0 }).map((i) => i.id),
+    ['c', 'a', 'b'], // by use count desc
+  )
+})
+
+ok('sortIdentities does not mutate input', () => {
+  const ids = [
+    { id: 'a', name: 'B', createdAt: 1 },
+    { id: 'b', name: 'A', createdAt: 2 },
+  ]
+  const before = ids.map((i) => i.id).join(',')
+  V.sortIdentities(ids, 'alpha')
+  assert.strictEqual(ids.map((i) => i.id).join(','), before)
+})
+
 console.log(`\nsidebar-view: ${passed} checks passed ✓`)

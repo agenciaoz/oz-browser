@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.33 — Sidebar: buscar + ordenar identities (paridad Ghost) (2026-06-16)
+
+[`2026-06-16`] [`ui/sidebar`] Toolbar nuevo en el sidebar: buscar identity por nombre (filtra mientras escribís) + ordenar (Creación / A–Z / Más usadas). Helpers puros `filterIdentities`/`sortIdentities` en `sidebar-view.js` (+3 smoketests, total 9). Estado en localStorage (UI-only, sin churn de backend/sync); "Más usadas" cuenta selecciones de identity. `render()` se separó en `renderActiveContent()` para no perder el foco del input al tipear. i18n EN/ES. Manifest WebUI 2.0.23→2.0.24.
+
 ### v2.0.0-alpha.32 — Sidebar: un solo workspace activo (paridad Ghost) (2026-06-16)
 
 [`2026-06-16`] [`ui/sidebar`] Bug: al cambiar de workspace las pestañas del anterior quedaban visibles. Causa: el sidebar usaba `tabs.list()` (agrega TODAS las ventanas) y dibujaba el árbol de todos los workspaces. Fix paridad Ghost ("one workspace at a time"): la lista de workspaces (`#oz-workspace-pills`) ahora solo switchea, y abajo se muestran únicamente las identities + pestañas del workspace activo (header = su nombre). Helpers puros en `sidebar-view.js` + 6 smoketests. Se elimina `renderWorkspaceWrapper`; se conserva crear/renombrar/freezar/archivar/mover y ＋identity. Manifest WebUI 2.0.22→2.0.23.

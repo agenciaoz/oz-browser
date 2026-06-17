@@ -531,6 +531,45 @@
         flex: 0 0 auto;
       }
 
+      /*----- alpha.33: IDENTITY TOOLBAR (search + sort) -----*/
+      #oz-identity-toolbar {
+        display: flex;
+        gap: 4px;
+        padding: 2px 4px 6px;
+        align-items: center;
+      }
+      #oz-identity-search {
+        flex: 1 1 auto;
+        min-width: 0;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        color: var(--text-color);
+        font-size: 11.5px;
+        padding: 3px 7px;
+        outline: none;
+      }
+      #oz-identity-search:focus {
+        border-color: var(--accent);
+      }
+      #oz-identity-search::placeholder {
+        color: var(--text-muted);
+      }
+      #oz-identity-sort {
+        flex: 0 0 auto;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 4px;
+        color: var(--text-color);
+        font-size: 11px;
+        padding: 3px 4px;
+        cursor: pointer;
+        outline: none;
+      }
+      #oz-identity-sort:focus {
+        border-color: var(--accent);
+      }
+
       /*----- TREE SIDEBAR (active workspace > identities > tabs) -----*/
 
       .tree-row {
@@ -3999,6 +4038,21 @@
         >
           WORKSPACES &amp; IDENTITIES
         </div>
+        <div id="oz-identity-toolbar">
+          <input
+            id="oz-identity-search"
+            type="text"
+            autocomplete="off"
+            spellcheck="false"
+            placeholder="Search identities…"
+            data-i18n-attr="placeholder:sidebar.searchIdentities"
+          />
+          <select id="oz-identity-sort" title="Sort identities">
+            <option value="created" data-i18n="sidebar.sortCreated">Created</option>
+            <option value="alpha" data-i18n="sidebar.sortAlpha">A–Z</option>
+            <option value="frequency" data-i18n="sidebar.sortFrequency">Most used</option>
+          </select>
+        </div>
         <div id="oz-identity-list"></div>
 
         <!-- v1.8.3: sidebar-toolbar moved to footer bar. Sidebar is now
@@ -7043,6 +7097,7 @@
          can use window.OZ.ui.prompt() instead of broken window.prompt(). -->
     <script src="./ui-prompt.js"></script>
     <script src="./workspace-switcher.js"></script>
+    <script src="./sidebar-state.js"></script>
     <script src="./sidebar-view.js"></script>
     <script src="./sidebar-events.js"></script>
     <script src="./sidebar-health.js"></script>

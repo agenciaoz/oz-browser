@@ -44,6 +44,43 @@
   }
 
   /**
+   * Filter identities by a free-text query against the name (case-insensitive).
+   * Empty / whitespace query returns all. (Ghost: "search identities".)
+   */
+  function filterIdentities(identities, query) {
+    const q = (query || '').trim().toLowerCase()
+    if (!q) return (identities || []).slice()
+    return (identities || []).filter((i) => (i.name || '').toLowerCase().includes(q))
+  }
+
+  /**
+   * Sort identities by mode (Ghost: created / alphabetical / frequency).
+   *   - 'alpha'     : name A→Z (locale-aware)
+   *   - 'frequency' : most-used first (useCounts[id] desc), tiebreak A→Z
+   *   - 'created'   : creation order (createdAt asc) — default
+   * Pure: returns a new array, never mutates the input.
+   */
+  function sortIdentities(identities, mode, useCounts) {
+    const arr = (identities || []).slice()
+    const counts = useCounts || {}
+    const byName = (a, b) =>
+      (a.name || '').localeCompare(b.name || '', undefined, {
+        sensitivity: 'base',
+      })
+    if (mode === 'alpha') {
+      arr.sort(byName)
+    } else if (mode === 'frequency') {
+      arr.sort((a, b) => {
+        const d = (counts[b.id] || 0) - (counts[a.id] || 0)
+        return d !== 0 ? d : byName(a, b)
+      })
+    } else {
+      arr.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0))
+    }
+    return arr
+  }
+
+  /**
    * Cross-workspace isolation: of all live tabs (tabs.list() aggregates every
    * open window), keep only those whose identity lives in the active workspace.
    * This is the core fix for "old workspace tabs stay visible after switch".
@@ -58,6 +95,8 @@
     identitiesForWorkspace,
     tabsForIdentity,
     scopeTabsToWorkspace,
+    filterIdentities,
+    sortIdentities,
   }
 
   if (typeof module !== 'undefined' && module.exports) {

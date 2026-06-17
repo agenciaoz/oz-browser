@@ -21,24 +21,9 @@
 
 ;(function () {
   const { safe } = window.OZ.utils
-
-  const STORAGE_KEY = 'oz-tree-expanded'
-
-  function loadExpanded() {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY)
-      return raw ? JSON.parse(raw) : {}
-    } catch (_e) {
-      return {}
-    }
-  }
-  function saveExpanded(state) {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state))
-    } catch (_e) {
-      /* quota exceeded — ignore */
-    }
-  }
+  // alpha.33 — localStorage persistence extracted to sidebar-state.js (ADR 0005).
+  const { loadExpanded, saveExpanded, loadIdSort, saveIdSort, loadIdUse, saveIdUse } =
+    window.OZ.SidebarState
 
   class IdentitySidebar {
     workspaces = []
@@ -55,14 +40,29 @@
         return
       }
       this.expanded = loadExpanded()
+      this.idQuery = ''
+      this.idSort = loadIdSort()
+      this.idUse = loadIdUse()
       this.$root = document.getElementById('oz-identity-list')
       this.$pills = document.getElementById('oz-workspace-pills')
       this.$treeHeader = document.getElementById('oz-tree-header')
-      this.$newIdBtn = document.getElementById('oz-new-identity')
+      this.$idSearch = document.getElementById('oz-identity-search')
+      this.$idSort = document.getElementById('oz-identity-sort')
       this.$newWsBtn = document.getElementById('oz-new-workspace')
       this.$archivedToggle = document.getElementById('oz-workspace-show-archived')
-      if (this.$newIdBtn) {
-        this.$newIdBtn.addEventListener('click', () => this.handleNewIdentity())
+      if (this.$idSearch) {
+        this.$idSearch.addEventListener('input', () => {
+          this.idQuery = this.$idSearch.value
+          this.renderActiveContent()
+        })
+      }
+      if (this.$idSort) {
+        this.$idSort.value = this.idSort
+        this.$idSort.addEventListener('change', () => {
+          this.idSort = this.$idSort.value
+          saveIdSort(this.idSort)
+          this.renderActiveContent()
+        })
       }
       if (this.$newWsBtn) {
         this.$newWsBtn.addEventListener('click', () => this.handleNewWorkspace())
@@ -233,6 +233,9 @@
     }
 
     handleSelectIdentity(identityId) {
+      // alpha.33 — bump use count for the "Most used" sort (UI-only).
+      this.idUse[identityId] = (this.idUse[identityId] || 0) + 1
+      saveIdUse(this.idUse)
       safe(window.oz.identities.setActive(identityId), 'identities.setActive')
       // C-7-bis: bidirectional sync — al click una identity, seleccionar
       // un tab visible de esa identity en la tabstrip (si hay alguno). Si
@@ -324,31 +327,7 @@
       }
 
       // 2) Active workspace content — ONLY its identities + tabs.
-      if (this.$root) {
-        this.$root.innerHTML = ''
-        const activeWs = visibleWs.find((w) => w.id === this.activeWorkspaceId)
-        if (this.$treeHeader) {
-          // Dynamic header = active workspace name. Drop data-i18n so the i18n
-          // pass doesn't overwrite it on locale change.
-          this.$treeHeader.removeAttribute('data-i18n')
-          this.$treeHeader.textContent = activeWs ? activeWs.name : '—'
-        }
-        const wsIdentities = activeWs
-          ? V.identitiesForWorkspace(this.identities, activeWs.id)
-          : []
-        if (wsIdentities.length === 0) {
-          const empty = document.createElement('div')
-          empty.className = 'tree-empty'
-          empty.textContent = activeWs
-            ? '(no identities — click ＋ on the workspace)'
-            : '(no workspace)'
-          this.$root.appendChild(empty)
-        } else {
-          for (const ident of wsIdentities) {
-            this.$root.appendChild(this.renderIdentityWrapper(ident))
-          }
-        }
-      }
+      this.renderActiveContent(visibleWs)
 
       if (this.$archivedToggle) {
         const archivedCount = this.workspaces.filter((w) => w.isArchived).length
@@ -360,6 +339,47 @@
             ? `Hide archived (${archivedCount})`
             : `Show archived (${archivedCount})`
         }
+      }
+    }
+
+    /**
+     * Render only the active workspace's identities + tabs into #oz-identity-list,
+     * applying the search filter + sort. Split from render() so typing in the
+     * search box (which lives outside $root) doesn't blow away its focus.
+     */
+    renderActiveContent(visibleWs) {
+      if (!this.$root) return
+      const V = window.OZ.SidebarView
+      const list = visibleWs || V.visibleWorkspaces(this.workspaces, this.showArchived)
+      const activeWs = list.find((w) => w.id === this.activeWorkspaceId)
+
+      if (this.$treeHeader) {
+        // Dynamic header = active workspace name. Drop data-i18n so the i18n
+        // pass doesn't overwrite it on locale change.
+        this.$treeHeader.removeAttribute('data-i18n')
+        this.$treeHeader.textContent = activeWs ? activeWs.name : '—'
+      }
+
+      this.$root.innerHTML = ''
+      let wsIdentities = activeWs
+        ? V.identitiesForWorkspace(this.identities, activeWs.id)
+        : []
+      wsIdentities = V.filterIdentities(wsIdentities, this.idQuery)
+      wsIdentities = V.sortIdentities(wsIdentities, this.idSort, this.idUse)
+
+      if (wsIdentities.length === 0) {
+        const empty = document.createElement('div')
+        empty.className = 'tree-empty'
+        empty.textContent = !activeWs
+          ? '(no workspace)'
+          : this.idQuery
+            ? '(no matches)'
+            : '(no identities — click ＋ on the workspace)'
+        this.$root.appendChild(empty)
+        return
+      }
+      for (const ident of wsIdentities) {
+        this.$root.appendChild(this.renderIdentityWrapper(ident))
       }
     }
 

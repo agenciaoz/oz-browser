@@ -31,7 +31,11 @@
     "showArchived": "Mostrar archivados",
     "workspacesAndIdentities": "ESPACIOS E IDENTIDADES",
     "addIdentity": "+ Nueva identidad",
-    "general": "Navegación general"
+    "general": "Navegación general",
+    "searchIdentities": "Buscar identities…",
+    "sortCreated": "Creación",
+    "sortAlpha": "A–Z",
+    "sortFrequency": "Más usadas"
   },
   "settings": {
     "title": "Configuración",
