@@ -529,6 +529,21 @@
       name.textContent = identity.locked ? `🔒 ${identity.name}` : identity.name
       row.appendChild(name)
 
+      // alpha.40: tag chips — click filters by that tag (sets the search box).
+      for (const tag of identity.tags || []) {
+        const chip = document.createElement('span')
+        chip.className = 'oz-tag-chip'
+        chip.textContent = tag
+        chip.title = `Filter by tag: ${tag}`
+        chip.addEventListener('click', (ev) => {
+          ev.stopPropagation()
+          this.idQuery = tag
+          if (this.$idSearch) this.$idSearch.value = tag
+          this.renderActiveContent()
+        })
+        row.appendChild(chip)
+      }
+
       const tabsOfId = this.tabs.filter((t) => t.identityId === identity.id)
       const count = document.createElement('span')
       count.className = 'tree-count'
@@ -578,61 +593,8 @@
     }
 
     renderTabRow(tab, identity) {
-      const row = document.createElement('div')
-      row.className = 'tree-row tab-row'
-      row.dataset.tabId = tab.id
-      if (!tab.isLoaded) row.classList.add('lazy')
-      if (tab.id === this.activeOzTabId) row.classList.add('active')
-
-      row.draggable = true
-      row.addEventListener('dragstart', (ev) => {
-        ev.dataTransfer.setData('application/oz-tab-id', tab.id)
-        ev.dataTransfer.effectAllowed = 'move'
-        row.classList.add('dragging')
-      })
-      row.addEventListener('dragend', () => row.classList.remove('dragging'))
-
-      const fav = document.createElement('span')
-      fav.className = 'tree-favicon'
-      if (tab.favicon) {
-        const img = document.createElement('img')
-        img.src = tab.favicon
-        img.style.width = '12px'
-        img.style.height = '12px'
-        fav.appendChild(img)
-      } else {
-        fav.classList.add('lazy')
-        fav.style.background = identity.color
-      }
-      row.appendChild(fav)
-
-      const title = document.createElement('span')
-      title.className = 'tree-name'
-      const baseTitle = tab.title || tab.url || 'New Tab'
-      title.textContent = tab.locked ? `🔒 ${baseTitle}` : baseTitle
-      title.title = tab.url || ''
-      row.appendChild(title)
-
-      if (!tab.locked) {
-        const close = document.createElement('button')
-        close.className = 'oz-close'
-        close.textContent = '✕'
-        close.addEventListener('click', (e) => this.handleCloseTab(tab.id, e))
-        row.appendChild(close)
-      }
-
-      row.addEventListener('click', () => this.handleSelectTab(tab.id))
-      row.addEventListener('contextmenu', async (ev) => {
-        ev.preventDefault()
-        ev.stopPropagation()
-        if (window.oz.tabs.contextMenu) {
-          await safe(
-            window.oz.tabs.contextMenu(tab.id, { x: ev.clientX, y: ev.clientY }),
-            'tabs.contextMenu',
-          )
-        }
-      })
-      return row
+      // alpha.40: extracted to sidebar-tabrow.js (ADR 0005 LOC budget).
+      return window.OZ.SidebarTabRow.render(this, tab, identity)
     }
   }
 

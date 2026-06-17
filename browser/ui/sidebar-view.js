@@ -50,7 +50,11 @@
   function filterIdentities(identities, query) {
     const q = (query || '').trim().toLowerCase()
     if (!q) return (identities || []).slice()
-    return (identities || []).filter((i) => (i.name || '').toLowerCase().includes(q))
+    return (identities || []).filter((i) => {
+      if ((i.name || '').toLowerCase().includes(q)) return true
+      // alpha.40: also match tags so the search box doubles as a tag filter.
+      return (i.tags || []).some((t) => String(t).toLowerCase().includes(q))
+    })
   }
 
   /**

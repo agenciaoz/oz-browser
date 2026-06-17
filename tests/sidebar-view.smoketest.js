@@ -128,6 +128,27 @@ ok('sortIdentities: alpha / created / frequency', () => {
   )
 })
 
+ok('filterIdentities also matches tags (alpha.40)', () => {
+  const ids = [
+    { id: 'a', name: 'Pedro', tags: ['cliente', 'ventas'] },
+    { id: 'b', name: 'Ana', tags: ['soporte'] },
+    { id: 'c', name: 'Luis', tags: [] },
+  ]
+  assert.deepStrictEqual(
+    V.filterIdentities(ids, 'vent').map((i) => i.id),
+    ['a'], // matches tag "ventas"
+  )
+  assert.deepStrictEqual(
+    V.filterIdentities(ids, 'SOPORTE').map((i) => i.id),
+    ['b'], // case-insensitive tag match
+  )
+  // name still matches
+  assert.deepStrictEqual(
+    V.filterIdentities(ids, 'luis').map((i) => i.id),
+    ['c'],
+  )
+})
+
 ok('sortIdentities does not mutate input', () => {
   const ids = [
     { id: 'a', name: 'B', createdAt: 1 },

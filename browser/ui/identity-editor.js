@@ -150,6 +150,9 @@
 
       this.$form.elements.name.value = identity.name || ''
       this.$form.elements.userAgent.value = identity.userAgent || ''
+      if (this.$form.elements.tags) {
+        this.$form.elements.tags.value = (identity.tags || []).join(', ')
+      }
       // v2.0.0-alpha.22: surface a yellow inline warning when this identity
       // is going to navigate with the real IP. Fire-and-forget — failures
       // (e.g. preload not loaded) just leave the warning hidden.
@@ -266,6 +269,10 @@
       const patch = {
         name,
         color: this.selectedColor,
+      }
+      if (this.$form.elements.tags) {
+        // alpha.40: comma/space separated → IdentityManager.update normalizes.
+        patch.tags = this.$form.elements.tags.value
       }
       if (!this.current.isDefault) {
         patch.userAgent = ua // empty string → null (default) in IdentityManager.update.

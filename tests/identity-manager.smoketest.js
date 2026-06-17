@@ -558,6 +558,29 @@ section('H3a defensive backfill on _load')
   ok('legacy data persisted', list.length === 2)
 }
 
+// alpha.40 — tags on identities (create + update + normalize)
+section('tags: create, update, normalize')
+{
+  const { IdentityManager } = freshIM()
+  const im = new IdentityManager()
+  const a = im.create({ name: 'WithTags', tags: ['Cliente', ' ventas ', ''] })
+  ok('create stores normalized tags', JSON.stringify(a.tags) === '["Cliente","ventas"]')
+
+  const b = im.create({ name: 'NoTags' })
+  ok('create defaults tags to []', Array.isArray(b.tags) && b.tags.length === 0)
+
+  // update accepts a comma-separated string → normalized array, dedupe.
+  const u = im.update(a.id, { tags: 'x, y, x, Y' })
+  ok(
+    'update normalizes + dedupes (case-insensitive)',
+    JSON.stringify(u.tags) === '["x","y"]',
+  )
+
+  // clearing tags
+  const u2 = im.update(a.id, { tags: '' })
+  ok('update with empty string clears tags', u2.tags.length === 0)
+}
+
 // D-3a 'changed' event tests + updatedAt backfill on _load were split into
 // tests/identity-manager-events.smoketest.js (ADR 0005 — 500 LOC rule).
 

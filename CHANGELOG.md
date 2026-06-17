@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.40 — Tags en identities + filtro (paridad Ghost) (2026-06-16)
+
+[`2026-06-16`] [`identity/sidebar`] Tags en identities (Ghost parity): campo Tags en el editor de identity, chips clickeables en el sidebar (clic → filtra por ese tag), y el buscador ahora matchea nombre O tags. Modelo: `identity.tags[]` (create/update con `normalizeTags` — trim/dedupe case-insensitive/cap 32ch×20), backfill legacy, viaja por sync (whole-record). Refactors por LOC budget (ADR 0005): helpers puros → NUEVO `identity-utils.js` (uuid/now/nowIso/normalizeTags/DEFAULT_COLORS); `renderTabRow` → NUEVO `sidebar-tabrow.js`. i18n EN/ES. Tests: identity-manager 65, sidebar-view 10. Manifest WebUI 2.0.29.
+
 ### v2.0.0-alpha.39 — Proxies: auto-recuperación + auto-disable menos agresivo (2026-06-16)
 
 [`2026-06-16`] [`proxy-health`] Bug reportado por Jose: 11 proxies sanos quedaron auto-deshabilitados (rojo, "leak risk") tras 3 fallos transitorios, y el daemon de salud solo re-testeaba proxies asignables → una vez disabled, nunca se re-testeaba ni se recuperaba solo. Fix: (1) el daemon ahora re-testea los proxies ACTIVOS incluidos los auto-deshabilitados (`testAll({activeOnly})` → `listActiveForHealth()`), y `recordHealthSuccess` los re-habilita solo cuando vuelven a pasar — los apagados a mano (isActive=false) siguen excluidos; (2) umbral de auto-disable subido 3→5 (los residenciales tienen timeouts transitorios). `AUTO_DISABLE_THRESHOLD` exportado. Tests proxy-health 32/32 (+ recovery + manual-off) y proxy-manager 60/60 (+ listActiveForHealth). No toca browser/ui/ → sin bump de manifest.

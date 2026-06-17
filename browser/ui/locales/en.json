@@ -991,7 +991,9 @@
     "save": "Save",
     "errorNameRequired": "Name is required.",
     "errorSaveFailed": "Failed to save. Check the log.",
-    "noProxyWarning": "⚠️ This identity will browse with your real IP — sure?"
+    "noProxyWarning": "⚠️ This identity will browse with your real IP — sure?",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "e.g. client, sales (comma-separated)"
   },
   "identityClone": {
     "title": "📑 Clone identity",

@@ -991,7 +991,9 @@
     "save": "Guardar",
     "errorNameRequired": "El nombre es obligatorio.",
     "errorSaveFailed": "No se pudo guardar. Revisá el log.",
-    "noProxyWarning": "⚠️ Esta identity navegará con IP real — ¿seguro?"
+    "noProxyWarning": "⚠️ Esta identity navegará con IP real — ¿seguro?",
+    "tagsLabel": "Tags",
+    "tagsPlaceholder": "ej: cliente, ventas (separadas por coma)"
   },
   "identityClone": {
     "title": "📑 Clonar identidad",

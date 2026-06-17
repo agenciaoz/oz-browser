@@ -705,6 +705,23 @@
         opacity: 0.4;
       }
 
+      /* alpha.40: identity tag chips */
+      .oz-tag-chip {
+        flex: 0 0 auto;
+        font-size: 9.5px;
+        line-height: 1.4;
+        padding: 0 5px;
+        border-radius: 999px;
+        background: rgba(108, 142, 239, 0.18);
+        color: var(--text-color);
+        white-space: nowrap;
+        cursor: pointer;
+      }
+      .oz-tag-chip:hover {
+        background: var(--accent);
+        color: #fff;
+      }
+
       .tree-row .add-tab {
         background: transparent;
         border: none;
@@ -4255,6 +4272,16 @@
             <input name="name" type="text" required maxlength="60" />
           </label>
           <label>
+            <span data-i18n="identityEditor.tagsLabel">Tags</span>
+            <input
+              name="tags"
+              type="text"
+              autocomplete="off"
+              placeholder="e.g. client, sales (comma-separated)"
+              data-i18n-attr="placeholder:identityEditor.tagsPlaceholder"
+            />
+          </label>
+          <label>
             <span data-i18n="identityEditor.colorLabel">Color</span>
             <div class="color-swatches" id="oz-identity-swatches"></div>
           </label>
@@ -7159,6 +7186,7 @@
     <script src="./workspace-switcher.js"></script>
     <script src="./sidebar-state.js"></script>
     <script src="./sidebar-view.js"></script>
+    <script src="./sidebar-tabrow.js"></script>
     <script src="./sidebar-events.js"></script>
     <script src="./sidebar-health.js"></script>
     <script src="./sidebar.js"></script>

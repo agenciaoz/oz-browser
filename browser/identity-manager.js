@@ -12,10 +12,11 @@
 
 const fs = require('fs')
 const path = require('path')
-const crypto = require('crypto')
 const { EventEmitter } = require('events')
 const { app, session } = require('electron')
 const log = require('./logger')
+// alpha.40: pure helpers extracted to keep this file under the LOC budget.
+const { uuid, now, nowIso, normalizeTags, DEFAULT_COLORS } = require('./identity-utils')
 
 // 1.5c: content script preload for auto-fill / auto-save. Resolved lazily —
 // `app.getAppPath()` is only valid after `app.whenReady()`, so we defer the
@@ -40,19 +41,6 @@ function contentPreloadPath() {
   return _contentPreloadPath
 }
 
-const DEFAULT_COLORS = [
-  '#5b8def',
-  '#ff7a45',
-  '#36b37e',
-  '#ffab00',
-  '#9c5cf2',
-  '#e85a8c',
-  '#00b8d9',
-  '#f15a5a',
-  '#36b37e',
-  '#ff5630',
-]
-
 // Identity cap. Default behavior in 1.5f: NO CAP (Jose's use case = 50+
 // social media accounts, internal/paid use). Free tier (3 identities) is now
 // OPT-IN via `OZ_TIER=free` — useful for screenshotting the upgrade prompt
@@ -73,23 +61,6 @@ class IdentityCapError extends Error {
     this.current = current
     this.max = max
   }
-}
-
-function uuid() {
-  // Short, URL-safe id. crypto.randomUUID() works but is too long for partition names.
-  return crypto.randomBytes(8).toString('hex')
-}
-
-function now() {
-  return Date.now()
-}
-
-// D-3a: ISO 8601 timestamp for the sync layer (LWW comparisons use this).
-// We keep `createdAt` as legacy ms-since-epoch for backwards compatibility
-// with existing identities.json files; `updatedAt` is the new field stamped
-// on every mutation.
-function nowIso() {
-  return new Date().toISOString()
 }
 
 class IdentityManager extends EventEmitter {
@@ -157,6 +128,11 @@ class IdentityManager extends EventEmitter {
         ident.workspaceId = 'general'
         backfilled += 1
       }
+      // alpha.40: ensure tags[] exists on legacy identities.
+      if (!Array.isArray(ident.tags)) {
+        ident.tags = []
+        backfilled += 1
+      }
     }
     if (backfilled > 0) {
       log.warn('identity-manager', 'backfilled identities without workspaceId', {
@@ -212,7 +188,14 @@ class IdentityManager extends EventEmitter {
     return this.identities.find((i) => i.isDefault) || this.identities[0]
   }
 
-  create({ name = 'New Identity', color, userAgent, workspaceId, fingerprintSeed } = {}) {
+  create({
+    name = 'New Identity',
+    color,
+    userAgent,
+    workspaceId,
+    fingerprintSeed,
+    tags,
+  } = {}) {
     if (!IS_PAID_TIER) {
       // Default identity counts towards the cap intentionally — Free tier
       // gets 1 Default + up to (MAX-1) custom = 3 total.
@@ -256,6 +239,8 @@ class IdentityManager extends EventEmitter {
       // 'general' if missing — the host (Browser) is responsible for routing
       // identities to the right workspace by the time they reach create().
       workspaceId: workspaceId || 'general',
+      // alpha.40: free-text labels for grouping/filtering (Ghost parity).
+      tags: normalizeTags(tags),
     }
     this.identities.push(identity)
     this._save()
@@ -321,6 +306,16 @@ class IdentityManager extends EventEmitter {
           ident[key] = next
           mutated = true
         }
+      }
+    }
+
+    // alpha.40: tags (array) — normalized + compared separately from the
+    // scalar whitelist above.
+    if (Object.prototype.hasOwnProperty.call(patch, 'tags')) {
+      const nextTags = normalizeTags(patch.tags)
+      if (JSON.stringify(ident.tags || []) !== JSON.stringify(nextTags)) {
+        ident.tags = nextTags
+        mutated = true
       }
     }
 
