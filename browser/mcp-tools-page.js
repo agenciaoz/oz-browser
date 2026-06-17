@@ -114,6 +114,11 @@ function buildPageTools(browser) {
           ...idTab,
           selector: { type: 'string' },
           button: { type: 'string', enum: ['left', 'right', 'middle'] },
+          human: {
+            type: 'boolean',
+            description:
+              'Move along a Bézier path with gaussian delays (anti-detect). Default false.',
+          },
         },
         required: ['identityId', 'selector'],
         additionalProperties: false,
@@ -131,6 +136,10 @@ function buildPageTools(browser) {
           selector: { type: 'string' },
           text: { type: 'string' },
           delayVarianceMs: { type: 'number' },
+          human: {
+            type: 'boolean',
+            description: 'Gaussian per-char cadence (anti-detect). Default false.',
+          },
         },
         required: ['identityId', 'selector', 'text'],
         additionalProperties: false,

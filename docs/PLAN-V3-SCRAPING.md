@@ -66,6 +66,8 @@ La diferencia entre "se nota bot" y "pasa Cloudflare". Capa que envuelve A.
 
 Flag por-tool `human: true|false` (off para velocidad, on para targets duros).
 
+> **Estado: EN CURSO.** Slice 1 ✅ `v2.0.0-alpha.51`: `click` (Bézier + gaussian) y `type` (cadencia gaussiana) detrás de `human:true` (default off). Pure `page-human.js` (bezier/gaussian/keystrokeDelays). Pendiente: scroll con momentum, idle lognormal entre acciones, typos+corrección.
+
 ### V3-C — Stealth defaults always-on · ~15-20h
 
 Expandir lo que ya hace FingerprintEngine.

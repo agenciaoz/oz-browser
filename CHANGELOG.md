@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.51 — V3-B: humanization layer (default-off) (2026-06-17)
+
+[`2026-06-17`] [`mcp/scraping`] Capa de humanización para `oz.page.click` y `oz.page.type` detrás de un flag **`human: true` (default false = comportamiento idéntico al anterior, cero riesgo)**. Con `human`: el click mueve el cursor por una **curva Bézier** con delays gaussianos antes de presionar (en vez de teleport directo), y el type usa **cadencia gaussiana por carácter** (en vez de uniforme) — justo lo que los anti-bot conductuales miran. Matemática pura en NUEVO `page-human.js` (`bezier`/`bezierPath`/`gaussian`/`keystrokeDelays`), con `rng` inyectable para tests deterministas. Tests page-human 5. Sin browser/ui. Primer slice de V3-B; pendiente: scroll con momentum, idle lognormal entre acciones, typos ocasionales.
+
 ### v2.0.0-alpha.50 — V3-A cierre: network intercept (block/capture) (2026-06-17)
 
 [`2026-06-17`] [`mcp/scraping`] Cierra V3-A (page-control). 4 tools nuevas `oz.network.*` por identity (sobre su Electron session): `block` (cancela requests cuyo URL matchea patrones — glob con `*` o substring; ideal para tirar ads/trackers/assets pesados y acelerar el scrape), `capture` (toggle: loguea requests que matchean), `captured` (devuelve el log {url,method,resourceType,ts}, cap 500), `clear` (reset). Un solo `onBeforeRequest` por sesión, wireado lazy, que consulta estado mutable por-identity → togglear no re-wirea; default = passthrough (sin cambio de comportamiento hasta usarse). Self-contained: `mcp-tools-network.js` construye UNA instancia de `network-handlers.js` (el estado persiste). Matching puro en NUEVO `network-utils.js` (globToRegExp/matchesAnyPattern/sanitizePatterns). Nombres `oz_network_*` ≤21. Tests network-utils 4. Sin browser/ui. **V3-A COMPLETO (12 page tools + 4 network tools).**

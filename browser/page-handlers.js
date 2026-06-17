@@ -15,6 +15,7 @@
 const log = require('./logger')
 const { normalizeOmniboxInput } = require('./url-normalize')
 const PU = require('./page-utils')
+const HM = require('./page-human')
 
 function buildPageHandlers(browser) {
   // Find a tab by explicit id (any window), else the first tab of the identity.
@@ -117,8 +118,10 @@ function buildPageHandlers(browser) {
       return runJS(identityId, tabId, code)
     },
 
-    /** Real mouse click on the first match (scrolls into view, sendInputEvent). */
-    async click({ identityId, tabId, selector, button }) {
+    /** Real mouse click on the first match (scrolls into view, sendInputEvent).
+     *  `human:true` (v3-B) moves the cursor along a Bézier path with gaussian
+     *  delays before pressing (default false = direct move, unchanged). */
+    async click({ identityId, tabId, selector, button, human }) {
       if (!PU.isValidSelector(selector)) return err('BAD_SELECTOR')
       const r = resolveWC(identityId, tabId)
       if (r.__error) return r
@@ -131,7 +134,16 @@ function buildPageHandlers(browser) {
       if (!pt) return err('NOT_FOUND', 'Selector matched no element')
       const btn = button === 'right' || button === 'middle' ? button : 'left'
       try {
-        r.wc.sendInputEvent({ type: 'mouseMove', x: pt.x, y: pt.y })
+        if (human) {
+          const start = { x: Math.max(0, pt.x - 45), y: Math.max(0, pt.y - 35) }
+          for (const p of HM.bezierPath(start, pt, { steps: 18, jitter: 0.2 })) {
+            r.wc.sendInputEvent({ type: 'mouseMove', x: p.x, y: p.y })
+            await sleep(HM.gaussian(12, 5, undefined, 2, 40))
+          }
+          await sleep(HM.gaussian(90, 30, undefined, 30, 250))
+        } else {
+          r.wc.sendInputEvent({ type: 'mouseMove', x: pt.x, y: pt.y })
+        }
         r.wc.sendInputEvent({
           type: 'mouseDown',
           x: pt.x,
@@ -139,6 +151,7 @@ function buildPageHandlers(browser) {
           button: btn,
           clickCount: 1,
         })
+        if (human) await sleep(HM.gaussian(60, 20, undefined, 20, 160))
         r.wc.sendInputEvent({
           type: 'mouseUp',
           x: pt.x,
@@ -149,11 +162,13 @@ function buildPageHandlers(browser) {
       } catch (e) {
         return err('INPUT_FAILED', e && e.message)
       }
-      return { ok: true, x: pt.x, y: pt.y, button: btn }
+      return { ok: true, x: pt.x, y: pt.y, button: btn, human: !!human }
     },
 
-    /** Focus the first match and type text char-by-char via sendInputEvent. */
-    async type({ identityId, tabId, selector, text, delayVarianceMs }) {
+    /** Focus the first match and type text char-by-char via sendInputEvent.
+     *  `human:true` (v3-B) uses gaussian per-char cadence; otherwise the
+     *  optional uniform `delayVarianceMs` (default 0 = as fast as possible). */
+    async type({ identityId, tabId, selector, text, delayVarianceMs, human }) {
       if (!PU.isValidSelector(selector)) return err('BAD_SELECTOR')
       if (typeof text !== 'string') return err('BAD_TEXT')
       const r = resolveWC(identityId, tabId)
@@ -166,15 +181,19 @@ function buildPageHandlers(browser) {
       }
       if (!focused) return err('NOT_FOUND', 'Selector matched no element')
       const variance = Math.max(0, Math.min(Number(delayVarianceMs) || 0, 500))
+      const humanDelays = human ? HM.keystrokeDelays(text, {}) : null
+      let i = 0
       for (const ch of text) {
         try {
           r.wc.sendInputEvent({ type: 'char', keyCode: ch })
         } catch (e) {
           return err('INPUT_FAILED', e && e.message)
         }
-        if (variance) await sleep(Math.floor(Math.random() * variance))
+        if (humanDelays) await sleep(humanDelays[i])
+        else if (variance) await sleep(Math.floor(Math.random() * variance))
+        i++
       }
-      return { ok: true, typed: text.length }
+      return { ok: true, typed: text.length, human: !!human }
     },
 
     /** Scroll the page: to = 'top' | 'bottom' | number of px. */
