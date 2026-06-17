@@ -36,7 +36,7 @@ Convertir OZ en un **browser agent-controlled para scraping** con anti-detecció
 
 ### V3-A — Page control tools (MCP) · ~25-35h
 
-> **Estado: EN CURSO.** Slice 1 ✅ `v2.0.0-alpha.48`: `navigate/getInfo/getText/getAttr/queryAll/eval`. Slice 2 ✅ `v2.0.0-alpha.49`: `click` (sendInputEvent real), `type` (char-by-char + delay), `scroll`, `waitFor`, `screenshot` (capturePage), `extract` (declarativo). Pendiente: `oz.network.intercept` + humanization (V3-B). (ADR 0036.)
+> **Estado: ✅ COMPLETO (alpha.48–50).** Slice 1 (`alpha.48`): `navigate/getInfo/getText/getAttr/queryAll/eval`. Slice 2 (`alpha.49`): `click` (sendInputEvent real), `type`, `scroll`, `waitFor`, `screenshot`, `extract`. Slice 3 (`alpha.50`): `oz.network.block/capture/captured/clear`. Total: 12 page tools + 4 network tools. (ADR 0036.) Próximo: V3-B humanization.
 
 El core: que el agente pueda manejar la página. Tools nuevas en un módulo `mcp-tools-page.js` + handlers `page-handlers.js` (respetando budget 500 LOC, ADR 0005).
 

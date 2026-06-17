@@ -27,6 +27,7 @@ const { buildSyncTools } = require('./mcp-tools-sync')
 const { buildBulkTools } = require('./mcp-tools-bulk')
 const { buildScheduledTools } = require('./mcp-tools-scheduled')
 const { buildPageTools } = require('./mcp-tools-page')
+const { buildNetworkTools } = require('./mcp-tools-network')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -480,8 +481,11 @@ function buildToolCatalog(browser) {
     }),
 
     // v3-A: page-control tools for scraping/agent-control (navigate + read
-    // DOM + eval, scoped to an identity tab). Self-contained handlers.
+    // DOM + eval + input-events, scoped to an identity tab). Self-contained.
     ...buildPageTools(browser),
+
+    // v3-A: network intercept (block/capture requests per identity session).
+    ...buildNetworkTools(browser),
 
     // -------------------- system metrics --------------------
     {

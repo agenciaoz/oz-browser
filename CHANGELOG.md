@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.50 — V3-A cierre: network intercept (block/capture) (2026-06-17)
+
+[`2026-06-17`] [`mcp/scraping`] Cierra V3-A (page-control). 4 tools nuevas `oz.network.*` por identity (sobre su Electron session): `block` (cancela requests cuyo URL matchea patrones — glob con `*` o substring; ideal para tirar ads/trackers/assets pesados y acelerar el scrape), `capture` (toggle: loguea requests que matchean), `captured` (devuelve el log {url,method,resourceType,ts}, cap 500), `clear` (reset). Un solo `onBeforeRequest` por sesión, wireado lazy, que consulta estado mutable por-identity → togglear no re-wirea; default = passthrough (sin cambio de comportamiento hasta usarse). Self-contained: `mcp-tools-network.js` construye UNA instancia de `network-handlers.js` (el estado persiste). Matching puro en NUEVO `network-utils.js` (globToRegExp/matchesAnyPattern/sanitizePatterns). Nombres `oz_network_*` ≤21. Tests network-utils 4. Sin browser/ui. **V3-A COMPLETO (12 page tools + 4 network tools).**
+
 ### v2.0.0-alpha.49 — V3-A slice 2: input-events + waitFor + screenshot + extract (2026-06-17)
 
 [`2026-06-17`] [`mcp/scraping`] Segundo slice de page-control: 6 tools nuevas `oz.page.*`. `click` (click de mouse REAL: scrollIntoView + `sendInputEvent` mouseDown/Up en el centro del elemento, no `.click()` sintético detectable; button left/right/middle), `type` (focus + `sendInputEvent` char-by-char, `delayVarianceMs` 0-500 para cadencia humana), `scroll` (top/bottom/px), `waitFor` (poll del selector hasta aparecer o timeout, default 5s max 60s), `screenshot` (`capturePage`→base64 PNG del viewport), `extract` (declarativo: schema field→selector|{selector,attr} → {field:value}, el gran ahorro de tokens). Helpers puros nuevos en `page-utils.js` (clickCoords/focus/exists/scroll/extract scripts, inyección-safe vía JSON). Helper `resolveWC` en page-handlers. Nombres `oz_page_*` ≤21. Tests page-utils 9 (+4). ADR 0036 actualizado. Sin browser/ui (sin manifest bump). Pendiente: `oz.network.intercept` + humanization (V3-B).
