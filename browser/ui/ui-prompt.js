@@ -194,7 +194,139 @@
     })
   }
 
+  // alpha.47 — confirm dialog (window.prompt/confirm are disabled in
+  // chrome-extension pages). Returns Promise<boolean>: true on OK/Enter,
+  // false on Cancel/Escape/backdrop. Reuses the prompt modal chrome (no input).
+  // opts: { okLabel, cancelLabel, danger } — danger paints the OK button red.
+  function ozConfirm(message, opts) {
+    opts = opts || {}
+    return new Promise((resolve) => {
+      if (window.oz && window.oz.ui && window.oz.ui.setContentVisible) {
+        try {
+          window.oz.ui.setContentVisible(false).catch(() => {})
+        } catch (_e) {
+          /* defensive */
+        }
+      }
+
+      const backdrop = document.createElement('div')
+      backdrop.className = 'oz-prompt-backdrop'
+      Object.assign(backdrop.style, {
+        position: 'fixed',
+        top: '0',
+        left: '0',
+        right: '0',
+        bottom: '0',
+        background: 'rgba(0, 0, 0, 0.55)',
+        zIndex: '99999',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      })
+
+      const modal = document.createElement('div')
+      modal.className = 'oz-prompt-modal'
+      Object.assign(modal.style, {
+        background: 'var(--bg-elevated, #2a2a35)',
+        color: 'var(--text-color, #fff)',
+        borderRadius: '10px',
+        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6)',
+        padding: '20px 22px',
+        minWidth: '360px',
+        maxWidth: '480px',
+        border: '1px solid rgba(255, 255, 255, 0.08)',
+        fontFamily: 'inherit',
+      })
+
+      const label = document.createElement('div')
+      label.textContent = message || ''
+      Object.assign(label.style, {
+        fontSize: '14px',
+        marginBottom: '4px',
+        fontWeight: '500',
+        lineHeight: '1.4',
+      })
+
+      const actions = document.createElement('div')
+      Object.assign(actions.style, {
+        display: 'flex',
+        justifyContent: 'flex-end',
+        gap: '8px',
+        marginTop: '18px',
+      })
+
+      const btnCancel = document.createElement('button')
+      btnCancel.type = 'button'
+      btnCancel.textContent = opts.cancelLabel || 'Cancel'
+      Object.assign(btnCancel.style, {
+        padding: '7px 14px',
+        background: 'transparent',
+        border: '1px solid rgba(255, 255, 255, 0.15)',
+        borderRadius: '6px',
+        color: 'inherit',
+        font: 'inherit',
+        cursor: 'pointer',
+      })
+
+      const btnOk = document.createElement('button')
+      btnOk.type = 'button'
+      btnOk.textContent = opts.okLabel || 'OK'
+      Object.assign(btnOk.style, {
+        padding: '7px 14px',
+        background: opts.danger ? '#dc2626' : 'var(--accent, #6488ff)',
+        border: 'none',
+        borderRadius: '6px',
+        color: '#fff',
+        font: 'inherit',
+        fontWeight: '600',
+        cursor: 'pointer',
+      })
+
+      actions.appendChild(btnCancel)
+      actions.appendChild(btnOk)
+      modal.appendChild(label)
+      modal.appendChild(actions)
+      backdrop.appendChild(modal)
+      document.body.appendChild(backdrop)
+      setTimeout(() => btnOk.focus(), 0)
+
+      let resolved = false
+      function done(value) {
+        if (resolved) return
+        resolved = true
+        document.removeEventListener('keydown', onKeyDown, true)
+        if (backdrop.parentNode) backdrop.parentNode.removeChild(backdrop)
+        if (window.oz && window.oz.ui && window.oz.ui.setContentVisible) {
+          try {
+            window.oz.ui.setContentVisible(true).catch(() => {})
+          } catch (_e) {
+            /* defensive */
+          }
+        }
+        resolve(value)
+      }
+
+      function onKeyDown(ev) {
+        if (ev.key === 'Enter') {
+          ev.preventDefault()
+          done(true)
+        } else if (ev.key === 'Escape') {
+          ev.preventDefault()
+          done(false)
+        }
+      }
+
+      btnOk.addEventListener('click', () => done(true))
+      btnCancel.addEventListener('click', () => done(false))
+      backdrop.addEventListener('click', (ev) => {
+        if (ev.target === backdrop) done(false)
+      })
+      document.addEventListener('keydown', onKeyDown, true)
+    })
+  }
+
   window.OZ = window.OZ || {}
   window.OZ.ui = window.OZ.ui || {}
   window.OZ.ui.prompt = ozPrompt
+  window.OZ.ui.confirm = ozConfirm
 })()

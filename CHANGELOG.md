@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.47 — Confirmaciones en acciones destructivas (2026-06-17)
+
+[`2026-06-17`] [`ui`] Red de seguridad contra borrados accidentales: helper reutilizable nuevo `window.OZ.ui.confirm(message, {okLabel, cancelLabel, danger})` (modal HTML, porque `window.confirm` está deshabilitado en chrome-extension pages; reusa el chrome del prompt, botón OK rojo en modo danger). Cableado en App Dock (quitar un enlace, restablecer el dock) y en Tasks (limpiar completadas). i18n EN/ES (`appDock.confirm*`, `tasks.confirm*`). Sin lógica nueva que testear (cableado sobre mutaciones ya cubiertas). Manifest WebUI 2.0.35. Sin main process ni IPC.
+
 ### v2.0.0-alpha.46 — Tasks por-workspace (2026-06-17)
 
 [`2026-06-17`] [`sidebar`] El Tasks module ahora es **por-workspace**: cada workspace tiene su propia checklist (antes era una sola lista global). El módulo resuelve su workspace activo (`workspaces.getActive`), sigue los cambios de workspace (`onActiveChanged`, gateado por `windowId` como el sidebar) y muestra solo las tareas de ese workspace. Storage `oz-tasks` pasa de array plano a objeto `{ [wsId]: Task[] }`; **migración automática** del formato alpha.45 → bucket `general` (sin perder tareas). Helpers puros nuevos `migrateStore`/`listFor`/`withList`. Tests sidebar-tasks-utils 7 (+2). Manifest WebUI 2.0.34. (Sin main process ni IPC — usa el `oz:window:getId` de alpha.42.)

@@ -239,8 +239,9 @@
       this._persistAndRender()
     }
 
-    _removeKey(key) {
+    async _removeKey(key) {
       if (!key) return
+      if (!(await this._confirm(t('appDock.confirmRemove')))) return
       const isCustom = (this.dock.custom || []).some((c) => c.key === key)
       if (isCustom) {
         this.dock.custom = this.dock.custom.filter((c) => c.key !== key)
@@ -251,6 +252,16 @@
       this._persistAndRender()
     }
 
+    async _confirm(message) {
+      if (window.OZ && window.OZ.ui && typeof window.OZ.ui.confirm === 'function') {
+        return window.OZ.ui.confirm(message, {
+          danger: true,
+          okLabel: t('appDock.confirmOk'),
+        })
+      }
+      return true
+    }
+
     _reorder(draggedKey, targetKey, placeAfter) {
       const U = window.OZ.AppDockUtils
       const current = this._entries().map((e) => e.key)
@@ -258,7 +269,8 @@
       this._persistAndRender()
     }
 
-    _resetDock() {
+    async _resetDock() {
+      if (!(await this._confirm(t('appDock.confirmReset')))) return
       this.dock = { custom: [], order: [], hidden: [] }
       this._persistAndRender()
     }

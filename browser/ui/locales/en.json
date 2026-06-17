@@ -178,14 +178,19 @@
     "promptName": "Link name",
     "promptUrl": "Link URL (https://…)",
     "removeHint": "right-click to remove",
-    "reset": "Reset dock to defaults"
+    "reset": "Reset dock to defaults",
+    "confirmRemove": "Remove this link from the dock?",
+    "confirmReset": "Reset the dock to its default links? Your custom links will be removed.",
+    "confirmOk": "Remove"
   },
   "tasks": {
     "title": "Tasks",
     "addPlaceholder": "Add a task…",
     "empty": "No tasks yet",
     "clearDone": "Clear completed",
-    "remove": "Remove task"
+    "remove": "Remove task",
+    "confirmClear": "Remove all completed tasks from this workspace?",
+    "confirmClearOk": "Clear"
   },
   "proxyDashboard": {
     "title": "Proxy Health Dashboard",

@@ -178,14 +178,19 @@
     "promptName": "Nombre del enlace",
     "promptUrl": "URL del enlace (https://…)",
     "removeHint": "clic derecho para quitar",
-    "reset": "Restablecer el dock"
+    "reset": "Restablecer el dock",
+    "confirmRemove": "¿Quitar este enlace del dock?",
+    "confirmReset": "¿Restablecer el dock a los enlaces por defecto? Se eliminarán tus enlaces propios.",
+    "confirmOk": "Quitar"
   },
   "tasks": {
     "title": "Tareas",
     "addPlaceholder": "Agregar una tarea…",
     "empty": "Sin tareas aún",
     "clearDone": "Limpiar completadas",
-    "remove": "Eliminar tarea"
+    "remove": "Eliminar tarea",
+    "confirmClear": "¿Eliminar todas las tareas completadas de este workspace?",
+    "confirmClearOk": "Limpiar"
   },
   "proxyDashboard": {
     "title": "Panel de salud de proxies",

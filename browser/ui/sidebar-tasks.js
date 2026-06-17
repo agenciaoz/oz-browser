@@ -134,9 +134,19 @@
         })
       }
       if (this.$clear) {
-        this.$clear.addEventListener('click', () => {
+        this.$clear.addEventListener('click', async () => {
           if (!this.wsId) return
           const U = window.OZ.SidebarTasksUtils
+          if (
+            window.OZ.ui &&
+            typeof window.OZ.ui.confirm === 'function' &&
+            !(await window.OZ.ui.confirm(t('tasks.confirmClear'), {
+              danger: true,
+              okLabel: t('tasks.confirmClearOk'),
+            }))
+          ) {
+            return
+          }
           this._setList(U.clearCompleted(this._list()))
         })
       }
