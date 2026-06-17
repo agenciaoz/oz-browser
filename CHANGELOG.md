@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.35 — Sidebar: colapsar + redimensionar (paridad Ghost) (2026-06-16)
+
+[`2026-06-16`] [`ui/sidebar`] Módulo `sidebar-resize.js`: arrastrar el borde derecho del sidebar para redimensionar (160–420px, persistido) + botón ⟨/⟩ para colapsar/expandir (estado persistido). Self-init, sin backend. CSS del handle + estado `.collapsed`. Manifest WebUI 2.0.24→2.0.25.
+
 ### v2.0.0-alpha.34 — Reset Identity (paridad Ghost) (2026-06-16)
 
 [`2026-06-16`] [`identity`] Nuevo "Reset identity…" en el menú contextual de identity (paridad Ghost, support art. 320): confirma, regenera el fingerprint y cierra las tabs (desbloqueadas) de esa identity en todas las ventanas, conservando nombre/color/proxy/user-agent/cookies. Handler puro `identities.reset()` en identity-handlers.js + `tests/identity-reset.smoketest.js` (4 checks). Sin tocar `browser/ui/` (no requiere bump de manifest).

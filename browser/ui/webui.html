@@ -380,6 +380,52 @@
         flex-direction: column;
         gap: 4px;
         border-right: 1px solid rgba(255, 255, 255, 0.05);
+        position: relative;
+      }
+
+      /*----- alpha.35: sidebar collapse + resize (Ghost parity) -----*/
+      #oz-sidebar-resize {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        right: 0;
+        width: 6px;
+        cursor: col-resize;
+        z-index: 5;
+      }
+      #oz-sidebar-resize:hover {
+        background: var(--accent);
+        opacity: 0.5;
+      }
+      #oz-sidebar-collapse {
+        position: absolute;
+        top: 6px;
+        right: 8px;
+        z-index: 6;
+        width: 18px;
+        height: 18px;
+        padding: 0;
+        line-height: 16px;
+        font-size: 11px;
+        text-align: center;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 4px;
+        color: var(--text-muted);
+        cursor: pointer;
+      }
+      #oz-sidebar-collapse:hover {
+        color: var(--text-color);
+        background: rgba(255, 255, 255, 0.12);
+      }
+      #oz-sidebar.collapsed {
+        width: 46px !important;
+        flex: 0 0 46px !important;
+        min-width: 46px;
+        overflow: hidden;
+      }
+      #oz-sidebar.collapsed > *:not(#oz-sidebar-collapse):not(#oz-sidebar-resize) {
+        display: none !important;
       }
 
       #oz-sidebar .header {
@@ -7102,6 +7148,7 @@
     <script src="./sidebar-events.js"></script>
     <script src="./sidebar-health.js"></script>
     <script src="./sidebar.js"></script>
+    <script src="./sidebar-resize.js"></script>
     <!-- v1.6.4 fix: load the proxy health badge script. Without this line the
          toolbar badge stays gray forever (data-status="gray" hardcoded in HTML
          until the JS sets it). Latent since H-2a v1.1.1. -->
