@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.39 — Proxies: auto-recuperación + auto-disable menos agresivo (2026-06-16)
+
+[`2026-06-16`] [`proxy-health`] Bug reportado por Jose: 11 proxies sanos quedaron auto-deshabilitados (rojo, "leak risk") tras 3 fallos transitorios, y el daemon de salud solo re-testeaba proxies asignables → una vez disabled, nunca se re-testeaba ni se recuperaba solo. Fix: (1) el daemon ahora re-testea los proxies ACTIVOS incluidos los auto-deshabilitados (`testAll({activeOnly})` → `listActiveForHealth()`), y `recordHealthSuccess` los re-habilita solo cuando vuelven a pasar — los apagados a mano (isActive=false) siguen excluidos; (2) umbral de auto-disable subido 3→5 (los residenciales tienen timeouts transitorios). `AUTO_DISABLE_THRESHOLD` exportado. Tests proxy-health 32/32 (+ recovery + manual-off) y proxy-manager 60/60 (+ listActiveForHealth). No toca browser/ui/ → sin bump de manifest.
+
 ### v2.0.0-alpha.38 — Nombre de tab "Identity · RED" + dot de color (2026-06-16)
 
 [`2026-06-16`] [`ui/tabstrip`] Pedido de Jose: el tab strip ahora muestra "Identity · RED" (ej: "Contexto · IG") para distinguir de un vistazo a qué identity pertenece cada tab; el título real de la página queda en el tooltip. + dot del color de la identity en cada tab. Módulo puro `tab-label.js` (`networkAbbrev` host-anchored IG/X/FB/TT/YT/IN/TH/WA/TG/RD/PIN/SC/TW/GM + `hostLabel` fallback + `tabDisplayLabel`) + `tests/tab-label.smoketest.js` (5 checks). Manifest WebUI 2.0.28.

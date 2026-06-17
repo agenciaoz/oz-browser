@@ -34,6 +34,11 @@ const log = require('./logger')
 
 const VALID_PROTOCOLS = ['http', 'https', 'socks5']
 const DEFAULT_PROTOCOL = 'https' // ADR 0004
+// alpha.39: consecutive health failures before auto-disable. Raised 3→5 —
+// residential proxies (Oxylabs) have transient timeouts; 3 strikes disabled
+// healthy proxies too eagerly. Pair with daemon auto-recovery (re-tests
+// auto-disabled-but-active proxies so they come back on their own).
+const AUTO_DISABLE_THRESHOLD = 5
 
 function uuid() {
   return crypto.randomBytes(8).toString('hex')
@@ -87,6 +92,16 @@ class ProxyManager {
   /** Filter to proxies usable for assignment: isActive AND NOT isDisabled. */
   listAssignable() {
     return this.proxies.filter((p) => p.isActive && !p.isDisabled).map((p) => ({ ...p }))
+  }
+
+  /**
+   * alpha.39: proxies the health daemon should keep testing — everything the
+   * user hasn't manually turned off (isActive), INCLUDING auto-disabled ones
+   * so a recovered proxy gets re-tested and auto-re-enabled. Manual-off
+   * (isActive=false) stays excluded.
+   */
+  listActiveForHealth() {
+    return this.proxies.filter((p) => p.isActive).map((p) => ({ ...p }))
   }
 
   get(id) {
@@ -283,7 +298,7 @@ class ProxyManager {
     proxy.failureCount = (proxy.failureCount || 0) + 1
     proxy.lastTestedAt = now()
     let autoDisabled = false
-    if (proxy.failureCount >= 3 && !proxy.isDisabled) {
+    if (proxy.failureCount >= AUTO_DISABLE_THRESHOLD && !proxy.isDisabled) {
       proxy.isDisabled = true
       autoDisabled = true
       log.warn('proxy-manager', 'proxy auto-disabled after 3 failures', {
@@ -301,4 +316,9 @@ class ProxyManager {
   }
 }
 
-module.exports = { ProxyManager, VALID_PROTOCOLS, DEFAULT_PROTOCOL }
+module.exports = {
+  ProxyManager,
+  VALID_PROTOCOLS,
+  DEFAULT_PROTOCOL,
+  AUTO_DISABLE_THRESHOLD,
+}

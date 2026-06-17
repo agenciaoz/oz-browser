@@ -68,10 +68,10 @@ function freshSetup() {
   delete require.cache[require.resolve('../browser/proxy-manager.js')]
   delete require.cache[require.resolve('../browser/proxy-health.js')]
   delete require.cache[require.resolve('../browser/logger.js')]
-  const { ProxyManager } = require('../browser/proxy-manager.js')
+  const { ProxyManager, AUTO_DISABLE_THRESHOLD } = require('../browser/proxy-manager.js')
   const { ProxyHealth } = require('../browser/proxy-health.js')
   const pm = new ProxyManager()
-  return { pm, ProxyHealth }
+  return { pm, ProxyHealth, AUTO_DISABLE_THRESHOLD }
 }
 
 console.log('OZ Browser — proxy-health smoke test')
@@ -80,7 +80,7 @@ console.log('OZ Browser — proxy-health smoke test')
 section('testOne: success → records latency + clears failure count')
 ;(async () => {
   try {
-    const { pm, ProxyHealth } = freshSetup()
+    const { pm, ProxyHealth, AUTO_DISABLE_THRESHOLD } = freshSetup()
     const a = pm.create({ name: 'a', host: '1.2.3.4', port: 8080 })
     let calledWith = null
     const fakeTcp = async (host, port) => {
@@ -116,8 +116,8 @@ section('testOne: success → records latency + clears failure count')
     ok('unknown id ok:false', r3.ok === false)
     ok('reason proxy-not-found', r3.reason === 'proxy-not-found')
 
-    // ---------- 2. failure path → auto-disable after 3 -------------
-    section('testOne: 3 failures → auto-disable + notify')
+    // ---------- 2. failure path → auto-disable after THRESHOLD -----
+    section(`testOne: ${AUTO_DISABLE_THRESHOLD} failures → auto-disable + notify`)
     const failTcp = async () => ({ ok: false, message: 'timeout' })
     const failConnect = async () => ({ ok: false, message: 'timeout' })
     const notifyCalls = []
@@ -131,29 +131,60 @@ section('testOne: success → records latency + clears failure count')
     })
     const c = pm.create({ name: 'c', host: '3.4.5.6', port: 80 })
 
-    const f1 = await ph2.testOne(c.id)
-    ok(
-      'fail 1: not autoDisabled',
-      f1.autoDisabled === undefined || f1.autoDisabled === false,
-    )
-    const f2 = await ph2.testOne(c.id)
-    ok('fail 2: not autoDisabled', f2.autoDisabled !== true)
-    const f3 = await ph2.testOne(c.id)
-    ok('fail 3: autoDisabled', f3.autoDisabled === true)
+    let lastFail
+    for (let i = 1; i <= AUTO_DISABLE_THRESHOLD; i++) {
+      lastFail = await ph2.testOne(c.id)
+      if (i < AUTO_DISABLE_THRESHOLD) {
+        ok(`fail ${i}: not autoDisabled yet`, lastFail.autoDisabled !== true)
+      }
+    }
+    ok(`fail ${AUTO_DISABLE_THRESHOLD}: autoDisabled`, lastFail.autoDisabled === true)
     ok('notify fired once on autoDisable', notifyCalls.length === 1)
     ok(
       'notify title contains "auto-disabled"',
       notifyCalls[0].title.includes('auto-disabled'),
     )
     ok(
-      'broadcast fired (3 fails + initial broadcasts)',
-      broadcastCalls.filter((c) => c === 'oz:proxies:changed').length === 3,
+      'broadcast fired once per failure',
+      broadcastCalls.filter((c) => c === 'oz:proxies:changed').length ===
+        AUTO_DISABLE_THRESHOLD,
     )
     ok('proxy isDisabled=true', pm.get(c.id).isDisabled === true)
 
     // recordHealthSuccess should re-enable + reset
     pm.recordHealthSuccess(c.id, { latencyMs: 50 })
     ok('after success isDisabled=false', pm.get(c.id).isDisabled === false)
+
+    // ---------- 2b. alpha.39 auto-recovery: daemon re-tests auto-disabled
+    //               active proxies and re-enables them when they pass --------
+    section('testAll activeOnly re-tests + auto-recovers an auto-disabled proxy')
+    const { pm: pmR, ProxyHealth: PHR } = freshSetup()
+    const rec1 = pmR.create({ name: 'recov', host: '9.9.9.9', port: 80 })
+    // Force auto-disabled state (isActive stays true).
+    pmR.update(rec1.id, { isDisabled: true })
+    ok('precondition: isDisabled=true', pmR.get(rec1.id).isDisabled === true)
+    ok(
+      'default testAll (assignable) SKIPS the auto-disabled proxy',
+      (
+        await new PHR({
+          proxyManager: pmR,
+          connectViaProxy: async () => ({ ok: true }),
+        }).testAll()
+      ).length === 0,
+    )
+    const phR = new PHR({
+      proxyManager: pmR,
+      tcpConnect: async () => ({ ok: true }),
+      connectViaProxy: async () => ({ ok: true, status: 200 }),
+    })
+    const recovResults = await phR.testAll({ activeOnly: true })
+    ok('activeOnly testAll includes the auto-disabled proxy', recovResults.length === 1)
+    ok('auto-recovered: isDisabled=false', pmR.get(rec1.id).isDisabled === false)
+    // Manual-off (isActive=false) must NOT be revived.
+    const rec2 = pmR.create({ name: 'off', host: '8.8.8.8', port: 80 })
+    pmR.update(rec2.id, { isActive: false, isDisabled: true })
+    await phR.testAll({ activeOnly: true })
+    ok('manual-off proxy stays isActive=false', pmR.get(rec2.id).isActive === false)
 
     // ---------- 3. testAll parallel ----------------------------------
     section('testAll: parallel results')

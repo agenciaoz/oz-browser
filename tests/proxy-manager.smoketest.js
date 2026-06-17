@@ -66,7 +66,7 @@ function freshSetup() {
   delete require.cache[require.resolve('../browser/proxy-manager.js')]
   delete require.cache[require.resolve('../browser/proxy-handlers.js')]
   delete require.cache[require.resolve('../browser/logger.js')]
-  const { ProxyManager } = require('../browser/proxy-manager.js')
+  const { ProxyManager, AUTO_DISABLE_THRESHOLD } = require('../browser/proxy-manager.js')
   const { buildProxyHandlers } = require('../browser/proxy-handlers.js')
   const pm = new ProxyManager()
   const broadcasts = []
@@ -77,7 +77,7 @@ function freshSetup() {
     },
   }
   const handlers = buildProxyHandlers(browser)
-  return { pm, browser, handlers, broadcasts }
+  return { pm, browser, handlers, broadcasts, AUTO_DISABLE_THRESHOLD }
 }
 
 console.log('OZ Browser — proxy-manager smoke test')
@@ -126,6 +126,15 @@ section('CRUD + list filtering')
   const c = pm.create({ name: 'C', host: 'c.com', port: 82, isActive: false })
   ok('list = 3', pm.list().length === 3)
   ok('listAssignable = 2 (excludes inactive)', pm.listAssignable().length === 2)
+
+  // alpha.39: listActiveForHealth = isActive (incl. auto-disabled), excl manual-off.
+  pm.update(b.id, { isDisabled: true }) // auto-disabled but still isActive
+  ok('listAssignable now = 1 (excludes auto-disabled)', pm.listAssignable().length === 1)
+  ok(
+    'listActiveForHealth = 2 (a + auto-disabled b, excludes inactive c)',
+    pm.listActiveForHealth().length === 2,
+  )
+  pm.update(b.id, { isDisabled: false }) // restore for later assertions
 
   const u = pm.update(a.id, { name: 'A renamed', port: 8080 })
   ok('update name', u.name === 'A renamed')
@@ -207,19 +216,18 @@ section('autoAssign: skips disabled and inactive')
 // 6. health record success/failure + auto-disable
 section('health: success + failure + auto-disable')
 {
-  const { pm } = freshSetup()
+  const { pm, AUTO_DISABLE_THRESHOLD: TH } = freshSetup()
   const a = pm.create({ name: 'a', host: 'a.com', port: 80 })
 
-  // Two failures don't disable
-  pm.recordHealthFailure(a.id, { reason: 'timeout' })
-  pm.recordHealthFailure(a.id, { reason: 'timeout' })
-  ok('after 2 fails not disabled', pm.get(a.id).isDisabled === false)
-  ok('failureCount === 2', pm.get(a.id).failureCount === 2)
+  // Failures below threshold don't disable.
+  for (let i = 1; i < TH; i++) pm.recordHealthFailure(a.id, { reason: 'timeout' })
+  ok(`after ${TH - 1} fails not disabled`, pm.get(a.id).isDisabled === false)
+  ok(`failureCount === ${TH - 1}`, pm.get(a.id).failureCount === TH - 1)
 
-  // Third fail → auto-disable
+  // Threshold-th fail → auto-disable
   const r = pm.recordHealthFailure(a.id, { reason: 'timeout' })
   ok('autoDisabled returned', r.autoDisabled === true)
-  ok('after 3 fails isDisabled=true', pm.get(a.id).isDisabled === true)
+  ok(`after ${TH} fails isDisabled=true`, pm.get(a.id).isDisabled === true)
   ok('not in assignable pool', pm.listAssignable().length === 0)
 
   // Success resets and re-enables
@@ -230,11 +238,10 @@ section('health: success + failure + auto-disable')
   ok('ip recorded', pm.get(a.id).lastTestedIp === '1.2.3.4')
   ok('back in assignable pool', pm.listAssignable().length === 1)
 
-  // 4th fail also doesn't double-fire autoDisabled (counter goes 1→2→3)
-  pm.recordHealthFailure(a.id)
-  pm.recordHealthFailure(a.id)
-  const r4 = pm.recordHealthFailure(a.id)
-  ok('autoDisabled fires once again at 3', r4.autoDisabled === true)
+  // Auto-disable fires again after another THRESHOLD consecutive fails.
+  for (let i = 1; i < TH; i++) pm.recordHealthFailure(a.id)
+  const rTh = pm.recordHealthFailure(a.id)
+  ok(`autoDisabled fires again at ${TH}`, rTh.autoDisabled === true)
 }
 
 // 7. handlers wrappers

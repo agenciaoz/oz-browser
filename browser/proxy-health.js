@@ -106,10 +106,15 @@ class ProxyHealth {
    * Test all assignable proxies in parallel. Returns array of per-proxy
    * results in input order.
    */
-  async testAll({ includeDisabled = false } = {}) {
+  async testAll({ includeDisabled = false, activeOnly = false } = {}) {
+    // includeDisabled → every proxy. activeOnly → everything not manually
+    // turned off (incl. auto-disabled, so they can auto-recover). default →
+    // only assignable.
     const proxies = includeDisabled
       ? this.proxyManager.list()
-      : this.proxyManager.listAssignable()
+      : activeOnly
+        ? this.proxyManager.listActiveForHealth()
+        : this.proxyManager.listAssignable()
     if (proxies.length === 0) return []
     const results = await Promise.all(proxies.map((p) => this.testOne(p.id)))
     log.info('proxy-health', 'testAll done', {
@@ -127,7 +132,10 @@ class ProxyHealth {
   startDaemon({ intervalMs = DEFAULT_DAEMON_INTERVAL_MS } = {}) {
     if (this._timer) return false
     this._timer = setInterval(() => {
-      this.testAll().catch((err) => {
+      // alpha.39: activeOnly re-tests auto-disabled-but-active proxies too, so
+      // a proxy that recovered gets auto-re-enabled (recordHealthSuccess clears
+      // isDisabled). Manual-off proxies stay excluded.
+      this.testAll({ activeOnly: true }).catch((err) => {
         log.error('proxy-health', 'daemon tick failed', { message: err.message })
       })
     }, intervalMs)
