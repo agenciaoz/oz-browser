@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.34 — Reset Identity (paridad Ghost) (2026-06-16)
+
+[`2026-06-16`] [`identity`] Nuevo "Reset identity…" en el menú contextual de identity (paridad Ghost, support art. 320): confirma, regenera el fingerprint y cierra las tabs (desbloqueadas) de esa identity en todas las ventanas, conservando nombre/color/proxy/user-agent/cookies. Handler puro `identities.reset()` en identity-handlers.js + `tests/identity-reset.smoketest.js` (4 checks). Sin tocar `browser/ui/` (no requiere bump de manifest).
+
 ### v2.0.0-alpha.33 — Sidebar: buscar + ordenar identities (paridad Ghost) (2026-06-16)
 
 [`2026-06-16`] [`ui/sidebar`] Toolbar nuevo en el sidebar: buscar identity por nombre (filtra mientras escribís) + ordenar (Creación / A–Z / Más usadas). Helpers puros `filterIdentities`/`sortIdentities` en `sidebar-view.js` (+3 smoketests, total 9). Estado en localStorage (UI-only, sin churn de backend/sync); "Más usadas" cuenta selecciones de identity. `render()` se separó en `renderActiveContent()` para no perder el foco del input al tipear. i18n EN/ES. Manifest WebUI 2.0.23→2.0.24.

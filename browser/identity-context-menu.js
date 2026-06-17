@@ -56,6 +56,32 @@ function buildIdentityContextMenu({ browser, identityId }) {
       })
     },
   })
+  // alpha.34 — Reset identity (Ghost parity): close its tabs + new fingerprint,
+  // keep name/color/proxy/UA/cookies. Native confirm before the destructive bit.
+  template.push({
+    label: 'Reset identity…',
+    click: async () => {
+      const { dialog } = require('electron')
+      const res = await dialog.showMessageBox({
+        type: 'warning',
+        buttons: ['Reset', 'Cancel'],
+        defaultId: 1,
+        cancelId: 1,
+        message: `Reset "${ident.name}"?`,
+        detail:
+          'Closes this identity’s tabs and generates a new fingerprint. Keeps its name, color, proxy, user-agent and cookies.',
+      })
+      if (res.response !== 0) return
+      const r = h.reset(ident.id)
+      if (r && r.ok === false) {
+        browser.broadcastToWebUI('oz:sidebar:remove-rejected', {
+          kind: 'identity-reset',
+          id: ident.id,
+          reason: r.reason,
+        })
+      }
+    },
+  })
   // C-6 — open Anti-Detect Health modal for this identity. Available on
   // every identity (incluyendo Default + locked) — el dashboard es read-only
   // por default; los inline fixes respetan los locks downstream.

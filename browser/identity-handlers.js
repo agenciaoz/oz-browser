@@ -32,6 +32,44 @@ function buildIdentityHandlers(browser) {
       return im().get(id)
     },
 
+    /**
+     * alpha.34 — Reset an identity (Ghost parity, support art. 320):
+     * regenerates the fingerprint + closes all its (unlocked) tabs, while
+     * KEEPING name, color, proxy, user-agent and cookies. Returns
+     * { ok, closedTabs, fingerprint } or { ok:false, reason }.
+     */
+    reset(identityId) {
+      const ident = im().get(identityId)
+      if (!ident) return { ok: false, reason: 'not-found' }
+
+      // 1) New fingerprint (reroll seed). Engine may be absent in tests.
+      let fp = null
+      if (browser.fingerprintEngine && browser.fingerprintEngine.regenerate) {
+        fp = browser.fingerprintEngine.regenerate(identityId)
+        browser.broadcastToWebUI('oz:fingerprint:changed', { identityId })
+      }
+
+      // 2) Close all unlocked tabs of this identity across every window.
+      let closedTabs = 0
+      for (const win of browser.windows || []) {
+        if (!win.tabs) continue
+        const victims = win.tabs.tabList.filter(
+          (t) => t.identityId === identityId && !t.locked,
+        )
+        for (const t of victims) {
+          win.tabs.remove(t.id)
+          browser.broadcastToWebUI('oz:tabs:updated', {
+            kind: 'removed',
+            tabId: t.id,
+          })
+          closedTabs++
+        }
+      }
+
+      log.info('identity-handlers', 'reset ok', { identityId, closedTabs })
+      return { ok: true, closedTabs, fingerprint: fp }
+    },
+
     getActive() {
       return browser.activeIdentityId
     },
