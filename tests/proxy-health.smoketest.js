@@ -231,6 +231,26 @@ section('testOne: success → records latency + clears failure count')
     ok('stopDaemon returns true', stopped === true)
     ok('stopDaemon idempotent (false if not running)', ph5.stopDaemon() === false)
 
+    // ---------- 6. classifyConnectStatus: 407-with-creds = fail -------
+    // Regression guard for the "verde falso" bug (alpha.41): a 407 when we
+    // DID send credentials means auth was rejected (e.g. provider rotated the
+    // password) and must be red, not green. Without creds, 407 stays ok.
+    section('classifyConnectStatus: auth-aware 407 handling')
+    delete require.cache[require.resolve('../browser/proxy-health.js')]
+    const { classifyConnectStatus } = require('../browser/proxy-health.js')
+    const r200creds = classifyConnectStatus(200, true)
+    ok('200 + creds → ok', r200creds.ok === true)
+    const r200nocreds = classifyConnectStatus(200, false)
+    ok('200 + no creds → ok', r200nocreds.ok === true)
+    const r407creds = classifyConnectStatus(407, true)
+    ok('407 + creds → FAIL (was the false-green bug)', r407creds.ok === false)
+    ok('407 + creds → message mentions auth', /auth/i.test(r407creds.message || ''))
+    const r407nocreds = classifyConnectStatus(407, false)
+    ok('407 + no creds → ok (reachable, needs auth)', r407nocreds.ok === true)
+    ok('407 + no creds → needsAuth flag', r407nocreds.needsAuth === true)
+    const r502 = classifyConnectStatus(502, true)
+    ok('502 → fail', r502.ok === false)
+
     // ---------- Cleanup --------------------------------------------------
     Module._load = originalLoad
     console.log(`\n=== ${passed} passed · ${failed} failed ===`)

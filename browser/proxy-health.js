@@ -6,18 +6,25 @@
 // Doc: docs/modules/proxy-health.md
 // ADR: docs/architecture/0017-proxy-model.md (sección Health checks)
 //
-// Estrategia v1 (sin deps externas):
-//   - HTTP/HTTPS proxies: TCP connect + HTTP CONNECT handshake.
-//     Status 200 → ok. Status 407 → ok (proxy vivo, solo falta auth — el user
-//     ya verá el error en navigation real). Status 4xx/5xx u otro → fail.
+// Estrategia (sin deps externas):
+//   - HTTP/HTTPS proxies: TCP connect + HTTP CONNECT handshake CON las
+//     credenciales del proxy (Proxy-Authorization). El status del CONNECT ya
+//     refleja si la auth pasó:
+//       · 200 → túnel abierto (auth ok si se enviaron creds) → ok.
+//       · 407 + se enviaron creds → credenciales rechazadas/expiradas → FAIL.
+//         Este es el modo exacto que deja la navegación real en un loop
+//         infinito de 407 con la página en blanco, así que el health check lo
+//         tiene que marcar ROJO, no verde (alpha.41 — antes daba verde falso).
+//       · 407 + sin creds → proxy vivo pero falta auth que el user no cargó →
+//         ok-needsAuth (no podemos validar una auth que nunca mandamos).
+//       · 4xx/5xx u otro → fail.
 //   - SOCKS5: solo TCP reachability (parsing SOCKS5 handshake completo es
-//     overhead innecesario v1).
+//     overhead innecesario; SOCKS auth es in-band).
 //   - Timeout default 10s. Latency = wall-time del primer-byte.
 //
-// Limitación: NO validamos que el proxy fetchee contenido externo (eso
-// requiere TLS + GET + parsing). El TCP+CONNECT atrapa el 90% de los modos
-// de falla (proxy dead, host wrong, port wrong, auth equivocado).
-// "Real fetch test" llega en 1.10 con instrumentación completa.
+// Nota: el CONNECT autenticado valida auth + alcance al target, pero NO hace
+// el TLS+GET completo. Suficiente para atrapar proxy dead / host|port wrong /
+// auth rechazada (incl. password rotada del lado del provider).
 
 const net = require('net')
 const log = require('./logger')
@@ -180,10 +187,31 @@ function tcpConnect(host, port, timeoutMs) {
 }
 
 /**
- * Open a TCP socket to the proxy and send an HTTP CONNECT request to the
- * target host:port. Resolves to {ok, status, message}. Status 200 or 407
- * counts as "proxy alive" (407 means missing creds, which is configurable
- * by the user — the proxy itself is reachable).
+ * Decide whether a CONNECT response status means the proxy is healthy, given
+ * whether we sent credentials. Pure + exported for tests.
+ *
+ *   - 200            → tunnel established (auth ok if creds were sent) → ok.
+ *   - 407 + hasCreds → creds wrong/expired → FAIL (the endless-407 blank-page
+ *                       mode). Surfaced red so the dashboard stops lying green.
+ *   - 407 + no creds → reachable, just needs auth the user hasn't set → ok
+ *                       (needsAuth flag; we can't validate auth we never sent).
+ *   - anything else  → fail.
+ */
+function classifyConnectStatus(status, hasCreds) {
+  if (status === 200) return { ok: true, status }
+  if (status === 407) {
+    if (hasCreds) {
+      return { ok: false, status, message: 'auth failed (HTTP 407)' }
+    }
+    return { ok: true, status, needsAuth: true }
+  }
+  return { ok: false, status, message: `HTTP ${status}` }
+}
+
+/**
+ * Open a TCP socket to the proxy and send an authenticated HTTP CONNECT
+ * request to the target host:port. Resolves to {ok, status, message?} via
+ * classifyConnectStatus — a 407 when creds WERE sent is a real failure.
  */
 function connectViaProxy(proxy, target, timeoutMs) {
   return new Promise((resolve) => {
@@ -229,10 +257,7 @@ function connectViaProxy(proxy, target, timeoutMs) {
       const m = firstLine.match(/^HTTP\/1\.[01]\s+(\d{3})/)
       if (!m) return finish({ ok: false, message: `bad response: ${firstLine}` })
       const status = parseInt(m[1], 10)
-      if (status === 200 || status === 407) {
-        return finish({ ok: true, status })
-      }
-      return finish({ ok: false, message: `HTTP ${status}`, status })
+      return finish(classifyConnectStatus(status, Boolean(proxy.username)))
     })
     socket.on('timeout', () => finish({ ok: false, message: 'timeout' }))
     socket.on('error', (err) => finish({ ok: false, message: err.message }))
@@ -246,6 +271,7 @@ module.exports = {
   ProxyHealth,
   tcpConnect,
   connectViaProxy,
+  classifyConnectStatus,
   DEFAULT_TIMEOUT_MS,
   DEFAULT_DAEMON_INTERVAL_MS,
   DEFAULT_TARGET,
