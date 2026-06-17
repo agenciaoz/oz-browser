@@ -21,7 +21,7 @@
       const rowEl =
         payload.kind === 'workspace'
           ? document.querySelector(
-              `.workspace-wrapper[data-ws-id="${payload.id}"] .workspace-row`,
+              `#oz-workspace-pills .workspace-pill[data-ws-id="${payload.id}"]`,
             )
           : document.querySelector(
               `.identity-wrapper[data-identity-id="${payload.id}"] .identity-row`,

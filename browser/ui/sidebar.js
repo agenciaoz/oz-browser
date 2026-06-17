@@ -274,7 +274,7 @@
     // --- inline rename (workspaces + identities) -------------------------------
 
     handleInlineRename(rowEl, currentName, onSave) {
-      const nameEl = rowEl.querySelector('.tree-name')
+      const nameEl = rowEl.querySelector('.tree-name, .workspace-name')
       if (!nameEl) return
       nameEl.innerHTML = ''
       const input = document.createElement('input')

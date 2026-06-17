@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.36 — Fix: rename + ＋identity de workspace (regresión alpha.32) (2026-06-16)
+
+[`2026-06-16`] [`ui/sidebar`] Bugfix de la regresión introducida en alpha.32 (workspaces pasaron de `.workspace-wrapper/.workspace-row` a `.workspace-pill`): (1) rename de workspace por click derecho/doble-click no funcionaba — `sidebar-events.js` buscaba el row viejo y `handleInlineRename` buscaba `.tree-name` en vez de `.workspace-name`; (2) el botón ＋identity de cada workspace estaba invisible (`opacity:0` revelado solo en `.workspace-row:hover`). Fix: selector `#oz-workspace-pills .workspace-pill[data-ws-id]`, `querySelector('.tree-name, .workspace-name')`, y revelar ＋identity en `.workspace-pill:hover`. Manifest WebUI 2.0.26.
+
 ### v2.0.0-alpha.35 — Sidebar: colapsar + redimensionar (paridad Ghost) (2026-06-16)
 
 [`2026-06-16`] [`ui/sidebar`] Módulo `sidebar-resize.js`: arrastrar el borde derecho del sidebar para redimensionar (160–420px, persistido) + botón ⟨/⟩ para colapsar/expandir (estado persistido). Self-init, sin backend. CSS del handle + estado `.collapsed`. Manifest WebUI 2.0.24→2.0.25.
