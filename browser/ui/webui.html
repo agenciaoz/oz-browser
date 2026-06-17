@@ -3794,6 +3794,115 @@
         min-height: 0;
       }
 
+      /* alpha.45 — Tasks module (collapsible checklist at sidebar bottom). */
+      .oz-tasks {
+        flex: 0 0 auto;
+        border-top: 1px solid var(--border, rgba(255, 255, 255, 0.1));
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        max-height: 45%;
+      }
+      .oz-tasks-header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 6px 10px;
+        cursor: pointer;
+        user-select: none;
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text, #e5e7eb);
+      }
+      .oz-tasks-header:hover {
+        background: rgba(255, 255, 255, 0.05);
+      }
+      .oz-tasks-chevron {
+        font-size: 10px;
+        transition: transform 0.12s ease;
+      }
+      .oz-tasks-chevron.expanded {
+        transform: rotate(90deg);
+      }
+      .oz-tasks-title {
+        flex: 1 1 auto;
+      }
+      .oz-tasks-progress {
+        font-size: 11px;
+        opacity: 0.65;
+        font-variant-numeric: tabular-nums;
+      }
+      .oz-tasks.collapsed .oz-tasks-body {
+        display: none;
+      }
+      .oz-tasks-body {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        padding: 0 8px 8px;
+        overflow-y: auto;
+        min-height: 0;
+      }
+      .oz-tasks-empty {
+        font-size: 11px;
+        opacity: 0.5;
+        padding: 4px 2px;
+      }
+      .oz-task-row {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 12px;
+      }
+      .oz-task-row .oz-task-text {
+        flex: 1 1 auto;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .oz-task-row.done .oz-task-text {
+        text-decoration: line-through;
+        opacity: 0.5;
+      }
+      .oz-task-del {
+        background: transparent;
+        border: 0;
+        color: var(--text, #e5e7eb);
+        opacity: 0;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 0 2px;
+      }
+      .oz-task-row:hover .oz-task-del {
+        opacity: 0.6;
+      }
+      .oz-task-del:hover {
+        opacity: 1;
+      }
+      #oz-tasks-input {
+        width: 100%;
+        box-sizing: border-box;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+        border-radius: 6px;
+        color: var(--text, #e5e7eb);
+        padding: 4px 8px;
+        font-size: 12px;
+      }
+      .oz-tasks-clear {
+        align-self: flex-start;
+        background: transparent;
+        border: 0;
+        color: var(--text, #e5e7eb);
+        opacity: 0.6;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 2px 0;
+      }
+      .oz-tasks-clear:hover {
+        opacity: 1;
+      }
+
       /* v1.8.3: sidebar-toolbar relocated from the bottom of the sidebar
          to the right side of the footer bar. No more space-between (the
          outer #oz-footer-bar handles spacing between the two sub-groups).
@@ -4142,6 +4251,35 @@
           </select>
         </div>
         <div id="oz-identity-list"></div>
+
+        <!-- alpha.45: Tasks module (Ghost parity) — collapsible checklist with
+             progress. Rendered/managed by sidebar-tasks.js. -->
+        <div id="oz-tasks" class="oz-tasks collapsed">
+          <div id="oz-tasks-header" class="oz-tasks-header">
+            <span class="oz-tasks-chevron">▸</span>
+            <span class="oz-tasks-title" data-i18n="tasks.title">Tasks</span>
+            <span id="oz-tasks-progress" class="oz-tasks-progress"></span>
+          </div>
+          <div id="oz-tasks-body" class="oz-tasks-body">
+            <div id="oz-tasks-list"></div>
+            <form id="oz-tasks-add" autocomplete="off">
+              <input
+                id="oz-tasks-input"
+                type="text"
+                data-i18n-attr="placeholder:tasks.addPlaceholder"
+                placeholder="Add a task…"
+              />
+            </form>
+            <button
+              id="oz-tasks-clear"
+              type="button"
+              class="oz-tasks-clear"
+              data-i18n="tasks.clearDone"
+            >
+              Clear completed
+            </button>
+          </div>
+        </div>
 
         <!-- v1.8.3: sidebar-toolbar moved to footer bar. Sidebar is now
              just workspaces tree (cleaner, more room for identities). -->
@@ -7204,6 +7342,9 @@
     <script src="./sidebar-health.js"></script>
     <script src="./sidebar.js"></script>
     <script src="./sidebar-resize.js"></script>
+    <!-- alpha.45: Tasks module (pure utils before the DOM module). -->
+    <script src="./sidebar-tasks-utils.js"></script>
+    <script src="./sidebar-tasks.js"></script>
     <!-- v1.6.4 fix: load the proxy health badge script. Without this line the
          toolbar badge stays gray forever (data-status="gray" hardcoded in HTML
          until the JS sets it). Latent since H-2a v1.1.1. -->

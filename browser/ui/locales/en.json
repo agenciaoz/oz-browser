@@ -180,6 +180,13 @@
     "removeHint": "right-click to remove",
     "reset": "Reset dock to defaults"
   },
+  "tasks": {
+    "title": "Tasks",
+    "addPlaceholder": "Add a task…",
+    "empty": "No tasks yet",
+    "clearDone": "Clear completed",
+    "remove": "Remove task"
+  },
   "proxyDashboard": {
     "title": "Proxy Health Dashboard",
     "loading": "Loading…",

@@ -180,6 +180,13 @@
     "removeHint": "clic derecho para quitar",
     "reset": "Restablecer el dock"
   },
+  "tasks": {
+    "title": "Tareas",
+    "addPlaceholder": "Agregar una tarea…",
+    "empty": "Sin tareas aún",
+    "clearDone": "Limpiar completadas",
+    "remove": "Eliminar tarea"
+  },
   "proxyDashboard": {
     "title": "Panel de salud de proxies",
     "loading": "Cargando…",

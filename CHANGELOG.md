@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.45 — Tasks module en el sidebar (paridad Ghost) (2026-06-17)
+
+[`2026-06-17`] [`sidebar`] Módulo de Tareas en el sidebar (Ghost parity): checklist colapsable al pie del sidebar con agregar (input + Enter), marcar/desmarcar (checkbox + tachado), eliminar (✕ en hover), limpiar completadas y contador de progreso (done/total en el header). Colapsado por defecto; estado de colapso + tareas persisten en localStorage (`oz-tasks` / `oz-tasks-collapsed`, UI-only). Lista global para v1 (por-workspace queda como futuro). Lógica pura en NUEVO `sidebar-tasks-utils.js` (addTask/toggleTask/removeTask/clearCompleted/progress/sanitize) + DOM en NUEVO `sidebar-tasks.js`. i18n EN/ES (`tasks.*`). Tests nuevos sidebar-tasks-utils 5. Manifest WebUI 2.0.33. (Sin main process ni IPC — cierra el backlog de paridad del sidebar Ghost.)
+
 ### v2.0.0-alpha.44 — App Dock personalizable (paridad Ghost) (2026-06-17)
 
 [`2026-06-17`] [`sidebar/dock`] El quick-access-bar se vuelve **App Dock configurable** (Ghost parity): además de los 9 built-ins (🍪 + IP + 7 redes), el usuario puede **agregar** enlaces propios (botón "+" → prompt nombre + URL, normaliza https://), **quitar** (clic derecho: built-ins se ocultan, custom se borran), **reordenar** (drag-drop) y **restablecer** (clic derecho en "+"). Persiste en localStorage `oz-app-dock` ({custom, order, hidden}, UI-only). Lógica pura en NUEVO `app-dock-utils.js` (mergeDock/reorderDock/buildCustomLink/normalizeUrl/abbrevFromLabel) + estado en NUEVO `app-dock-state.js`. i18n EN/ES (`appDock.*`). Tests nuevos app-dock-utils 5. Manifest WebUI 2.0.32. (Sin main process ni IPC.)
