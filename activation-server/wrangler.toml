@@ -1,0 +1,12 @@
+name = "oz-activate"
+main = "worker.js"
+compatibility_date = "2024-11-01"
+
+# Secrets (set with `npx wrangler secret put <NAME>`):
+#   ADMIN_TOKEN  — bearer token for the /admin dashboard + endpoints
+#   HMAC_SECRET  — signs activation tokens
+
+[[d1_databases]]
+binding = "DB"
+database_name = "oz-admin"
+database_id = "bcb2c92f-0a5d-470c-9ae3-ca8e0eda3450"

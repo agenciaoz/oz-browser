@@ -7,3 +7,4 @@ package-lock.json
 *.min.js
 *.bundle.js
 browser/.bundled
+activation-server/

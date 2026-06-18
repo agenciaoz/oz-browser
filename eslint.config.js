@@ -18,6 +18,7 @@ module.exports = [
       'build/',
       'tests/', // smoke tests usan console.log para output legible
       'browser/.bundled/', // v1.4.4: webpack-generated preload bundles
+      'activation-server/', // Cloudflare Worker (runtime distinto: Workers globals)
     ],
   },
 

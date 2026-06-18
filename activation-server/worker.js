@@ -1,0 +1,287 @@
+// OZ Browser — Activation + admin backend (Cloudflare Worker + D1).
+//
+// Endpoints:
+//   POST /activate  {key, machineId, appVersion}  → first activation
+//   POST /validate  {key, machineId, token?}       → re-check on each launch
+//   POST /event     {key, machineId, type, meta}   → usage telemetry
+//   GET  /           (admin dashboard HTML)
+//   GET  /admin/data            (Bearer ADMIN_TOKEN) → licenses+activations+events
+//   POST /admin/create {email,name,plan?,days?}     → mints a key
+//   POST /admin/revoke {key} / /admin/unrevoke {key} / /admin/delete {key}
+//
+// Data: D1 "oz-admin" (tables licenses, activations, events). Secrets:
+//   ADMIN_TOKEN (dashboard auth), HMAC_SECRET (signs activation tokens).
+//
+// Deploy: cd activation-server && npx wrangler deploy
+
+const OFFLINE_GRACE_DAYS = 7
+
+function json(obj, status = 200) {
+  return new Response(JSON.stringify(obj), {
+    status,
+    headers: { 'content-type': 'application/json', 'access-control-allow-origin': '*' },
+  })
+}
+
+function now() {
+  return Date.now()
+}
+
+async function hmac(bodyStr, secret) {
+  const enc = new TextEncoder()
+  const key = await crypto.subtle.importKey(
+    'raw',
+    enc.encode(secret || 'dev'),
+    { name: 'HMAC', hash: 'SHA-256' },
+    false,
+    ['sign'],
+  )
+  const buf = await crypto.subtle.sign('HMAC', key, enc.encode(bodyStr))
+  return btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/=+$/, '')
+}
+
+async function signToken(payload, secret) {
+  const body = btoa(JSON.stringify(payload)).replace(/=+$/, '')
+  return body + '.' + (await hmac(body, secret))
+}
+
+async function verifyToken(token, secret) {
+  const [body, sig] = String(token || '').split('.')
+  if (!body || !sig) return null
+  if ((await hmac(body, secret)) !== sig) return null
+  try {
+    return JSON.parse(atob(body))
+  } catch (_e) {
+    return null
+  }
+}
+
+function genKey() {
+  // OZ-XXXX-XXXX-XXXX (no ambiguous chars)
+  const al = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'
+  const grp = () =>
+    Array.from({ length: 4 }, () => al[Math.floor(Math.random() * al.length)]).join('')
+  return `OZ-${grp()}-${grp()}-${grp()}`
+}
+
+async function readBody(request) {
+  try {
+    return await request.json()
+  } catch (_e) {
+    return {}
+  }
+}
+
+// --- public: activation -----------------------------------------------------
+
+async function activate(request, env, isValidate) {
+  const b = await readBody(request)
+  const key = String(b.key || '').trim().toUpperCase()
+  const machineId = String(b.machineId || '').trim()
+  if (!key || !machineId) return json({ ok: false, reason: 'missing_fields' }, 400)
+
+  const lic = await env.DB.prepare('SELECT * FROM licenses WHERE key = ?').bind(key).first()
+  if (!lic) return json({ ok: false, reason: 'invalid_key' }, 403)
+  if (lic.status === 'revoked') return json({ ok: false, reason: 'revoked' }, 403)
+  if (lic.expires_at && lic.expires_at < now())
+    return json({ ok: false, reason: 'expired' }, 403)
+
+  const t = now()
+  await env.DB.prepare(
+    `INSERT INTO activations (key, machine_id, app_version, first_seen, last_seen)
+     VALUES (?1, ?2, ?3, ?4, ?4)
+     ON CONFLICT(key, machine_id) DO UPDATE SET last_seen = ?4, app_version = ?3`,
+  )
+    .bind(key, machineId, String(b.appVersion || ''), t)
+    .run()
+
+  await env.DB.prepare(
+    'INSERT INTO events (key, machine_id, type, meta, ts) VALUES (?,?,?,?,?)',
+  )
+    .bind(key, machineId, isValidate ? 'validate' : 'activate', '', t)
+    .run()
+
+  const token = await signToken({ key, machineId, iat: t }, env.HMAC_SECRET)
+  return json({
+    ok: true,
+    plan: lic.plan,
+    email: lic.email,
+    name: lic.name,
+    expiresAt: lic.expires_at || null,
+    offlineGraceDays: OFFLINE_GRACE_DAYS,
+    token,
+  })
+}
+
+async function logEvent(request, env) {
+  const b = await readBody(request)
+  const key = String(b.key || '').trim().toUpperCase()
+  const machineId = String(b.machineId || '').trim()
+  const type = String(b.type || '').trim().slice(0, 64)
+  if (!type) return json({ ok: false, reason: 'missing_type' }, 400)
+  let meta = ''
+  try {
+    meta = b.meta ? JSON.stringify(b.meta).slice(0, 2000) : ''
+  } catch (_e) {
+    meta = ''
+  }
+  await env.DB.prepare(
+    'INSERT INTO events (key, machine_id, type, meta, ts) VALUES (?,?,?,?,?)',
+  )
+    .bind(key || null, machineId || null, type, meta, now())
+    .run()
+  return json({ ok: true })
+}
+
+// --- admin ------------------------------------------------------------------
+
+function authed(request, env) {
+  const h = request.headers.get('authorization') || ''
+  const token = h.replace(/^Bearer\s+/i, '')
+  return env.ADMIN_TOKEN && token === env.ADMIN_TOKEN
+}
+
+async function adminRoute(request, env, pathname) {
+  if (!authed(request, env)) return json({ ok: false, reason: 'unauthorized' }, 401)
+
+  if (pathname === '/admin/data' && request.method === 'GET') {
+    const licenses = (await env.DB.prepare('SELECT * FROM licenses ORDER BY created_at DESC').all()).results
+    const activations = (await env.DB.prepare('SELECT * FROM activations ORDER BY last_seen DESC').all()).results
+    const events = (await env.DB.prepare('SELECT * FROM events ORDER BY ts DESC LIMIT 300').all()).results
+    return json({ ok: true, licenses, activations, events })
+  }
+
+  const b = await readBody(request)
+  if (pathname === '/admin/create' && request.method === 'POST') {
+    const key = genKey()
+    const days = Number(b.days) || 0
+    const expires = days > 0 ? now() + days * 86400000 : null
+    await env.DB.prepare(
+      `INSERT INTO licenses (key, email, name, status, plan, created_at, expires_at)
+       VALUES (?,?,?,'active',?,?,?)`,
+    )
+      .bind(key, String(b.email || ''), String(b.name || ''), String(b.plan || 'test'), now(), expires)
+      .run()
+    return json({ ok: true, key })
+  }
+
+  const key = String(b.key || '').trim().toUpperCase()
+  if (!key) return json({ ok: false, reason: 'missing_key' }, 400)
+  if (pathname === '/admin/revoke' && request.method === 'POST') {
+    await env.DB.prepare("UPDATE licenses SET status='revoked' WHERE key=?").bind(key).run()
+    return json({ ok: true })
+  }
+  if (pathname === '/admin/unrevoke' && request.method === 'POST') {
+    await env.DB.prepare("UPDATE licenses SET status='active' WHERE key=?").bind(key).run()
+    return json({ ok: true })
+  }
+  if (pathname === '/admin/delete' && request.method === 'POST') {
+    await env.DB.prepare('DELETE FROM licenses WHERE key=?').bind(key).run()
+    await env.DB.prepare('DELETE FROM activations WHERE key=?').bind(key).run()
+    return json({ ok: true })
+  }
+  return json({ ok: false, reason: 'not_found' }, 404)
+}
+
+export default {
+  async fetch(request, env) {
+    const url = new URL(request.url)
+    const p = url.pathname
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'access-control-allow-origin': '*',
+          'access-control-allow-methods': 'GET,POST,OPTIONS',
+          'access-control-allow-headers': 'content-type,authorization',
+        },
+      })
+    }
+    try {
+      if (p === '/' || p === '/admin') return new Response(DASHBOARD, { headers: { 'content-type': 'text/html; charset=utf-8' } })
+      if (p === '/activate' && request.method === 'POST') return await activate(request, env, false)
+      if (p === '/validate' && request.method === 'POST') return await activate(request, env, true)
+      if (p === '/event' && request.method === 'POST') return await logEvent(request, env)
+      if (p.startsWith('/admin/')) return await adminRoute(request, env, p)
+      return json({ ok: false, reason: 'not_found' }, 404)
+    } catch (e) {
+      return json({ ok: false, reason: 'server_error', message: String(e && e.message) }, 500)
+    }
+  },
+}
+
+const DASHBOARD = `<!doctype html><html lang="es"><head><meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>OZ Browser — Admin</title>
+<style>
+:root{--bg:#0f1117;--card:#1a1d27;--bd:#2a2e3a;--tx:#e5e7eb;--mut:#9aa0ab;--acc:#6488ff;--red:#dc2626;--grn:#16a34a}
+*{box-sizing:border-box}body{margin:0;font:14px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;background:var(--bg);color:var(--tx)}
+header{padding:14px 20px;border-bottom:1px solid var(--bd);display:flex;align-items:center;gap:12px}
+h1{font-size:16px;margin:0;font-weight:700}
+.wrap{padding:20px;max-width:1100px;margin:0 auto}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:10px;padding:16px;margin-bottom:18px}
+.card h2{font-size:13px;text-transform:uppercase;letter-spacing:.04em;color:var(--mut);margin:0 0 12px}
+input,button,select{font:inherit;color:inherit}
+input,select{background:#0d0f15;border:1px solid var(--bd);border-radius:6px;padding:7px 10px;color:var(--tx)}
+button{background:var(--acc);border:0;border-radius:6px;padding:7px 12px;color:#fff;font-weight:600;cursor:pointer}
+button.ghost{background:transparent;border:1px solid var(--bd);color:var(--tx)}
+button.danger{background:var(--red)}button.ok{background:var(--grn)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 8px;border-bottom:1px solid var(--bd);white-space:nowrap}
+th{color:var(--mut);font-weight:600}
+.tag{padding:1px 7px;border-radius:99px;font-size:11px;font-weight:600}
+.tag.active{background:rgba(22,163,74,.18);color:#4ade80}.tag.revoked{background:rgba(220,38,38,.18);color:#f87171}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.mut{color:var(--mut)}.mono{font-family:ui-monospace,Menlo,monospace}
+#login{max-width:380px;margin:80px auto}
+.hide{display:none}
+</style></head><body>
+<div id="login" class="card">
+  <h2>OZ Admin</h2>
+  <div class="row"><input id="tok" type="password" placeholder="Admin token" style="flex:1"/><button onclick="saveTok()">Entrar</button></div>
+  <p class="mut" id="loginerr"></p>
+</div>
+<div id="app" class="hide">
+<header><h1>🦉 OZ Browser — Admin</h1><span class="mut" id="stat"></span><span style="flex:1"></span><button class="ghost" onclick="load()">↻ Refrescar</button><button class="ghost" onclick="logout()">Salir</button></header>
+<div class="wrap">
+  <div class="card">
+    <h2>Crear acceso</h2>
+    <div class="row">
+      <input id="c_name" placeholder="Nombre"/>
+      <input id="c_email" placeholder="Email"/>
+      <input id="c_days" type="number" placeholder="Días (0 = sin vto)" style="width:160px"/>
+      <button onclick="createKey()">+ Generar clave</button>
+      <span id="newkey" class="mono"></span>
+    </div>
+  </div>
+  <div class="card"><h2>Licencias (<span id="nlic">0</span>)</h2><div style="overflow:auto"><table id="tlic"></table></div></div>
+  <div class="card"><h2>Actividad reciente (<span id="nev">0</span>)</h2><div style="overflow:auto;max-height:360px"><table id="tev"></table></div></div>
+</div>
+</div>
+<script>
+let TOK=localStorage.getItem('oz_admin_tok')||''
+function saveTok(){TOK=document.getElementById('tok').value.trim();localStorage.setItem('oz_admin_tok',TOK);load()}
+function logout(){localStorage.removeItem('oz_admin_tok');location.reload()}
+function fmt(ts){return ts?new Date(ts).toLocaleString():'—'}
+async function api(path,method,body){const r=await fetch(path,{method:method||'GET',headers:{authorization:'Bearer '+TOK,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return r.json()}
+async function load(){
+  const d=await api('/admin/data')
+  if(!d.ok){document.getElementById('loginerr').textContent='Token inválido';return}
+  document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide')
+  const acts={};(d.activations||[]).forEach(a=>{(acts[a.key]=acts[a.key]||[]).push(a)})
+  document.getElementById('nlic').textContent=d.licenses.length
+  document.getElementById('tlic').innerHTML='<tr><th>Clave</th><th>Nombre</th><th>Email</th><th>Estado</th><th>Activaciones</th><th>Últ. visto</th><th>Vto</th><th></th></tr>'+
+   d.licenses.map(l=>{const a=acts[l.key]||[];const last=a.length?Math.max(...a.map(x=>x.last_seen)):0;
+   return '<tr><td class="mono">'+l.key+'</td><td>'+(l.name||'')+'</td><td class="mut">'+(l.email||'')+'</td>'+
+   '<td><span class="tag '+l.status+'">'+l.status+'</span></td><td>'+a.length+(a.length?' <span class=mut>('+a.map(x=>(x.app_version||'?')).join(', ')+')</span>':'')+'</td>'+
+   '<td class="mut">'+fmt(last)+'</td><td class="mut">'+(l.expires_at?fmt(l.expires_at):'—')+'</td>'+
+   '<td class="row">'+(l.status==='revoked'?'<button class="ok" onclick="act(\\''+l.key+'\\',\\'unrevoke\\')">Reactivar</button>':'<button class="danger" onclick="act(\\''+l.key+'\\',\\'revoke\\')">Revocar</button>')+
+   ' <button class="ghost" onclick="del(\\''+l.key+'\\')">✕</button></td></tr>'}).join('')
+  document.getElementById('nev').textContent=(d.events||[]).length
+  document.getElementById('tev').innerHTML='<tr><th>Fecha</th><th>Tipo</th><th>Clave</th><th>Detalle</th></tr>'+
+   (d.events||[]).map(e=>'<tr><td class="mut">'+fmt(e.ts)+'</td><td>'+e.type+'</td><td class="mono">'+(e.key||'')+'</td><td class="mut">'+(e.meta||'')+'</td></tr>').join('')
+}
+async function createKey(){const r=await api('/admin/create','POST',{name:c_name.value,email:c_email.value,days:Number(c_days.value)||0});if(r.ok){document.getElementById('newkey').textContent='→ '+r.key;load()}}
+async function act(key,a){if(!confirm(a+' '+key+'?'))return;await api('/admin/'+a,'POST',{key});load()}
+async function del(key){if(!confirm('Eliminar '+key+' y sus activaciones?'))return;await api('/admin/delete','POST',{key});load()}
+if(TOK)load()
+</script></body></html>`
