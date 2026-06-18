@@ -86,6 +86,19 @@ async function activate(request, env, isValidate) {
   if (lic.expires_at && lic.expires_at < now())
     return json({ ok: false, reason: 'expired' }, 403)
 
+  // Device cap: only blocks binding a NEW machine beyond the limit. Existing
+  // machines (re-activation / validate) always pass.
+  const existing = await env.DB.prepare(
+    'SELECT machine_id FROM activations WHERE key = ?',
+  )
+    .bind(key)
+    .all()
+  const ids = (existing.results || []).map((r) => r.machine_id)
+  const cap = lic.max_devices || 2
+  if (!ids.includes(machineId) && ids.length >= cap) {
+    return json({ ok: false, reason: 'device_limit', cap }, 403)
+  }
+
   const t = now()
   await env.DB.prepare(
     `INSERT INTO activations (key, machine_id, app_version, first_seen, last_seen)
@@ -156,11 +169,20 @@ async function adminRoute(request, env, pathname) {
     const key = genKey()
     const days = Number(b.days) || 0
     const expires = days > 0 ? now() + days * 86400000 : null
+    const maxDevices = Number(b.maxDevices) > 0 ? Number(b.maxDevices) : 2
     await env.DB.prepare(
-      `INSERT INTO licenses (key, email, name, status, plan, created_at, expires_at)
-       VALUES (?,?,?,'active',?,?,?)`,
+      `INSERT INTO licenses (key, email, name, status, plan, created_at, expires_at, max_devices)
+       VALUES (?,?,?,'active',?,?,?,?)`,
     )
-      .bind(key, String(b.email || ''), String(b.name || ''), String(b.plan || 'test'), now(), expires)
+      .bind(
+        key,
+        String(b.email || ''),
+        String(b.name || ''),
+        String(b.plan || 'test'),
+        now(),
+        expires,
+        maxDevices,
+      )
       .run()
     return json({ ok: true, key })
   }
@@ -178,6 +200,22 @@ async function adminRoute(request, env, pathname) {
   if (pathname === '/admin/delete' && request.method === 'POST') {
     await env.DB.prepare('DELETE FROM licenses WHERE key=?').bind(key).run()
     await env.DB.prepare('DELETE FROM activations WHERE key=?').bind(key).run()
+    return json({ ok: true })
+  }
+  if (pathname === '/admin/setcap' && request.method === 'POST') {
+    const cap = Number(b.maxDevices) > 0 ? Number(b.maxDevices) : 2
+    await env.DB.prepare('UPDATE licenses SET max_devices=? WHERE key=?').bind(cap, key).run()
+    return json({ ok: true, maxDevices: cap })
+  }
+  if (pathname === '/admin/deactivate' && request.method === 'POST') {
+    // Free a device (or all devices when machineId omitted) so the seat reopens.
+    if (b.machineId) {
+      await env.DB.prepare('DELETE FROM activations WHERE key=? AND machine_id=?')
+        .bind(key, String(b.machineId))
+        .run()
+    } else {
+      await env.DB.prepare('DELETE FROM activations WHERE key=?').bind(key).run()
+    }
     return json({ ok: true })
   }
   return json({ ok: false, reason: 'not_found' }, 404)
@@ -234,7 +272,8 @@ th{color:var(--mut);font-weight:600}
 .mut{color:var(--mut)}.mono{font-family:ui-monospace,Menlo,monospace}
 #login{max-width:380px;margin:80px auto}
 .hide{display:none}
-</style></head><body>
+canvas{max-height:140px}
+</style><script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js"></script></head><body>
 <div id="login" class="card">
   <h2>OZ Admin</h2>
   <div class="row"><input id="tok" type="password" placeholder="Admin token" style="flex:1"/><button onclick="saveTok()">Entrar</button></div>
@@ -248,40 +287,63 @@ th{color:var(--mut);font-weight:600}
     <div class="row">
       <input id="c_name" placeholder="Nombre"/>
       <input id="c_email" placeholder="Email"/>
-      <input id="c_days" type="number" placeholder="Días (0 = sin vto)" style="width:160px"/>
+      <input id="c_days" type="number" placeholder="Días (0 = sin vto)" style="width:150px"/>
+      <input id="c_cap" type="number" placeholder="Máx disp. (def 2)" style="width:150px"/>
       <button onclick="createKey()">+ Generar clave</button>
       <span id="newkey" class="mono"></span>
     </div>
   </div>
+  <div class="card"><h2>Actividad (14 días)</h2><canvas id="chart"></canvas></div>
   <div class="card"><h2>Licencias (<span id="nlic">0</span>)</h2><div style="overflow:auto"><table id="tlic"></table></div></div>
-  <div class="card"><h2>Actividad reciente (<span id="nev">0</span>)</h2><div style="overflow:auto;max-height:360px"><table id="tev"></table></div></div>
+  <div class="card"><h2>Actividad reciente (<span id="nev">0</span>)</h2><div class="row" style="margin-bottom:10px"><input id="evfilter" placeholder="Filtrar (tipo, clave, host)…" oninput="renderEvents()" style="flex:1"/></div><div style="overflow:auto;max-height:360px"><table id="tev"></table></div></div>
 </div>
 </div>
 <script>
 let TOK=localStorage.getItem('oz_admin_tok')||''
+let DATA=null
 function saveTok(){TOK=document.getElementById('tok').value.trim();localStorage.setItem('oz_admin_tok',TOK);load()}
 function logout(){localStorage.removeItem('oz_admin_tok');location.reload()}
 function fmt(ts){return ts?new Date(ts).toLocaleString():'—'}
+function dayKey(ts){const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')}
 async function api(path,method,body){const r=await fetch(path,{method:method||'GET',headers:{authorization:'Bearer '+TOK,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return r.json()}
 async function load(){
   const d=await api('/admin/data')
   if(!d.ok){document.getElementById('loginerr').textContent='Token inválido';return}
+  DATA=d
   document.getElementById('login').classList.add('hide');document.getElementById('app').classList.remove('hide')
-  const acts={};(d.activations||[]).forEach(a=>{(acts[a.key]=acts[a.key]||[]).push(a)})
-  document.getElementById('nlic').textContent=d.licenses.length
-  document.getElementById('tlic').innerHTML='<tr><th>Clave</th><th>Nombre</th><th>Email</th><th>Estado</th><th>Activaciones</th><th>Últ. visto</th><th>Vto</th><th></th></tr>'+
-   d.licenses.map(l=>{const a=acts[l.key]||[];const last=a.length?Math.max(...a.map(x=>x.last_seen)):0;
-   return '<tr><td class="mono">'+l.key+'</td><td>'+(l.name||'')+'</td><td class="mut">'+(l.email||'')+'</td>'+
-   '<td><span class="tag '+l.status+'">'+l.status+'</span></td><td>'+a.length+(a.length?' <span class=mut>('+a.map(x=>(x.app_version||'?')).join(', ')+')</span>':'')+'</td>'+
+  renderLicenses();renderChart();renderEvents()
+}
+function renderLicenses(){
+  const acts={};(DATA.activations||[]).forEach(a=>{(acts[a.key]=acts[a.key]||[]).push(a)})
+  document.getElementById('nlic').textContent=DATA.licenses.length
+  document.getElementById('tlic').innerHTML='<tr><th>Clave</th><th>Nombre</th><th>Estado</th><th>Disp.</th><th>Versiones</th><th>Últ. visto</th><th>Vto</th><th></th></tr>'+
+   DATA.licenses.map(l=>{const a=acts[l.key]||[];const last=a.length?Math.max(...a.map(x=>x.last_seen)):0;const cap=l.max_devices||2;
+   return '<tr><td class="mono">'+l.key+'</td><td>'+(l.name||'')+'<div class=mut style="font-size:11px">'+(l.email||'')+'</div></td>'+
+   '<td><span class="tag '+l.status+'">'+l.status+'</span></td>'+
+   '<td>'+a.length+'/'+cap+' <button class="ghost" title="Editar cap" onclick="setcap(\\''+l.key+'\\','+cap+')">✎</button>'+(a.length?' <button class="ghost" title="Liberar dispositivos" onclick="freedev(\\''+l.key+'\\')">⎋</button>':'')+'</td>'+
+   '<td class="mut">'+(a.map(x=>x.app_version||'?').join(', ')||'—')+'</td>'+
    '<td class="mut">'+fmt(last)+'</td><td class="mut">'+(l.expires_at?fmt(l.expires_at):'—')+'</td>'+
    '<td class="row">'+(l.status==='revoked'?'<button class="ok" onclick="act(\\''+l.key+'\\',\\'unrevoke\\')">Reactivar</button>':'<button class="danger" onclick="act(\\''+l.key+'\\',\\'revoke\\')">Revocar</button>')+
    ' <button class="ghost" onclick="del(\\''+l.key+'\\')">✕</button></td></tr>'}).join('')
-  document.getElementById('nev').textContent=(d.events||[]).length
-  document.getElementById('tev').innerHTML='<tr><th>Fecha</th><th>Tipo</th><th>Clave</th><th>Detalle</th></tr>'+
-   (d.events||[]).map(e=>'<tr><td class="mut">'+fmt(e.ts)+'</td><td>'+e.type+'</td><td class="mono">'+(e.key||'')+'</td><td class="mut">'+(e.meta||'')+'</td></tr>').join('')
 }
-async function createKey(){const r=await api('/admin/create','POST',{name:c_name.value,email:c_email.value,days:Number(c_days.value)||0});if(r.ok){document.getElementById('newkey').textContent='→ '+r.key;load()}}
+function renderChart(){
+  const days=[];const n=new Date();
+  for(let i=13;i>=0;i--){const d=new Date(n);d.setDate(n.getDate()-i);days.push(dayKey(d.getTime()))}
+  const c={};days.forEach(k=>c[k]=0);(DATA.events||[]).forEach(e=>{const k=dayKey(e.ts);if(k in c)c[k]++})
+  if(window._chart)window._chart.destroy()
+  window._chart=new Chart(document.getElementById('chart'),{type:'bar',data:{labels:days.map(d=>d.slice(5)),datasets:[{data:days.map(d=>c[d]),backgroundColor:'#6488ff'}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,ticks:{color:'#9aa0ab',precision:0}},x:{ticks:{color:'#9aa0ab'}}}}})
+}
+function renderEvents(){
+  const f=(document.getElementById('evfilter').value||'').toLowerCase()
+  const evs=(DATA.events||[]).filter(e=>!f||((e.type||'')+(e.key||'')+(e.meta||'')).toLowerCase().includes(f))
+  document.getElementById('nev').textContent=evs.length
+  document.getElementById('tev').innerHTML='<tr><th>Fecha</th><th>Tipo</th><th>Clave</th><th>Detalle</th></tr>'+
+   evs.map(e=>'<tr><td class="mut">'+fmt(e.ts)+'</td><td>'+e.type+'</td><td class="mono">'+(e.key||'')+'</td><td class="mut">'+(e.meta||'')+'</td></tr>').join('')
+}
+async function createKey(){const r=await api('/admin/create','POST',{name:c_name.value,email:c_email.value,days:Number(c_days.value)||0,maxDevices:Number(c_cap.value)||2});if(r.ok){document.getElementById('newkey').textContent='→ '+r.key;load()}}
 async function act(key,a){if(!confirm(a+' '+key+'?'))return;await api('/admin/'+a,'POST',{key});load()}
 async function del(key){if(!confirm('Eliminar '+key+' y sus activaciones?'))return;await api('/admin/delete','POST',{key});load()}
+function setcap(key,cur){const v=prompt('Máx dispositivos para '+key,cur);if(v===null)return;api('/admin/setcap','POST',{key,maxDevices:Number(v)||2}).then(load)}
+function freedev(key){if(!confirm('Liberar TODOS los dispositivos de '+key+'? (tendrá que reactivar)'))return;api('/admin/deactivate','POST',{key}).then(load)}
 if(TOK)load()
 </script></body></html>`

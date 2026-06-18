@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.54 — Device cap + Dashboard v2 (2026-06-18)
+
+[`2026-06-18`] [`activation`] **Device cap por clave:** columna `max_devices` (default 2) en D1; `/activate` rechaza un dispositivo NUEVO que supere el cap (`reason:'device_limit'`), re-activaciones de un device existente siempre pasan; admin `/admin/setcap` + `/admin/deactivate` (liberar un device o todos). App: la ventana de activación muestra "Límite de dispositivos alcanzado" ante `device_limit`. **Dashboard v2** (`activation-server/worker.js`): gráfico de actividad 14 días (Chart.js), columna Disp. `usados/cap` con editar-cap (✎) y liberar (⎋), input de email en alta, y **filtro** de actividad por tipo/clave/host. Worker redeployado + probado (cap enforcement por curl: 2 OK, 3ro rechazado). Solo `worker.js` (infra, sin lint/loc/manifest) + 1 línea en license-manager (mensaje). Sin tests nuevos (server probado por curl; app Electron-bound).
+
 ### v2.0.0-alpha.53 — Telemetría de actividad por-feature (2026-06-18)
 
 [`2026-06-18`] [`activation`] El panel ahora ve "en qué trabajan", no solo logins. `license-manager.reportEvent(type, meta)` (público, fire-and-forget, no-op si no activado, nunca tira). Hooks: bulk runner al completar → evento `bulk-run` ({actionId, status, stats}) en `bulk-handlers.js`; `oz.page.navigate` → evento `scrape` ({host}) en `page-handlers.js`. Solo eventos operativos (qué/cuándo), no contenido. Aparecen en el dashboard (sección Actividad). Sin tests nuevos (Electron-bound; los smoke de page/network siguen verdes — reportEvent cae en su try/catch fuera de Electron).

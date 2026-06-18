@@ -257,7 +257,7 @@ async function activate(){const key=k.value.trim();if(!key){err.textContent='Ing
  const r=await ipcRenderer.invoke('oz:license:activate',key)
  if(r&&r.ok){go.textContent='✓ Activado — reiniciando…'}
  else{go.disabled=false;go.textContent='Activar';
-  err.textContent=r&&r.reason==='invalid_key'?'Clave inválida':r&&r.reason==='revoked'?'Clave revocada':r&&r.reason==='expired'?'Clave vencida':'No se pudo validar (revisá tu internet)'}}
+  err.textContent=r&&r.reason==='invalid_key'?'Clave inválida':r&&r.reason==='revoked'?'Clave revocada':r&&r.reason==='expired'?'Clave vencida':r&&r.reason==='device_limit'?'Límite de dispositivos alcanzado — pedile al admin que libere uno':'No se pudo validar (revisá tu internet)'}}
 go.onclick=activate
 k.addEventListener('keydown',e=>{if(e.key==='Enter')activate()})
 document.getElementById('quit').onclick=()=>ipcRenderer.invoke('oz:license:quit')
