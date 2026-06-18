@@ -259,6 +259,35 @@ function buildOverridesScript(fp) {
     if (typeof WebGLRenderingContext !== 'undefined') spoofGL(WebGLRenderingContext);
     if (typeof WebGL2RenderingContext !== 'undefined') spoofGL(WebGL2RenderingContext);
 
+    // --- stealth defaults (v3-C) ------------------------------------------
+    // The top behavioural/headless tells, always-on (identity-independent):
+    //  1) navigator.webdriver → false (puppeteer/selenium flag).
+    //  2) window.chrome.runtime shape (headless Chrome lacks window.chrome).
+    //  3) permissions.query('notifications') must agree with Notification.permission
+    //     (classic headless mismatch: 'denied' vs 'default').
+    defineGetter(navigator, 'webdriver', function () { return false; });
+    try {
+      if (!window.chrome) {
+        window.chrome = { runtime: {}, app: { isInstalled: false } };
+      } else if (!window.chrome.runtime) {
+        window.chrome.runtime = {};
+      }
+    } catch (e) {}
+    try {
+      if (navigator.permissions && navigator.permissions.query) {
+        var origQuery = navigator.permissions.query.bind(navigator.permissions);
+        navigator.permissions.query = function (p) {
+          if (p && p.name === 'notifications') {
+            return Promise.resolve({
+              state: (typeof Notification !== 'undefined' && Notification.permission) || 'default',
+              onchange: null,
+            });
+          }
+          return origQuery(p);
+        };
+      }
+    } catch (e) {}
+
     window.__OZ_FP_APPLIED__ = true;
   })();`
 }

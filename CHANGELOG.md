@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.55 — V3-C stealth defaults always-on (2026-06-18)
+
+[`2026-06-18`] [`scraping/stealth`] Shims anti-detección agregados al script de fingerprint que ya se inyecta en cada página (document-start, page world), always-on e identity-independent: (1) `navigator.webdriver` → `false` (el flag #1 de selenium/puppeteer), (2) `window.chrome.runtime` shape (headless Chrome no lo tiene), (3) `permissions.query('notifications')` ahora coincide con `Notification.permission` (mismatch clásico de headless), otros permisos pasan al nativo. Todos guardados en try/catch (defensivos, no rompen la página). Pure string-builder en `preload-fingerprint-script.js`; tests de inyección en vm +4 (55 passed). Sin browser/ui (sin manifest). **Recomendado: smoke visual de Jose contra un detector (creepjs/pixelscan/bot.sannysoft) antes de confiarlo en prod.** Pendiente V3-C: timezone/Accept-Language auto-match a la geo del proxy.
+
 ### v2.0.0-alpha.54 — Device cap + Dashboard v2 (2026-06-18)
 
 [`2026-06-18`] [`activation`] **Device cap por clave:** columna `max_devices` (default 2) en D1; `/activate` rechaza un dispositivo NUEVO que supere el cap (`reason:'device_limit'`), re-activaciones de un device existente siempre pasan; admin `/admin/setcap` + `/admin/deactivate` (liberar un device o todos). App: la ventana de activación muestra "Límite de dispositivos alcanzado" ante `device_limit`. **Dashboard v2** (`activation-server/worker.js`): gráfico de actividad 14 días (Chart.js), columna Disp. `usados/cap` con editar-cap (✎) y liberar (⎋), input de email en alta, y **filtro** de actividad por tipo/clave/host. Worker redeployado + probado (cap enforcement por curl: 2 OK, 3ro rechazado). Solo `worker.js` (infra, sin lint/loc/manifest) + 1 línea en license-manager (mensaje). Sin tests nuevos (server probado por curl; app Electron-bound).

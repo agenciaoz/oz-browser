@@ -93,6 +93,9 @@ function makePageWorld() {
     languages: ['en-US', 'en'],
     plugins: [],
     mimeTypes: [],
+    // v3-C stealth: native permissions.query returns a sentinel so the test
+    // can tell passthrough (geolocation) from the notifications override.
+    permissions: { query: () => Promise.resolve({ state: 'native' }) },
     // getBattery may be undefined on the platform — script reassigns regardless
   }
   const nativeScreen = {
@@ -165,6 +168,7 @@ function makePageWorld() {
     WebGLRenderingContext: FakeWebGLRenderingContext,
     WebGL2RenderingContext: FakeWebGL2RenderingContext,
     speechSynthesis: { getVoices: () => [] },
+    Notification: { permission: 'granted' },
   }
   // Self-reference: window === globalThis in browsers
   ctx.window = ctx
@@ -294,6 +298,27 @@ section('apply: getBattery + speechSynthesis.getVoices')
     if (voices.length > 0) {
       ok('first voice name matches', voices[0].name === fp.speechVoices[0].name)
       ok('first voice lang matches', voices[0].lang === fp.speechVoices[0].lang)
+    }
+
+    // --------- 4b. stealth defaults (v3-C) -------------------------------
+    section('apply: stealth defaults (webdriver / chrome / permissions)')
+    {
+      const feS = new FingerprintEngine()
+      const fpS = feS.getOrCreate('id-stealth', 'seed-stealth')
+      const ctxS = makePageWorld()
+      applyScriptToContext(buildOverridesScript(fpS), ctxS)
+      ok('navigator.webdriver === false', ctxS.navigator.webdriver === false)
+      ok(
+        'window.chrome.runtime exists',
+        ctxS.chrome && typeof ctxS.chrome.runtime === 'object',
+      )
+      const notif = await ctxS.navigator.permissions.query({ name: 'notifications' })
+      ok(
+        "permissions.query('notifications') agrees with Notification.permission",
+        notif.state === 'granted',
+      )
+      const geo = await ctxS.navigator.permissions.query({ name: 'geolocation' })
+      ok('permissions.query(other) passes through to native', geo.state === 'native')
     }
 
     // --------- 5. WebGL getParameter override --------------------------------
