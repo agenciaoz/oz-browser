@@ -78,4 +78,68 @@ function keystrokeDelays(text, opts, rng) {
   return out
 }
 
-module.exports = { clamp, bezier, bezierPath, gaussian, keystrokeDelays }
+/** Lognormal sample (heavy right tail — realistic idle gaps), clamped. */
+function lognormal(mu, sigma, rng, min, max) {
+  const r = rng || Math.random
+  let u = 0
+  let v = 0
+  while (u === 0) u = r()
+  while (v === 0) v = r()
+  const z = Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v)
+  const val = Math.exp(mu + sigma * z)
+  const lo = min == null ? 0 : min
+  const hi = max == null ? Number.MAX_SAFE_INTEGER : max
+  return clamp(Math.round(val), lo, hi)
+}
+
+/**
+ * Momentum scroll: split a total pixel distance into decreasing wheel deltas
+ * (ease-out, like a flick). Preserves sign; sums ~= totalPx. Returns int deltas.
+ */
+function momentumSteps(totalPx, opts, rng) {
+  const o = opts || {}
+  const steps = Math.max(3, Math.floor(o.steps || 8))
+  void rng
+  const dir = totalPx < 0 ? -1 : 1
+  const abs = Math.abs(totalPx) || 0
+  let sum = 0
+  const weights = []
+  for (let i = 0; i < steps; i++) {
+    const w = steps - i
+    weights.push(w)
+    sum += w
+  }
+  return weights.map((w) => dir * Math.max(1, Math.round((abs * w) / sum)))
+}
+
+/**
+ * Build a keystroke plan with occasional typos+correction. Each entry is
+ * { key } (type a char) or { back: true } (Backspace). A typo inserts a wrong
+ * char then a backspace before the right char. Pure via injectable rng.
+ */
+function typoPlan(text, opts, rng) {
+  const r = rng || Math.random
+  const o = opts || {}
+  const rate = o.rate == null ? 0.06 : o.rate
+  const al = 'abcdefghijklmnopqrstuvwxyz'
+  const out = []
+  for (const ch of String(text || '')) {
+    if (/[a-z]/i.test(ch) && r() < rate) {
+      out.push({ key: al[Math.floor(r() * al.length)] })
+      out.push({ back: true })
+    }
+    out.push({ key: ch })
+  }
+  return out
+}
+
+module.exports = {
+  clamp,
+  bezier,
+  bezierPath,
+  gaussian,
+  keystrokeDelays,
+  lognormal,
+  momentumSteps,
+  typoPlan,
+}

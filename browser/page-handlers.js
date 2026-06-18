@@ -190,24 +190,55 @@ function buildPageHandlers(browser) {
         return err('EVAL_FAILED', e && e.message)
       }
       if (!focused) return err('NOT_FOUND', 'Selector matched no element')
+      // human: gaussian cadence + occasional typo→backspace→correct.
+      if (human) {
+        for (const step of HM.typoPlan(text, {})) {
+          try {
+            if (step.back) {
+              r.wc.sendInputEvent({ type: 'keyDown', keyCode: 'Backspace' })
+              r.wc.sendInputEvent({ type: 'keyUp', keyCode: 'Backspace' })
+            } else {
+              r.wc.sendInputEvent({ type: 'char', keyCode: step.key })
+            }
+          } catch (e) {
+            return err('INPUT_FAILED', e && e.message)
+          }
+          await sleep(HM.gaussian(110, 30, undefined, 25, 380))
+        }
+        return { ok: true, typed: text.length, human: true }
+      }
       const variance = Math.max(0, Math.min(Number(delayVarianceMs) || 0, 500))
-      const humanDelays = human ? HM.keystrokeDelays(text, {}) : null
-      let i = 0
       for (const ch of text) {
         try {
           r.wc.sendInputEvent({ type: 'char', keyCode: ch })
         } catch (e) {
           return err('INPUT_FAILED', e && e.message)
         }
-        if (humanDelays) await sleep(humanDelays[i])
-        else if (variance) await sleep(Math.floor(Math.random() * variance))
-        i++
+        if (variance) await sleep(Math.floor(Math.random() * variance))
       }
-      return { ok: true, typed: text.length, human: !!human }
+      return { ok: true, typed: text.length, human: false }
     },
 
-    /** Scroll the page: to = 'top' | 'bottom' | number of px. */
-    scroll({ identityId, tabId, to }) {
+    /** Scroll the page: to = 'top' | 'bottom' | number of px.
+     *  `human:true` with a numeric distance eases it into momentum steps. */
+    async scroll({ identityId, tabId, to, human }) {
+      if (human && typeof to === 'number') {
+        const r = resolveWC(identityId, tabId)
+        if (r.__error) return r
+        try {
+          for (const dy of HM.momentumSteps(to, { steps: 8 })) {
+            await r.wc.executeJavaScript('window.scrollBy(0,' + dy + ')', true)
+            await sleep(HM.gaussian(45, 15, undefined, 12, 130))
+          }
+          return {
+            ok: true,
+            human: true,
+            result: await r.wc.executeJavaScript('window.scrollY', true),
+          }
+        } catch (e) {
+          return err('EVAL_FAILED', e && e.message)
+        }
+      }
       return runJS(identityId, tabId, PU.scrollScript(to))
     },
 

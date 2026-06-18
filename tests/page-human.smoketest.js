@@ -73,4 +73,34 @@ ok('keystrokeDelays: one per char, each within bounds', () => {
   assert.strictEqual(HM.keystrokeDelays('', {}, seqRng([0.5, 0.5])).length, 0)
 })
 
+ok('lognormal is positive, clamped, integer', () => {
+  const v = HM.lognormal(5, 0.5, seqRng([0.5, 0.5]), 50, 5000)
+  assert.ok(v >= 50 && v <= 5000 && Number.isInteger(v))
+})
+
+ok('momentumSteps: decreasing, sign-preserving, sums ~= total', () => {
+  const s = HM.momentumSteps(800, { steps: 8 })
+  assert.strictEqual(s.length, 8)
+  assert.ok(s.every((d) => d > 0))
+  assert.ok(s[0] > s[s.length - 1]) // ease-out
+  const sum = s.reduce((a, b) => a + b, 0)
+  assert.ok(Math.abs(sum - 800) <= 8) // rounding tolerance
+  // negative distance → all negative (scroll up)
+  assert.ok(HM.momentumSteps(-300, { steps: 5 }).every((d) => d < 0))
+})
+
+ok('typoPlan: rate 0 → just keys; forced rng → typo+back+key', () => {
+  const clean = HM.typoPlan('abc', { rate: 0 }, seqRng([0.9]))
+  assert.deepStrictEqual(
+    clean.map((s) => s.key),
+    ['a', 'b', 'c'],
+  )
+  // rng always 0 → r()<rate triggers a typo before each letter (wrong + back + key)
+  const messy = HM.typoPlan('ab', { rate: 1 }, seqRng([0]))
+  // each letter: {key:wrong},{back},{key:ch} → 6 entries for 2 letters
+  assert.strictEqual(messy.length, 6)
+  assert.strictEqual(messy[1].back, true)
+  assert.strictEqual(messy[2].key, 'a')
+})
+
 console.log(`\npage-human: ${passed} checks passed ✓`)

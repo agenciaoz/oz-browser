@@ -158,6 +158,11 @@ function buildPageTools(browser) {
             description: "'top' | 'bottom' | number of px",
             oneOf: [{ type: 'string' }, { type: 'number' }],
           },
+          human: {
+            type: 'boolean',
+            description:
+              'With a numeric distance, ease into momentum steps. Default false.',
+          },
         },
         required: ['identityId', 'to'],
         additionalProperties: false,

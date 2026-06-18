@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.56 — V3-B resto: momentum scroll + typos (human) (2026-06-18)
+
+[`2026-06-18`] [`scraping/human`] Cierra V3-B. `oz.page.scroll` con `human:true` + distancia numérica → baja en pasos decrecientes (ease-out, momentum) con delays gaussianos en vez de salto instantáneo. `oz.page.type` con `human:true` ahora mete **typos ocasionales con corrección** (tecla errada → Backspace → correcta) además de la cadencia gaussiana. Todo detrás del flag `human` (default false = sin cambios). Helpers puros nuevos en `page-human.js` (`lognormal`/`momentumSteps`/`typoPlan`), tests +3 (8 total). Sin browser/ui.
+
 ### v2.0.0-alpha.55 — V3-C stealth defaults always-on (2026-06-18)
 
 [`2026-06-18`] [`scraping/stealth`] Shims anti-detección agregados al script de fingerprint que ya se inyecta en cada página (document-start, page world), always-on e identity-independent: (1) `navigator.webdriver` → `false` (el flag #1 de selenium/puppeteer), (2) `window.chrome.runtime` shape (headless Chrome no lo tiene), (3) `permissions.query('notifications')` ahora coincide con `Notification.permission` (mismatch clásico de headless), otros permisos pasan al nativo. Todos guardados en try/catch (defensivos, no rompen la página). Pure string-builder en `preload-fingerprint-script.js`; tests de inyección en vm +4 (55 passed). Sin browser/ui (sin manifest). **Recomendado: smoke visual de Jose contra un detector (creepjs/pixelscan/bot.sannysoft) antes de confiarlo en prod.** Pendiente V3-C: timezone/Accept-Language auto-match a la geo del proxy.
