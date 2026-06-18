@@ -14,6 +14,8 @@
 
 'use strict'
 
+const licenseManager = require('./license-manager')
+
 function buildBulkHandlers(browser) {
   const runner = browser.bulkRunner
   if (!runner) throw new Error('buildBulkHandlers: browser.bulkRunner required')
@@ -28,7 +30,15 @@ function buildBulkHandlers(browser) {
     runner.on('created', (e) => browser.broadcastToWebUI('oz:bulk:created', e))
     runner.on('started', (e) => browser.broadcastToWebUI('oz:bulk:started', e))
     runner.on('progress', (e) => browser.broadcastToWebUI('oz:bulk:progress', e))
-    runner.on('completed', (e) => browser.broadcastToWebUI('oz:bulk:completed', e))
+    runner.on('completed', (e) => {
+      browser.broadcastToWebUI('oz:bulk:completed', e)
+      const m = (e && e.meta) || {}
+      licenseManager.reportEvent('bulk-run', {
+        actionId: m.actionId,
+        status: m.status,
+        stats: m.stats,
+      })
+    })
     runner.on('cancelling', (e) => browser.broadcastToWebUI('oz:bulk:cancelling', e))
   }
 

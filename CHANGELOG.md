@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.53 — Telemetría de actividad por-feature (2026-06-18)
+
+[`2026-06-18`] [`activation`] El panel ahora ve "en qué trabajan", no solo logins. `license-manager.reportEvent(type, meta)` (público, fire-and-forget, no-op si no activado, nunca tira). Hooks: bulk runner al completar → evento `bulk-run` ({actionId, status, stats}) en `bulk-handlers.js`; `oz.page.navigate` → evento `scrape` ({host}) en `page-handlers.js`. Solo eventos operativos (qué/cuándo), no contenido. Aparecen en el dashboard (sección Actividad). Sin tests nuevos (Electron-bound; los smoke de page/network siguen verdes — reportEvent cae en su try/catch fuera de Electron).
+
 ### v2.0.0-alpha.52 — Activación online (gate + backend + dashboard) (2026-06-18)
 
 [`2026-06-18`] [`activation`] Build de prueba para el equipo: la app ahora **requiere activación** contra un servidor propio. Backend NUEVO `activation-server/` (Cloudflare Worker `oz-activate` + D1 `oz-admin`): endpoints `/activate` `/validate` `/event` + `/admin/*` (Bearer) + **dashboard web** (crear/revocar claves, ver activaciones por máquina/versión y actividad). App: NUEVO `license-manager.js` + gate en `main.js init()` (`if (await licenseManager.gate()) return`) — si no activado abre solo la ventana de activación y no bootea el resto; al activar OK `app.relaunch()`. Re-validación online por launch + gracia offline 7d atada a machineId; revocar del lado server corta en el próximo chequeo. Robustez: bypass dev `OZ_LICENSE_DISABLED=1`, override `OZ_LICENSE_SERVER`, fail-open si la ventana no abre (no brickea), cerrar la ventana = quit. Telemetría `app-open` por validación. ADR 0037. Backend excluido de eslint/prettier/check:loc (runtime Workers). Sin tests unitarios (Electron-bound; se valida con smoke de la build). Pendiente: hooks de telemetría por-feature (bulk/scrape).

@@ -16,6 +16,15 @@ const log = require('./logger')
 const { normalizeOmniboxInput } = require('./url-normalize')
 const PU = require('./page-utils')
 const HM = require('./page-human')
+const licenseManager = require('./license-manager')
+
+function hostOf(url) {
+  try {
+    return new URL(url).host
+  } catch (_e) {
+    return ''
+  }
+}
 
 function buildPageHandlers(browser) {
   // Find a tab by explicit id (any window), else the first tab of the identity.
@@ -69,6 +78,7 @@ function buildPageHandlers(browser) {
     navigate({ identityId, tabId, url }) {
       const norm = url ? normalizeOmniboxInput(url) || url : null
       if (!norm) return err('BAD_URL', 'Missing or invalid url')
+      licenseManager.reportEvent('scrape', { host: hostOf(norm) })
       const tab = resolveTab(identityId, tabId)
       if (!tab) {
         const win = browser.getFocusedWindow()

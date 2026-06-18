@@ -125,6 +125,25 @@ function fireEvent(type, rec, machineId) {
   )
 }
 
+/**
+ * Public usage-telemetry reporter (fire-and-forget, never throws). No-op if not
+ * activated. Used by feature hooks (bulk runs, scrapes) to feed the admin
+ * dashboard "what they worked on". Operational events only — no page content.
+ */
+function reportEvent(type, meta) {
+  try {
+    const rec = loadLocal()
+    if (!rec || !rec.key || !type) return
+    post(
+      '/event',
+      { key: rec.key, machineId: getMachineId(), type: String(type), meta: meta || {} },
+      4000,
+    )
+  } catch (_e) {
+    /* never throw */
+  }
+}
+
 async function ensureActivated() {
   const machineId = getMachineId()
   const rec = loadLocal()
@@ -302,4 +321,4 @@ async function gate() {
   }
 }
 
-module.exports = { gate, ensureActivated, activateWithKey, getMachineId }
+module.exports = { gate, ensureActivated, activateWithKey, getMachineId, reportEvent }
