@@ -14,6 +14,7 @@
 const { app, BrowserWindow } = require('electron')
 
 const log = require('./logger')
+const licenseManager = require('./license-manager')
 const { setupErrorHandlers } = require('./error-handler')
 
 // Initialize logger and global error handlers as early as possible.
@@ -376,6 +377,11 @@ class Browser {
 
   async init() {
     log.info('browser', 'Browser.init() starting')
+
+    // Activation gate (pre-SaaS test builds): if this install isn't activated,
+    // show ONLY the activation window and halt the rest of boot. Bypass with
+    // OZ_LICENSE_DISABLED=1. See license-manager.js + activation-server/.
+    if (await licenseManager.gate()) return
 
     // B-1: register the oz:// protocol scheme + listeners. Done as the very
     // first init step so that any URL queued by the OS during cold-start

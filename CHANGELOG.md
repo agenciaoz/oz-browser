@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.52 — Activación online (gate + backend + dashboard) (2026-06-18)
+
+[`2026-06-18`] [`activation`] Build de prueba para el equipo: la app ahora **requiere activación** contra un servidor propio. Backend NUEVO `activation-server/` (Cloudflare Worker `oz-activate` + D1 `oz-admin`): endpoints `/activate` `/validate` `/event` + `/admin/*` (Bearer) + **dashboard web** (crear/revocar claves, ver activaciones por máquina/versión y actividad). App: NUEVO `license-manager.js` + gate en `main.js init()` (`if (await licenseManager.gate()) return`) — si no activado abre solo la ventana de activación y no bootea el resto; al activar OK `app.relaunch()`. Re-validación online por launch + gracia offline 7d atada a machineId; revocar del lado server corta en el próximo chequeo. Robustez: bypass dev `OZ_LICENSE_DISABLED=1`, override `OZ_LICENSE_SERVER`, fail-open si la ventana no abre (no brickea), cerrar la ventana = quit. Telemetría `app-open` por validación. ADR 0037. Backend excluido de eslint/prettier/check:loc (runtime Workers). Sin tests unitarios (Electron-bound; se valida con smoke de la build). Pendiente: hooks de telemetría por-feature (bulk/scrape).
+
 ### v2.0.0-alpha.51 — V3-B: humanization layer (default-off) (2026-06-17)
 
 [`2026-06-17`] [`mcp/scraping`] Capa de humanización para `oz.page.click` y `oz.page.type` detrás de un flag **`human: true` (default false = comportamiento idéntico al anterior, cero riesgo)**. Con `human`: el click mueve el cursor por una **curva Bézier** con delays gaussianos antes de presionar (en vez de teleport directo), y el type usa **cadencia gaussiana por carácter** (en vez de uniforme) — justo lo que los anti-bot conductuales miran. Matemática pura en NUEVO `page-human.js` (`bezier`/`bezierPath`/`gaussian`/`keystrokeDelays`), con `rng` inyectable para tests deterministas. Tests page-human 5. Sin browser/ui. Primer slice de V3-B; pendiente: scroll con momentum, idle lognormal entre acciones, typos ocasionales.
