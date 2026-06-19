@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.57 — Publishing Studio E1-E4A (2026-06-19)
+
+[`2026-06-19`] [`publishing`] Publishing Studio: pestaña dedicada para publicar desde N identities. E1 composer schema-driven IG/X + health gating + publicar ahora. E2-A cola/historial/retry. E3 programar recurrente + drip + lista programadas. E4-A motor de variación (spintax/hashtags/rotación de media, RNG por-identity) + plantillas/media-library + preview. Manifest WebUI 2.0.39, 45 tests, ADR 0038. Pendiente smoke en vivo + etapas de motor E2-B/E3-B/E4-B/E6.
+
 ### v2.0.0-alpha.56 — V3-B resto: momentum scroll + typos (human) (2026-06-18)
 
 [`2026-06-18`] [`scraping/human`] Cierra V3-B. `oz.page.scroll` con `human:true` + distancia numérica → baja en pasos decrecientes (ease-out, momentum) con delays gaussianos en vez de salto instantáneo. `oz.page.type` con `human:true` ahora mete **typos ocasionales con corrección** (tecla errada → Backspace → correcta) además de la cadencia gaussiana. Todo detrás del flag `human` (default false = sin cambios). Helpers puros nuevos en `page-human.js` (`lognormal`/`momentumSteps`/`typoPlan`), tests +3 (8 total). Sin browser/ui.
