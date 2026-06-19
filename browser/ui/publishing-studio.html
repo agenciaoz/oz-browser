@@ -1,0 +1,584 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title data-i18n="publishingStudio.pageTitle">OZ Browser — Publishing Studio</title>
+    <style>
+      :root {
+        --bg: #1a1a1a;
+        --panel: #232323;
+        --panel-2: #1f1f1f;
+        --border: #2e2e2e;
+        --text: #e8e8e8;
+        --text-muted: #888;
+        --accent: #7c5fbf;
+        --green: #4ade80;
+        --yellow: #fbbf24;
+        --red: #ef4444;
+        --gray: #888;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .container {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px;
+      }
+      header.hero {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px 22px;
+        margin-bottom: 18px;
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        flex-wrap: wrap;
+      }
+      header.hero h1 {
+        margin: 0;
+        font-size: 20px;
+        font-weight: 600;
+      }
+      header.hero .hint {
+        color: var(--text-muted);
+        font-size: 13px;
+      }
+      header.hero .actions {
+        margin-left: auto;
+        display: flex;
+        gap: 8px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 18px;
+      }
+      @media (max-width: 760px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+      .card {
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+        padding: 18px 20px;
+      }
+      .card h2 {
+        margin: 0 0 14px;
+        font-size: 15px;
+        font-weight: 600;
+      }
+      .pub-row {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+        margin-bottom: 14px;
+      }
+      .pub-label {
+        font-size: 12px;
+        color: var(--text-muted);
+        font-weight: 500;
+      }
+      .pub-input {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: var(--text);
+        padding: 8px 10px;
+        font-size: 14px;
+        font-family: inherit;
+      }
+      .pub-input:focus {
+        outline: none;
+        border-color: var(--accent);
+      }
+      .pub-textarea-box {
+        position: relative;
+      }
+      .pub-textarea {
+        width: 100%;
+        resize: vertical;
+        min-height: 90px;
+      }
+      .pub-counter {
+        font-size: 11px;
+        color: var(--text-muted);
+        text-align: right;
+        margin-top: 2px;
+      }
+      .pub-counter.over {
+        color: var(--red);
+      }
+      .pub-file-box {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .pub-file-name {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .pub-field-err {
+        font-size: 12px;
+        color: var(--red);
+        min-height: 14px;
+      }
+      .pub-targets-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 10px;
+      }
+      .pub-link {
+        background: none;
+        border: none;
+        color: var(--accent);
+        cursor: pointer;
+        font-size: 12px;
+        padding: 0;
+      }
+      .pub-targets-summary {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .pub-targets-list {
+        max-height: 320px;
+        overflow-y: auto;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        padding: 6px;
+      }
+      .pub-id-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 6px 8px;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .pub-id-row:hover {
+        background: var(--panel-2);
+      }
+      .pub-dot,
+      .pub-prog-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+        background: var(--gray);
+      }
+      .pub-dot[data-status='green'] {
+        background: var(--green);
+      }
+      .pub-dot[data-status='yellow'] {
+        background: var(--yellow);
+      }
+      .pub-dot[data-status='red'] {
+        background: var(--red);
+      }
+      .pub-id-name {
+        flex: 1;
+      }
+      .pub-id-flag {
+        font-size: 11px;
+        color: var(--red);
+        text-transform: uppercase;
+      }
+      .pub-id-warn {
+        font-size: 11px;
+        color: var(--yellow);
+        text-transform: uppercase;
+      }
+      .pub-empty {
+        color: var(--text-muted);
+        font-size: 13px;
+        padding: 14px;
+        text-align: center;
+      }
+      .footer-bar {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        margin-top: 18px;
+        padding: 16px 20px;
+        background: var(--panel);
+        border: 1px solid var(--border);
+        border-radius: 8px;
+      }
+      button.btn {
+        background: var(--accent);
+        color: white;
+        border: none;
+        padding: 9px 16px;
+        border-radius: 6px;
+        cursor: pointer;
+        font-size: 13px;
+        font-weight: 600;
+      }
+      button.btn:disabled {
+        opacity: 0.45;
+        cursor: not-allowed;
+      }
+      button.btn.secondary {
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        color: var(--text);
+        font-weight: 500;
+      }
+      .pub-status {
+        font-size: 13px;
+        color: var(--text-muted);
+      }
+      .pub-status[data-tone='green'] {
+        color: var(--green);
+      }
+      .pub-status[data-tone='yellow'] {
+        color: var(--yellow);
+      }
+      .pub-status[data-tone='red'] {
+        color: var(--red);
+      }
+      .pub-progress {
+        margin-top: 14px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .pub-prog-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        padding: 4px 0;
+      }
+      .pub-prog-row[data-status='success'] .pub-prog-dot {
+        background: var(--green);
+      }
+      .pub-prog-row[data-status='failed'] .pub-prog-dot {
+        background: var(--red);
+      }
+      .pub-prog-row[data-status='running'] .pub-prog-dot {
+        background: var(--yellow);
+      }
+      .pub-prog-row[data-status='skipped'] .pub-prog-dot {
+        background: var(--gray);
+      }
+      .pub-prog-status {
+        margin-left: auto;
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      /* ----- Etapa 2-A: history / queue ----- */
+      .pub-hist-section {
+        margin-top: 18px;
+      }
+      .pub-hist-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .pub-hist-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel-2);
+        font-size: 13px;
+      }
+      .pub-hist-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+        background: var(--gray);
+      }
+      .pub-hist-row[data-status='completed'] .pub-hist-dot,
+      .pub-hist-item[data-status='success'] .pub-hist-dot {
+        background: var(--green);
+      }
+      .pub-hist-row[data-status='failed'] .pub-hist-dot,
+      .pub-hist-row[data-status='partial'] .pub-hist-dot,
+      .pub-hist-item[data-status='failed'] .pub-hist-dot {
+        background: var(--red);
+      }
+      .pub-hist-row[data-status='running'] .pub-hist-dot,
+      .pub-hist-item[data-status='running'] .pub-hist-dot {
+        background: var(--yellow);
+      }
+      .pub-hist-platform {
+        font-weight: 600;
+      }
+      .pub-hist-pill {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 10px;
+        background: var(--border);
+        color: var(--text-muted);
+        text-transform: uppercase;
+      }
+      .pub-hist-tally {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .pub-hist-ago {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .pub-hist-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 12px;
+      }
+      .pub-hist-retry {
+        color: var(--yellow);
+      }
+      .pub-hist-detail {
+        padding: 4px 0 8px 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 3px;
+      }
+      .pub-hist-item {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 12px;
+      }
+      .pub-hist-item-name {
+        flex: 1;
+      }
+      .pub-hist-item-status {
+        color: var(--text-muted);
+      }
+      /* ----- Etapa 3: when / schedule ----- */
+      .pub-when {
+        margin-top: 6px;
+        border-top: 1px solid var(--border);
+        padding-top: 14px;
+      }
+      .pub-seg {
+        display: inline-flex;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        overflow: hidden;
+      }
+      .pub-seg-btn {
+        background: var(--panel-2);
+        color: var(--text-muted);
+        border: none;
+        padding: 7px 14px;
+        cursor: pointer;
+        font-size: 13px;
+      }
+      .pub-seg-btn.active {
+        background: var(--accent);
+        color: #fff;
+        font-weight: 600;
+      }
+      .pub-sched-fields {
+        margin-top: 12px;
+      }
+      .pub-sched-list {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+      .pub-sched-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 8px 10px;
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        background: var(--panel-2);
+        font-size: 13px;
+      }
+      .pub-sched-row[data-enabled='false'] {
+        opacity: 0.6;
+      }
+      .pub-sched-dot {
+        width: 9px;
+        height: 9px;
+        border-radius: 50%;
+        flex: 0 0 auto;
+        background: var(--green);
+      }
+      .pub-sched-dot[data-enabled='false'] {
+        background: var(--gray);
+      }
+      .pub-sched-platform {
+        font-weight: 600;
+      }
+      .pub-sched-desc {
+        color: var(--text);
+      }
+      .pub-sched-who {
+        color: var(--text-muted);
+        font-size: 12px;
+      }
+      .pub-sched-actions {
+        margin-left: auto;
+        display: flex;
+        gap: 12px;
+      }
+      .pub-sched-del {
+        color: var(--red);
+      }
+      /* ----- Etapa 4: variation & templates ----- */
+      .pub-var-section {
+        margin-top: 6px;
+        border-top: 1px solid var(--border);
+        padding-top: 14px;
+      }
+      .pub-var-title {
+        font-size: 13px;
+        font-weight: 600;
+        margin-bottom: 10px;
+      }
+      .pub-var-line {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .pub-var-line .pub-input {
+        flex: 1;
+        min-width: 120px;
+      }
+      .pub-var-count {
+        flex: 0 0 64px;
+        min-width: 0;
+      }
+      .pub-var-count-lbl {
+        font-size: 12px;
+        color: var(--text-muted);
+      }
+      .pub-var-hint {
+        font-size: 12px;
+        color: var(--text-muted);
+        margin: 8px 0 10px;
+        line-height: 1.4;
+      }
+      .pub-var-preview {
+        margin-top: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+      }
+      .pub-var-row {
+        display: flex;
+        gap: 10px;
+        font-size: 12px;
+        padding: 5px 8px;
+        border: 1px solid var(--border);
+        border-radius: 5px;
+        background: var(--panel-2);
+      }
+      .pub-var-name {
+        flex: 0 0 110px;
+        font-weight: 600;
+        color: var(--accent);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .pub-var-text {
+        flex: 1;
+        white-space: pre-wrap;
+        color: var(--text);
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <header class="hero">
+        <div>
+          <h1 data-i18n="publishingStudio.title">Publishing Studio</h1>
+          <div class="hint" data-i18n="publishingStudio.subtitle">
+            Compose once, publish across your identities — safely.
+          </div>
+        </div>
+        <div class="actions">
+          <button
+            id="pub-refresh-btn"
+            class="btn secondary"
+            data-i18n="publishingStudio.refresh"
+          >
+            Refresh
+          </button>
+        </div>
+      </header>
+
+      <div class="grid">
+        <section class="card">
+          <h2 data-i18n="publishingStudio.composeHeading">Compose</h2>
+          <div id="pub-composer"></div>
+          <div class="pub-var-section">
+            <div class="pub-var-title" data-i18n="publishingStudio.var.heading">
+              Variation &amp; templates
+            </div>
+            <div id="pub-variation"></div>
+          </div>
+          <div id="pub-when" class="pub-when"></div>
+        </section>
+        <section class="card">
+          <h2 data-i18n="publishingStudio.targetsHeading">Identities</h2>
+          <div id="pub-targets"></div>
+        </section>
+      </div>
+
+      <div class="footer-bar">
+        <button
+          id="pub-publish-btn"
+          class="btn"
+          disabled
+          data-i18n="publishingStudio.publishNow"
+        >
+          Publish now
+        </button>
+        <span id="pub-status" class="pub-status" data-tone="gray"></span>
+      </div>
+
+      <div id="pub-progress" class="pub-progress"></div>
+
+      <section class="card pub-hist-section">
+        <h2 data-i18n="publishingStudio.sched.heading">Scheduled publications</h2>
+        <div id="pub-scheduled"></div>
+      </section>
+
+      <section class="card pub-hist-section">
+        <h2 data-i18n="publishingStudio.hist.heading">Recent publications</h2>
+        <div id="pub-history"></div>
+      </section>
+    </div>
+
+    <script src="./i18n.js"></script>
+    <script src="./ui-prompt.js"></script>
+    <script src="./bulk-history-helpers.js"></script>
+    <script src="./publishing-helpers.js"></script>
+    <script src="./publishing-composer.js"></script>
+    <script src="./publishing-targets.js"></script>
+    <script src="./publishing-schedule.js"></script>
+    <script src="./publishing-scheduled-list.js"></script>
+    <script src="./publishing-variation.js"></script>
+    <script src="./publishing-store.js"></script>
+    <script src="./publishing-variation-ui.js"></script>
+    <script src="./publishing-history.js"></script>
+    <script src="./publishing-studio.js"></script>
+  </body>
+</html>

@@ -221,6 +221,16 @@ function buildCommands(sources) {
       emoji: '📜',
       payload: { action: 'open-modal', modal: 'bulkHistory' },
     },
+    // v2 Etapa 1 (Publishing Studio): open the dedicated publishing tab.
+    {
+      id: 'action:open-publishing-studio',
+      label: 'Publishing Studio…',
+      labelKey: 'publishingStudio.paletteEntry',
+      keywords: 'publish post instagram x twitter social media studio compose',
+      keywordsKey: 'publishingStudio.paletteKeywords',
+      emoji: '📣',
+      payload: { action: 'open-publishing' },
+    },
     {
       id: 'action:open-bulk-opener',
       label: 'Bulk Open Identities…',

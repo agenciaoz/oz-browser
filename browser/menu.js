@@ -120,6 +120,16 @@ const setupMenu = (browser) => {
     }
   }
 
+  // v2 Etapa 1 — opens the Publishing Studio in a dedicated tab. The chrome
+  // listens for this and calls window.oz.publishing.openTab(). Same focused-
+  // window routing as the entries above.
+  const openPublishingStudio = () => {
+    const win = browser.getFocusedWindow()
+    if (win && win.webContents && !win.webContents.isDestroyed()) {
+      win.webContents.send('oz:publishing:open')
+    }
+  }
+
   const template = [
     ...(isMac ? [{ role: 'appMenu' }] : []),
     { role: 'fileMenu' },
@@ -256,6 +266,14 @@ const setupMenu = (browser) => {
           // junto a openBulkHistory).
           label: 'Bulk Run History…',
           click: openBulkHistory,
+        },
+        { type: 'separator' },
+        {
+          // v2 Etapa 1 — Publishing Studio (compose + publish across
+          // identities). Opens as a dedicated tab.
+          label: 'Publishing Studio…',
+          accelerator: 'Alt+Shift+P',
+          click: openPublishingStudio,
         },
       ],
     },

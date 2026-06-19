@@ -292,6 +292,13 @@
         if (ui && typeof ui.open === 'function') ui.open()
         return true
       },
+      // v2 Etapa 1: open the Publishing Studio in a dedicated tab.
+      'open-publishing': async () => {
+        if (window.oz?.publishing?.openTab) {
+          await safe(window.oz.publishing.openTab(), 'publishing.openTab')
+        }
+        return true
+      },
       'toggle-devtools': async () => {
         // No IPC for active webContents devtools; the native menu has the
         // Cmd+Shift+J binding. Surfaced here for discoverability.

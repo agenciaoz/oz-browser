@@ -44,6 +44,14 @@
     await sidebar.init()
     if (wsSwitcher) await wsSwitcher.init()
 
+    // v2 Etapa 1: the Publishing Studio menu item / palette routes through the
+    // focused chrome. Open the dedicated tab when asked.
+    if (window.oz?.publishing?.onOpen) {
+      window.oz.publishing.onOpen(() => {
+        if (window.oz.publishing.openTab) window.oz.publishing.openTab()
+      })
+    }
+
     // C-8: wire the new Health Check button (toolbar footer). The other
     // toolbar buttons hook themselves up via document.getElementById in
     // their own modules (account-manager.js, time-machine.js, etc).
@@ -56,6 +64,14 @@
         if (window.OZ && window.OZ.HealthCheck && activeId) {
           window.OZ.HealthCheck.open(activeId)
         }
+      })
+    }
+
+    // v2 Etapa 1: footer toolbar button opens the Publishing Studio tab.
+    const publishBtn = document.getElementById('oz-publish-button')
+    if (publishBtn) {
+      publishBtn.addEventListener('click', () => {
+        if (window.oz?.publishing?.openTab) window.oz.publishing.openTab()
       })
     }
 

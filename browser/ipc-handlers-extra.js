@@ -336,6 +336,10 @@ function registerProxyHealthGlobalHandlersIPC(browser) {
       return { ok: false, reason: 'OPEN_FAILED', message: err.message }
     }
   })
+
+  // v2 Etapa 1: Publishing Studio open-tab handler. Extracted to
+  // publishing-ipc.js to keep this file under the 500-LOC budget (ADR 0005).
+  require('./publishing-ipc').registerPublishingIpc(browser)
 }
 
 // ----- Ghost Browser Migration (G-3) ----------------------------------------

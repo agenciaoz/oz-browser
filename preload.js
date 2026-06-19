@@ -15,6 +15,7 @@ const { contextBridge, ipcRenderer } = require('electron')
 const { injectBrowserAction } = require('electron-chrome-extensions/browser-action')
 const { buildAutoUpdaterApi } = require('./browser/preload-autoupdater-api')
 const { buildBulkApi } = require('./browser/preload-bulk-api')
+const { buildPublishingApi } = require('./browser/preload-publishing-api')
 
 // OZ-owned chrome-extension pages that need window.oz. webui.html is the
 // main browser chrome; proxy-dashboard.html is the H-2b dashboard tab.
@@ -549,6 +550,8 @@ if (isOzPage) {
         return () => ipcRenderer.off('oz:health:changed', listener)
       },
     },
+    // v2 Etapa 1: Publishing Studio — impl en browser/preload-publishing-api.js.
+    publishing: buildPublishingApi(ipcRenderer),
     // H-2j (v1.1.4): WebRTC + DNS leak tests on demand. run() spawns hidden
     // BrowserWindow with identity session to gather ICE candidates + hits
     // ipleak.net via net.request, then judges via leak-tests.js (pure).
