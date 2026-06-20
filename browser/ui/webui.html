@@ -235,34 +235,24 @@
       .tab:not([data-active]):hover {
         background: rgba(255, 255, 255, 0.06);
       }
-      /* alpha.67/68: drag-and-drop live feedback. The dragged tab dims with a
-         dashed outline; a bold glowing bar + an open gap show exactly where it
-         will land (before/after the hovered tab), updated live on dragover. */
+      /* alpha.67/69: drag-and-drop live feedback. The dragged tab dims with a
+         dashed outline; a bold glowing bar shows exactly where it will land
+         (before/after the hovered tab), updated live on dragover. The bar is an
+         absolute overlay — it does NOT shift layout, so neighbors don't jitter
+         (the old margin-gap caused a reflow loop = vibration). */
       .tab[data-dragging] {
         opacity: 0.35;
         outline: 1px dashed rgba(255, 255, 255, 0.55);
         outline-offset: -2px;
-      }
-      .tab[data-drop-side] {
-        /* smooth the gap opening so the insertion point reads clearly */
-        transition:
-          background 0.12s ease,
-          margin 0.09s ease;
-      }
-      .tab[data-drop-side='before'] {
-        margin-left: 14px;
-      }
-      .tab[data-drop-side='after'] {
-        margin-right: 14px;
       }
       .tab[data-drop-side]::after {
         content: '';
         position: absolute;
         top: 0;
         bottom: 0;
-        width: 4px;
+        width: 5px;
         border-radius: 3px;
-        background: #8fd0ff;
+        background: #9ad6ff;
         box-shadow:
           0 0 12px 3px rgba(74, 163, 255, 0.95),
           0 0 4px 1px #ffffff;
@@ -270,10 +260,10 @@
         pointer-events: none;
       }
       .tab[data-drop-side='before']::after {
-        left: -9px;
+        left: -3px;
       }
       .tab[data-drop-side='after']::after {
-        right: -9px;
+        right: -3px;
       }
       .tab .favicon[src] {
         display: none;
