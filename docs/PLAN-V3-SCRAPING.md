@@ -109,17 +109,21 @@ Flag por-tool `human: true|false` (off para velocidad, on para targets duros).
 > smoke en vivo pendiente). Pendiente del bloque: orquestador de ejecución
 > paralela que ate `DomainRateLimiter` + `CrawlFrontier` + page-tools.
 
-- Rate-limit por dominio (`DomainRateLimiter`, espaciado next-available) ✅ (alpha.61). Falta: cablear la **ejecución en paralelo** de N identidades sobre este primitivo.
+- Correr N identidades en paralelo (`runScrapeJob`, orquestador) ✅ (alpha.64) — ata `CrawlFrontier` + `DomainRateLimiter` + retry, `worker` inyectable, concurrency/maxPages/follow-links/AbortSignal. Falta: adapter del `worker` real (identity + page-handlers) + smoke en vivo.
+- Rate-limit por dominio (`DomainRateLimiter`, espaciado next-available) ✅ (alpha.61).
 - **Detección** de captcha (heurística + sentinels reCAPTCHA/hCaptcha) → alerta, **NO** resolver ✅ (alpha.59)
 - Retry con backoff exponencial por clase de error ✅ (alpha.60)
 - Crawl frontier persistente (JSON) ✅ (alpha.62) — `CrawlFrontier` dedupe + visited + depth + reintentos + persistencia atómica.
 - **Headless** (`--headless --identity --recipe`) ✅ código (alpha.63): parser CLI + `runHeadlessRecipe` (driver=page-handlers inyectable, retry por paso, recipe JSON validado) + bootstrap `headless-setup.js` wireado en `main.js` detrás del flag. **Falta smoke en vivo** (toca Electron) + override de `--proxy` + ventana oculta (hoy reusa la ventana inicial).
 
-> **Resumen V3-D:** primitivos del bloque completos y testeados (captcha,
-> retry/backoff, rate-limit por dominio, crawl frontier, headless CLI+runner).
-> Pendiente para cerrar 100%: (a) orquestador que corra N identidades en
-> paralelo consumiendo `DomainRateLimiter` + `CrawlFrontier`, y (b) smoke en
-> vivo del modo headless en la Mac de Jose.
+> **Resumen V3-D:** lógica del bloque COMPLETA y testeada (captcha, retry/backoff,
+> rate-limit por dominio, crawl frontier, headless CLI+runner, orquestador
+> paralelo `runScrapeJob`). Lo único que resta son los **glues a Electron + sus
+> smokes en vivo** (no smokeables en sandbox): (a) smoke del modo headless en la
+> Mac de Jose (+ override `--proxy` + ventana oculta), y (b) adapter del `worker`
+> real del orquestador (asigna identity + corre page-handlers) + su smoke. El
+> motor de scraping ya es usable vía MCP `oz.page.*` hoy; el orquestador y el
+> headless agregan automatización masiva por encima.
 
 ### V3-E — Observabilidad · ~10h
 
