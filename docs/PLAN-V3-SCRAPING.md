@@ -103,14 +103,23 @@ Flag por-tool `human: true|false` (off para velocidad, on para targets duros).
 > (glue `runWithRetry`/`executeItemWithRetry`). Opt-in por run vía
 > `options.retry`; respeta AbortSignal y el `clock` inyectable. `_realClock`
 > extraído a `bulk-runner-clock.js` por budget LOC. 13 tests con fake clock.
-> Pendiente del bloque: orquestación paralela con rate-limit por dominio,
-> crawl frontier, headless.
+> Slice 3 ✅ `v2.0.0-alpha.61`: **rate-limit por dominio** (`DomainRateLimiter`).
+> Slice 4 ✅ `v2.0.0-alpha.62`: **crawl frontier persistente** (`CrawlFrontier`).
+> Slice 5 ✅ `v2.0.0-alpha.63`: **modo headless** (CLI + runner, código completo;
+> smoke en vivo pendiente). Pendiente del bloque: orquestador de ejecución
+> paralela que ate `DomainRateLimiter` + `CrawlFrontier` + page-tools.
 
-- Correr N identidades en paralelo con rate-limit por dominio (reusa `oz.bulk.rlStats`) — pendiente
+- Rate-limit por dominio (`DomainRateLimiter`, espaciado next-available) ✅ (alpha.61). Falta: cablear la **ejecución en paralelo** de N identidades sobre este primitivo.
 - **Detección** de captcha (heurística + sentinels reCAPTCHA/hCaptcha) → alerta, **NO** resolver ✅ (alpha.59)
 - Retry con backoff exponencial por clase de error ✅ (alpha.60)
-- Crawl frontier persistente (SQLite/JSON) — pendiente
-- **Headless** (`--headless --identity --recipe --proxy`) integrado acá (~3-5h extra) — pendiente
+- Crawl frontier persistente (JSON) ✅ (alpha.62) — `CrawlFrontier` dedupe + visited + depth + reintentos + persistencia atómica.
+- **Headless** (`--headless --identity --recipe`) ✅ código (alpha.63): parser CLI + `runHeadlessRecipe` (driver=page-handlers inyectable, retry por paso, recipe JSON validado) + bootstrap `headless-setup.js` wireado en `main.js` detrás del flag. **Falta smoke en vivo** (toca Electron) + override de `--proxy` + ventana oculta (hoy reusa la ventana inicial).
+
+> **Resumen V3-D:** primitivos del bloque completos y testeados (captcha,
+> retry/backoff, rate-limit por dominio, crawl frontier, headless CLI+runner).
+> Pendiente para cerrar 100%: (a) orquestador que corra N identidades en
+> paralelo consumiendo `DomainRateLimiter` + `CrawlFrontier`, y (b) smoke en
+> vivo del modo headless en la Mac de Jose.
 
 ### V3-E — Observabilidad · ~10h
 

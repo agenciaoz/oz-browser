@@ -752,6 +752,13 @@ class Browser {
 
     this.resolveReady()
     log.info('browser', 'Browser.init() done — initial window created')
+
+    // V3-D: headless invocation (oz --headless --identity --recipe ...). Runs
+    // the recipe over page-handlers then exits. Guarded by the flag → zero
+    // effect on a normal GUI launch.
+    if (require('./headless-cli').isHeadlessInvocation(process.argv)) {
+      await require('./headless-setup').runHeadless(this, process.argv)
+    }
   }
 
   createWindow(options = {}) {
