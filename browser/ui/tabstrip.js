@@ -194,23 +194,44 @@
           ev.dataTransfer.setData('text/plain', String(tab.id))
         }
       })
-      node.addEventListener('dragend', () => delete node.dataset.dragging)
+      node.addEventListener('dragend', () => {
+        delete node.dataset.dragging
+        this.clearDropMarkers()
+      })
       node.addEventListener('dragover', (ev) => {
         ev.preventDefault()
         if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move'
-        node.dataset.dropTarget = ''
+        if (this._dragId == null || this._dragId === tab.id) return
+        // Live indicator: left half → marker BEFORE this tab, right half → AFTER.
+        const rect = node.getBoundingClientRect()
+        const side = ev.clientX < rect.left + rect.width / 2 ? 'before' : 'after'
+        if (node.dataset.dropSide !== side) {
+          this.clearDropMarkers()
+          node.dataset.dropSide = side
+        }
       })
-      node.addEventListener('dragleave', () => delete node.dataset.dropTarget)
+      node.addEventListener('dragleave', () => delete node.dataset.dropSide)
       node.addEventListener('drop', (ev) => {
         ev.preventDefault()
-        delete node.dataset.dropTarget
+        const side = node.dataset.dropSide || 'before'
+        this.clearDropMarkers()
         const fromId = this._dragId
         this._dragId = null
         if (fromId == null || fromId === tab.id) return
-        const toIndex = this.tabs.findIndex((t) => t.id === tab.id)
-        if (toIndex < 0) return
-        safe(window.oz.tabs.reorder(fromId, toIndex), 'tabs.reorder')
+        const fromIndex = this.tabs.findIndex((t) => t.id === fromId)
+        const targetIndex = this.tabs.findIndex((t) => t.id === tab.id)
+        if (fromIndex < 0 || targetIndex < 0) return
+        const to = window.OZ.TabstripLayout.dropTargetIndex(fromIndex, targetIndex, side)
+        safe(window.oz.tabs.reorder(fromId, to), 'tabs.reorder')
       })
+    }
+
+    // Remove the live drop indicator from every tab.
+    clearDropMarkers() {
+      if (!this.$.list) return
+      for (const el of this.$.list.querySelectorAll('.tab[data-drop-side]')) {
+        delete el.dataset.dropSide
+      }
     }
 
     renderTabNode(tab) {

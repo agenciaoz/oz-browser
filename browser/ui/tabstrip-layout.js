@@ -48,6 +48,24 @@
     return copy
   }
 
+  /**
+   * Mapea el slot de inserción visual de un drag (antes/después de la tab
+   * objetivo) al índice `to` que espera moveItem(). Cuando el item se mueve
+   * de izquierda a derecha, removerlo primero corre los índices uno a la
+   * izquierda → se compensa con -1.
+   *
+   * @param {number} fromIndex    índice actual de la tab arrastrada.
+   * @param {number} targetIndex  índice de la tab sobre la que se suelta.
+   * @param {'before'|'after'} side
+   * @returns {number} índice destino para moveItem.
+   */
+  function dropTargetIndex(fromIndex, targetIndex, side) {
+    const f = _int(fromIndex)
+    const t = _int(targetIndex)
+    const insert = side === 'after' ? t + 1 : t
+    return insert > f ? insert - 1 : insert
+  }
+
   /** Tope de filas válido: entero en [1, MAX_ROWS], default 3 ante basura. */
   function clampMaxRows(v) {
     const n = _int(v)
@@ -108,6 +126,7 @@
 
   const api = {
     moveItem,
+    dropTargetIndex,
     clampMaxRows,
     rowCountFor,
     chromeTopInset,

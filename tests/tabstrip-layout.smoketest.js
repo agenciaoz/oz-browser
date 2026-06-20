@@ -45,6 +45,24 @@ ok('moveItem: tolerates tiny/garbage arrays', () => {
   assert.deepStrictEqual(L.moveItem(null, 0, 1), [])
 })
 
+// ---- dropTargetIndex (drag-and-drop insertion math) ------------------------
+
+ok('dropTargetIndex + moveItem land where the indicator shows', () => {
+  const tabs = ['a', 'b', 'c', 'd'] // indices 0..3
+  // Drag 'a' (0) to AFTER 'c' (2) → expected ['b','c','a','d']
+  let to = L.dropTargetIndex(0, 2, 'after')
+  assert.deepStrictEqual(L.moveItem(tabs, 0, to), ['b', 'c', 'a', 'd'])
+  // Drag 'd' (3) to BEFORE 'b' (1) → expected ['a','d','b','c']
+  to = L.dropTargetIndex(3, 1, 'before')
+  assert.deepStrictEqual(L.moveItem(tabs, 3, to), ['a', 'd', 'b', 'c'])
+  // Drag 'b' (1) to BEFORE 'a' (0) → expected ['b','a','c','d']
+  to = L.dropTargetIndex(1, 0, 'before')
+  assert.deepStrictEqual(L.moveItem(tabs, 1, to), ['b', 'a', 'c', 'd'])
+  // Drag 'a' (0) to AFTER 'd' (3) → expected ['b','c','d','a']
+  to = L.dropTargetIndex(0, 3, 'after')
+  assert.deepStrictEqual(L.moveItem(tabs, 0, to), ['b', 'c', 'd', 'a'])
+})
+
 // ---- clampMaxRows -----------------------------------------------------------
 
 ok('clampMaxRows: 1..MAX_ROWS, default on junk', () => {

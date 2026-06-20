@@ -235,6 +235,30 @@
       .tab:not([data-active]):hover {
         background: rgba(255, 255, 255, 0.06);
       }
+      /* alpha.67: drag-and-drop live feedback. The dragged tab dims; a glowing
+         vertical bar shows where it will land (before/after the hovered tab),
+         updated in real time on dragover. */
+      .tab[data-dragging] {
+        opacity: 0.4;
+      }
+      .tab[data-drop-side]::after {
+        content: '';
+        position: absolute;
+        top: 12%;
+        bottom: 12%;
+        width: 3px;
+        border-radius: 2px;
+        background: #4aa3ff;
+        box-shadow: 0 0 6px 1px rgba(74, 163, 255, 0.8);
+        z-index: 6;
+        pointer-events: none;
+      }
+      .tab[data-drop-side='before']::after {
+        left: -2px;
+      }
+      .tab[data-drop-side='after']::after {
+        right: -2px;
+      }
       .tab .favicon[src] {
         display: none;
         width: 16px;
