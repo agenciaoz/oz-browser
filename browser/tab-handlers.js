@@ -10,6 +10,29 @@
 
 const log = require('./logger')
 const { normalizeOmniboxInput } = require('./url-normalize')
+const { shouldCleanupEphemeral } = require('./identity-ephemeral')
+
+// F3: remove a throwaway identity once its last tab is gone.
+function _cleanupEphemeralIdentity(browser, identityId) {
+  if (!identityId || !browser.identityManager) return
+  const ident = browser.identityManager.get(identityId)
+  if (!ident || !ident.ephemeral) return
+  const remaining = []
+  for (const win of browser.windows) {
+    for (const t of win.tabs.tabList) remaining.push({ identityId: t.identityId })
+  }
+  if (!shouldCleanupEphemeral(ident, remaining)) return
+  try {
+    browser.identityManager.remove(identityId)
+    browser.broadcastToWebUI('oz:identities:changed')
+    log.info('tab-handlers', 'ephemeral identity cleaned up', { identityId })
+  } catch (err) {
+    log.warn('tab-handlers', 'ephemeral cleanup failed', {
+      identityId,
+      message: err.message,
+    })
+  }
+}
 
 function buildTabHandlers(browser) {
   return {
@@ -105,9 +128,13 @@ function buildTabHandlers(browser) {
           // path (every workspace switch destroys all tabs via remove() in a
           // loop), filling the stack with stale tabs.
           const spec = tab.toSpec ? tab.toSpec() : null
+          const closedIdentityId = tab.identityId
           win.tabs.remove(tabId)
           if (spec) win.tabs.pushClosed(spec)
           browser.broadcastToWebUI('oz:tabs:updated', { kind: 'removed', tabId })
+          // F3: if this was the last tab of a throwaway (ephemeral) identity,
+          // remove the identity so it doesn't pile up.
+          _cleanupEphemeralIdentity(browser, closedIdentityId)
           log.info('tab-handlers', 'close ok', { tabId, windowId: win.id })
           return true
         }

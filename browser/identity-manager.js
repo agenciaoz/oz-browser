@@ -195,6 +195,7 @@ class IdentityManager extends EventEmitter {
     workspaceId,
     fingerprintSeed,
     tags,
+    ephemeral = false,
   } = {}) {
     if (!IS_PAID_TIER) {
       // Default identity counts towards the cap intentionally — Free tier
@@ -241,6 +242,9 @@ class IdentityManager extends EventEmitter {
       workspaceId: workspaceId || 'general',
       // alpha.40: free-text labels for grouping/filtering (Ghost parity).
       tags: normalizeTags(tags),
+      // F3: throwaway identity. When true, OZ removes it + wipes its data once
+      // its last tab closes (see identity-ephemeral.js + tab-handlers.close).
+      ephemeral: !!ephemeral,
     }
     this.identities.push(identity)
     this._save()

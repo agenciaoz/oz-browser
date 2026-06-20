@@ -210,6 +210,8 @@ if (isOzPage) {
     },
     // alpha.65: multi-row tabstrip — renderer reports its row count to main.
     chrome: { setRows: (rows) => ipcRenderer.invoke('oz:chrome:setRows', rows) },
+    // F2: named projects — impl en browser/preload-projects-api.js (LOC budget).
+    projects: require('./preload-projects-api').buildProjectsApi(ipcRenderer),
     vault: {
       status: () => ipcRenderer.invoke('oz:vault:status'),
       unlock: () => ipcRenderer.invoke('oz:vault:unlock'),

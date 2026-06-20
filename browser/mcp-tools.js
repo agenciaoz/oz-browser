@@ -28,6 +28,7 @@ const { buildBulkTools } = require('./mcp-tools-bulk')
 const { buildScheduledTools } = require('./mcp-tools-scheduled')
 const { buildPageTools } = require('./mcp-tools-page')
 const { buildNetworkTools } = require('./mcp-tools-network')
+const { buildProjectTools } = require('./mcp-tools-projects')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -54,6 +55,7 @@ function buildToolCatalog(browser) {
   const alerts = () => browser.handlers && browser.handlers.alerts
   const health = () => browser.handlers && browser.handlers.health
   const extensions = () => browser.handlers && browser.handlers.extensions
+  const projects = () => browser.handlers && browser.handlers.projects
 
   return [
     // -------------------- identities --------------------
@@ -498,6 +500,9 @@ function buildToolCatalog(browser) {
 
     // v3-A: network intercept (block/capture requests per identity session).
     ...buildNetworkTools(browser),
+
+    // F2: project save/restore tools (named tab sets).
+    ...buildProjectTools({ projects }),
 
     // -------------------- system metrics --------------------
     {

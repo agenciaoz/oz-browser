@@ -43,6 +43,7 @@ const { buildSyncHandlers } = require('./sync-handlers')
 const { buildHudHandlers } = require('./hud-handlers')
 const { buildMcpHandlers } = require('./mcp-handlers')
 const { buildBulkHandlers } = require('./bulk-handlers')
+const { buildProjectHandlers } = require('./project-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
@@ -89,6 +90,7 @@ function registerIpcHandlers(browser) {
     hud: buildHudHandlers(browser, { app: require('electron').app }),
     mcp: buildMcpHandlers(browser),
     bulk: browser.bulkRunner ? buildBulkHandlers(browser) : undefined,
+    projects: buildProjectHandlers(browser),
   })
 
   registerLogHandlers(browser)
@@ -470,6 +472,11 @@ function registerTabHandlersIPC(browser) {
   // Tab IPC (oz:tabs:*) extraído a tab-ipc-setup.js por el budget de LOC
   // (ADR 0005). Incluye el nuevo oz:tabs:reorder (drag-and-drop, alpha.65).
   require('./tab-ipc-setup').registerTabsIpc(ipcMain, h)
+
+  // F2: project IPC (oz:projects:*).
+  if (browser.handlers.projects) {
+    require('./project-ipc-setup').registerProjectsIpc(ipcMain, browser.handlers.projects)
+  }
 
   // alpha.65: multi-row tabstrip. El WebUI reporta cuántas filas ocupa el tab
   // strip; main calcula el inset superior y re-layoutea los WebContentsView de

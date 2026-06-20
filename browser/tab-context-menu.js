@@ -72,7 +72,11 @@ function buildTabContextMenu({ browser, tabId }) {
         // Reuse duplicate-in-temporary path but with about:blank.
         try {
           const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16)
-          const ident = im.create({ name: `Temp ${stamp}`, color: '#a8a8a8' })
+          const ident = im.create({
+            name: `Temp ${stamp}`,
+            color: '#a8a8a8',
+            ephemeral: true,
+          })
           browser.broadcastToWebUI('oz:identities:changed')
           h.openInIdentity(ident.id, 'about:blank')
         } catch (err) {

@@ -1,7 +1,8 @@
 // OZ Browser — Chrome extensions integration: session UA scrub, ChromeExtensions
 // instance, Web Store install, and per-webContents handlers (window.open, context menu).
 
-const { app, session, dialog } = require('electron')
+const { app, session, dialog, Menu, MenuItem } = require('electron')
+const { openInIdentityItems } = require('./link-context-menu')
 const { ElectronChromeExtensions } = require('electron-chrome-extensions')
 const { buildChromeContextMenu } = require('electron-chrome-context-menu')
 const { installChromeWebStore, loadAllExtensions } = require('electron-chrome-web-store')
@@ -234,9 +235,67 @@ function setupWebContentsCreatedHandler(browser) {
           }
         },
       })
+      // F1: right-click on a link → "Open link in identity" submenu.
+      if (params.linkURL) {
+        appendOpenInIdentity(menu, browser, params.linkURL)
+      }
       menu.popup()
     })
   })
+}
+
+/**
+ * Append a separator + "Abrir link en…" submenu listing identities. Each item
+ * opens `linkURL` in a tab under that identity (or a fresh temp/new identity).
+ */
+function appendOpenInIdentity(menu, browser, linkURL) {
+  const im = browser.identityManager
+  if (!im || !browser.handlers || !browser.handlers.tabs) return
+  const h = browser.handlers.tabs
+
+  const openUnder = (identityId) => {
+    const id = h.openInIdentity(identityId, linkURL)
+    if (id) h.select(id)
+  }
+  const items = openInIdentityItems({
+    identities: im.list(),
+    activeIdentityId: browser.activeIdentityId,
+  })
+  const submenu = new Menu()
+  for (const it of items) {
+    submenu.append(
+      new MenuItem({
+        label: it.label,
+        click: () => {
+          try {
+            if (it.action === 'open') {
+              openUnder(it.identityId)
+            } else if (it.action === 'open-temp') {
+              const stamp = new Date().toISOString().replace('T', ' ').slice(0, 16)
+              const ident = im.create({
+                name: `Temp ${stamp}`,
+                color: '#a8a8a8',
+                ephemeral: true,
+              })
+              browser.broadcastToWebUI('oz:identities:changed')
+              openUnder(ident.id)
+            } else if (it.action === 'open-new') {
+              const ident = im.create({ name: 'New Identity' })
+              browser.broadcastToWebUI('oz:identities:changed')
+              openUnder(ident.id)
+            }
+          } catch (err) {
+            log.warn('extensions-setup', 'open link in identity failed', {
+              action: it.action,
+              message: err.message,
+            })
+          }
+        },
+      }),
+    )
+  }
+  menu.append(new MenuItem({ type: 'separator' }))
+  menu.append(new MenuItem({ label: 'Abrir link en…', submenu }))
 }
 
 module.exports = {
