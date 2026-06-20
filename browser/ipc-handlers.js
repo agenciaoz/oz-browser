@@ -467,46 +467,26 @@ function registerBackupHandlersIPC(browser) {
 function registerTabHandlersIPC(browser) {
   const h = browser.handlers.tabs
 
-  ipcMain.handle('oz:tabs:list', () => h.list())
-  ipcMain.handle('oz:tabs:getIdentity', (_e, tabId) => h.getIdentity(tabId))
-  ipcMain.handle('oz:tabs:openInIdentity', (_e, identityId, url) =>
-    h.openInIdentity(identityId, url),
-  )
-  ipcMain.handle('oz:tabs:select', (_e, tabId) => h.select(tabId))
-  ipcMain.handle('oz:tabs:close', (_e, tabId) => h.close(tabId))
-  // H1 — Cmd+Shift+T equivalent.
-  ipcMain.handle('oz:tabs:reopenClosed', () => h.reopenClosed())
-  ipcMain.handle('oz:tabs:bulkCreateLazy', (_e, count, identityId, urlTemplate) =>
-    h.bulkCreateLazy(count, identityId, urlTemplate),
-  )
-  ipcMain.handle('oz:tabs:moveToWorkspace', (_e, tabId, targetWorkspaceId) =>
-    h.moveToWorkspace(tabId, targetWorkspaceId),
-  )
+  // Tab IPC (oz:tabs:*) extraído a tab-ipc-setup.js por el budget de LOC
+  // (ADR 0005). Incluye el nuevo oz:tabs:reorder (drag-and-drop, alpha.65).
+  require('./tab-ipc-setup').registerTabsIpc(ipcMain, h)
 
-  // 1.7a: tab context menu actions ----------------------------------------
-  ipcMain.handle('oz:tabs:reload', (_e, tabId) => h.reload(tabId))
-  ipcMain.handle('oz:tabs:duplicate', (_e, tabId) => h.duplicate(tabId))
-  ipcMain.handle('oz:tabs:duplicateInTemporary', (_e, tabId) =>
-    h.duplicateInTemporary(tabId),
-  )
-  ipcMain.handle('oz:tabs:duplicateInIdentity', (_e, tabId, identityId) =>
-    h.duplicateInIdentity(tabId, identityId),
-  )
-  ipcMain.handle('oz:tabs:duplicateInNewIdentity', (_e, tabId, name) =>
-    h.duplicateInNewIdentity(tabId, name),
-  )
-  ipcMain.handle('oz:tabs:refreshAllInIdentity', (_e, identityId) =>
-    h.refreshAllInIdentity(identityId),
-  )
-  ipcMain.handle('oz:tabs:moveToNewWindow', (_e, tabId) => h.moveToNewWindow(tabId))
-  ipcMain.handle('oz:tabs:pin', (_e, tabId) => h.pin(tabId))
-  ipcMain.handle('oz:tabs:unpin', (_e, tabId) => h.unpin(tabId))
-  ipcMain.handle('oz:tabs:lock', (_e, tabId) => h.lock(tabId))
-  ipcMain.handle('oz:tabs:unlock', (_e, tabId) => h.unlock(tabId))
-  ipcMain.handle('oz:tabs:mute', (_e, tabId) => h.mute(tabId))
-  ipcMain.handle('oz:tabs:unmute', (_e, tabId) => h.unmute(tabId))
-  ipcMain.handle('oz:tabs:closeOthers', (_e, tabId) => h.closeOthers(tabId))
-  ipcMain.handle('oz:tabs:closeToRight', (_e, tabId) => h.closeToRight(tabId))
+  // alpha.65: multi-row tabstrip. El WebUI reporta cuántas filas ocupa el tab
+  // strip; main calcula el inset superior y re-layoutea los WebContentsView de
+  // esa ventana para que el contenido no tape las filas extra.
+  ipcMain.handle('oz:chrome:setRows', (event, rows) => {
+    const { chromeTopInset } = require('./ui/tabstrip-layout')
+    const win = browser.windows.find(
+      (w) =>
+        w.webContents === event.sender ||
+        (w.window && w.window.webContents === event.sender),
+    )
+    if (!win) return false
+    const electronWin = win.window || win
+    electronWin.__ozTopInset = chromeTopInset({ rows: Number(rows) })
+    for (const t of win.tabs.tabList) if (t.materialized) t.invalidateLayout()
+    return true
+  })
 
   // 1.7a: context-menu opener — main builds the native template and pops it
   // up at the cursor location for the requesting window. Renderer just sends

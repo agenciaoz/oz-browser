@@ -175,6 +175,7 @@ if (isOzPage) {
       openInIdentity: (identityId, url) =>
         ipcRenderer.invoke('oz:tabs:openInIdentity', identityId, url),
       select: (tabId) => ipcRenderer.invoke('oz:tabs:select', tabId),
+      reorder: (tabId, toIndex) => ipcRenderer.invoke('oz:tabs:reorder', tabId, toIndex),
       close: (tabId) => ipcRenderer.invoke('oz:tabs:close', tabId),
       // H1 — Cmd+Shift+T binding lives in the native menu (browser/menu.js)
       // but we expose this here so the renderer can also trigger it via
@@ -207,6 +208,8 @@ if (isOzPage) {
         return () => ipcRenderer.off('oz:tabs:updated', listener)
       },
     },
+    // alpha.65: multi-row tabstrip — renderer reports its row count to main.
+    chrome: { setRows: (rows) => ipcRenderer.invoke('oz:chrome:setRows', rows) },
     vault: {
       status: () => ipcRenderer.invoke('oz:vault:status'),
       unlock: () => ipcRenderer.invoke('oz:vault:unlock'),

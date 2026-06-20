@@ -71,6 +71,20 @@ function buildTabHandlers(browser) {
       return false
     },
 
+    // Drag-and-drop reorder within a window's tab list. `toIndex` is the
+    // target position in that window's tabList.
+    reorder(tabId, toIndex) {
+      for (const win of browser.windows) {
+        if (win.tabs.get(tabId)) {
+          const moved = win.tabs.reorder(tabId, Number(toIndex))
+          if (moved) browser.broadcastToWebUI('oz:tabs:updated', { kind: 'reordered' })
+          return moved
+        }
+      }
+      log.warn('tab-handlers', 'reorder: tabId not found', { tabId })
+      return false
+    },
+
     close(tabId) {
       for (const win of browser.windows) {
         const tab = win.tabs.get(tabId)

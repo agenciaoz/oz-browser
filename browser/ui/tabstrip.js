@@ -13,6 +13,10 @@
     tabs = []
     identities = []
     activeOzTabId = null
+    // alpha.65: multi-row tabstrip + drag-reorder state.
+    maxRows = 3
+    _lastRows = null
+    _dragId = null
 
     constructor() {
       const $ = document.querySelector.bind(document)
@@ -87,12 +91,45 @@
       }
       this.identities = await window.oz.identities.list()
       this.tabs = await window.oz.tabs.list()
+      await this.loadMaxRows()
       this.render()
       window.oz.identities.onChanged(async () => {
         this.identities = await window.oz.identities.list()
         this.render()
       })
       window.oz.tabs.onUpdated((info) => this.handleEvent(info))
+      // alpha.65: re-evaluate row count when the window width changes.
+      window.addEventListener('resize', () => this.applyRows())
+    }
+
+    async loadMaxRows() {
+      const L = window.OZ.TabstripLayout
+      try {
+        const ts = await window.oz.settings.get('tabStrip')
+        this.maxRows = L ? L.clampMaxRows(ts && ts.maxRows) : 3
+      } catch (_e) {
+        this.maxRows = L ? L.MAX_ROWS : 3
+      }
+    }
+
+    // Compute how many rows the tabstrip needs and report it to main so the
+    // page content view inset tracks the (taller) chrome. Also drives the
+    // --oz-tab-rows CSS var that pushes the toolbar down.
+    applyRows() {
+      const L = window.OZ.TabstripLayout
+      if (!L || !this.$.list) return
+      const rows = L.rowCountFor({
+        count: this.tabs.length,
+        containerWidth: this.$.list.clientWidth || 0,
+        minTabWidth: 120,
+        maxRows: this.maxRows,
+      })
+      document.documentElement.style.setProperty('--oz-tab-rows', String(rows))
+      if (rows === this._lastRows) return
+      this._lastRows = rows
+      if (window.oz.chrome && window.oz.chrome.setRows) {
+        safe(window.oz.chrome.setRows(rows), 'chrome.setRows')
+      }
     }
 
     handleEvent(info) {
@@ -113,7 +150,8 @@
         this.activeOzTabId = info.tabId
         const sel = this.tabs.find((x) => x.id === info.tabId)
         if (sel) this.renderToolbar(sel)
-      } else if (info.kind === 'bulk-created') {
+      } else if (info.kind === 'bulk-created' || info.kind === 'reordered') {
+        // alpha.65: reordered → re-list so the strip reflects the new order.
         window.oz.tabs.list().then((all) => {
           this.tabs = all
           this.render()
@@ -138,6 +176,41 @@
       for (const tab of this.tabs) {
         this.$.list.appendChild(this.renderTabNode(tab))
       }
+      // alpha.65: recompute rows after the DOM is laid out (clientWidth needs a
+      // frame to be accurate after innerHTML reset).
+      window.requestAnimationFrame(() => this.applyRows())
+    }
+
+    // alpha.65: wire HTML5 drag-and-drop on a tab node to reorder it. Uses an
+    // instance var for the dragged id so the original id type is preserved
+    // (dataTransfer only carries strings).
+    wireDrag(node, tab) {
+      node.draggable = true
+      node.addEventListener('dragstart', (ev) => {
+        this._dragId = tab.id
+        node.dataset.dragging = ''
+        if (ev.dataTransfer) {
+          ev.dataTransfer.effectAllowed = 'move'
+          ev.dataTransfer.setData('text/plain', String(tab.id))
+        }
+      })
+      node.addEventListener('dragend', () => delete node.dataset.dragging)
+      node.addEventListener('dragover', (ev) => {
+        ev.preventDefault()
+        if (ev.dataTransfer) ev.dataTransfer.dropEffect = 'move'
+        node.dataset.dropTarget = ''
+      })
+      node.addEventListener('dragleave', () => delete node.dataset.dropTarget)
+      node.addEventListener('drop', (ev) => {
+        ev.preventDefault()
+        delete node.dataset.dropTarget
+        const fromId = this._dragId
+        this._dragId = null
+        if (fromId == null || fromId === tab.id) return
+        const toIndex = this.tabs.findIndex((t) => t.id === tab.id)
+        if (toIndex < 0) return
+        safe(window.oz.tabs.reorder(fromId, toIndex), 'tabs.reorder')
+      })
     }
 
     renderTabNode(tab) {
@@ -204,6 +277,9 @@
         : tab.title || 'New Tab'
       node.querySelector('.title').textContent = tab.locked ? `\u{1F512} ${label}` : label
       node.querySelector('.audio').disabled = true
+
+      // alpha.65: drag-and-drop reorder.
+      this.wireDrag(node, tab)
       return node
     }
 

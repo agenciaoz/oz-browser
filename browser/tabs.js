@@ -254,13 +254,17 @@ class Tab extends EventEmitter {
     if (!this.materialized || !this.window || this.window.isDestroyed()) return
     const [width, height] = this.window.getSize()
     const padding = 4
+    // alpha.65: top inset is dynamic when the tabstrip wraps to multiple rows
+    // (set by ipc-handlers `oz:chrome:setRows`). Falls back to the single-row
+    // TOOLBAR_HEIGHT constant.
+    const top = this.window.__ozTopInset || TOOLBAR_HEIGHT
     this.view.setBounds({
       x: SIDEBAR_WIDTH + padding,
-      y: TOOLBAR_HEIGHT,
+      y: top,
       width: width - SIDEBAR_WIDTH - padding * 2,
       // v1.8.2: subtract FOOTER_HEIGHT so the WebContentsView doesn't
       // overlap the bookmarks bar at the bottom (v1.8.1).
-      height: height - TOOLBAR_HEIGHT - FOOTER_HEIGHT - padding,
+      height: height - top - FOOTER_HEIGHT - padding,
     })
     this.view.setBorderRadius(8)
   }
@@ -443,6 +447,19 @@ class Tabs extends EventEmitter {
     if (this.tabList.length === 0) {
       // Don't auto-destroy the window — user might create a new tab via UI.
     }
+  }
+
+  /**
+   * Reordena una tab a una nueva posición (drag-and-drop del tabstrip).
+   * Devuelve true si se movió. No materializa ni cambia la selección.
+   */
+  reorder(tabId, toIndex) {
+    const from = this.tabList.findIndex((t) => t.id === tabId)
+    if (from < 0) return false
+    const { moveItem } = require('./ui/tabstrip-layout')
+    this.tabList = moveItem(this.tabList, from, toIndex)
+    this.emit('tabs-reordered', { tabId, toIndex })
+    return true
   }
 
   select(tabId) {
