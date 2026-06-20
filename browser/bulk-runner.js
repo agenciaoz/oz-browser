@@ -37,6 +37,8 @@ const fs = require('fs')
 const path = require('path')
 const crypto = require('crypto')
 const { EventEmitter } = require('events')
+const { executeItemWithRetry } = require('./bulk-runner-retry')
+const { realClock } = require('./bulk-runner-clock')
 
 const SCHEMA_VERSION = 1
 const MAX_IDENTITIES_PER_RUN = 200
@@ -95,7 +97,7 @@ class BulkRunner extends EventEmitter {
     this.runsDir = path.join(this.userDataDir, 'bulk-runs')
     this.logger = opts.logger || _silentLogger()
     // `clock` allows tests to fake delay timers.
-    this.clock = opts.clock || _realClock()
+    this.clock = opts.clock || realClock()
     // v2 sub-bloque 4: optional auto-login dependencies. When set, the runner
     // will attempt vault-backed login + retry once on err.code='needs_login'.
     // If unset, the original needs_login error surfaces as item.failed.
@@ -192,7 +194,13 @@ class BulkRunner extends EventEmitter {
       actionId,
       actionLabel: action.label,
       params,
-      options: { minDelayMs: minDelay, maxDelayMs: maxDelay },
+      options: {
+        minDelayMs: minDelay,
+        maxDelayMs: maxDelay,
+        // V3-D: optional per-run retry policy (raw opts; normalized at run
+        // time by bulk-runner-retry.js). null = no retry (historic behavior).
+        retry: _isPlainObject(options.retry) ? options.retry : null,
+      },
       identityCount: items.length,
       status: RUN_STATUS_CREATED,
       createdAt: new Date().toISOString(),
@@ -398,13 +406,17 @@ class BulkRunner extends EventEmitter {
         logger: this.logger,
         signal: r.controller.signal,
       }
-      let result
-      let runErr
-      try {
-        result = await action.run(identity, r.meta.params, ctx)
-      } catch (err) {
-        runErr = err
-      }
+      const outcome = await executeItemWithRetry({
+        runFn: () => action.run(identity, r.meta.params, ctx),
+        retryOpts: r.meta.options && r.meta.options.retry,
+        clock: this.clock,
+        signal: r.controller.signal,
+        logger: this.logger,
+        runId,
+        item,
+      })
+      let result = outcome.result
+      let runErr = outcome.error
       // v2 sub-bloque 4: auto-login retry on needs_login error. Only
       // attempts when accountsAPI is wired AND action declared a platform.
       if (
@@ -540,26 +552,6 @@ class BulkRunner extends EventEmitter {
 
 function _newRunId() {
   return 'br-' + crypto.randomBytes(8).toString('hex')
-}
-
-function _realClock() {
-  return {
-    sleep(ms, signal) {
-      return new Promise((resolve) => {
-        const t = setTimeout(resolve, ms)
-        if (signal) {
-          signal.addEventListener(
-            'abort',
-            () => {
-              clearTimeout(t)
-              resolve()
-            },
-            { once: true },
-          )
-        }
-      })
-    },
-  }
 }
 
 function _silentLogger() {
