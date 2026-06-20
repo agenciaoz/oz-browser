@@ -70,14 +70,25 @@ Flag por-tool `human: true|false` (off para velocidad, on para targets duros).
 
 ### V3-C — Stealth defaults always-on · ~15-20h
 
-Expandir lo que ya hace FingerprintEngine.
+> **Estado: ✅ COMPLETO (alpha.55 + alpha.58).** Shims always-on en alpha.55
+> (`navigator.webdriver`=false, `chrome.runtime` shape, `permissions.query`
+> coherente). **alpha.58 cierra el timezone/Accept-Language auto-match:** al
+> asignar un proxy con país conocido a una identity, se aplica automáticamente
+> su timezone + languages + locale al fingerprint y se refresca el
+> Accept-Language de la sesión viva (header q-weighted estilo Chrome, derivado
+> de `fp.languages` — antes mandábamos un solo idioma = mismatch). Respeta
+> override manual (`geoSource:'manual'`) y el switch `privacy.autoMatchGeo`
+> (default ON). Helpers puros en `geo-match.js` + tests. Pendientes opcionales:
+> WebRTC leak prevention (STUN por proxy, mDNS off), audio FP randomization,
+> y lookup ip-api real (hoy se usa el país del proxy, que cubre el caso real
+> de Oxylabs/Bright Data sin red extra).
 
-- `navigator.webdriver` = undefined forzado
-- `navigator.plugins` realista por OS+UA
-- WebRTC leak prevention (STUN por el proxy, mDNS off)
-- **Timezone + Accept-Language auto-match a la geo del proxy IP** (lookup ip-api) — alto impacto, baja complejidad
-- Audio fingerprint randomization
-- `chrome.runtime` con shape correcto
+- `navigator.webdriver` = undefined forzado ✅
+- `navigator.plugins` realista por OS+UA ✅ (vía blueprints)
+- WebRTC leak prevention (STUN por el proxy, mDNS off) — pendiente
+- **Timezone + Accept-Language auto-match a la geo del proxy** ✅ (alpha.58)
+- Audio fingerprint randomization — pendiente
+- `chrome.runtime` con shape correcto ✅
 
 ### V3-D — Orquestación · ~10-15h (se apoya en Bulk Runner v2)
 

@@ -230,6 +230,95 @@ section(
   ok('workspace geoSuggestion', r5.geoSuggestion && r5.geoSuggestion.country === 'AR')
 }
 
+// -------------------------------------------------------------------------
+section('V3-C: auto-match geo on proxy assign (timezone + Accept-Language)')
+{
+  delete require.cache[require.resolve('../browser/proxy-manager.js')]
+  delete require.cache[require.resolve('../browser/proxy-assignment.js')]
+  delete require.cache[require.resolve('../browser/proxy-handlers.js')]
+  delete require.cache[require.resolve('../browser/fingerprint-engine.js')]
+  delete require.cache[require.resolve('../browser/logger.js')]
+  for (const f of fs.readdirSync(TEST_USERDATA)) {
+    if (f === 'logs') continue
+    fs.rmSync(path.join(TEST_USERDATA, f), { recursive: true, force: true })
+  }
+  const { ProxyManager } = require('../browser/proxy-manager.js')
+  const { ProxyAssignment } = require('../browser/proxy-assignment.js')
+  const { buildProxyHandlers } = require('../browser/proxy-handlers.js')
+  const { FingerprintEngine } = require('../browser/fingerprint-engine.js')
+
+  const pm = new ProxyManager()
+  const pa = new ProxyAssignment({ proxyManager: pm })
+  const ar = pm.create({ host: 'ar-pr.example.com', port: 8080, country: 'AR' })
+  const jp = pm.create({ host: 'jp-pr.example.com', port: 8080, country: 'JP' })
+
+  const fe = new FingerprintEngine()
+  // Seed a profile for each identity so applyGeoSuggestion has something to mutate.
+  fe.getOrCreate('auto-1', 'seed-auto-1')
+  fe.getOrCreate('manual-1', 'seed-manual-1')
+
+  // Track Accept-Language pushed to the live session.
+  let lastAcceptLang = null
+  const fakeSession = {
+    setProxy: async () => {},
+    setUserAgent: (_ua, lang) => {
+      lastAcceptLang = lang
+    },
+  }
+  const sessionCache = new Map([
+    ['auto-1', fakeSession],
+    ['manual-1', fakeSession],
+  ])
+  let autoMatchSetting = true
+  const browser = {
+    proxyManager: pm,
+    proxyAssignment: pa,
+    fingerprintEngine: fe,
+    settingsManager: { get: () => ({ autoMatchGeo: autoMatchSetting }) },
+    identityManager: {
+      get: (id) => ({ id }),
+      getSession: () => fakeSession,
+      sessionCache,
+    },
+    windows: [],
+    broadcastToWebUI() {},
+  }
+  const h = buildProxyHandlers(browser)
+
+  // 1) Fresh identity + setting ON → auto applies.
+  const a = h.assignToIdentity('auto-1', ar.id)
+  ok('auto: geoApplied true', a.geoApplied === true)
+  ok(
+    'auto: timezone now AR',
+    fe.cache['auto-1'].timezone === 'America/Argentina/Buenos_Aires',
+  )
+  ok('auto: languages now es-AR first', fe.cache['auto-1'].language === 'es-AR')
+  ok('auto: geoSource = auto', fe.cache['auto-1'].geoSource === 'auto')
+  ok(
+    'auto: live Accept-Language refreshed (q-weighted)',
+    lastAcceptLang === 'es-AR,es;q=0.9,en;q=0.8',
+  )
+
+  // 2) Manual override is never clobbered by a later auto assign.
+  fe.applyGeoSuggestion(
+    'manual-1',
+    { timezone: 'Europe/Madrid', languages: ['es-ES', 'es', 'en'], locale: 'es-ES' },
+    'manual',
+  )
+  const m = h.assignToIdentity('manual-1', jp.id)
+  ok('manual: geoApplied false (guarded)', m.geoApplied === false)
+  ok('manual: timezone stays Madrid', fe.cache['manual-1'].timezone === 'Europe/Madrid')
+  ok('manual: geoSource stays manual', fe.cache['manual-1'].geoSource === 'manual')
+
+  // 3) Setting OFF → no auto apply even on a fresh identity.
+  autoMatchSetting = false
+  fe.getOrCreate('off-1', 'seed-off-1')
+  sessionCache.set('off-1', fakeSession)
+  const o = h.assignToIdentity('off-1', ar.id)
+  ok('off: geoApplied false', o.geoApplied === false)
+  ok('off: timezone unchanged from random default', !fe.cache['off-1'].geoSource)
+}
+
 // ---------- Cleanup --------------------------------------------------------
 Module._load = originalLoad
 console.log(`\n=== ${passed} passed · ${failed} failed ===`)

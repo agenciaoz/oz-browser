@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.58 — V3-C cierre: geo auto-match (timezone + Accept-Language) (2026-06-20)
+
+[`2026-06-20`] [`scraping/stealth`] Cierra V3-C. Al asignar un proxy con país conocido a una identity, OZ ahora **auto-matchea la geo**: aplica el timezone + languages + locale de ese país al fingerprint y **refresca el Accept-Language de la sesión viva** con un header q-weighted estilo Chrome real (`es-AR,es;q=0.9,en;q=0.8`) derivado de `fp.languages` — antes el header mandaba un solo idioma, un mismatch clásico contra `navigator.languages`. Respeta override manual del usuario (`geoSource:'manual'` nunca se pisa) y un switch nuevo `privacy.autoMatchGeo` (default ON). Helpers puros en NUEVO `geo-match.js` (`formatAcceptLanguage`/`shouldAutoApplyGeo`); `fingerprint-engine.applyGeoSuggestion` gana arg `source`; `proxy-handlers.assignToIdentity` dispara el auto-match (nuevo `maybeAutoMatchGeo`, best-effort, nunca tira) y devuelve `geoApplied`; el hook de fingerprint usa el header correcto. Tests: geo-match 11 + country-locale +10 (49 en ese archivo). Sin browser/ui (sin manifest bump). Pendientes opcionales de V3-C: WebRTC leak prevention + audio FP. **Recomendado: smoke de Jose contra creepjs/pixelscan/bot.sannysoft con un proxy no-US para ver timezone + Accept-Language coincidiendo con el IP.**
+
 ### v2.0.0-alpha.57 — Publishing Studio E1-E4A (2026-06-19)
 
 [`2026-06-19`] [`publishing`] Publishing Studio: pestaña dedicada para publicar desde N identities. E1 composer schema-driven IG/X + health gating + publicar ahora. E2-A cola/historial/retry. E3 programar recurrente + drip + lista programadas. E4-A motor de variación (spintax/hashtags/rotación de media, RNG por-identity) + plantillas/media-library + preview. Manifest WebUI 2.0.39, 45 tests, ADR 0038. Pendiente smoke en vivo + etapas de motor E2-B/E3-B/E4-B/E6.

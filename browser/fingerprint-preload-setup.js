@@ -19,6 +19,7 @@
 const path = require('path')
 const { app } = require('electron')
 const log = require('./logger')
+const { formatAcceptLanguage } = require('./geo-match')
 
 function setupFingerprintPreload(browser) {
   if (!browser || !browser.identityManager || !browser.fingerprintEngine) return false
@@ -39,10 +40,17 @@ function setupFingerprintPreload(browser) {
     if (!ident) return
     const fp = browser.fingerprintEngine.getOrCreate(identityId, ident.fingerprintSeed)
     if (fp && fp.ua) {
-      session.setUserAgent(fp.ua, fp.language || 'en-US')
+      // V3-C: Accept-Language must be a Chrome-realistic q-weighted list built
+      // from fp.languages (the same array navigator.languages exposes), NOT a
+      // single language. A header like `es-AR` while navigator.languages says
+      // ['es-AR','es','en'] is a classic mismatch tell. Fall back defensively.
+      const acceptLang =
+        formatAcceptLanguage(fp.languages) || fp.language || 'en-US,en;q=0.9'
+      session.setUserAgent(fp.ua, acceptLang)
       log.debug('fingerprint-preload-setup', 'session UA set from FP', {
         identityId,
         ua: fp.ua,
+        acceptLang,
       })
     }
     if (typeof session.registerPreloadScript === 'function') {

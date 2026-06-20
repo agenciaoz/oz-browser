@@ -502,8 +502,17 @@ class FingerprintEngine {
    * tested + classified by country. Mutates the cached profile (timezone +
    * languages + locale) WITHOUT regenerating the rest (so screen + UA stay
    * consistent across re-locations).
+   *
+   * V3-C: `source` records whether this came from an explicit user action
+   * ('manual', default — preserves legacy callers) or from proxy auto-match
+   * ('auto'). Auto-match callers consult `geoSource` first so they never
+   * clobber a manual override (see geo-match.shouldAutoApplyGeo).
    */
-  applyGeoSuggestion(identityId, { timezone, languages, locale } = {}) {
+  applyGeoSuggestion(
+    identityId,
+    { timezone, languages, locale } = {},
+    source = 'manual',
+  ) {
     const profile = this.cache[identityId]
     if (!profile) return null
     if (timezone) profile.timezone = timezone
@@ -514,11 +523,13 @@ class FingerprintEngine {
     if (locale) profile.locale = locale
     profile.geoOverridden = true
     profile.geoOverriddenAt = Date.now()
+    profile.geoSource = source === 'auto' ? 'auto' : 'manual'
     this._save()
     log.info('fingerprint-engine', 'geo suggestion applied', {
       identityId,
       timezone: profile.timezone,
       languages: profile.languages,
+      source: profile.geoSource,
     })
     return { ...profile }
   }

@@ -14,6 +14,7 @@ const { toProxyRulesString } = require('./proxy-assignment')
 const { parseCsv, encodeCsv } = require('./proxy-csv')
 const { listProviders, expandProvider } = require('./proxy-providers')
 const { resolveCountry } = require('./country-locale')
+const { formatAcceptLanguage, shouldAutoApplyGeo } = require('./geo-match')
 
 function buildProxyHandlers(browser) {
   const pm = () => browser.proxyManager
@@ -86,13 +87,18 @@ function buildProxyHandlers(browser) {
       if (resolved && resolved.country) {
         geoSuggestion = resolveCountry(resolved.country)
       }
+      // V3-C: auto-match the identity's geo (timezone + languages + locale) to
+      // the proxy's country, unless the user set a manual override. Off via
+      // settings.privacy.autoMatchGeo = false.
+      const geoApplied = maybeAutoMatchGeo(browser, identityId, geoSuggestion)
       log.info('proxy-handlers', 'assignToIdentity ok', {
         identityId,
         value,
         proxyId: resolved && resolved.id,
         geoSuggestion: geoSuggestion && geoSuggestion.country,
+        geoApplied,
       })
-      return { ok: true, identityId, value, geoSuggestion }
+      return { ok: true, identityId, value, geoSuggestion, geoApplied }
     },
 
     /**
@@ -339,4 +345,72 @@ function applyAssignmentsToIdentity(browser, identityId) {
   return true
 }
 
-module.exports = { buildProxyHandlers, applyAssignmentsToIdentity }
+/**
+ * V3-C: auto-match an identity's fingerprint geo to a proxy's country.
+ *
+ * Given the geoSuggestion resolved from the proxy's country, applies it to the
+ * identity's fingerprint (timezone + languages + locale) and refreshes the live
+ * cached session's Accept-Language so HTTP headers match navigator.languages.
+ *
+ * Respects two guards:
+ *   - settings.privacy.autoMatchGeo (default true) — global off switch.
+ *   - a MANUAL geo override on the profile is never clobbered
+ *     (geo-match.shouldAutoApplyGeo).
+ *
+ * Returns true if geo was applied, false otherwise. Best-effort: never throws.
+ */
+function maybeAutoMatchGeo(browser, identityId, geoSuggestion) {
+  try {
+    if (!geoSuggestion) return false
+    const fe = browser.fingerprintEngine
+    if (!fe || typeof fe.applyGeoSuggestion !== 'function') return false
+
+    // Global setting gate (default ON if settings unavailable).
+    const sm = browser.settingsManager
+    if (sm && typeof sm.get === 'function') {
+      const privacy = sm.get('privacy')
+      if (privacy && privacy.autoMatchGeo === false) return false
+    }
+
+    // Never clobber a manual override.
+    const current =
+      typeof fe.getOrCreate === 'function' ? fe.cache && fe.cache[identityId] : null
+    if (!shouldAutoApplyGeo(current)) return false
+
+    const profile = fe.applyGeoSuggestion(identityId, geoSuggestion, 'auto')
+    if (!profile || profile.__error) return false
+
+    // Refresh the live session's Accept-Language (UA unchanged) so the change
+    // takes effect without a tab reload. Only touches an already-cached session.
+    try {
+      const im = browser.identityManager
+      const cached = im && im.sessionCache && im.sessionCache.get(identityId)
+      if (cached && profile.ua) {
+        const acceptLang =
+          formatAcceptLanguage(profile.languages) || profile.language || 'en-US,en;q=0.9'
+        cached.setUserAgent(profile.ua, acceptLang)
+      }
+    } catch (err) {
+      log.warn('proxy-handlers', 'live Accept-Language refresh failed', {
+        identityId,
+        message: err.message,
+      })
+    }
+
+    browser.broadcastToWebUI('oz:fingerprint:changed', { identityId })
+    log.info('proxy-handlers', 'auto-matched geo to proxy', {
+      identityId,
+      country: geoSuggestion.country,
+      timezone: geoSuggestion.timezone,
+    })
+    return true
+  } catch (err) {
+    log.warn('proxy-handlers', 'maybeAutoMatchGeo failed', {
+      identityId,
+      message: err.message,
+    })
+    return false
+  }
+}
+
+module.exports = { buildProxyHandlers, applyAssignmentsToIdentity, maybeAutoMatchGeo }

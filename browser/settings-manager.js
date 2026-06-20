@@ -63,6 +63,12 @@ const DEFAULTS = Object.freeze({
     // that already imported a proxy pool. Default ON because the safe
     // posture is "every identity has a proxy".
     autoAssignProxyOnCreate: true,
+    // v2.0.0-alpha.58 (V3-C): when a proxy with a known country is assigned to
+    // an identity, auto-apply that country's timezone + languages + locale to
+    // the identity's fingerprint (and refresh its live session Accept-Language)
+    // so JS geo and HTTP headers match the exit IP. A manual geo override is
+    // never clobbered. Default ON — geo coherence is the safe posture.
+    autoMatchGeo: true,
   },
   automation: {
     mcpEnabled: false,
