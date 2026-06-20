@@ -95,13 +95,20 @@ Flag por-tool `human: true|false` (off para velocidad, on para targets duros).
 > **Estado: EN CURSO.** Slice 1 ✅ `v2.0.0-alpha.59`: **detección de captcha**
 > (`oz.page.captcha`) — sentinels reCAPTCHA/hCaptcha/Turnstile/Cloudflare
 > challenge/DataDome/PerimeterX + fallback de texto → alerta urgente, **NO**
-> resuelve. Pure `scrape-captcha.js` + tests. Pendiente del bloque: orquestación
-> paralela con rate-limit por dominio, retry con backoff por clase de error,
+> resuelve. Pure `scrape-captcha.js` + tests. Slice 2 ✅ `v2.0.0-alpha.60`:
+> **retry con backoff exponencial por clase de error** — `scrape-retry.js`
+> (puro: `classifyError` clasifica network/timeout/navigation como retryables;
+> captcha/needs_login/rate-limit/aborted/fatal NO; `backoffDelay` exponencial
+> con equal-jitter; `buildRetryPolicy`/`shouldRetry`) + `bulk-runner-retry.js`
+> (glue `runWithRetry`/`executeItemWithRetry`). Opt-in por run vía
+> `options.retry`; respeta AbortSignal y el `clock` inyectable. `_realClock`
+> extraído a `bulk-runner-clock.js` por budget LOC. 13 tests con fake clock.
+> Pendiente del bloque: orquestación paralela con rate-limit por dominio,
 > crawl frontier, headless.
 
 - Correr N identidades en paralelo con rate-limit por dominio (reusa `oz.bulk.rlStats`) — pendiente
 - **Detección** de captcha (heurística + sentinels reCAPTCHA/hCaptcha) → alerta, **NO** resolver ✅ (alpha.59)
-- Retry con backoff exponencial por clase de error — pendiente
+- Retry con backoff exponencial por clase de error ✅ (alpha.60)
 - Crawl frontier persistente (SQLite/JSON) — pendiente
 - **Headless** (`--headless --identity --recipe --proxy`) integrado acá (~3-5h extra) — pendiente
 
