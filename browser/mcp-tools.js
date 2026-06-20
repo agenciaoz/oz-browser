@@ -243,6 +243,18 @@ function buildToolCatalog(browser) {
       call: ({ tabId }) => tabs().select(tabId),
     },
     {
+      name: 'oz.tabs.reorder',
+      description:
+        'Reorder a tab to a new position (0-based) within its window tab list (drag-and-drop). Returns true/false.',
+      inputSchema: {
+        type: 'object',
+        properties: { tabId: { type: 'string' }, toIndex: { type: 'number' } },
+        required: ['tabId', 'toIndex'],
+        additionalProperties: false,
+      },
+      call: ({ tabId, toIndex }) => tabs().reorder(tabId, toIndex),
+    },
+    {
       name: 'oz.tabs.close',
       description: 'Close a tab by id. Returns true/false.',
       inputSchema: {
