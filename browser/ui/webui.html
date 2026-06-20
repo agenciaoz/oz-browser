@@ -235,29 +235,45 @@
       .tab:not([data-active]):hover {
         background: rgba(255, 255, 255, 0.06);
       }
-      /* alpha.67: drag-and-drop live feedback. The dragged tab dims; a glowing
-         vertical bar shows where it will land (before/after the hovered tab),
-         updated in real time on dragover. */
+      /* alpha.67/68: drag-and-drop live feedback. The dragged tab dims with a
+         dashed outline; a bold glowing bar + an open gap show exactly where it
+         will land (before/after the hovered tab), updated live on dragover. */
       .tab[data-dragging] {
-        opacity: 0.4;
+        opacity: 0.35;
+        outline: 1px dashed rgba(255, 255, 255, 0.55);
+        outline-offset: -2px;
+      }
+      .tab[data-drop-side] {
+        /* smooth the gap opening so the insertion point reads clearly */
+        transition:
+          background 0.12s ease,
+          margin 0.09s ease;
+      }
+      .tab[data-drop-side='before'] {
+        margin-left: 14px;
+      }
+      .tab[data-drop-side='after'] {
+        margin-right: 14px;
       }
       .tab[data-drop-side]::after {
         content: '';
         position: absolute;
-        top: 12%;
-        bottom: 12%;
-        width: 3px;
-        border-radius: 2px;
-        background: #4aa3ff;
-        box-shadow: 0 0 6px 1px rgba(74, 163, 255, 0.8);
-        z-index: 6;
+        top: 0;
+        bottom: 0;
+        width: 4px;
+        border-radius: 3px;
+        background: #8fd0ff;
+        box-shadow:
+          0 0 12px 3px rgba(74, 163, 255, 0.95),
+          0 0 4px 1px #ffffff;
+        z-index: 8;
         pointer-events: none;
       }
       .tab[data-drop-side='before']::after {
-        left: -2px;
+        left: -9px;
       }
       .tab[data-drop-side='after']::after {
-        right: -2px;
+        right: -9px;
       }
       .tab .favicon[src] {
         display: none;
