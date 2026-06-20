@@ -92,11 +92,18 @@ Flag por-tool `human: true|false` (off para velocidad, on para targets duros).
 
 ### V3-D — Orquestación · ~10-15h (se apoya en Bulk Runner v2)
 
-- Correr N identidades en paralelo con rate-limit por dominio (reusa `oz.bulk.rlStats`)
-- **Detección** de captcha (heurística + sentinels reCAPTCHA/hCaptcha) → alerta, **NO** resolver
-- Retry con backoff exponencial por clase de error
-- Crawl frontier persistente (SQLite/JSON)
-- **Headless** (`--headless --identity --recipe --proxy`) integrado acá (~3-5h extra)
+> **Estado: EN CURSO.** Slice 1 ✅ `v2.0.0-alpha.59`: **detección de captcha**
+> (`oz.page.captcha`) — sentinels reCAPTCHA/hCaptcha/Turnstile/Cloudflare
+> challenge/DataDome/PerimeterX + fallback de texto → alerta urgente, **NO**
+> resuelve. Pure `scrape-captcha.js` + tests. Pendiente del bloque: orquestación
+> paralela con rate-limit por dominio, retry con backoff por clase de error,
+> crawl frontier, headless.
+
+- Correr N identidades en paralelo con rate-limit por dominio (reusa `oz.bulk.rlStats`) — pendiente
+- **Detección** de captcha (heurística + sentinels reCAPTCHA/hCaptcha) → alerta, **NO** resolver ✅ (alpha.59)
+- Retry con backoff exponencial por clase de error — pendiente
+- Crawl frontier persistente (SQLite/JSON) — pendiente
+- **Headless** (`--headless --identity --recipe --proxy`) integrado acá (~3-5h extra) — pendiente
 
 ### V3-E — Observabilidad · ~10h
 

@@ -215,6 +215,24 @@ function buildPageTools(browser) {
       },
       call: (a) => h.extract(a),
     },
+    {
+      name: 'oz.page.captcha',
+      description:
+        'Detect a captcha / bot-challenge on the identity tab (reCAPTCHA, hCaptcha, Cloudflare Turnstile/challenge, DataDome, PerimeterX). OZ detects + alerts, never solves. Returns {ok,detected,types,signals,primaryType}. Set alert=false to skip raising an OZ alert.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          ...idTab,
+          alert: {
+            type: 'boolean',
+            description: 'Raise an urgent OZ alert when detected. Default true.',
+          },
+        },
+        required: ['identityId'],
+        additionalProperties: false,
+      },
+      call: (a) => h.detectCaptcha(a),
+    },
   ]
 }
 

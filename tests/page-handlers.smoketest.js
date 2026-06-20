@@ -181,6 +181,48 @@ async function main() {
     assert.ok(r.__error && r.__error.code === 'TAB_NOT_FOUND')
   })
 
+  await ok('detectCaptcha: classifies result + raises an urgent alert', async () => {
+    const b = makeFakeBrowser()
+    const alerts = []
+    b.alertManager = { add: (a) => alerts.push(a) }
+    b._wc.executeJavaScript = () =>
+      Promise.resolve({ detected: true, types: ['recaptcha'], signals: ['recaptcha'] })
+    const h = buildPageHandlers(b)
+    const r = await h.detectCaptcha({ identityId: 'id1' })
+    assert.strictEqual(r.ok, true)
+    assert.strictEqual(r.detected, true)
+    assert.strictEqual(r.primaryType, 'recaptcha')
+    assert.strictEqual(alerts.length, 1)
+    assert.strictEqual(alerts[0].severity, 'urgent')
+    assert.strictEqual(alerts[0].type, 'captcha-detected')
+    assert.strictEqual(alerts[0].identityId, 'id1')
+  })
+
+  await ok('detectCaptcha: alert=false suppresses the alert', async () => {
+    const b = makeFakeBrowser()
+    const alerts = []
+    b.alertManager = { add: (a) => alerts.push(a) }
+    b._wc.executeJavaScript = () =>
+      Promise.resolve({ detected: true, types: ['hcaptcha'], signals: ['hcaptcha'] })
+    const h = buildPageHandlers(b)
+    const r = await h.detectCaptcha({ identityId: 'id1', alert: false })
+    assert.strictEqual(r.detected, true)
+    assert.strictEqual(alerts.length, 0)
+  })
+
+  await ok('detectCaptcha: clean page → not detected, no alert', async () => {
+    const b = makeFakeBrowser()
+    const alerts = []
+    b.alertManager = { add: (a) => alerts.push(a) }
+    b._wc.executeJavaScript = () =>
+      Promise.resolve({ detected: false, types: [], signals: [] })
+    const h = buildPageHandlers(b)
+    const r = await h.detectCaptcha({ identityId: 'id1' })
+    assert.strictEqual(r.detected, false)
+    assert.strictEqual(r.primaryType, null)
+    assert.strictEqual(alerts.length, 0)
+  })
+
   await ok('bad selector / bad code are rejected before touching the page', async () => {
     const b = makeFakeBrowser()
     const h = buildPageHandlers(b)

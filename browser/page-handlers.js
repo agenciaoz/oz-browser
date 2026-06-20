@@ -16,6 +16,7 @@ const log = require('./logger')
 const { normalizeOmniboxInput } = require('./url-normalize')
 const PU = require('./page-utils')
 const HM = require('./page-human')
+const SC = require('./scrape-captcha')
 const licenseManager = require('./license-manager')
 
 function hostOf(url) {
@@ -284,6 +285,43 @@ function buildPageHandlers(browser) {
         return err('BAD_SCHEMA', 'schema must be an object of field→selector')
       }
       return runJS(identityId, tabId, PU.extractScript(schema))
+    },
+
+    /**
+     * V3-D: detect captcha / bot-challenge on the identity's tab. Policy is
+     * DETECT + ALERT, never solve. When detected and `alert` is true (default),
+     * raises an urgent OZ alert so the agent/Jose can pause or rotate. Returns
+     * { ok, detected, types, signals, primaryType }.
+     */
+    async detectCaptcha({ identityId, tabId, alert = true }) {
+      const r = resolveWC(identityId, tabId)
+      if (r.__error) return r
+      let raw
+      try {
+        raw = await r.wc.executeJavaScript(SC.detectCaptchaScript(), true)
+      } catch (e) {
+        return err('EVAL_FAILED', e && e.message)
+      }
+      const res = SC.classifyCaptchaResult(raw)
+      if (res.detected && alert && browser.alertManager) {
+        try {
+          browser.alertManager.add({
+            type: 'captcha-detected',
+            severity: 'urgent',
+            title: 'Captcha / challenge detectado',
+            message: `${res.primaryType} en la pestaña de scraping (${res.types.join(', ')}). OZ no resuelve captchas — pausá, rotá identity o resolvé manual.`,
+            identityId,
+          })
+        } catch (e) {
+          log.warn('page-handlers', 'captcha alert failed', { message: e && e.message })
+        }
+      }
+      log.info('page-handlers', 'detectCaptcha', {
+        identityId,
+        detected: res.detected,
+        primaryType: res.primaryType,
+      })
+      return { ok: true, ...res }
     },
   }
 }
