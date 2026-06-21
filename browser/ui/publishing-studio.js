@@ -54,7 +54,7 @@
         setCaption: (text) => state.composer.setCaptionValue(text),
         getIdentities: () =>
           state.targets ? state.targets.getSelectedIdentityObjects() : [],
-        store: window.OZ.publishingStore,
+        store: buildLibraryStore(),
       })
       state.variation.mount()
     }
@@ -86,6 +86,24 @@
     if (state.history) await state.history.load()
     wireEvents()
     refreshPublishButton()
+  }
+
+  // MCP-first templates/hashtags library backed by main (oz.publishing.lib*),
+  // mapped to the method names the variation panel expects. Falls back to the
+  // legacy localStorage store when the new API isn't present (older preload).
+  function buildLibraryStore() {
+    const p = window.oz && window.oz.publishing
+    if (p && p.libList && p.libSave) {
+      return {
+        listTemplates: () => p.libList('templates'),
+        saveTemplate: (x) => p.libSave('templates', x),
+        removeTemplate: (id) => p.libDel('templates', id),
+        listHashtagGroups: () => p.libList('hashtags'),
+        saveHashtagGroup: (x) => p.libSave('hashtags', x),
+        removeHashtagGroup: (id) => p.libDel('hashtags', id),
+      }
+    }
+    return window.OZ.publishingStore
   }
 
   async function loadActions() {

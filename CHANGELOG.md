@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.88 — Publishing: plantillas/hashtags del renderer → store de main (2026-06-20)
+
+[`2026-06-20`] [`publishing/ui`] Última pieza del vaciado: la persistencia de plantillas y grupos de hashtags del panel de variación deja de usar localStorage y pasa al store de main (`oz.publishing.libList/libSave/libDel`). NUEVO adapter `buildLibraryStore()` en `publishing-studio.js` mapea los kinds (templates/hashtags) a los métodos que el panel espera; `publishing-variation-ui.js` hace todas las lecturas del store con `await` (funciona con el store async de main O el localStorage sync legacy como fallback si el preload es viejo). Shapes idénticos (templates {name,caption,hashtags}, hashtags {name,tags}) → cero migración de datos. Queda en el renderer solo DOM + el filtrado de history (cosmético). ADR 0038.
+
 ### v2.0.0-alpha.87 — Publishing: el renderer delega en main (vaciado de lógica) (2026-06-20)
 
 [`2026-06-20`] [`publishing/ui`] El Publishing Studio del renderer ya NO recalcula la lógica pura: delega en los handlers de main. `publishing-studio.js` → `oz.publishing.actions` (campos), `oz.publishing.compose` (validar/preflight), `oz.publishing.send` (armar spec + despachar). `publishing-variation-ui.js` → `oz.publishing.preview` (motor de variación). Programar → NUEVO handler `scheduleCompose(input)` (arma el ScheduledAction desde input crudo) + IPC `oz:publishing:schedCompose` + preload. `composePublish` ahora respeta `options` (drip) pasado por el renderer. Cada reruteo tiene fallback al helper local si el preload es viejo. +scheduleCompose tests. Queda en el renderer solo DOM + persistencia localStorage de plantillas/hashtags (tiene equivalente en main `oz.publishing.lib*`, migración futura). ADR 0038.

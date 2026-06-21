@@ -180,7 +180,10 @@
       }
     }
 
-    _refreshGroups() {
+    // All store reads are awaited so the store can be the MCP-first main
+    // library (async, oz.publishing.lib*) OR the legacy localStorage store
+    // (sync) — `await` works for both.
+    async _refreshGroups() {
       if (!this.store) return
       this.$groups.innerHTML = ''
       this.$groups.appendChild(
@@ -189,12 +192,12 @@
           text: t('publishingStudio.var.insertGroup', 'Insert group…'),
         }),
       )
-      for (const g of this.store.listHashtagGroups()) {
+      for (const g of (await this.store.listHashtagGroups()) || []) {
         this.$groups.appendChild(el('option', { value: g.id, text: g.name }))
       }
     }
 
-    _refreshTemplates() {
+    async _refreshTemplates() {
       if (!this.store) return
       this.$templates.innerHTML = ''
       this.$templates.appendChild(
@@ -203,14 +206,14 @@
           text: t('publishingStudio.var.loadTemplate', 'Load template…'),
         }),
       )
-      for (const tpl of this.store.listTemplates()) {
+      for (const tpl of (await this.store.listTemplates()) || []) {
         this.$templates.appendChild(el('option', { value: tpl.id, text: tpl.name }))
       }
     }
 
-    _loadGroup(id) {
+    async _loadGroup(id) {
       if (!id || !this.store) return
-      const g = this.store.listHashtagGroups().find((x) => x.id === id)
+      const g = ((await this.store.listHashtagGroups()) || []).find((x) => x.id === id)
       if (!g) return
       const existing = parseTags(this.$hashtags.value)
       const merged = Array.from(new Set(existing.concat(g.tags)))
@@ -218,9 +221,9 @@
       this.$groups.value = ''
     }
 
-    _loadTemplate(id) {
+    async _loadTemplate(id) {
       if (!id || !this.store) return
-      const tpl = this.store.listTemplates().find((x) => x.id === id)
+      const tpl = ((await this.store.listTemplates()) || []).find((x) => x.id === id)
       if (!tpl) return
       this.setCaption(tpl.caption)
       if (Array.isArray(tpl.hashtags) && tpl.hashtags.length) {
@@ -237,8 +240,8 @@
         t('publishingStudio.var.groupName', 'Hashtag group name'),
       )
       if (!name) return
-      this.store.saveHashtagGroup({ name, tags })
-      this._refreshGroups()
+      await this.store.saveHashtagGroup({ name, tags })
+      await this._refreshGroups()
     }
 
     async _saveTemplate() {
@@ -247,12 +250,12 @@
         t('publishingStudio.var.templateName', 'Template name'),
       )
       if (!name) return
-      this.store.saveTemplate({
+      await this.store.saveTemplate({
         name,
         caption: this.getCaption(),
         hashtags: parseTags(this.$hashtags.value),
       })
-      this._refreshTemplates()
+      await this._refreshTemplates()
     }
   }
 
