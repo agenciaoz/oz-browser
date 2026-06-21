@@ -10,8 +10,8 @@
 // tests (headless-cli-runner.smoketest.js); este archivo es el cableado a
 // Electron y requiere un smoke en vivo en la Mac de Jose.
 //
-// NOTA: el override de proxy por `--proxy` aún no se aplica acá (se respeta el
-// proxy ya asignado a la identity). Pendiente menor.
+// El override de proxy por `--proxy` se aplica antes de correr (assignToIdentity);
+// si falla, se respeta el proxy ya asignado a la identity.
 //
 // ADR: 0030 (bulk-runner) · 0005 (modular) · 0036 (page-control).
 
@@ -51,9 +51,25 @@ async function runHeadless(browser, argv) {
   }
 
   if (args.proxyId) {
-    log.warn('headless', 'proxy override not yet applied; using identity proxy', {
-      proxyId: args.proxyId,
-    })
+    try {
+      const ph = browser.handlers && browser.handlers.proxies
+      if (ph && typeof ph.assignToIdentity === 'function') {
+        ph.assignToIdentity(args.identityId, args.proxyId)
+        log.info('headless', 'proxy override applied', {
+          identityId: args.identityId,
+          proxyId: args.proxyId,
+        })
+      } else {
+        log.warn('headless', 'proxy handler unavailable; using identity proxy', {
+          proxyId: args.proxyId,
+        })
+      }
+    } catch (e) {
+      log.warn('headless', 'proxy override failed; using identity proxy', {
+        proxyId: args.proxyId,
+        message: e.message,
+      })
+    }
   }
 
   log.info('headless', 'running recipe', {
