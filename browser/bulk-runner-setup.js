@@ -24,6 +24,7 @@ const { buildXLikeAction } = require('./bulk-actions-x-like')
 const { buildTiktokLikeAction } = require('./bulk-actions-tiktok-like')
 const { buildTiktokFollowAction } = require('./bulk-actions-tiktok-follow')
 const { buildFbLikeAction } = require('./bulk-actions-fb-like')
+const { buildFbPostAction } = require('./bulk-actions-fb-post')
 const { BulkRunner } = require('./bulk-runner')
 const { BulkRateLimit } = require('./bulk-rate-limit')
 
@@ -124,6 +125,14 @@ function setupBulkRunner(browser, opts = {}) {
   if (!registry.get('fb_like')) {
     registry.register(
       buildFbLikeAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
+  }
+  if (!registry.get('fb_post')) {
+    registry.register(
+      buildFbPostAction({
         identityManager: browser.identityManager,
         electron: opts.electron || _safeRequireElectron(),
       }),

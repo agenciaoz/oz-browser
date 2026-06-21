@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.84 — Publishing E6: action fb_post (Facebook) (2026-06-20)
+
+[`2026-06-20`] [`publishing/bulk`] Primera red nueva de la Etapa 6. NUEVO `bulk-actions-fb-post.js` (`buildFbPostAction`): postea estado de texto en Facebook por identity — abrir composer → escribir en el dialog (execCommand insertText) → click Publicar → verificar, con detección early de needs_login/captcha/checkpoint. Registrado en `bulk-runner-setup.js` (cap rate-limit 25/día ya existía). El plan gana `facebook→fb_post` (ACTION_BY_PLATFORM + buildPublishParams text) → publicaciones FB funcionan end-to-end por publish/schedule/dryRun. Schema-driven: aparece solo en el composer (ADR-B). +11 tests fb_post + facebook en publishing-plan (16). Media (foto/video) y tiktok/reels: siguiente. Selectores frágiles → apoyarse en dry-run + smoke en vivo. ADR 0038.
+
 ### v2.0.0-alpha.83 — Publishing E2: dry-run / pre-flight por MCP (2026-06-20)
 
 [`2026-06-20`] [`publishing`] Etapa 2 (confianza). Helper puro `P.dryRunReport(pub, ctx)` valida una publicación SIN publicar: plataforma soportada, media presente y que EXISTE en disco, identities resueltas y health gating (identities en rojo no postean). Handler `dryRun(id)` cablea contexto real (ids.list + health.get por identity + fs.existsSync) + tool `oz.publishing.dryRun` + IPC. Devuelve `{ ok, actionId, issues[], identities[{exists,health,willPublish}] }` — correr antes de `publish` para cazar problemas antes de un lote masivo. +5 tests (15 en el archivo). La validación de login/selectores EN VIVO sigue siendo del runner real (smoke en Electron, pendiente). ADR 0038.

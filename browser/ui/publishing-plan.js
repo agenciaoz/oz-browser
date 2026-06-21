@@ -74,6 +74,7 @@
   const ACTION_BY_PLATFORM = {
     instagram: 'ig_post',
     x: 'x_post',
+    facebook: 'fb_post',
   }
 
   function _str(v) {
@@ -209,6 +210,8 @@
         return { imagePath: media[0] || '', caption: _str(p.caption) }
       case 'x':
         return { text: _str(p.caption) }
+      case 'facebook':
+        return { text: _str(p.caption) }
       default:
         return {}
     }
@@ -226,7 +229,7 @@
       return {
         __error: {
           code: 'UNSUPPORTED_PLATFORM',
-          message: `publish not supported for ${p.platform} (only instagram, x)`,
+          message: `publish not supported for ${p.platform} (only instagram, x, facebook)`,
         },
       }
     }
@@ -273,7 +276,7 @@
       report.ok = false
       report.issues.push({
         code: 'UNSUPPORTED_PLATFORM',
-        message: `publish not supported for ${p.platform} (only instagram, x)`,
+        message: `publish not supported for ${p.platform} (only instagram, x, facebook)`,
       })
       return report
     }

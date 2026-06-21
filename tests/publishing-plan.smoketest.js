@@ -127,7 +127,8 @@ ok('planToMatrix: round-trips through parse', () => {
 ok('platformToActionId + buildPublishParams', () => {
   assert.strictEqual(P.platformToActionId('instagram'), 'ig_post')
   assert.strictEqual(P.platformToActionId('x'), 'x_post')
-  assert.strictEqual(P.platformToActionId('facebook'), null)
+  assert.strictEqual(P.platformToActionId('facebook'), 'fb_post')
+  assert.strictEqual(P.platformToActionId('tiktok'), null)
   assert.deepStrictEqual(
     P.buildPublishParams('instagram', { media: ['/p.jpg'], caption: 'hi' }),
     { imagePath: '/p.jpg', caption: 'hi' },
@@ -156,7 +157,7 @@ ok('buildBulkSpec: valid IG → spec; missing pieces → __error', () => {
     params: { imagePath: '/p.jpg', caption: 'hi' },
   })
   assert.strictEqual(
-    P.buildBulkSpec({ platform: 'facebook', identities: ['p1'] }).__error.code,
+    P.buildBulkSpec({ platform: 'tiktok', identities: ['p1'] }).__error.code,
     'UNSUPPORTED_PLATFORM',
   )
   assert.strictEqual(
@@ -319,6 +320,25 @@ ok('dryRunReport: unsupported platform short-circuits', () => {
   const r = P.dryRunReport({ id: 'p5', platform: 'tiktok', identities: ['i1'] }, {})
   assert.strictEqual(r.ok, false)
   assert.strictEqual(r.issues[0].code, 'UNSUPPORTED_PLATFORM')
+})
+
+ok('facebook maps to fb_post (text, no media required)', () => {
+  assert.strictEqual(P.platformToActionId('facebook'), 'fb_post')
+  assert.strictEqual(P.platformToActionId(P.normalizePlatform('fb')), 'fb_post')
+  const params = P.buildPublishParams('facebook', { caption: 'hola' })
+  assert.strictEqual(params.text, 'hola')
+  const built = P.buildBulkSpec({
+    platform: 'facebook',
+    caption: 'hi',
+    identities: ['i1'],
+  })
+  assert.strictEqual(built.spec.actionId, 'fb_post')
+  const r = P.dryRunReport(
+    { id: 'pf', platform: 'facebook', caption: 'hi', identities: ['i1'] },
+    { identitiesById: { i1: { name: 'P' } }, healthById: { i1: 'green' } },
+  )
+  assert.strictEqual(r.ok, true)
+  assert.strictEqual(r.actionId, 'fb_post')
 })
 
 console.log(`\n✓ publishing-plan + store (E5): ${passed} checks passed`)
