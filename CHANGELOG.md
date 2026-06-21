@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.85 — Publishing E7: analytics por MCP (2026-06-20)
+
+[`2026-06-20`] [`publishing`] Etapa 7 (pulido). NUEVO `publishing-analytics.js` (puro): tasa de éxito por red (instagram/x/facebook), por identity y por hora (UTC) sobre el historial de bulk runs de actions de publicar, + `bestHour`. Handler `analytics(opts)` reúne los records vía `bulk.list/get` + tool `oz.publishing.stats` + IPC. successRate = done/(done+failed); ignora skipped/cancelled/pending y runs no-publish. Responde "¿cómo van mis posteos / a qué hora conviene postear?" sin abrir la UI. +7 tests. ADR 0038.
+
 ### v2.0.0-alpha.84 — Publishing E6: action fb_post (Facebook) (2026-06-20)
 
 [`2026-06-20`] [`publishing/bulk`] Primera red nueva de la Etapa 6. NUEVO `bulk-actions-fb-post.js` (`buildFbPostAction`): postea estado de texto en Facebook por identity — abrir composer → escribir en el dialog (execCommand insertText) → click Publicar → verificar, con detección early de needs_login/captcha/checkpoint. Registrado en `bulk-runner-setup.js` (cap rate-limit 25/día ya existía). El plan gana `facebook→fb_post` (ACTION_BY_PLATFORM + buildPublishParams text) → publicaciones FB funcionan end-to-end por publish/schedule/dryRun. Schema-driven: aparece solo en el composer (ADR-B). +11 tests fb_post + facebook en publishing-plan (16). Media (foto/video) y tiktok/reels: siguiente. Selectores frágiles → apoyarse en dry-run + smoke en vivo. ADR 0038.

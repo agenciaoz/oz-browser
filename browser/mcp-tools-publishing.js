@@ -117,6 +117,17 @@ function buildPublishingTools({ publishing }) {
       call: ({ id }) => publishing().remove(id),
     },
     {
+      name: 'oz.publishing.stats',
+      description:
+        'Publishing analytics over the bulk-run history: success rate by network (instagram/x/facebook), by identity, and by hour of day (UTC). Optional `actions` filters which actionIds to include (default ig_post/x_post/fb_post). Returns { overall, byNetwork, byIdentity, byHour } — each bucket has {items,done,failed,skipped,cancelled,successRate}. Answers "how are my posts doing / when should I post?".',
+      inputSchema: {
+        type: 'object',
+        properties: { actions: { type: 'array', items: { type: 'string' } } },
+        additionalProperties: false,
+      },
+      call: (args) => publishing().analytics(args || {}),
+    },
+    {
       name: 'oz.publishing.dryRun',
       description:
         'Pre-flight a publication WITHOUT publishing (Etapa 2 dry-run). Statically validates: platform supported, media present AND exists on disk, identities resolve, and per-identity health gating (red identities are skipped). Does NOT touch the browser. Returns { ok, actionId, issues:[{code,message}], identities:[{identityId,name,exists,health,willPublish}] }. Run this before oz.publishing.publish to catch problems before a mass post.',

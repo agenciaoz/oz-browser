@@ -19,6 +19,8 @@ function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:export', () => h.export())
   // Dry-run / pre-flight (validate without publishing).
   ipcMain.handle('oz:publishing:dryRun', (_e, id) => h.dryRun(id))
+  // Analytics (success by network/identity/hour over the bulk-run history).
+  ipcMain.handle('oz:publishing:stats', (_e, opts) => h.analytics(opts))
   // Content variation (anti-footprint) — same engine the UI preview uses.
   ipcMain.handle('oz:publishing:preview', (_e, spec, identities) =>
     h.preview(spec, identities),

@@ -15,6 +15,7 @@ const { PublishingPlanStore } = require('./publishing-plan-store')
 const { PublishingLibraryStore } = require('./publishing-library-store')
 const P = require('./ui/publishing-plan')
 const V = require('./ui/publishing-variation')
+const A = require('./publishing-analytics')
 const log = require('./logger')
 
 function buildPublishingHandlers(browser) {
@@ -192,6 +193,27 @@ function buildPublishingHandlers(browser) {
           }
         },
       })
+    },
+
+    /**
+     * Analytics de publicaciones (E7): tasa de éxito por red / por identity /
+     * por hora (UTC), sobre el historial de bulk runs de actions de publicar
+     * (ig_post/x_post/fb_post). Reusa la lógica pura `publishing-analytics`.
+     * Devuelve { overall, byNetwork, byIdentity, byHour } (cada bucket con
+     * successRate). MCP-first: "¿cómo van mis posteos?" sin abrir la UI.
+     */
+    analytics(opts) {
+      const bulk = browser.handlers && browser.handlers.bulk
+      if (!bulk || typeof bulk.list !== 'function' || typeof bulk.get !== 'function') {
+        return { __error: { code: 'NO_BULK', message: 'bulk runner unavailable' } }
+      }
+      const summaries = bulk.list() || []
+      const records = []
+      for (const s of summaries) {
+        const full = bulk.get(s.runId)
+        if (full) records.push(full)
+      }
+      return A.computeAnalytics(records, opts || {})
     },
 
     // ── Content variation (anti-footprint) — MCP-first ──────────────────
