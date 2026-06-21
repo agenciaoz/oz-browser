@@ -125,6 +125,38 @@ soporte de params por-identity en el runner (`paramsByIdentity` / resolver) +
 que `ig_post`/`x_post` usen los params resueltos. Toca motor/acciones → va con
 smoke. Las plantillas, grupos y media library SÍ funcionan hoy (autoría).
 
+## Migración MCP-first (ADR-D, alpha.78-81)
+
+**Contexto.** E1-E4A nacieron renderer-first: el estado (plan de contenido,
+plantillas, grupos de hashtags, media library) vivía en `localStorage` del
+WebUI. Eso rompe la directiva de Jose: _"el MCP debe poder hacer todo, que sea
+súper robusto siempre"_. Un agente no puede tocar `localStorage` del renderer.
+
+**Decisión.** Toda la capa de datos del Publishing Studio vive en el MAIN
+process (JSON atómico en `userData`), con tools MCP `oz.publishing.*` Y la UI
+leyendo de la misma fuente. Una sola fuente de verdad.
+
+- **Plan de contenido** → `publishing-plan-store.js` (publications + workflow
+  draft→review→approved→published + `addMany` para import). Lógica pura en
+  `ui/publishing-plan.js` (matrix↔plan, state machine, export, `buildBulkSpec`).
+  Tools: `oz.publishing.import/list/get/status/update/remove/export`.
+- **Publicar** → `oz.publishing.publish(id)` mapea plataforma→actionId y dispara
+  el post real vía el Bulk Runner; marca `published` al despachar.
+- **Programar** → `oz.publishing.sched(id, schedule)` crea una Scheduled Action
+  tipo `bulk` (reusa el scheduler de F-3, cero motor nuevo); `oz.publishing.unsched`
+  la cancela. La publicación guarda `scheduledActionId`.
+- **Autoría** → `publishing-library-store.js` (kinds templates|hashtags|media);
+  tools `oz.publishing.libList/libSave/libDel`.
+
+**Patrón de tools cortos.** `oz.publishing.<verbo>` debe quedar ≤21 chars
+(guard `mcp-server.smoketest`). Por eso `sched`/`unsched`/`libDel` en vez de
+`schedule`/`unschedule`/`libDelete`. El aggregator `mcp-tools-extra.js`
+(projects + scrape + publishing) mantiene `mcp-tools.js` bajo 500 LOC.
+
+**Pendiente de la migración.** El panel WebUI E5 (import Excel + tablero de
+aprobación) aún debe pasar a leer de estos stores en vez de `localStorage`;
+schedule `once`/fecha puntual (E3-B); plataformas `fb_post`/`tiktok_post`/Reels.
+
 ## Alternativas descartadas
 
 - **Modal en vez de tab:** un composer + selección de identities + progreso

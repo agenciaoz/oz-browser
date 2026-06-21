@@ -8,6 +8,86 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.81 — Publishing: programar/cancelar por MCP (2026-06-20)
+
+[`2026-06-20`] [`publishing`] Scheduling de publicaciones MCP-first reusando el scheduler (Scheduled Action tipo `bulk`). Handlers `schedule(id,schedule)`/`unschedule(id)` + tools `oz.publishing.sched` (daily/weekly/every-minutes) / `oz.publishing.unsched`. Helper puro `buildBulkSpec` (consolida validación platform/identities/media de publish + schedule). Store gana `scheduledActionId` para cancelar. +2 tests (10 en el archivo), guard 154/0. ADR 0038.
+
+### v2.0.0-alpha.80 — Publishing: librería (plantillas/hashtags/media) → main+MCP (2026-06-20)
+
+[`2026-06-20`] [`publishing`] Migra las colecciones de autoría de localStorage del renderer al MAIN (MCP-first). NUEVO `publishing-library-store.js` (kinds templates|hashtags|media, list/save/remove + normalización + dedupe, JSON atómico) + tools `oz.publishing.libList/libSave/libDel` + IPC + preload. El agente ya maneja toda la autoría por MCP. 5 tests. ADR 0038.
+
+### v2.0.0-alpha.79 — Publishing: publicar por MCP vía bulk runner (2026-06-20)
+
+[`2026-06-20`] [`publishing`] `oz.publishing.publish(id)` mapea plataforma→actionId (instagram→ig_post, x→x_post), dispara el post real vía el bulk runner sobre las identities de la publicación y la marca `published`. Errores tipados: UNSUPPORTED_PLATFORM | NO_TARGETS | NO_MEDIA | NO_BULK. Cierra el ciclo publish end-to-end por MCP.
+
+### v2.0.0-alpha.78 — Publishing Studio E5: plan de contenido MCP-first (2026-06-20)
+
+[`2026-06-20`] [`publishing`] Capa de datos del plan de contenido en el MAIN (no localStorage): NUEVO `publishing-plan-store.js` (publications CRUD + workflow draft→review→approved→published + addMany para import) + `publishing-plan-handlers.js` + lógica pura `ui/publishing-plan.js` (matrix↔plan, state machine, export). Tools `oz.publishing.import/list/get/status/update/remove/export`. Aggregator `mcp-tools-extra.js` (projects+scrape+publishing) para mantener mcp-tools.js ≤500. ADR 0038. Arranca la migración MCP-first de todo Publishing (directiva "el MCP debe poder hacer todo").
+
+### v2.0.0-alpha.77 — Scraping headless: aplica override --proxy (2026-06-20)
+
+[`2026-06-20`] [`scraping`] El runner headless ahora aplica `--proxy` real vía `proxies.assignToIdentity(identityId, value)` antes de correr la receta. Cierra el modo headless con proxy por-corrida.
+
+### v2.0.0-alpha.76 — V3-D cierre: worker real + oz.scrape.run (2026-06-20)
+
+[`2026-06-20`] [`scraping`] Orquestador completo. NUEVO `scrape-worker.js` (`makeRecipeWorker` reusa `runHeadlessRecipe` por URL) + `scrape-handlers.js` (`buildScrapeHandlers`) + tool `oz.scrape.run` (frontier + rate-limit por dominio + retry, en paralelo). Lógica V3-D end-to-end accesible por MCP. ADR scraping. Pendiente: smokes en vivo (worker real + headless).
+
+### v2.0.0-alpha.75 — Fix tabstrip: restaura zona de arrastre de ventana (2026-06-20)
+
+[`2026-06-20`] [`ui/tabstrip`] Bug reportado por Jose ("aplasté el filo del app, no me deja moverlo"): las tabs con `flex: 1 1` crecían y se comían la región `.app-drag`. Fix: `.tab { flex: 0 1 12rem }`. La barra de título vuelve a arrastrar la ventana.
+
+### v2.0.0-alpha.74 — Proyectos: UI en el sidebar (F2) (2026-06-20)
+
+[`2026-06-20`] [`projects`] Sección "Proyectos" en el sidebar: guardar el estado actual (workspace-scope o session-scope de todos los WS), listar, restaurar y borrar. NUEVOS `ui/sidebar-projects.js` + `sidebar-projects-utils.js`. Lee/escribe vía `oz.projects.*` (MCP-first, store en main).
+
+### v2.0.0-alpha.73 — Fix proyectos: require path del preload (./browser/) (2026-06-20)
+
+[`2026-06-20`] [`projects`] El `make` (webpack) rompía: `preload.js` (root) requería `preload-projects-api` sin prefijo `./browser/`. CI no lo agarra (no corre webpack), solo aparece en publish. Fix: `./browser/preload-projects-api`. **Gotcha:** los requires de preload.js a helpers de browser/ van con `./browser/`.
+
+### v2.0.0-alpha.72 — Ghost-style: F1 link→identidad + F3 descartable + F2 proyectos (2026-06-20)
+
+[`2026-06-20`] [`features`] Tres features Ghost de una. **F1**: menú contextual "Abrir link en…" → submenú de identidades (`link-context-menu.js`). **F3**: identidad descartable (flag `ephemeral`, se auto-borra al cerrar la última tab; `identity-ephemeral.js` + hook de cierre). **F2**: backend `project-store.js` + handlers + tools `oz.projects.*` (save/restore de workspace o sesión completa). F1+F3 con smoke OK; F2 UI llega en alpha.74.
+
+### v2.0.0-alpha.69 — Fix tabstrip: drag sin jitter (2026-06-20)
+
+[`2026-06-20`] [`ui/tabstrip`] El hueco/margin de 14px durante el drag causaba un loop de reflow que hacía "vibrar" la tab vecina. Fix: saco el margin, dejo solo la barra de drop como overlay absoluto.
+
+### v2.0.0-alpha.68 — Tabstrip: drop-indicator más visible (2026-06-20)
+
+[`2026-06-20`] [`ui/tabstrip`] El indicador de drop era casi invisible ("se ve pero muy poco"). Barra más gruesa y brillante durante el drag.
+
+### v2.0.0-alpha.67 — Tabstrip: drop-indicator en vivo (2026-06-20)
+
+[`2026-06-20`] [`ui/tabstrip`] Barra de inserción que sigue al cursor durante el drag-reorder de tabs.
+
+### v2.0.0-alpha.66 — Fix CI: tool oz.tabs.reorder (paridad IPC↔MCP) (2026-06-20)
+
+[`2026-06-20`] [`ui/tabstrip`] alpha.65 agregó el IPC `oz:tabs:reorder` sin su tool MCP → el guard de paridad rompió CI. Fix: tool `oz.tabs.reorder`. **Regla: todo IPC `oz:*` nuevo necesita su tool MCP.**
+
+### v2.0.0-alpha.65 — Tabs multi-fila + drag-reorder (2026-06-20)
+
+[`2026-06-20`] [`ui/tabstrip`] Las tabs envuelven a varias filas (auto-expand, tope configurable default 3, floor 120px) para más tabs por workspace sin achicarlas. + drag-and-drop para reordenar. `tabstrip-layout.js` puro (tests) + `tabs.js` reorder + IPC `oz:tabs:reorder` + tool MCP + `tab-ipc-setup.js`. Inset dinámico del chrome según filas.
+
+### v2.0.0-alpha.64 — V3-D: orquestador paralelo (runScrapeJob) (2026-06-20)
+
+[`2026-06-20`] [`scraping`] `scrape-orchestrator.js`: `runScrapeJob` corre N workers en paralelo combinando frontier + rate-limiter por dominio + retry. Lógica V3-D completa (faltan glues Electron + smokes).
+
+### v2.0.0-alpha.63 — V3-D: modo headless CLI + recipe runner (2026-06-20)
+
+[`2026-06-20`] [`scraping`] `headless-cli.js` (parse args) + `headless-runner.js` (`runHeadlessRecipe`) + `headless-setup.js` (bootstrap Electron tras flag). Corre recetas de scraping sin UI.
+
+### v2.0.0-alpha.62 — V3-D: crawl frontier persistente (2026-06-20)
+
+[`2026-06-20`] [`scraping`] `scrape-frontier.js`: `CrawlFrontier` con dedupe/visited/depth/retry y persistencia JSON. La cola de URLs sobrevive reinicios.
+
+### v2.0.0-alpha.61 — V3-D: rate-limit por dominio (2026-06-20)
+
+[`2026-06-20`] [`scraping`] `scrape-ratelimit-domain.js`: `DomainRateLimiter` espacia requests por dominio (next-available) para no martillar un host en corridas paralelas.
+
+### v2.0.0-alpha.60 — V3-D: retry + backoff exponencial por clase de error (2026-06-20)
+
+[`2026-06-20`] [`scraping`] `scrape-retry.js` (`classifyError`/`backoffDelay`/`buildRetryPolicy`) + `bulk-runner-retry.js` (`runWithRetry` opt-in vía `options.retry`). El reloj inyectable se extrajo a `bulk-runner-clock.js` (LOC budget).
+
 ### v2.0.0-alpha.59 — V3-D slice 1: detección de captcha (2026-06-20)
 
 [`2026-06-20`] [`scraping`] Arranca V3-D (orquestación). Tool nueva `oz.page.captcha` que escanea la pestaña de una identity buscando captchas/challenges (reCAPTCHA, hCaptcha, Cloudflare Turnstile + interstitial "Just a moment…", DataDome, PerimeterX, y fallback de texto "verify you are human"). **Política: DETECTAR + ALERTAR, NUNCA resolver** (zona gris legal, ver PLAN §4): cuando detecta, levanta una alerta urgente `captcha-detected` en el panel (suprimible con `alert:false`) para que el agente/Jose pause, rote identity o resuelva manual. Devuelve `{ok,detected,types,signals,primaryType}` (primaryType por orden de prioridad). NUEVO `scrape-captcha.js` puro (`detectCaptchaScript` estático = injection-free + `classifyCaptchaResult` defensivo) + handler `detectCaptcha` en `page-handlers.js` + tool en `mcp-tools-page.js` (`oz_page_captcha`, 15 chars ≤21). Tests: scrape-captcha 9 + page-handlers +3 (13). Sin browser/ui (sin manifest bump). Pendiente V3-D: orquestación paralela con rate-limit por dominio, retry con backoff por clase de error, crawl frontier, headless.
