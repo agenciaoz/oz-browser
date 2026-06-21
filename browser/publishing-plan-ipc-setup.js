@@ -25,6 +25,7 @@ function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:actions', () => h.actions())
   ipcMain.handle('oz:publishing:compose', (_e, input) => h.compose(input))
   ipcMain.handle('oz:publishing:send', (_e, input) => h.composePublish(input))
+  ipcMain.handle('oz:publishing:schedCompose', (_e, input) => h.scheduleCompose(input))
   // Content variation (anti-footprint) — same engine the UI preview uses.
   ipcMain.handle('oz:publishing:preview', (_e, spec, identities) =>
     h.preview(spec, identities),

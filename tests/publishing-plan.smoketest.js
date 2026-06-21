@@ -226,6 +226,25 @@ ok('handlers.schedule: creates a bulk Scheduled Action + stores its id', () => {
   assert.deepStrictEqual(removed, ['sa-1'])
   assert.strictEqual(h.get(id).scheduledActionId, null)
 
+  // scheduleCompose: schedule from RAW composer input (no plan store id).
+  const before = created.length
+  const sc = h.scheduleCompose({
+    platform: 'x',
+    identityIds: ['p1', 'p2'],
+    params: { text: 'hola' },
+    schedule: { type: 'daily', time: '08:00' },
+    name: 'manual',
+  })
+  assert.strictEqual(sc.ok, true)
+  assert.strictEqual(created.length, before + 1)
+  const last = created[created.length - 1]
+  assert.strictEqual(last.action, 'bulk')
+  assert.strictEqual(last.params.spec.actionId, 'x_post')
+  assert.deepStrictEqual(last.params.spec.identityIds, ['p1', 'p2'])
+  // unknown platform short-circuits with __error (scheduler untouched)
+  const bad = h.scheduleCompose({ platform: 'myspace', schedule: {} })
+  assert.strictEqual(bad.__error.code, 'UNSUPPORTED_PLATFORM')
+
   // unsupported platform short-circuits before touching the scheduler
   const fb = h.import({ rows: [{ platform: 'ig', caption: 'x', media: '' }] })
   void fb

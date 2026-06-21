@@ -307,7 +307,10 @@ function buildPublishingHandlers(browser) {
       const bulk = browser.handlers && browser.handlers.bulk
       if (!bulk || typeof bulk.run !== 'function')
         return { __error: { code: 'NO_BULK', message: 'bulk runner unavailable' } }
-      const options = c.drip || undefined
+      const options =
+        input.options && Object.keys(input.options).length
+          ? input.options
+          : c.drip || undefined
       const dispatched = []
       if (input.variation) {
         // Per-identity params → one run each.
@@ -358,6 +361,32 @@ function buildPublishingHandlers(browser) {
         warned: c.warned,
         blocked: c.blocked,
       }
+    },
+
+    /**
+     * Programa una publicación desde input CRUDO del composer (sin pasar por
+     * el plan store): arma el ScheduledAction tipo bulk con buildScheduleInput
+     * y lo crea. Mueve el armado del spec/schedule del renderer a main.
+     * input: { actionId|platform, identityIds, params, schedule, options, name }.
+     */
+    scheduleCompose(input = {}) {
+      const actionId = input.actionId || P.platformToActionId(input.platform)
+      if (!actionId)
+        return {
+          __error: { code: 'UNSUPPORTED_PLATFORM', message: 'unknown platform/action' },
+        }
+      const sched = browser.handlers && browser.handlers.scheduled
+      if (!sched || typeof sched.create !== 'function')
+        return { __error: { code: 'NO_SCHED', message: 'scheduler unavailable' } }
+      const create = Hh.buildScheduleInput({
+        name: input.name,
+        actionId,
+        identityIds: input.identityIds || [],
+        params: input.params || {},
+        schedule: input.schedule,
+        options: input.options,
+      })
+      return sched.create(create)
     },
 
     // ── Content variation (anti-footprint) — MCP-first ──────────────────

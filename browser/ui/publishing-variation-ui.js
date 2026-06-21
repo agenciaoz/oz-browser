@@ -148,7 +148,7 @@
       }
     }
 
-    _preview() {
+    async _preview() {
       this.$preview.innerHTML = ''
       const identities = this.getIdentities() || []
       if (!identities.length) {
@@ -160,7 +160,16 @@
         )
         return
       }
-      const rows = V.previewVariations(this._spec(), identities.slice(0, 12))
+      // MCP-first: main resolves the variation (same engine). Fall back to the
+      // local engine if the new API isn't present.
+      const spec = this._spec()
+      const ids = identities.slice(0, 12)
+      let rows
+      if (window.oz && window.oz.publishing && window.oz.publishing.preview) {
+        rows = await window.oz.publishing.preview(spec, ids)
+      } else {
+        rows = V.previewVariations(spec, ids)
+      }
       for (const r of rows) {
         this.$preview.appendChild(
           el('div', { class: 'pub-var-row' }, [

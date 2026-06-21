@@ -31,6 +31,21 @@ function buildPublishingApi(ipcRenderer) {
     libList: (kind) => ipcRenderer.invoke('oz:publishing:libList', kind),
     libSave: (kind, item) => ipcRenderer.invoke('oz:publishing:libSave', kind, item),
     libDel: (kind, id) => ipcRenderer.invoke('oz:publishing:libDel', kind, id),
+    // Composer migrated to main (MCP-first): the renderer delegates field
+    // derivation, validation, variation + dispatch to these instead of
+    // recomputing with the pure helpers locally.
+    actions: () => ipcRenderer.invoke('oz:publishing:actions'),
+    compose: (input) => ipcRenderer.invoke('oz:publishing:compose', input),
+    send: (input) => ipcRenderer.invoke('oz:publishing:send', input),
+    scheduleCompose: (input) => ipcRenderer.invoke('oz:publishing:schedCompose', input),
+    dryRun: (id) => ipcRenderer.invoke('oz:publishing:dryRun', id),
+    stats: (opts) => ipcRenderer.invoke('oz:publishing:stats', opts),
+    // Content variation (anti-footprint) — same engine main uses.
+    preview: (spec, identities) =>
+      ipcRenderer.invoke('oz:publishing:preview', spec, identities),
+    resolveVariation: (spec, opts) =>
+      ipcRenderer.invoke('oz:publishing:resolve', spec, opts),
+    variety: (text) => ipcRenderer.invoke('oz:publishing:variety', text),
   }
 }
 

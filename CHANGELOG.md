@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.87 — Publishing: el renderer delega en main (vaciado de lógica) (2026-06-20)
+
+[`2026-06-20`] [`publishing/ui`] El Publishing Studio del renderer ya NO recalcula la lógica pura: delega en los handlers de main. `publishing-studio.js` → `oz.publishing.actions` (campos), `oz.publishing.compose` (validar/preflight), `oz.publishing.send` (armar spec + despachar). `publishing-variation-ui.js` → `oz.publishing.preview` (motor de variación). Programar → NUEVO handler `scheduleCompose(input)` (arma el ScheduledAction desde input crudo) + IPC `oz:publishing:schedCompose` + preload. `composePublish` ahora respeta `options` (drip) pasado por el renderer. Cada reruteo tiene fallback al helper local si el preload es viejo. +scheduleCompose tests. Queda en el renderer solo DOM + persistencia localStorage de plantillas/hashtags (tiene equivalente en main `oz.publishing.lib*`, migración futura). ADR 0038.
+
 ### v2.0.0-alpha.86 — Publishing: composer migrado a main (MCP-first) (2026-06-20)
 
 [`2026-06-20`] [`publishing`] Cierra el gap MCP-first del composer (era renderer-only). NUEVO `publishing-compose.js` (puro) reusa `publishing-helpers` (fields-desde-schema, validación, health partition, drip) + `publishing-variation` para construir el plan de composición POR identity. Handlers `actions()` (redes publicables + campos del schema, ADR-B), `compose(input)` (preview sin publicar: valida, parte por salud, resuelve variación per-identity) y `composePublish(input)` (compone Y publica: un bulk run por identity si hay variación, uno solo si no, con drip). Tools `oz.publishing.actions/compose/send` + IPC. `fb_post` agregado a PUBLISHABLE_ACTION_IDS. El agente compone y publica multi-cuenta con anti-huella en una llamada MCP, sin el renderer. +7 tests compose. ADR 0038 (ADR-B/ADR-C).

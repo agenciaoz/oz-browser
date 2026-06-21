@@ -89,13 +89,19 @@
   }
 
   async function loadActions() {
-    let actions = []
+    // MCP-first: main derives the publishable actions + their composer fields
+    // from the bulk registry (oz.publishing.actions). Fall back to the local
+    // pure helper only if the new API isn't present (older preload).
+    let publishable = []
     try {
-      actions = await window.oz.bulk.listActions()
+      if (window.oz.publishing && window.oz.publishing.actions) {
+        publishable = await window.oz.publishing.actions()
+      } else {
+        publishable = H.pickPublishActions(await window.oz.bulk.listActions())
+      }
     } catch (_e) {
-      actions = []
+      publishable = []
     }
-    const publishable = H.pickPublishActions(actions)
     state.composer.setActions(publishable)
     if (!publishable.length) {
       setStatus(t('publishingStudio.noActions', 'No publish actions available'), 'red')
@@ -131,17 +137,33 @@
     if (!sel) return
     const part = state.targets.getPartition()
     const allowed = part.allowed
+    const platformLabel = H.platformLabel(sel.platform)
+    const drip = state.schedule ? state.schedule.getDripOptions() : undefined
+    const mode = state.schedule ? state.schedule.getMode() : 'now'
 
-    const pre = H.preflightPublish({
-      fields: sel.fields,
-      params: sel.params,
+    // MCP-first: main composes + validates (oz.publishing.compose). The renderer
+    // no longer runs preflight/spec-building; it just surfaces the result. Falls
+    // back to the local pure helper if the new API isn't present.
+    const composeInput = {
+      actionId: sel.actionId,
       identityIds: allowed,
-    })
-    if (!pre.ok) {
-      if (pre.code === 'invalidParams') {
-        state.composer.showErrors(pre.errors)
-        setStatus(t('publishingStudio.fixErrors', 'Fix the highlighted fields'), 'red')
-      } else if (pre.code === 'noTargets') {
+      params: sel.params,
+      options: drip,
+    }
+    let plan
+    if (window.oz.publishing && window.oz.publishing.compose) {
+      plan = await window.oz.publishing.compose(composeInput)
+    } else {
+      plan = localComposeFallback(sel, allowed)
+    }
+    if (plan && plan.__error) {
+      setStatus(t('publishingStudio.pickTargets', 'Select at least one identity'), 'red')
+      return
+    }
+    if (!plan.ok) {
+      if (plan.code === 'tooManyTargets') {
+        setStatus(t('publishingStudio.tooMany', { max: plan.max }), 'red')
+      } else if (plan.code === 'noTargets') {
         setStatus(
           part.blocked.length
             ? t(
@@ -151,16 +173,15 @@
             : t('publishingStudio.pickTargets', 'Select at least one identity'),
           'red',
         )
-      } else if (pre.code === 'tooManyTargets') {
-        setStatus(t('publishingStudio.tooMany', { max: pre.max }), 'red')
+      } else {
+        // invalid params → per-identity errors (same for all when not varied).
+        const errs = (plan.plan && plan.plan[0] && plan.plan[0].errors) || []
+        state.composer.showErrors(errs)
+        setStatus(t('publishingStudio.fixErrors', 'Fix the highlighted fields'), 'red')
       }
       return
     }
     state.composer.showErrors([])
-
-    const platformLabel = H.platformLabel(sel.platform)
-    const drip = state.schedule ? state.schedule.getDripOptions() : undefined
-    const mode = state.schedule ? state.schedule.getMode() : 'now'
 
     if (mode === 'schedule') {
       await schedulePublish(sel, allowed, platformLabel, drip)
@@ -170,8 +191,8 @@
     const msg = t('publishingStudio.confirm', {
       count: allowed.length,
       platform: platformLabel,
-      blocked: part.blocked.length,
-      warned: part.warned.length,
+      blocked: (plan.blocked || part.blocked).length,
+      warned: (plan.warned || part.warned).length,
     })
     const okLabel = t('publishingStudio.confirmOk', 'Publish now')
     const cancelLabel = t('common.cancel', 'Cancel')
@@ -181,13 +202,28 @@
     }
     if (!confirmed) return
 
-    const spec = H.buildPublishSpec({
-      actionId: sel.actionId,
-      identityIds: allowed,
+    await runPublish(composeInput, allowed)
+  }
+
+  // Local fallback mirroring compose() for older preloads without the new API.
+  function localComposeFallback(sel, allowed) {
+    const pre = H.preflightPublish({
+      fields: sel.fields,
       params: sel.params,
-      options: drip,
+      identityIds: allowed,
     })
-    await runPublish(spec, allowed)
+    if (!pre.ok) {
+      return {
+        ok: false,
+        code: pre.code,
+        max: pre.max,
+        plan: [{ errors: pre.errors || [] }],
+      }
+    }
+    return {
+      ok: true,
+      plan: allowed.map((id) => ({ identityId: id, params: sel.params })),
+    }
   }
 
   async function schedulePublish(sel, allowed, platformLabel, drip) {
@@ -208,16 +244,23 @@
     }
     if (!confirmed) return
 
-    const input = H.buildScheduleInput({
+    const composeInput = {
       name: t('publishingStudio.sched.nameAuto', { platform: platformLabel }),
       actionId: sel.actionId,
       identityIds: allowed,
       params: sel.params,
       schedule,
       options: drip,
-    })
+    }
     try {
-      await window.oz.scheduledActions.create(input)
+      // MCP-first: main builds the ScheduledAction input + creates it
+      // (oz.publishing.scheduleCompose). Fall back to the local helper.
+      if (window.oz.publishing && window.oz.publishing.scheduleCompose) {
+        const res = await window.oz.publishing.scheduleCompose(composeInput)
+        if (res && res.__error) throw new Error(res.__error.message || res.__error.code)
+      } else {
+        await window.oz.scheduledActions.create(H.buildScheduleInput(composeInput))
+      }
       setStatus(t('publishingStudio.sched.created', 'Scheduled ✓'), 'green')
       if (state.scheduledList) await state.scheduledList.load()
     } catch (err) {
@@ -228,14 +271,29 @@
     }
   }
 
-  async function runPublish(spec, allowed) {
+  async function runPublish(input, allowed) {
     state.items = new Map()
     for (const id of allowed) state.items.set(id, { status: 'pending' })
     renderProgress()
     setStatus(t('publishingStudio.publishing', 'Publishing…'), 'yellow')
     try {
-      const runId = await window.oz.bulk.run(spec)
-      state.activeRunId = typeof runId === 'string' ? runId : runId && runId.runId
+      // MCP-first: main builds the spec + dispatches via the bulk runner
+      // (oz.publishing.send). Fall back to building the spec locally + bulk.run.
+      if (window.oz.publishing && window.oz.publishing.send) {
+        const res = await window.oz.publishing.send(input)
+        if (res && res.__error) throw new Error(res.__error.message || res.__error.code)
+        const first = (res && res.dispatched && res.dispatched[0]) || null
+        state.activeRunId = first && first.runId
+      } else {
+        const spec = H.buildPublishSpec({
+          actionId: input.actionId,
+          identityIds: input.identityIds,
+          params: input.params,
+          options: input.options,
+        })
+        const runId = await window.oz.bulk.run(spec)
+        state.activeRunId = typeof runId === 'string' ? runId : runId && runId.runId
+      }
       refreshPublishButton()
     } catch (err) {
       setStatus(
