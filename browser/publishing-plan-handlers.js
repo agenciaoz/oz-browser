@@ -58,6 +58,50 @@ function buildPublishingHandlers(browser) {
       return store.setStatus(id, P.nextStatus(pub.status, action))
     },
 
+    /**
+     * Publica una publicación AHORA vía el bulk runner (MCP-first end-to-end):
+     * mapea plataforma→actionId (ig_post/x_post), corre sobre sus identities y,
+     * si se despachó, marca la publicación como 'published'.
+     */
+    async publish(id) {
+      const pub = store.get(id)
+      if (!pub)
+        return { __error: { code: 'NOT_FOUND', message: 'publication not found' } }
+      const actionId = P.platformToActionId(pub.platform)
+      if (!actionId) {
+        return {
+          __error: {
+            code: 'UNSUPPORTED_PLATFORM',
+            message: `publish not supported for ${pub.platform} (only instagram, x)`,
+          },
+        }
+      }
+      const identityIds = Array.isArray(pub.identities)
+        ? pub.identities.filter(Boolean)
+        : []
+      if (identityIds.length === 0) {
+        return {
+          __error: { code: 'NO_TARGETS', message: 'publication has no identities' },
+        }
+      }
+      const bulk = browser.handlers && browser.handlers.bulk
+      if (!bulk || typeof bulk.run !== 'function') {
+        return { __error: { code: 'NO_BULK', message: 'bulk runner unavailable' } }
+      }
+      const params = P.buildPublishParams(pub.platform, pub)
+      if (actionId === 'ig_post' && !params.imagePath) {
+        return {
+          __error: { code: 'NO_MEDIA', message: 'instagram post needs a media path' },
+        }
+      }
+      const res = await bulk.run({ actionId, identityIds, params })
+      if (res && res.ok) {
+        store.setStatus(id, 'published')
+        log.info('publishing', 'published via bulk', { id, actionId, runId: res.runId })
+      }
+      return res
+    },
+
     update(id, patch) {
       const r = store.update(id, patch || {})
       return r || { __error: { code: 'NOT_FOUND', message: 'publication not found' } }

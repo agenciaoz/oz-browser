@@ -23,6 +23,7 @@ function buildPublishingApi(ipcRenderer) {
     setPlanStatus: (id, action) => ipcRenderer.invoke('oz:publishing:status', id, action),
     updatePlan: (id, patch) => ipcRenderer.invoke('oz:publishing:update', id, patch),
     removePlan: (id) => ipcRenderer.invoke('oz:publishing:remove', id),
+    publishPlan: (id) => ipcRenderer.invoke('oz:publishing:publish', id),
     exportPlan: () => ipcRenderer.invoke('oz:publishing:export'),
   }
 }

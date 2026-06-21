@@ -13,6 +13,7 @@ function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:status', (_e, id, action) => h.status(id, action))
   ipcMain.handle('oz:publishing:update', (_e, id, patch) => h.update(id, patch))
   ipcMain.handle('oz:publishing:remove', (_e, id) => h.remove(id))
+  ipcMain.handle('oz:publishing:publish', (_e, id) => h.publish(id))
   ipcMain.handle('oz:publishing:export', () => h.export())
 }
 

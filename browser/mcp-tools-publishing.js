@@ -70,6 +70,18 @@ function buildPublishingTools({ publishing }) {
       call: ({ id, patch }) => publishing().update(id, patch),
     },
     {
+      name: 'oz.publishing.publish',
+      description:
+        'Publish a publication NOW via the bulk runner (instagram→ig_post, x→x_post) across its identities. Marks it published on dispatch. Returns { ok, runId } or { __error } (UNSUPPORTED_PLATFORM | NO_TARGETS | NO_MEDIA | NO_BULK). Use oz.bulk.get to poll the run.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => publishing().publish(id),
+    },
+    {
       name: 'oz.publishing.remove',
       description: 'Delete a publication by id. Returns true/false.',
       inputSchema: {

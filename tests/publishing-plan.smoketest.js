@@ -122,6 +122,25 @@ ok('planToMatrix: round-trips through parse', () => {
   assert.strictEqual(matrix[1][5], 'approved')
 })
 
+// ---- publish mapping (platform → bulk action + params) ---------------------
+
+ok('platformToActionId + buildPublishParams', () => {
+  assert.strictEqual(P.platformToActionId('instagram'), 'ig_post')
+  assert.strictEqual(P.platformToActionId('x'), 'x_post')
+  assert.strictEqual(P.platformToActionId('facebook'), null)
+  assert.deepStrictEqual(
+    P.buildPublishParams('instagram', { media: ['/p.jpg'], caption: 'hi' }),
+    { imagePath: '/p.jpg', caption: 'hi' },
+  )
+  assert.deepStrictEqual(P.buildPublishParams('x', { caption: 'tweet' }), {
+    text: 'tweet',
+  })
+  assert.deepStrictEqual(P.buildPublishParams('instagram', {}), {
+    imagePath: '',
+    caption: '',
+  })
+})
+
 // ---- main store: publications + persistence --------------------------------
 
 ok('PublishingPlanStore: bulk add + list + status + persist', () => {

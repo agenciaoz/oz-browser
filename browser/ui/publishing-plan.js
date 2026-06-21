@@ -70,6 +70,12 @@
     tt: 'tiktok',
   }
 
+  // E5/publish: plataforma → actionId del bulk runner (las que existen hoy).
+  const ACTION_BY_PLATFORM = {
+    instagram: 'ig_post',
+    x: 'x_post',
+  }
+
   function _str(v) {
     return v == null ? '' : String(v).trim()
   }
@@ -185,9 +191,33 @@
     return rows
   }
 
+  /** actionId del bulk runner para publicar en esta plataforma, o null. */
+  function platformToActionId(platform) {
+    return ACTION_BY_PLATFORM[_str(platform).toLowerCase()] || null
+  }
+
+  /**
+   * Params exactos que espera la action del bulk runner para esta publicación.
+   * ig_post → { imagePath, caption } · x_post → { text }.
+   * @returns {object}
+   */
+  function buildPublishParams(platform, pub) {
+    const p = pub || {}
+    const media = Array.isArray(p.media) ? p.media : []
+    switch (_str(platform).toLowerCase()) {
+      case 'instagram':
+        return { imagePath: media[0] || '', caption: _str(p.caption) }
+      case 'x':
+        return { text: _str(p.caption) }
+      default:
+        return {}
+    }
+  }
+
   return {
     STATUSES,
     TRANSITIONS,
+    ACTION_BY_PLATFORM,
     canonicalHeader,
     normalizePlatform,
     matrixToPlanRows,
@@ -195,5 +225,7 @@
     canTransition,
     nextStatus,
     planToMatrix,
+    platformToActionId,
+    buildPublishParams,
   }
 })
