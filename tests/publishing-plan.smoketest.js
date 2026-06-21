@@ -141,6 +141,96 @@ ok('platformToActionId + buildPublishParams', () => {
   })
 })
 
+// ---- buildBulkSpec (pure validation + spec) --------------------------------
+
+ok('buildBulkSpec: valid IG → spec; missing pieces → __error', () => {
+  const good = P.buildBulkSpec({
+    platform: 'instagram',
+    caption: 'hi',
+    media: ['/p.jpg'],
+    identities: ['p1', 'p2'],
+  })
+  assert.deepStrictEqual(good.spec, {
+    actionId: 'ig_post',
+    identityIds: ['p1', 'p2'],
+    params: { imagePath: '/p.jpg', caption: 'hi' },
+  })
+  assert.strictEqual(
+    P.buildBulkSpec({ platform: 'facebook', identities: ['p1'] }).__error.code,
+    'UNSUPPORTED_PLATFORM',
+  )
+  assert.strictEqual(
+    P.buildBulkSpec({ platform: 'x', caption: 'hi', identities: [] }).__error.code,
+    'NO_TARGETS',
+  )
+  assert.strictEqual(
+    P.buildBulkSpec({ platform: 'instagram', caption: 'hi', identities: ['p1'] }).__error
+      .code,
+    'NO_MEDIA',
+  )
+})
+
+// ---- schedule / unschedule handlers (fake bulk + scheduled deps) -----------
+
+ok('handlers.schedule: creates a bulk Scheduled Action + stores its id', () => {
+  const dir = tmpDir()
+  const created = []
+  const removed = []
+  const browser = {
+    handlers: {
+      bulk: { run: async () => ({ ok: true, runId: 'r1' }) },
+      scheduled: {
+        create: (input) => {
+          created.push(input)
+          return { ok: true, action: { id: 'sa-1', ...input } }
+        },
+        remove: (id) => {
+          removed.push(id)
+          return { ok: true, removed: true }
+        },
+      },
+    },
+  }
+  // build handlers against a real store in tmp dir
+  process.env.OZ_TEST_USERDATA = dir
+  delete require.cache[require.resolve('../browser/publishing-plan-handlers.js')]
+  // electron.app.getPath is stubbed below via module mock
+  const Module = require('module')
+  const origLoad = Module._load
+  Module._load = function (request, parent, isMain) {
+    if (request === 'electron') {
+      return { app: { getPath: () => dir } }
+    }
+    return origLoad.call(this, request, parent, isMain)
+  }
+  const { buildPublishingHandlers } = require('../browser/publishing-plan-handlers.js')
+  const h = buildPublishingHandlers(browser)
+  Module._load = origLoad
+
+  const pub = h.import({
+    rows: [{ platform: 'x', caption: 'hi', identities: 'p1' }],
+  })
+  assert.strictEqual(pub.added, 1)
+  const id = h.list()[0].id
+
+  const res = h.schedule(id, { type: 'daily', time: '09:00' })
+  assert.strictEqual(res.ok, true)
+  assert.strictEqual(created.length, 1)
+  assert.strictEqual(created[0].action, 'bulk')
+  assert.deepStrictEqual(created[0].params.spec.identityIds, ['p1'])
+  assert.strictEqual(h.get(id).scheduledActionId, 'sa-1')
+
+  const un = h.unschedule(id)
+  assert.strictEqual(un.removed, true)
+  assert.deepStrictEqual(removed, ['sa-1'])
+  assert.strictEqual(h.get(id).scheduledActionId, null)
+
+  // unsupported platform short-circuits before touching the scheduler
+  const fb = h.import({ rows: [{ platform: 'ig', caption: 'x', media: '' }] })
+  void fb
+  fs.rmSync(dir, { recursive: true, force: true })
+})
+
 // ---- main store: publications + persistence --------------------------------
 
 ok('PublishingPlanStore: bulk add + list + status + persist', () => {

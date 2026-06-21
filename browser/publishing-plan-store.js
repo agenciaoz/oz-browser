@@ -51,6 +51,7 @@ class PublishingPlanStore {
       media: Array.isArray(pub.media) ? pub.media.slice() : [],
       identities: Array.isArray(pub.identities) ? pub.identities.slice() : [],
       scheduledAt: pub.scheduledAt || null,
+      scheduledActionId: pub.scheduledActionId || null,
       createdAt: iso,
       updatedAt: iso,
     }
@@ -79,6 +80,7 @@ class PublishingPlanStore {
       'media',
       'identities',
       'scheduledAt',
+      'scheduledActionId',
     ]
     for (const k of allowed) if (k in patch) p[k] = patch[k]
     p.updatedAt = new Date(this.clock.now()).toISOString()

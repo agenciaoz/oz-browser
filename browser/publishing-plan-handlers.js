@@ -69,39 +69,72 @@ function buildPublishingHandlers(browser) {
       const pub = store.get(id)
       if (!pub)
         return { __error: { code: 'NOT_FOUND', message: 'publication not found' } }
-      const actionId = P.platformToActionId(pub.platform)
-      if (!actionId) {
-        return {
-          __error: {
-            code: 'UNSUPPORTED_PLATFORM',
-            message: `publish not supported for ${pub.platform} (only instagram, x)`,
-          },
-        }
-      }
-      const identityIds = Array.isArray(pub.identities)
-        ? pub.identities.filter(Boolean)
-        : []
-      if (identityIds.length === 0) {
-        return {
-          __error: { code: 'NO_TARGETS', message: 'publication has no identities' },
-        }
-      }
+      const built = P.buildBulkSpec(pub)
+      if (built.__error) return built
       const bulk = browser.handlers && browser.handlers.bulk
       if (!bulk || typeof bulk.run !== 'function') {
         return { __error: { code: 'NO_BULK', message: 'bulk runner unavailable' } }
       }
-      const params = P.buildPublishParams(pub.platform, pub)
-      if (actionId === 'ig_post' && !params.imagePath) {
-        return {
-          __error: { code: 'NO_MEDIA', message: 'instagram post needs a media path' },
-        }
-      }
-      const res = await bulk.run({ actionId, identityIds, params })
+      const res = await bulk.run(built.spec)
       if (res && res.ok) {
         store.setStatus(id, 'published')
-        log.info('publishing', 'published via bulk', { id, actionId, runId: res.runId })
+        log.info('publishing', 'published via bulk', {
+          id,
+          actionId: built.spec.actionId,
+          runId: res.runId,
+        })
       }
       return res
+    },
+
+    /**
+     * Programa una publicación (MCP-first end-to-end): crea una Scheduled Action
+     * tipo 'bulk' con el spec de la publicación. `schedule` usa el shape del
+     * runner: { type:'daily', time:'HH:MM' } | { type:'weekly', day, time } |
+     * { type:'every-minutes', minutes }. Guarda el scheduledActionId en la
+     * publicación para poder cancelarla luego. Devuelve { ok, action } o __error.
+     */
+    schedule(id, schedule) {
+      const pub = store.get(id)
+      if (!pub)
+        return { __error: { code: 'NOT_FOUND', message: 'publication not found' } }
+      const built = P.buildBulkSpec(pub)
+      if (built.__error) return built
+      const sched = browser.handlers && browser.handlers.scheduled
+      if (!sched || typeof sched.create !== 'function') {
+        return { __error: { code: 'NO_SCHED', message: 'scheduler unavailable' } }
+      }
+      const res = sched.create({
+        name: `publish:${pub.platform}:${id}`,
+        action: 'bulk',
+        params: { spec: built.spec },
+        schedule,
+        enabled: true,
+      })
+      if (res && res.ok && res.action) {
+        store.update(id, { scheduledAt: schedule, scheduledActionId: res.action.id })
+        log.info('publishing', 'scheduled via bulk', {
+          id,
+          actionId: built.spec.actionId,
+          scheduledActionId: res.action.id,
+        })
+      }
+      return res
+    },
+
+    /** Cancela la programación de una publicación (borra su Scheduled Action). */
+    unschedule(id) {
+      const pub = store.get(id)
+      if (!pub)
+        return { __error: { code: 'NOT_FOUND', message: 'publication not found' } }
+      const sched = browser.handlers && browser.handlers.scheduled
+      let removed = false
+      if (pub.scheduledActionId && sched && typeof sched.remove === 'function') {
+        const r = sched.remove(pub.scheduledActionId)
+        removed = !!(r && r.removed)
+      }
+      store.update(id, { scheduledAt: null, scheduledActionId: null })
+      return { ok: true, removed }
     },
 
     update(id, patch) {

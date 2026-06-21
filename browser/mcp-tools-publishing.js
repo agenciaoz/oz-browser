@@ -82,6 +82,30 @@ function buildPublishingTools({ publishing }) {
       call: ({ id }) => publishing().publish(id),
     },
     {
+      name: 'oz.publishing.sched',
+      description:
+        'Schedule a publication to auto-publish on a recurring schedule via the bulk runner. `schedule` shape: {type:"daily",time:"HH:MM"} | {type:"weekly",day:"mon".."sun",time:"HH:MM"} | {type:"every-minutes",minutes:N}. Creates a Scheduled Action and stores its id on the publication. Returns { ok, action } or { __error } (UNSUPPORTED_PLATFORM | NO_TARGETS | NO_MEDIA | NO_SCHED). Cancel with oz.publishing.unsched.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' }, schedule: { type: 'object' } },
+        required: ['id', 'schedule'],
+        additionalProperties: false,
+      },
+      call: ({ id, schedule }) => publishing().schedule(id, schedule),
+    },
+    {
+      name: 'oz.publishing.unsched',
+      description:
+        'Cancel a publication’s schedule (removes its Scheduled Action). Returns { ok, removed }.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => publishing().unschedule(id),
+    },
+    {
       name: 'oz.publishing.remove',
       description: 'Delete a publication by id. Returns true/false.',
       inputSchema: {

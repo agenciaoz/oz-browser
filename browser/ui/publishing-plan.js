@@ -214,6 +214,35 @@
     }
   }
 
+  /**
+   * Valida una publicación y arma el spec del bulk runner para publicarla
+   * (ahora o programada). Una sola fuente de verdad para publish() y schedule().
+   * @returns {{spec:{actionId,identityIds,params}} | {__error:{code,message}}}
+   */
+  function buildBulkSpec(pub) {
+    const p = pub || {}
+    const actionId = platformToActionId(p.platform)
+    if (!actionId) {
+      return {
+        __error: {
+          code: 'UNSUPPORTED_PLATFORM',
+          message: `publish not supported for ${p.platform} (only instagram, x)`,
+        },
+      }
+    }
+    const identityIds = (Array.isArray(p.identities) ? p.identities : []).filter(Boolean)
+    if (identityIds.length === 0) {
+      return { __error: { code: 'NO_TARGETS', message: 'publication has no identities' } }
+    }
+    const params = buildPublishParams(p.platform, p)
+    if (actionId === 'ig_post' && !params.imagePath) {
+      return {
+        __error: { code: 'NO_MEDIA', message: 'instagram post needs a media path' },
+      }
+    }
+    return { spec: { actionId, identityIds, params } }
+  }
+
   return {
     STATUSES,
     TRANSITIONS,
@@ -227,5 +256,6 @@
     planToMatrix,
     platformToActionId,
     buildPublishParams,
+    buildBulkSpec,
   }
 })

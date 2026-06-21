@@ -24,6 +24,9 @@ function buildPublishingApi(ipcRenderer) {
     updatePlan: (id, patch) => ipcRenderer.invoke('oz:publishing:update', id, patch),
     removePlan: (id) => ipcRenderer.invoke('oz:publishing:remove', id),
     publishPlan: (id) => ipcRenderer.invoke('oz:publishing:publish', id),
+    schedulePlan: (id, schedule) =>
+      ipcRenderer.invoke('oz:publishing:sched', id, schedule),
+    unschedulePlan: (id) => ipcRenderer.invoke('oz:publishing:unsched', id),
     exportPlan: () => ipcRenderer.invoke('oz:publishing:export'),
     libList: (kind) => ipcRenderer.invoke('oz:publishing:libList', kind),
     libSave: (kind, item) => ipcRenderer.invoke('oz:publishing:libSave', kind, item),
