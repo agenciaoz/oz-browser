@@ -17,6 +17,12 @@ function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:sched', (_e, id, schedule) => h.schedule(id, schedule))
   ipcMain.handle('oz:publishing:unsched', (_e, id) => h.unschedule(id))
   ipcMain.handle('oz:publishing:export', () => h.export())
+  // Content variation (anti-footprint) — same engine the UI preview uses.
+  ipcMain.handle('oz:publishing:preview', (_e, spec, identities) =>
+    h.preview(spec, identities),
+  )
+  ipcMain.handle('oz:publishing:resolve', (_e, spec, opts) => h.resolve(spec, opts))
+  ipcMain.handle('oz:publishing:variety', (_e, text) => h.variety(text))
   // Library (templates/hashtags/media).
   ipcMain.handle('oz:publishing:libList', (_e, kind) => h.libList(kind))
   ipcMain.handle('oz:publishing:libSave', (_e, kind, item) => h.libSave(kind, item))

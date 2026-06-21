@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.82 — Publishing: variación de contenido por MCP (2026-06-20)
+
+[`2026-06-20`] [`publishing`] Cierra el gap MCP-first del motor de variación anti-huella. Handlers `preview(spec,identities)`/`resolve(spec,opts)`/`variety(text)` reusan la lógica pura `ui/publishing-variation` (spintax + subset de hashtags K-de-N + rotación de media, determinístico por identityId) + tools `oz.publishing.preview/resolve/variety` + IPC `oz:publishing:preview/resolve/variety`. El agente puede previsualizar exactamente qué postearía cada cuenta antes de disparar, sin el renderer. NUEVO `tests/publishing-mcp-tools.smoketest.js` (6 tests). ADR 0038.
+
 ### v2.0.0-alpha.81 — Publishing: programar/cancelar por MCP (2026-06-20)
 
 [`2026-06-20`] [`publishing`] Scheduling de publicaciones MCP-first reusando el scheduler (Scheduled Action tipo `bulk`). Handlers `schedule(id,schedule)`/`unschedule(id)` + tools `oz.publishing.sched` (daily/weekly/every-minutes) / `oz.publishing.unsched`. Helper puro `buildBulkSpec` (consolida validación platform/identities/media de publish + schedule). Store gana `scheduledActionId` para cancelar. +2 tests (10 en el archivo), guard 154/0. ADR 0038.

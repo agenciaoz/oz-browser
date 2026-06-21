@@ -117,6 +117,45 @@ function buildPublishingTools({ publishing }) {
       call: ({ id }) => publishing().remove(id),
     },
     {
+      name: 'oz.publishing.preview',
+      description:
+        'Preview anti-footprint content variation per identity WITHOUT publishing. `spec`: {caption (spintax {a|b} + {{vars}} allowed), hashtags[] (pool), hashtagCount (K of N), firstCommentHashtags (bool), mediaList[] (rotated), vars}. `identities`: [{id,name}]. Returns one row per identity {identityId,name,caption,mediaPath,firstComment}. Deterministic per identityId so the preview matches what would post.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          spec: { type: 'object' },
+          identities: { type: 'array', items: { type: 'object' } },
+        },
+        required: ['spec', 'identities'],
+        additionalProperties: false,
+      },
+      call: ({ spec, identities }) => publishing().preview(spec, identities),
+    },
+    {
+      name: 'oz.publishing.resolve',
+      description:
+        'Resolve varied content for ONE identity (same engine as preview). `spec` as in oz.publishing.preview; `opts`: {index, identity:{id,name}, vars}. Returns {caption,hashtags,hashtagsText,mediaPath,firstComment}.',
+      inputSchema: {
+        type: 'object',
+        properties: { spec: { type: 'object' }, opts: { type: 'object' } },
+        required: ['spec'],
+        additionalProperties: false,
+      },
+      call: ({ spec, opts }) => publishing().resolve(spec, opts),
+    },
+    {
+      name: 'oz.publishing.variety',
+      description:
+        'Count how many distinct caption variants a spintax string can yield (rough upper bound). Use to warn about low variety before posting to many accounts. Returns { variants }.',
+      inputSchema: {
+        type: 'object',
+        properties: { text: { type: 'string' } },
+        required: ['text'],
+        additionalProperties: false,
+      },
+      call: ({ text }) => publishing().variety(text),
+    },
+    {
       name: 'oz.publishing.libList',
       description:
         'List a publishing library collection. kind: templates | hashtags | media.',

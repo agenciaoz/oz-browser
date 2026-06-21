@@ -13,6 +13,7 @@ const { app } = require('electron')
 const { PublishingPlanStore } = require('./publishing-plan-store')
 const { PublishingLibraryStore } = require('./publishing-library-store')
 const P = require('./ui/publishing-plan')
+const V = require('./ui/publishing-variation')
 const log = require('./logger')
 
 function buildPublishingHandlers(browser) {
@@ -147,6 +148,29 @@ function buildPublishingHandlers(browser) {
     /** Exporta el plan como matriz (headers + filas) para Excel/CSV. */
     export() {
       return P.planToMatrix(store.list())
+    },
+
+    // ── Content variation (anti-footprint) — MCP-first ──────────────────
+    /**
+     * Previsualiza el contenido VARIADO por identity (spintax + subset de
+     * hashtags + rotación de media). Determinístico por identityId. Devuelve
+     * una fila por identity: { identityId, name, caption, mediaPath, firstComment }.
+     * El agente puede ver exactamente qué postearía cada cuenta antes de disparar.
+     */
+    preview(spec, identities) {
+      return V.previewVariations(spec || {}, identities || [])
+    },
+    /**
+     * Resuelve el contenido variado para UNA identity (mismo motor que preview).
+     * opts: { index, identity:{id,name}, vars }. Devuelve
+     * { caption, hashtags, hashtagsText, mediaPath, firstComment }.
+     */
+    resolve(spec, opts) {
+      return V.resolveForIdentity(spec || {}, opts || {})
+    },
+    /** Cuenta variantes posibles de un spintax (alerta "poca variedad"). */
+    variety(text) {
+      return { variants: V.spintaxVariety(text) }
     },
 
     // ── Library (templates | hashtags | media) — MCP-first ──────────────
