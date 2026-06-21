@@ -341,6 +341,18 @@ ok('dryRunReport: unsupported platform short-circuits', () => {
   assert.strictEqual(r.issues[0].code, 'UNSUPPORTED_PLATFORM')
 })
 
+ok('threads maps to threads_post (text)', () => {
+  assert.strictEqual(P.platformToActionId('threads'), 'threads_post')
+  assert.strictEqual(P.platformToActionId(P.normalizePlatform('th')), 'threads_post')
+  assert.strictEqual(P.buildPublishParams('threads', { caption: 'hi' }).text, 'hi')
+  const built = P.buildBulkSpec({
+    platform: 'threads',
+    caption: 'hi',
+    identities: ['i1'],
+  })
+  assert.strictEqual(built.spec.actionId, 'threads_post')
+})
+
 ok('facebook maps to fb_post (text, no media required)', () => {
   assert.strictEqual(P.platformToActionId('facebook'), 'fb_post')
   assert.strictEqual(P.platformToActionId(P.normalizePlatform('fb')), 'fb_post')

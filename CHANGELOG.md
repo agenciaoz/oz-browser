@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.89 — Publishing E6: action threads_post (Threads) (2026-06-20)
+
+[`2026-06-20`] [`publishing/bulk`] Segunda red nueva de la Etapa 6. NUEVO `bulk-actions-threads-post.js` (`buildThreadsPostAction`): postea un hilo de texto en Threads (Meta) por identity — abrir composer → escribir en el textbox (execCommand insertText) → click Post → verificar, con detección early de needs_login/captcha. Registrado en `bulk-runner-setup.js` (cap rate-limit `threads.net` 30/día). Plan gana `threads→threads_post` (alias th/threads, ACTION_BY_PLATFORM + buildPublishParams text) + helpers (PUBLISHABLE_ACTION_IDS, PLATFORM_LABEL Threads) + compose mapVariationToParams → end-to-end por publish/schedule/dryRun/compose/send. Schema-driven: auto-aparece en el composer (ADR-B). +11 tests threads + threads en publishing-plan (17). Selectores Meta frágiles → smoke en vivo. ADR 0038.
+
 ### v2.0.0-alpha.88 — Publishing: plantillas/hashtags del renderer → store de main (2026-06-20)
 
 [`2026-06-20`] [`publishing/ui`] Última pieza del vaciado: la persistencia de plantillas y grupos de hashtags del panel de variación deja de usar localStorage y pasa al store de main (`oz.publishing.libList/libSave/libDel`). NUEVO adapter `buildLibraryStore()` en `publishing-studio.js` mapea los kinds (templates/hashtags) a los métodos que el panel espera; `publishing-variation-ui.js` hace todas las lecturas del store con `await` (funciona con el store async de main O el localStorage sync legacy como fallback si el preload es viejo). Shapes idénticos (templates {name,caption,hashtags}, hashtags {name,tags}) → cero migración de datos. Queda en el renderer solo DOM + el filtrado de history (cosmético). ADR 0038.

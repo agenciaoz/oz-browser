@@ -73,6 +73,10 @@ const DEFAULT_CAPS = {
     fb_post: 25,
     _default: 100,
   },
+  'threads.net': {
+    threads_post: 30,
+    _default: 100,
+  },
   // Platform agnostic (echo / navigate) — no rate limit.
   _default: {
     _default: Infinity,

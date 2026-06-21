@@ -37,6 +37,7 @@ function mapVariationToParams(actionId, resolved, baseParams) {
       }
     case 'x_post':
     case 'fb_post':
+    case 'threads_post':
       return { ...base, text: caption != null ? caption : base.text || '' }
     default:
       return { ...base }

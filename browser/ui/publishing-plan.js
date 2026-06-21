@@ -68,6 +68,8 @@
     facebook: 'facebook',
     tiktok: 'tiktok',
     tt: 'tiktok',
+    threads: 'threads',
+    th: 'threads',
   }
 
   // E5/publish: plataforma → actionId del bulk runner (las que existen hoy).
@@ -75,6 +77,7 @@
     instagram: 'ig_post',
     x: 'x_post',
     facebook: 'fb_post',
+    threads: 'threads_post',
   }
 
   function _str(v) {
@@ -212,6 +215,8 @@
         return { text: _str(p.caption) }
       case 'facebook':
         return { text: _str(p.caption) }
+      case 'threads':
+        return { text: _str(p.caption) }
       default:
         return {}
     }
@@ -229,7 +234,7 @@
       return {
         __error: {
           code: 'UNSUPPORTED_PLATFORM',
-          message: `publish not supported for ${p.platform} (only instagram, x, facebook)`,
+          message: `publish not supported for ${p.platform} (only instagram, x, facebook, threads)`,
         },
       }
     }
@@ -276,7 +281,7 @@
       report.ok = false
       report.issues.push({
         code: 'UNSUPPORTED_PLATFORM',
-        message: `publish not supported for ${p.platform} (only instagram, x, facebook)`,
+        message: `publish not supported for ${p.platform} (only instagram, x, facebook, threads)`,
       })
       return report
     }
