@@ -17,9 +17,17 @@
 ;(function () {
   'use strict'
 
-  const MAX_ROWS = 3 // tope duro del feature (1..3)
+  const MAX_ROWS = 4 // tope duro del feature (1..4)
   const ROW_HEIGHT = 32 // alto de una fila de tabs en px (sync con CSS .tab)
   const BASE_TOOLBAR_HEIGHT = 64 // chrome superior con 1 fila (sync tabs.js)
+  // Piso absoluto del ancho de una tab (px). Cuando hay tantas tabs que ni a
+  // `minTabWidth` entran en `maxRows`, las tabs se ACHICAN hasta este piso —
+  // estilo Chrome: queda solo el favicon (+ la franja de identidad) y entran
+  // muchas más antes de tocar el tope de filas.
+  const HARD_MIN_TAB = 32
+  // Por debajo de este ancho el título no es legible → modo compacto: ocultar
+  // título/dot, dejar solo el favicon (el ✕ queda solo en la tab activa).
+  const COMPACT_TAB_WIDTH = 100
 
   /**
    * Devuelve una copia de `arr` con el elemento en `from` movido a `to`.
@@ -74,26 +82,56 @@
   }
 
   /**
-   * Filas que ocupa el tabstrip para `count` tabs en un ancho `containerWidth`,
-   * sin que ninguna tab baje de `minTabWidth`, hasta `maxRows`.
+   * Layout completo del tabstrip: cuántas filas y qué ancho fijar por tab.
+   *
+   * Dos regímenes:
+   *  1. Holgura: las tabs entran en ≤ `maxRows` filas sin bajar de `minTabWidth`.
+   *     → `tabWidth: null` (el CSS achica de su ancho natural a `minTabWidth` y
+   *     recién ahí envuelve; comportamiento histórico).
+   *  2. Saturación: hay tantas tabs que ni a `minTabWidth` entran en `maxRows`.
+   *     → se ACHICAN todas a un ancho fijo (`tabWidth` px) para que TODAS entren
+   *     dentro del tope de filas, hasta el piso `hardMinTabWidth`. Esto evita que
+   *     las tabs sobrantes envuelvan a filas que quedan tapadas por la página.
    *
    * @param {object} opts
-   * @param {number} opts.count           cantidad de tabs.
-   * @param {number} opts.containerWidth  ancho disponible del tab-list (px).
-   * @param {number} [opts.minTabWidth=120]
-   * @param {number} [opts.maxRows=3]
-   * @returns {number} filas en [1, maxRows]
+   * @param {number} opts.count            cantidad de tabs.
+   * @param {number} opts.containerWidth   ancho disponible del tab-list (px).
+   * @param {number} [opts.minTabWidth=120] piso "cómodo" antes de envolver.
+   * @param {number} [opts.hardMinTabWidth=54] piso absoluto al achicar.
+   * @param {number} [opts.maxRows=4]
+   * @returns {{rows:number, tabWidth:number|null, compact:boolean}}
    */
-  function rowCountFor(opts) {
+  function tabLayout(opts) {
     const o = opts || {}
     const count = Math.max(0, _int(o.count))
     const width = _num(o.containerWidth)
     const minTab = _num(o.minTabWidth, 120)
+    const hardMin = _num(o.hardMinTabWidth, HARD_MIN_TAB)
     const maxRows = clampMaxRows(o.maxRows == null ? MAX_ROWS : o.maxRows)
-    if (count <= 0 || !(width > 0) || !(minTab > 0)) return 1
-    const perRow = Math.max(1, Math.floor(width / minTab))
-    const needed = Math.ceil(count / perRow)
-    return Math.min(maxRows, Math.max(1, needed))
+    if (count <= 0 || !(width > 0) || !(minTab > 0)) {
+      return { rows: 1, tabWidth: null, compact: false }
+    }
+    const perRowAtFloor = Math.max(1, Math.floor(width / minTab))
+    const neededRows = Math.ceil(count / perRowAtFloor)
+    if (neededRows <= maxRows) {
+      // Entran con holgura: dejá que el flex achique naturalmente.
+      return { rows: Math.max(1, neededRows), tabWidth: null, compact: false }
+    }
+    // Saturación: fijá un ancho achicado para meter todo en `maxRows` filas.
+    const perRowNeeded = Math.ceil(count / maxRows)
+    const shrunk = Math.max(hardMin, Math.floor(width / perRowNeeded))
+    const perRowActual = Math.max(1, Math.floor(width / shrunk))
+    const rows = Math.min(maxRows, Math.max(1, Math.ceil(count / perRowActual)))
+    return { rows, tabWidth: shrunk, compact: shrunk < COMPACT_TAB_WIDTH }
+  }
+
+  /**
+   * Filas que ocupa el tabstrip (compat). Delega en {@link tabLayout}.
+   * @param {object} opts  ver tabLayout.
+   * @returns {number} filas en [1, maxRows]
+   */
+  function rowCountFor(opts) {
+    return tabLayout(opts).rows
   }
 
   /**
@@ -128,11 +166,14 @@
     moveItem,
     dropTargetIndex,
     clampMaxRows,
+    tabLayout,
     rowCountFor,
     chromeTopInset,
     MAX_ROWS,
     ROW_HEIGHT,
     BASE_TOOLBAR_HEIGHT,
+    HARD_MIN_TAB,
+    COMPACT_TAB_WIDTH,
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api

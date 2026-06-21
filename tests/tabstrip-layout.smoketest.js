@@ -115,6 +115,69 @@ ok('rowCountFor: degenerate inputs → 1 row', () => {
   assert.strictEqual(L.rowCountFor({ count: 5, containerWidth: 0 }), 1)
 })
 
+ok('MAX_ROWS is 4', () => {
+  assert.strictEqual(L.MAX_ROWS, 4)
+  assert.strictEqual(L.clampMaxRows(99), 4)
+})
+
+// ---- tabLayout (shrink-to-fit cuando satura) --------------------------------
+
+ok('tabLayout: holgura → tabWidth null (deja achicar al flex)', () => {
+  // 8 tabs entran en 1 fila a 120px (perRow=10) → sin ancho fijo.
+  assert.deepStrictEqual(
+    L.tabLayout({ count: 8, containerWidth: 1200, minTabWidth: 120 }),
+    { rows: 1, tabWidth: null, compact: false },
+  )
+  // 25 tabs → 3 filas, todavía dentro del tope de 4 → sin ancho fijo.
+  assert.deepStrictEqual(
+    L.tabLayout({ count: 25, containerWidth: 1200, minTabWidth: 120 }),
+    { rows: 3, tabWidth: null, compact: false },
+  )
+})
+
+ok('tabLayout: saturación → achica las tabs y respeta tope de filas', () => {
+  // 60 tabs en 1200px: a 120px entrarían 10/fila = 6 filas > 4 → satura.
+  const r = L.tabLayout({ count: 60, containerWidth: 1200, minTabWidth: 120, maxRows: 4 })
+  assert.ok(r.rows <= 4, 'no excede el tope de filas')
+  assert.ok(r.tabWidth != null && r.tabWidth < 120, 'fija un ancho menor al piso cómodo')
+  // El ancho fijado debe permitir meter las 60 en ≤4 filas.
+  const perRow = Math.floor(1200 / r.tabWidth)
+  assert.ok(Math.ceil(60 / perRow) <= 4, 'todas entran dentro del tope')
+})
+
+ok('tabLayout: muchísimas tabs → compacto (favicon-only) en el piso', () => {
+  // 500 tabs: imposible legible; el ancho se clava en el piso y entra compacto.
+  const r = L.tabLayout({ count: 500, containerWidth: 1200, maxRows: 4 })
+  assert.strictEqual(r.tabWidth, L.HARD_MIN_TAB)
+  assert.strictEqual(r.compact, true)
+})
+
+ok('tabLayout: saturación leve no necesariamente es compacta', () => {
+  // 50 tabs en 1200px, 4 filas → perRowNeeded=13, shrunk=floor(1200/13)=92 < 100
+  // (compacto). 44 tabs → perRowNeeded=11, shrunk=109 ≥ 100 → NO compacto.
+  const mild = L.tabLayout({
+    count: 44,
+    containerWidth: 1200,
+    minTabWidth: 120,
+    maxRows: 4,
+  })
+  assert.ok(mild.tabWidth != null && mild.tabWidth >= L.COMPACT_TAB_WIDTH)
+  assert.strictEqual(mild.compact, false)
+})
+
+ok('tabLayout: degenerados → 1 fila, sin ancho fijo', () => {
+  assert.deepStrictEqual(L.tabLayout({ count: 0, containerWidth: 1200 }), {
+    rows: 1,
+    tabWidth: null,
+    compact: false,
+  })
+  assert.deepStrictEqual(L.tabLayout({ count: 5, containerWidth: 0 }), {
+    rows: 1,
+    tabWidth: null,
+    compact: false,
+  })
+})
+
 // ---- chromeTopInset ---------------------------------------------------------
 
 ok('chromeTopInset: base for 1 row, +rowHeight per extra row', () => {

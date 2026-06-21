@@ -118,13 +118,30 @@
     applyRows() {
       const L = window.OZ.TabstripLayout
       if (!L || !this.$.list) return
-      const rows = L.rowCountFor({
+      const { rows, tabWidth, compact } = L.tabLayout({
         count: this.tabs.length,
         containerWidth: this.$.list.clientWidth || 0,
         minTabWidth: 120,
         maxRows: this.maxRows,
       })
-      document.documentElement.style.setProperty('--oz-tab-rows', String(rows))
+      const root = document.documentElement.style
+      root.setProperty('--oz-tab-rows', String(rows))
+      // alpha.86b: en saturación fijamos el ancho (basis + min) para que TODAS
+      // las tabs entren dentro del tope de filas, achicándose en vez de
+      // envolver a filas que la página tapa. Sin saturación volvemos al ancho
+      // natural (12rem → piso 120px) que maneja el flex.
+      if (tabWidth == null) {
+        root.setProperty('--oz-tab-basis', '12rem')
+        root.setProperty('--oz-tab-min', '120px')
+      } else {
+        root.setProperty('--oz-tab-basis', tabWidth + 'px')
+        root.setProperty('--oz-tab-min', tabWidth + 'px')
+      }
+      // alpha.86c: modo compacto estilo Chrome — cuando las tabs son muy
+      // angostas, solo queda el favicon + franja de identidad (título/dot
+      // ocultos; ✕ solo en la activa). Driven por atributo en el <ul>.
+      if (compact) this.$.list.dataset.compact = ''
+      else delete this.$.list.dataset.compact
       if (rows === this._lastRows) return
       this._lastRows = rows
       if (window.oz.chrome && window.oz.chrome.setRows) {

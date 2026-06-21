@@ -196,10 +196,13 @@
         /* alpha.65/75: ancho natural (12rem) que se achica hasta el piso
            clickeable y recién ahí envuelve. flex-grow 0 a propósito: si las
            tabs CRECIERAN llenarían toda la barra y se comerían la zona de
-           arrastre (.app-drag) → no se podría mover la ventana (bug alpha.65). */
-        flex: 0 1 12rem;
+           arrastre (.app-drag) → no se podría mover la ventana (bug alpha.65).
+           alpha.86b: --oz-tab-basis lo fija el renderer en saturación (muchas
+           tabs) a un ancho chico para que TODAS entren dentro del tope de filas
+           en vez de envolver a filas tapadas por la página. */
+        flex: 0 1 var(--oz-tab-basis, 12rem);
         min-width: var(--oz-tab-min, 120px);
-        max-width: 12rem;
+        max-width: var(--oz-tab-basis, 12rem);
         /* v1.9.1: bordes superiores redondeados estilo Chrome/Arc. */
         border-top-left-radius: 8px;
         border-top-right-radius: 8px;
@@ -311,6 +314,34 @@
       }
       .tab .controls .control:disabled {
         display: none;
+      }
+
+      /* alpha.86c: modo compacto estilo Chrome. Cuando hay tantas tabs que se
+         achican mucho, dejamos SOLO el favicon (la franja de identidad de la
+         izquierda sigue marcando la cuenta). El título y el dot se ocultan; el
+         ✕ queda solo en la tab activa para poder cerrar la actual. El favicon
+         se fuerza visible (con un cuadrito placeholder si todavía no cargó)
+         para que cada tab tenga un icono estable y clickeable. */
+      .tab-list[data-compact] .tab {
+        padding-left: 0.4rem;
+        padding-right: 0.35rem;
+        justify-content: center;
+      }
+      .tab-list[data-compact] .tab .title,
+      .tab-list[data-compact] .tab .oz-tab-iddot {
+        display: none;
+      }
+      .tab-list[data-compact] .tab:not([data-active]) .controls {
+        display: none;
+      }
+      .tab-list[data-compact] .tab .favicon {
+        display: block;
+        flex: 0 0 auto;
+        margin-right: 0;
+      }
+      .tab-list[data-compact] .tab .favicon:not(.loaded) {
+        background: rgba(255, 255, 255, 0.18);
+        border-radius: 3px;
       }
 
       .app-drag {
