@@ -1,8 +1,15 @@
 # PLAN — Publishing Studio (módulo de publicaciones multi-red)
 
-> Estado: **PROPUESTO** — pendiente de aprobación de Jose antes de tocar código.
-> Fecha: 2026-06-19. App base: `v2.0.0-alpha.56`. WebUI manifest: `2.0.35`.
+> Estado: **EN EJECUCIÓN.** Fecha: 2026-06-19. App base: `v2.0.0-alpha.56`.
 > Reemplaza el borrador de 5 sub-bloques por un plan en **7 etapas**.
+>
+> **Progreso al alpha.85 (2026-06-20):** E1+E5 MCP-first (plan/publish/schedule/
+> library). **E4 variación** → MCP (alpha.82 `oz.publishing.preview/resolve/variety`).
+> **E2 dry-run** → MCP (alpha.83 `oz.publishing.dryRun`; falta prueba-de-posteo
+> en vivo = screenshot, smoke Electron). **E6** arrancada: `fb_post` end-to-end
+> (alpha.84); faltan tiktok/IG-video/Reels + media en fb. **E7 analytics** → MCP
+> (alpha.85 `oz.publishing.stats`). Pendiente migrar a main: composer/targets/
+> history del renderer. Smokes en vivo de todo = Mac de Jose.
 
 ## 0. Visión
 

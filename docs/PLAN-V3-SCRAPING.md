@@ -133,7 +133,7 @@ Flag por-tool `human: true|false` (off para velocidad, on para targets duros).
 
 ### V3-F — Cookie/storage import general-purpose · ~4-6h
 
-Ya hay base (`oz.sessions.importCookies` + 5 formatos). Falta: tool `oz.identity.importCookies` general + UI "Import cookies…" en el menú de identidad + soporte localStorage opcional. Onboarding instantáneo de cuentas logueadas.
+> **Estado: ✅ CORE COMPLETO.** Los tools `oz.cookies.importStr` / `oz.cookies.importFile` (en `mcp-tools-tab-context.js`, sobre `cookies-handlers`+`cookies-io`) ya hacen import general per-identity en 5 formatos (oz/netscape/adspower/multilogin/header) — onboarding instantáneo de cuentas logueadas por MCP. **Pendiente (opcional):** UI "Import cookies…" en el menú de identidad + soporte localStorage. Lo único que resta es renderer/UX (smoke Electron).
 
 ---
 
