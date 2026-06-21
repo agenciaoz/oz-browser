@@ -15,6 +15,10 @@ function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:remove', (_e, id) => h.remove(id))
   ipcMain.handle('oz:publishing:publish', (_e, id) => h.publish(id))
   ipcMain.handle('oz:publishing:export', () => h.export())
+  // Library (templates/hashtags/media).
+  ipcMain.handle('oz:publishing:libList', (_e, kind) => h.libList(kind))
+  ipcMain.handle('oz:publishing:libSave', (_e, kind, item) => h.libSave(kind, item))
+  ipcMain.handle('oz:publishing:libDel', (_e, kind, id) => h.libDel(kind, id))
 }
 
 module.exports = { registerPublishingPlanIpc }

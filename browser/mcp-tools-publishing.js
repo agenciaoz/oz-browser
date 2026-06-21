@@ -93,6 +93,41 @@ function buildPublishingTools({ publishing }) {
       call: ({ id }) => publishing().remove(id),
     },
     {
+      name: 'oz.publishing.libList',
+      description:
+        'List a publishing library collection. kind: templates | hashtags | media.',
+      inputSchema: {
+        type: 'object',
+        properties: { kind: { type: 'string' } },
+        required: ['kind'],
+        additionalProperties: false,
+      },
+      call: ({ kind }) => publishing().libList(kind),
+    },
+    {
+      name: 'oz.publishing.libSave',
+      description:
+        'Add an item to a library collection. kind=templates → item {name,caption,hashtags[]}; kind=hashtags → item {name,tags[]}; kind=media → item {path}.',
+      inputSchema: {
+        type: 'object',
+        properties: { kind: { type: 'string' }, item: { type: 'object' } },
+        required: ['kind', 'item'],
+        additionalProperties: false,
+      },
+      call: ({ kind, item }) => publishing().libSave(kind, item),
+    },
+    {
+      name: 'oz.publishing.libDel',
+      description: 'Remove a library item by id. kind: templates | hashtags | media.',
+      inputSchema: {
+        type: 'object',
+        properties: { kind: { type: 'string' }, id: { type: 'string' } },
+        required: ['kind', 'id'],
+        additionalProperties: false,
+      },
+      call: ({ kind, id }) => publishing().libDel(kind, id),
+    },
+    {
       name: 'oz.publishing.export',
       description:
         'Export the whole content plan as a matrix (array-of-arrays, row 0 = headers) for Excel/CSV.',

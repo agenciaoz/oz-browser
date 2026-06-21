@@ -11,12 +11,14 @@
 
 const { app } = require('electron')
 const { PublishingPlanStore } = require('./publishing-plan-store')
+const { PublishingLibraryStore } = require('./publishing-library-store')
 const P = require('./ui/publishing-plan')
 const log = require('./logger')
 
 function buildPublishingHandlers(browser) {
   void browser
   const store = new PublishingPlanStore({ userDataDir: app.getPath('userData') })
+  const library = new PublishingLibraryStore({ userDataDir: app.getPath('userData') })
 
   return {
     /**
@@ -112,6 +114,18 @@ function buildPublishingHandlers(browser) {
     /** Exporta el plan como matriz (headers + filas) para Excel/CSV. */
     export() {
       return P.planToMatrix(store.list())
+    },
+
+    // ── Library (templates | hashtags | media) — MCP-first ──────────────
+    libList(kind) {
+      return library.list(kind)
+    },
+    libSave(kind, item) {
+      const r = library.save(kind, item || {})
+      return r || { __error: { code: 'BAD_KIND', message: `invalid kind: ${kind}` } }
+    },
+    libDel(kind, id) {
+      return library.remove(kind, id)
     },
   }
 }
