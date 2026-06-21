@@ -21,6 +21,10 @@ function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:dryRun', (_e, id) => h.dryRun(id))
   // Analytics (success by network/identity/hour over the bulk-run history).
   ipcMain.handle('oz:publishing:stats', (_e, opts) => h.analytics(opts))
+  // Composer migrated to main: list actions, compose (dry), compose+publish.
+  ipcMain.handle('oz:publishing:actions', () => h.actions())
+  ipcMain.handle('oz:publishing:compose', (_e, input) => h.compose(input))
+  ipcMain.handle('oz:publishing:send', (_e, input) => h.composePublish(input))
   // Content variation (anti-footprint) — same engine the UI preview uses.
   ipcMain.handle('oz:publishing:preview', (_e, spec, identities) =>
     h.preview(spec, identities),

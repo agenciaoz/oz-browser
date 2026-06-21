@@ -117,6 +117,49 @@ function buildPublishingTools({ publishing }) {
       call: ({ id }) => publishing().remove(id),
     },
     {
+      name: 'oz.publishing.actions',
+      description:
+        'List the publishable networks with their composer fields derived from each action paramsSchema (ADR-B). Returns [{actionId, platform, label, paramsSchema, fields:[{name,control,required,maxLength}]}]. Use to know what fields each network needs (ig_post: imagePath+caption; x_post/fb_post: text).',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      call: () => publishing().actions(),
+    },
+    {
+      name: 'oz.publishing.compose',
+      description:
+        'Compose a publication WITHOUT publishing: derive fields, partition targets by health (red=blocked), and RESOLVE anti-footprint variation per identity. Input: { actionId | platform, params, identityIds, variation?, spacingSec? } where variation is the oz.publishing.preview spec. Returns { ok, actionId, fields, plan:[{identityId,name,params,errors}], warned, blocked, drip }. The agent-side "composition preview".',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          actionId: { type: 'string' },
+          platform: { type: 'string' },
+          params: { type: 'object' },
+          identityIds: { type: 'array', items: { type: 'string' } },
+          variation: { type: 'object' },
+          spacingSec: { type: 'number' },
+        },
+        additionalProperties: false,
+      },
+      call: (args) => publishing().compose(args || {}),
+    },
+    {
+      name: 'oz.publishing.send',
+      description:
+        'Compose AND publish NOW in one step (MCP-first end-to-end). Same input as oz.publishing.compose. With variation, dispatches ONE bulk run per identity (its own varied params); without, a single run for all. Returns { ok, actionId, dispatched:[{identityId,runId,ok|error}], warned, blocked } or { __error } (UNSUPPORTED_PLATFORM | UNKNOWN_ACTION | INVALID_COMPOSE | NO_BULK). Poll runs with oz.bulk.get.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          actionId: { type: 'string' },
+          platform: { type: 'string' },
+          params: { type: 'object' },
+          identityIds: { type: 'array', items: { type: 'string' } },
+          variation: { type: 'object' },
+          spacingSec: { type: 'number' },
+        },
+        additionalProperties: false,
+      },
+      call: (args) => publishing().composePublish(args || {}),
+    },
+    {
       name: 'oz.publishing.stats',
       description:
         'Publishing analytics over the bulk-run history: success rate by network (instagram/x/facebook), by identity, and by hour of day (UTC). Optional `actions` filters which actionIds to include (default ig_post/x_post/fb_post). Returns { overall, byNetwork, byIdentity, byHour } — each bucket has {items,done,failed,skipped,cancelled,successRate}. Answers "how are my posts doing / when should I post?".',

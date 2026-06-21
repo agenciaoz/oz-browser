@@ -26,7 +26,7 @@
   // registry. Etapa 6 adds fb_post / tiktok_post; once registered they only
   // need to be appended here (ADR-B keeps the composer schema-driven, so no
   // form code changes — just the allow-list + platform map below).
-  const PUBLISHABLE_ACTION_IDS = ['ig_post', 'x_post']
+  const PUBLISHABLE_ACTION_IDS = ['ig_post', 'x_post', 'fb_post']
 
   const PLATFORM_BY_ACTION = {
     ig_post: 'instagram',

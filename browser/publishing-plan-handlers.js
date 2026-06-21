@@ -16,12 +16,50 @@ const { PublishingLibraryStore } = require('./publishing-library-store')
 const P = require('./ui/publishing-plan')
 const V = require('./ui/publishing-variation')
 const A = require('./publishing-analytics')
+const Hh = require('./ui/publishing-helpers')
+const C = require('./publishing-compose')
 const log = require('./logger')
 
 function buildPublishingHandlers(browser) {
   void browser
   const store = new PublishingPlanStore({ userDataDir: app.getPath('userData') })
   const library = new PublishingLibraryStore({ userDataDir: app.getPath('userData') })
+
+  // Resolve the publishable actions (id+label+platform+paramsSchema) from the
+  // bulk registry, annotated with their composer fields. Single source so the
+  // agent and the UI derive the form from the SAME schema (ADR-B).
+  function listPublishActions() {
+    const bulk = browser.handlers && browser.handlers.bulk
+    const all = bulk && typeof bulk.listActions === 'function' ? bulk.listActions() : []
+    return Hh.pickPublishActions(all).map((a) => ({
+      ...a,
+      fields: Hh.fieldsFromSchema(a),
+    }))
+  }
+
+  // Gather the live context buildComposePlan needs: the action schema, a health
+  // map for the targets, and identity name metadata (for {{identity}} vars).
+  async function gatherComposeCtx(actionId, identityIds) {
+    const action = listPublishActions().find((a) => a.actionId === actionId) || null
+    const idsH = browser.handlers && browser.handlers.ids
+    const healthH = browser.handlers && browser.handlers.health
+    const identities = []
+    if (idsH && typeof idsH.list === 'function') {
+      for (const it of idsH.list() || []) if (it && it.id) identities.push(it)
+    }
+    const healthMap = new Map()
+    if (healthH && typeof healthH.get === 'function') {
+      for (const idn of identityIds || []) {
+        try {
+          const rec = await healthH.get(idn)
+          if (rec && !rec.__error) healthMap.set(idn, rec.overall || 'unknown')
+        } catch (_e) {
+          /* health best-effort */
+        }
+      }
+    }
+    return { action, healthMap, identities }
+  }
 
   return {
     /**
@@ -214,6 +252,112 @@ function buildPublishingHandlers(browser) {
         if (full) records.push(full)
       }
       return A.computeAnalytics(records, opts || {})
+    },
+
+    // ── Composer (migrado del renderer a main, MCP-first) ───────────────
+    /**
+     * Lista las redes publicables con sus campos derivados del schema de la
+     * action (ADR-B). El agente sabe qué campos pide cada red sin la UI.
+     */
+    actions() {
+      return listPublishActions()
+    },
+
+    /**
+     * Compone una publicación SIN publicar: deriva campos, parte los targets
+     * por salud (rojo=bloqueado), y RESUELVE la variación anti-huella por
+     * identity. Devuelve el plan { plan:[{identityId,name,params,errors}],
+     * warned, blocked, ok }. Es el "preview de composición" del agente.
+     */
+    async compose(input = {}) {
+      const actionId = input.actionId || P.platformToActionId(input.platform)
+      if (!actionId)
+        return {
+          __error: { code: 'UNSUPPORTED_PLATFORM', message: 'unknown platform/action' },
+        }
+      const ctx = await gatherComposeCtx(actionId, input.identityIds)
+      if (!ctx.action)
+        return {
+          __error: {
+            code: 'UNKNOWN_ACTION',
+            message: `not a publish action: ${actionId}`,
+          },
+        }
+      return C.buildComposePlan({ ...input, actionId }, ctx)
+    },
+
+    /**
+     * Compone Y publica AHORA en un solo paso (MCP-first end-to-end). Si hay
+     * variación, despacha UN bulk run por identity (params propios); si no, un
+     * único run con todas. Devuelve { ok, dispatched:[{identityId,runId|error}],
+     * warned, blocked } o { __error }.
+     */
+    async composePublish(input = {}) {
+      const c = await this.compose(input)
+      if (c.__error) return c
+      if (!c.ok)
+        return {
+          __error: {
+            code: 'INVALID_COMPOSE',
+            message: 'compose plan not valid',
+            plan: c.plan,
+            blocked: c.blocked,
+          },
+        }
+      const bulk = browser.handlers && browser.handlers.bulk
+      if (!bulk || typeof bulk.run !== 'function')
+        return { __error: { code: 'NO_BULK', message: 'bulk runner unavailable' } }
+      const options = c.drip || undefined
+      const dispatched = []
+      if (input.variation) {
+        // Per-identity params → one run each.
+        for (const row of c.plan) {
+          try {
+            const res = await bulk.run(
+              Hh.buildPublishSpec({
+                actionId: c.actionId,
+                identityIds: [row.identityId],
+                params: row.params,
+                options,
+              }),
+            )
+            dispatched.push({
+              identityId: row.identityId,
+              runId: res && res.runId,
+              ok: !!(res && res.ok),
+            })
+          } catch (e) {
+            dispatched.push({ identityId: row.identityId, error: e.message })
+          }
+        }
+      } else {
+        const ids = c.plan.map((r) => r.identityId)
+        const res = await bulk.run(
+          Hh.buildPublishSpec({
+            actionId: c.actionId,
+            identityIds: ids,
+            params: input.params || {},
+            options,
+          }),
+        )
+        for (const id of ids)
+          dispatched.push({
+            identityId: id,
+            runId: res && res.runId,
+            ok: !!(res && res.ok),
+          })
+      }
+      log.info('publishing', 'composePublish dispatched', {
+        actionId: c.actionId,
+        count: dispatched.length,
+      })
+      return {
+        ok: true,
+        actionId: c.actionId,
+        dispatched,
+        warned: c.warned,
+        blocked: c.blocked,
+      }
     },
 
     // ── Content variation (anti-footprint) — MCP-first ──────────────────

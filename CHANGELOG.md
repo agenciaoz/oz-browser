@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.86 — Publishing: composer migrado a main (MCP-first) (2026-06-20)
+
+[`2026-06-20`] [`publishing`] Cierra el gap MCP-first del composer (era renderer-only). NUEVO `publishing-compose.js` (puro) reusa `publishing-helpers` (fields-desde-schema, validación, health partition, drip) + `publishing-variation` para construir el plan de composición POR identity. Handlers `actions()` (redes publicables + campos del schema, ADR-B), `compose(input)` (preview sin publicar: valida, parte por salud, resuelve variación per-identity) y `composePublish(input)` (compone Y publica: un bulk run por identity si hay variación, uno solo si no, con drip). Tools `oz.publishing.actions/compose/send` + IPC. `fb_post` agregado a PUBLISHABLE_ACTION_IDS. El agente compone y publica multi-cuenta con anti-huella en una llamada MCP, sin el renderer. +7 tests compose. ADR 0038 (ADR-B/ADR-C).
+
 ### v2.0.0-alpha.85 — Publishing E7: analytics por MCP (2026-06-20)
 
 [`2026-06-20`] [`publishing`] Etapa 7 (pulido). NUEVO `publishing-analytics.js` (puro): tasa de éxito por red (instagram/x/facebook), por identity y por hora (UTC) sobre el historial de bulk runs de actions de publicar, + `bestHour`. Handler `analytics(opts)` reúne los records vía `bulk.list/get` + tool `oz.publishing.stats` + IPC. successRate = done/(done+failed); ignora skipped/cancelled/pending y runs no-publish. Responde "¿cómo van mis posteos / a qué hora conviene postear?" sin abrir la UI. +7 tests. ADR 0038.
