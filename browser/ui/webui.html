@@ -193,9 +193,11 @@
         display: flex;
         flex-wrap: nowrap;
         align-items: center;
-        /* alpha.65: flexible width with a clickable floor; shrinks then wraps
-           instead of becoming microscopic. */
-        flex: 1 1 var(--oz-tab-min, 120px);
+        /* alpha.65/75: ancho natural (12rem) que se achica hasta el piso
+           clickeable y recién ahí envuelve. flex-grow 0 a propósito: si las
+           tabs CRECIERAN llenarían toda la barra y se comerían la zona de
+           arrastre (.app-drag) → no se podría mover la ventana (bug alpha.65). */
+        flex: 0 1 12rem;
         min-width: var(--oz-tab-min, 120px);
         max-width: 12rem;
         /* v1.9.1: bordes superiores redondeados estilo Chrome/Arc. */
