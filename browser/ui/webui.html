@@ -3949,6 +3949,80 @@
         opacity: 1;
       }
 
+      /* F2: Proyectos. Reusa la sección colapsable .oz-tasks; estilos propios
+         para acciones y filas. */
+      .oz-projects-actions {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        margin-bottom: 6px;
+      }
+      .oz-projects-btn {
+        flex: 1 1 auto;
+        background: rgba(255, 255, 255, 0.06);
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 6px;
+        color: var(--text, #e5e7eb);
+        cursor: pointer;
+        font-size: 11px;
+        padding: 5px 6px;
+        white-space: nowrap;
+      }
+      .oz-projects-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .oz-projects-empty {
+        opacity: 0.5;
+        font-size: 11px;
+        padding: 4px 2px;
+      }
+      .oz-projects-row {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+      }
+      .oz-projects-open {
+        flex: 1 1 auto;
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        background: transparent;
+        border: 0;
+        color: var(--text, #e5e7eb);
+        cursor: pointer;
+        padding: 4px 2px;
+        min-width: 0;
+        text-align: left;
+        border-radius: 4px;
+      }
+      .oz-projects-open:hover {
+        background: rgba(255, 255, 255, 0.06);
+      }
+      .oz-projects-name {
+        font-size: 12px;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
+      }
+      .oz-projects-meta {
+        font-size: 10px;
+        opacity: 0.55;
+      }
+      .oz-projects-del {
+        flex: 0 0 auto;
+        background: transparent;
+        border: 0;
+        color: var(--text, #e5e7eb);
+        opacity: 0.4;
+        cursor: pointer;
+        font-size: 11px;
+        padding: 2px 4px;
+      }
+      .oz-projects-del:hover {
+        opacity: 1;
+      }
+
       /* v1.8.3: sidebar-toolbar relocated from the bottom of the sidebar
          to the right side of the footer bar. No more space-between (the
          outer #oz-footer-bar handles spacing between the two sub-groups).
@@ -4326,6 +4400,27 @@
             >
               Clear completed
             </button>
+          </div>
+        </div>
+
+        <!-- F2: Proyectos (save/restore de tabs con nombre). Reusa estilos de
+             .oz-tasks para la sección colapsable. -->
+        <div id="oz-projects" class="oz-tasks collapsed">
+          <div id="oz-projects-header" class="oz-tasks-header">
+            <span class="oz-tasks-chevron">▸</span>
+            <span class="oz-tasks-title">Proyectos</span>
+            <span id="oz-projects-count" class="oz-tasks-progress"></span>
+          </div>
+          <div id="oz-projects-body" class="oz-tasks-body">
+            <div class="oz-projects-actions">
+              <button id="oz-projects-save-ws" type="button" class="oz-projects-btn">
+                💾 Guardar workspace
+              </button>
+              <button id="oz-projects-save-all" type="button" class="oz-projects-btn">
+                💾 Guardar todo
+              </button>
+            </div>
+            <div id="oz-projects-list"></div>
           </div>
         </div>
 
@@ -7403,6 +7498,8 @@
     <!-- alpha.45: Tasks module (pure utils before the DOM module). -->
     <script src="./sidebar-tasks-utils.js"></script>
     <script src="./sidebar-tasks.js"></script>
+    <script src="./sidebar-projects-utils.js"></script>
+    <script src="./sidebar-projects.js"></script>
     <!-- v1.6.4 fix: load the proxy health badge script. Without this line the
          toolbar badge stays gray forever (data-status="gray" hardcoded in HTML
          until the JS sets it). Latent since H-2a v1.1.1. -->
