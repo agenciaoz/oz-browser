@@ -177,9 +177,35 @@ ok('handlers.schedule: creates a bulk Scheduled Action + stores its id', () => {
   const dir = tmpDir()
   const created = []
   const removed = []
+  const runSpecs = []
+  const histRuns = {
+    rh1: {
+      meta: {
+        runId: 'rh1',
+        actionId: 'ig_post',
+        status: 'completed',
+        params: { imagePath: '/p.jpg', caption: 'hi' },
+      },
+      items: [
+        { identityId: 'a', status: 'done' },
+        { identityId: 'b', status: 'failed' },
+      ],
+    },
+    rh2: {
+      meta: { runId: 'rh2', actionId: 'ig_like', status: 'completed' },
+      items: [{ identityId: 'a', status: 'done' }],
+    },
+  }
   const browser = {
     handlers: {
-      bulk: { run: async () => ({ ok: true, runId: 'r1' }) },
+      bulk: {
+        run: async (spec) => {
+          runSpecs.push(spec)
+          return { ok: true, runId: 'r1' }
+        },
+        list: () => Object.values(histRuns).map((r) => r.meta),
+        get: (id) => histRuns[id] || null,
+      },
       scheduled: {
         create: (input) => {
           created.push(input)
@@ -244,6 +270,24 @@ ok('handlers.schedule: creates a bulk Scheduled Action + stores its id', () => {
   // unknown platform short-circuits with __error (scheduler untouched)
   const bad = h.scheduleCompose({ platform: 'myspace', schedule: {} })
   assert.strictEqual(bad.__error.code, 'UNSUPPORTED_PLATFORM')
+
+  // runs(): filters to publish runs + hydrates with counts/label/failedIds.
+  const runs = h.runs()
+  assert.strictEqual(runs.length, 1) // ig_post only, NOT ig_like
+  assert.strictEqual(runs[0].meta.runId, 'rh1')
+  assert.strictEqual(runs[0].counts.failed, 1)
+  assert.strictEqual(runs[0].platformLabel, 'Instagram')
+  assert.deepStrictEqual(runs[0].failedIds, ['b'])
+
+  // retryRun(): dispatches a retry spec with only the failed identity. The
+  // bulk.run fake pushes the spec synchronously, so we can assert without await.
+  const specsBefore = runSpecs.length
+  h.retryRun('rh1')
+  assert.strictEqual(runSpecs.length, specsBefore + 1)
+  assert.deepStrictEqual(runSpecs[runSpecs.length - 1].identityIds, ['b'])
+  // error cases return plain objects (retryRun is non-async on those paths).
+  assert.strictEqual(h.retryRun('rh2').__error.code, 'NO_FAILED')
+  assert.strictEqual(h.retryRun('nope').__error.code, 'NOT_FOUND')
 
   // unsupported platform short-circuits before touching the scheduler
   const fb = h.import({ rows: [{ platform: 'ig', caption: 'x', media: '' }] })

@@ -39,6 +39,8 @@ function buildPublishingApi(ipcRenderer) {
     send: (input) => ipcRenderer.invoke('oz:publishing:send', input),
     scheduleCompose: (input) => ipcRenderer.invoke('oz:publishing:schedCompose', input),
     dryRun: (id) => ipcRenderer.invoke('oz:publishing:dryRun', id),
+    runs: (limit) => ipcRenderer.invoke('oz:publishing:runs', limit),
+    retryRun: (runId) => ipcRenderer.invoke('oz:publishing:retry', runId),
     stats: (opts) => ipcRenderer.invoke('oz:publishing:stats', opts),
     // Content variation (anti-footprint) — same engine main uses.
     preview: (spec, identities) =>

@@ -160,6 +160,29 @@ function buildPublishingTools({ publishing }) {
       call: (args) => publishing().composePublish(args || {}),
     },
     {
+      name: 'oz.publishing.runs',
+      description:
+        'List recent PUBLISH runs (ig_post/x_post/fb_post/threads_post) from the bulk-run history, hydrated with counts + network label + failed identity ids. Optional `limit` (default 25). Returns [{meta, counts:{success,failed,...,total}, platformLabel, failedIds, items}]. Use to show "what did I publish" and feed oz.publishing.retry.',
+      inputSchema: {
+        type: 'object',
+        properties: { limit: { type: 'number' } },
+        additionalProperties: false,
+      },
+      call: ({ limit } = {}) => publishing().runs(limit),
+    },
+    {
+      name: 'oz.publishing.retry',
+      description:
+        'Retry the FAILED items of a publish run via the bulk runner. Pass the `runId` (from oz.publishing.runs). Returns the new run result or { __error } (NOT_FOUND | NO_FAILED | NO_BULK). Poll with oz.bulk.get.',
+      inputSchema: {
+        type: 'object',
+        properties: { runId: { type: 'string' } },
+        required: ['runId'],
+        additionalProperties: false,
+      },
+      call: ({ runId }) => publishing().retryRun(runId),
+    },
+    {
       name: 'oz.publishing.stats',
       description:
         'Publishing analytics over the bulk-run history: success rate by network (instagram/x/facebook), by identity, and by hour of day (UTC). Optional `actions` filters which actionIds to include (default ig_post/x_post/fb_post). Returns { overall, byNetwork, byIdentity, byHour } — each bucket has {items,done,failed,skipped,cancelled,successRate}. Answers "how are my posts doing / when should I post?".',

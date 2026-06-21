@@ -17,6 +17,7 @@ const P = require('./ui/publishing-plan')
 const V = require('./ui/publishing-variation')
 const A = require('./publishing-analytics')
 const Hh = require('./ui/publishing-helpers')
+const BHH = require('./ui/bulk-history-helpers')
 const C = require('./publishing-compose')
 const log = require('./logger')
 
@@ -252,6 +253,56 @@ function buildPublishingHandlers(browser) {
         if (full) records.push(full)
       }
       return A.computeAnalytics(records, opts || {})
+    },
+
+    /**
+     * Historial de publicaciones (E2): filtra los bulk runs a actions de
+     * publicar y los hidrata con conteos + label de red + ids fallidos, para
+     * que el renderer solo renderice (lógica de filtrado/conteo en main).
+     * Reusa los helpers puros. limit default 25.
+     */
+    runs(limit) {
+      const bulk = browser.handlers && browser.handlers.bulk
+      if (!bulk || typeof bulk.list !== 'function') {
+        return { __error: { code: 'NO_BULK', message: 'bulk runner unavailable' } }
+      }
+      const n = Number(limit) > 0 ? Number(limit) : 25
+      // bulk.list() returns meta summaries; bulk.get(runId) hydrates with items.
+      const publish = Hh.filterPublishRuns(bulk.list() || []).slice(0, n)
+      return publish.map((summary) => {
+        const meta = summary.meta || summary
+        const full = (typeof bulk.get === 'function' && bulk.get(meta.runId)) || {
+          meta,
+          items: [],
+        }
+        return {
+          meta: full.meta || meta,
+          counts: Hh.countItems(full.items),
+          platformLabel: Hh.runPlatformLabel(full.meta || meta),
+          failedIds: BHH.getFailedIdentityIds ? BHH.getFailedIdentityIds(full) : [],
+          items: full.items || [],
+        }
+      })
+    },
+
+    /**
+     * Reintenta los items fallidos de un run de publicación (E2): arma el
+     * retry spec con buildRetrySpec y lo despacha por el bulk runner. Devuelve
+     * el resultado del run o { __error } (NOT_FOUND | NO_FAILED | NO_BULK).
+     */
+    retryRun(runId) {
+      const bulk = browser.handlers && browser.handlers.bulk
+      if (!bulk || typeof bulk.get !== 'function' || typeof bulk.run !== 'function') {
+        return { __error: { code: 'NO_BULK', message: 'bulk runner unavailable' } }
+      }
+      const full = bulk.get(runId)
+      if (!full) return { __error: { code: 'NOT_FOUND', message: 'run not found' } }
+      const failedIds = BHH.getFailedIdentityIds ? BHH.getFailedIdentityIds(full) : []
+      if (!failedIds.length) {
+        return { __error: { code: 'NO_FAILED', message: 'no failed items to retry' } }
+      }
+      // Returns the bulk runner's promise; callers (MCP/IPC) await it.
+      return bulk.run(BHH.buildRetrySpec(full.meta, failedIds))
     },
 
     // ── Composer (migrado del renderer a main, MCP-first) ───────────────

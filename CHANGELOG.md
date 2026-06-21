@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.90 — Publishing: history (lista + retry) → main (2026-06-20)
+
+[`2026-06-20`] [`publishing`] Cierra el último resto de lógica del renderer. NUEVOS handlers `runs(limit)` (filtra los bulk runs a actions de publicar y los hidrata con counts + label de red + ids fallidos, reusando los helpers puros `filterPublishRuns/countItems/runPlatformLabel` + `bulk-history-helpers.getFailedIdentityIds`) y `retryRun(runId)` (arma el retry spec con `buildRetrySpec` y despacha solo las identities fallidas). Tools `oz.publishing.runs/retry` + IPC + preload. `publishing-history.js` delega: `load()`→`runs()`, `_retry()`→`retryRun()`, con fallback a bulk.list/get + helpers locales. +runs/retry tests en publishing-plan (17). El renderer del Studio ya es 100% presentación (DOM); toda la lógica vive en main por MCP. ADR 0038.
+
 ### v2.0.0-alpha.89 — Publishing E6: action threads_post (Threads) (2026-06-20)
 
 [`2026-06-20`] [`publishing/bulk`] Segunda red nueva de la Etapa 6. NUEVO `bulk-actions-threads-post.js` (`buildThreadsPostAction`): postea un hilo de texto en Threads (Meta) por identity — abrir composer → escribir en el textbox (execCommand insertText) → click Post → verificar, con detección early de needs_login/captcha. Registrado en `bulk-runner-setup.js` (cap rate-limit `threads.net` 30/día). Plan gana `threads→threads_post` (alias th/threads, ACTION_BY_PLATFORM + buildPublishParams text) + helpers (PUBLISHABLE_ACTION_IDS, PLATFORM_LABEL Threads) + compose mapVariationToParams → end-to-end por publish/schedule/dryRun/compose/send. Schema-driven: auto-aparece en el composer (ADR-B). +11 tests threads + threads en publishing-plan (17). Selectores Meta frágiles → smoke en vivo. ADR 0038.

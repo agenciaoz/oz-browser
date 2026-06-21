@@ -19,6 +19,9 @@ function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:export', () => h.export())
   // Dry-run / pre-flight (validate without publishing).
   ipcMain.handle('oz:publishing:dryRun', (_e, id) => h.dryRun(id))
+  // History: filtered + hydrated publish runs, and retry of failed items.
+  ipcMain.handle('oz:publishing:runs', (_e, limit) => h.runs(limit))
+  ipcMain.handle('oz:publishing:retry', (_e, runId) => h.retryRun(runId))
   // Analytics (success by network/identity/hour over the bulk-run history).
   ipcMain.handle('oz:publishing:stats', (_e, opts) => h.analytics(opts))
   // Composer migrated to main: list actions, compose (dry), compose+publish.

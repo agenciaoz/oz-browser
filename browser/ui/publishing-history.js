@@ -68,9 +68,16 @@
     }
 
     async load() {
+      // MCP-first: main filters publish runs + hydrates them with counts /
+      // network label / failed ids (oz.publishing.runs). Fall back to the local
+      // bulk.list + pure helpers if the new API isn't present.
+      if (window.oz.publishing && window.oz.publishing.runs) {
+        const hydrated = (await safe(window.oz.publishing.runs(MAX_ROWS), [])) || []
+        this._render(hydrated)
+        return
+      }
       const rows = (await safe(window.oz.bulk.list(), [])) || []
       const publish = H.filterPublishRuns(rows).slice(0, MAX_ROWS)
-      // Hydrate items (for counts + retry) — cache by runId.
       await Promise.all(
         publish.map(async (r) => {
           const id = r.meta.runId
@@ -84,12 +91,12 @@
           if (full) this._hydrated.set(id, full)
         }),
       )
-      this._render(publish)
+      this._render(publish.map((r) => this._hydrated.get(r.meta.runId) || r))
     }
 
-    _render(publish) {
+    _render(runs) {
       this.$list.innerHTML = ''
-      if (!publish.length) {
+      if (!runs.length) {
         this.$list.appendChild(
           el('div', {
             class: 'pub-empty',
@@ -98,20 +105,23 @@
         )
         return
       }
-      for (const r of publish) {
-        const full = this._hydrated.get(r.meta.runId) || r
-        this.$list.appendChild(this._renderRow(full))
-        if (this._expanded.has(r.meta.runId)) {
-          this.$list.appendChild(this._renderDetail(full))
+      for (const run of runs) {
+        this.$list.appendChild(this._renderRow(run))
+        if (this._expanded.has(run.meta.runId)) {
+          this.$list.appendChild(this._renderDetail(run))
         }
       }
     }
 
     _renderRow(run) {
       const meta = run.meta || {}
-      const counts = H.countItems(run.items)
-      const platform = H.runPlatformLabel(meta)
-      const failedIds = BH.getFailedIdentityIds ? BH.getFailedIdentityIds(run) : []
+      // Prefer the fields main precomputed (oz.publishing.runs); fall back to
+      // the local pure helpers when rendering a raw bulk run.
+      const counts = run.counts || H.countItems(run.items)
+      const platform =
+        run.platformLabel != null ? run.platformLabel : H.runPlatformLabel(meta)
+      const failedIds =
+        run.failedIds || (BH.getFailedIdentityIds ? BH.getFailedIdentityIds(run) : [])
       const canRetry = failedIds.length > 0 && TERMINAL.has(meta.status)
 
       const head = el('span', { class: 'pub-hist-platform', text: platform })
@@ -200,13 +210,19 @@
     }
 
     async _retry(meta, failedIds) {
-      let spec
-      try {
-        spec = BH.buildRetrySpec(meta, failedIds)
-      } catch (_e) {
-        return
+      // MCP-first: main builds the retry spec + dispatches (oz.publishing.retry).
+      // Fall back to building the spec locally + bulk.run.
+      if (window.oz.publishing && window.oz.publishing.retryRun) {
+        await safe(window.oz.publishing.retryRun(meta.runId), null)
+      } else {
+        let spec
+        try {
+          spec = BH.buildRetrySpec(meta, failedIds)
+        } catch (_e) {
+          return
+        }
+        await safe(window.oz.bulk.run(spec), null)
       }
-      await safe(window.oz.bulk.run(spec), null)
       this.onRetry()
       // Give the engine a tick, then refresh.
       setTimeout(() => this.load(), 400)
