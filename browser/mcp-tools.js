@@ -29,6 +29,7 @@ const { buildScheduledTools } = require('./mcp-tools-scheduled')
 const { buildPageTools } = require('./mcp-tools-page')
 const { buildNetworkTools } = require('./mcp-tools-network')
 const { buildProjectTools } = require('./mcp-tools-projects')
+const { buildScrapeTools } = require('./mcp-tools-scrape')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -52,9 +53,8 @@ function buildToolCatalog(browser) {
   const cookies = () => browser.handlers && browser.handlers.cookies
   const proxies = () => browser.handlers && browser.handlers.proxies
   const fingerprint = () => browser.handlers && browser.handlers.fingerprint
-  const alerts = () => browser.handlers && browser.handlers.alerts
-  const health = () => browser.handlers && browser.handlers.health
   const extensions = () => browser.handlers && browser.handlers.extensions
+  const scrape = () => browser.handlers && browser.handlers.scrape
   const projects = () => browser.handlers && browser.handlers.projects
 
   return [
@@ -474,10 +474,10 @@ function buildToolCatalog(browser) {
     ...buildIdentityCloneTools({ identities }),
 
     // E2-C-5: Alert tools (split per ADR 0005).
-    ...buildAlertTools({ alerts }),
+    ...buildAlertTools({ alerts: () => browser.handlers && browser.handlers.alerts }),
 
     // E2-C-6: Anti-detect health tools (split per ADR 0005).
-    ...buildHealthTools({ health }),
+    ...buildHealthTools({ health: () => browser.handlers && browser.handlers.health }),
 
     // E2-C-7: Extension per-identity sharing tools.
     ...buildExtensionTools({ extensions }),
@@ -503,6 +503,9 @@ function buildToolCatalog(browser) {
 
     // F2: project save/restore tools (named tab sets).
     ...buildProjectTools({ projects }),
+
+    // V3-D: parallel scrape orchestrator (frontier + rate-limit + retry).
+    ...buildScrapeTools({ scrape }),
 
     // -------------------- system metrics --------------------
     {
