@@ -16,6 +16,14 @@ function buildPublishingApi(ipcRenderer) {
       ipcRenderer.on('oz:publishing:open', listener)
       return () => ipcRenderer.off('oz:publishing:open', listener)
     },
+    // E5: content plan (main-process store, MCP-first; UI reads via these).
+    importPlan: (payload) => ipcRenderer.invoke('oz:publishing:import', payload),
+    listPlan: (status) => ipcRenderer.invoke('oz:publishing:list', status),
+    getPlan: (id) => ipcRenderer.invoke('oz:publishing:get', id),
+    setPlanStatus: (id, action) => ipcRenderer.invoke('oz:publishing:status', id, action),
+    updatePlan: (id, patch) => ipcRenderer.invoke('oz:publishing:update', id, patch),
+    removePlan: (id) => ipcRenderer.invoke('oz:publishing:remove', id),
+    exportPlan: () => ipcRenderer.invoke('oz:publishing:export'),
   }
 }
 

@@ -45,6 +45,7 @@ const { buildMcpHandlers } = require('./mcp-handlers')
 const { buildBulkHandlers } = require('./bulk-handlers')
 const { buildProjectHandlers } = require('./project-handlers')
 const { buildScrapeHandlers } = require('./scrape-handlers')
+const { buildPublishingHandlers } = require('./publishing-plan-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
@@ -93,6 +94,7 @@ function registerIpcHandlers(browser) {
     bulk: browser.bulkRunner ? buildBulkHandlers(browser) : undefined,
     projects: buildProjectHandlers(browser),
     scrape: buildScrapeHandlers(browser),
+    publishing: buildPublishingHandlers(browser),
   })
 
   registerLogHandlers(browser)
@@ -478,6 +480,14 @@ function registerTabHandlersIPC(browser) {
   // F2: project IPC (oz:projects:*).
   if (browser.handlers.projects) {
     require('./project-ipc-setup').registerProjectsIpc(ipcMain, browser.handlers.projects)
+  }
+
+  // E5: publishing-plan IPC (oz:publishing:*) — MCP-first, shared with UI.
+  if (browser.handlers.publishing) {
+    require('./publishing-plan-ipc-setup').registerPublishingPlanIpc(
+      ipcMain,
+      browser.handlers.publishing,
+    )
   }
 
   // alpha.65: multi-row tabstrip. El WebUI reporta cuántas filas ocupa el tab

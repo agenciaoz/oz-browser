@@ -28,8 +28,7 @@ const { buildBulkTools } = require('./mcp-tools-bulk')
 const { buildScheduledTools } = require('./mcp-tools-scheduled')
 const { buildPageTools } = require('./mcp-tools-page')
 const { buildNetworkTools } = require('./mcp-tools-network')
-const { buildProjectTools } = require('./mcp-tools-projects')
-const { buildScrapeTools } = require('./mcp-tools-scrape')
+const { buildExtraTools } = require('./mcp-tools-extra')
 
 /**
  * Build the v1 tool catalog. Returns array of tool descriptors that the MCP
@@ -54,8 +53,6 @@ function buildToolCatalog(browser) {
   const proxies = () => browser.handlers && browser.handlers.proxies
   const fingerprint = () => browser.handlers && browser.handlers.fingerprint
   const extensions = () => browser.handlers && browser.handlers.extensions
-  const scrape = () => browser.handlers && browser.handlers.scrape
-  const projects = () => browser.handlers && browser.handlers.projects
 
   return [
     // -------------------- identities --------------------
@@ -501,11 +498,9 @@ function buildToolCatalog(browser) {
     // v3-A: network intercept (block/capture requests per identity session).
     ...buildNetworkTools(browser),
 
-    // F2: project save/restore tools (named tab sets).
-    ...buildProjectTools({ projects }),
-
-    // V3-D: parallel scrape orchestrator (frontier + rate-limit + retry).
-    ...buildScrapeTools({ scrape }),
+    // Newer domains (projects F2 · scrape V3-D · publishing E5) consolidados
+    // en mcp-tools-extra.js por el budget de LOC (ADR 0005). MCP-first.
+    ...buildExtraTools(browser),
 
     // -------------------- system metrics --------------------
     {
