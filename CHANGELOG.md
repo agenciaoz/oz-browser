@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.83 — Publishing E2: dry-run / pre-flight por MCP (2026-06-20)
+
+[`2026-06-20`] [`publishing`] Etapa 2 (confianza). Helper puro `P.dryRunReport(pub, ctx)` valida una publicación SIN publicar: plataforma soportada, media presente y que EXISTE en disco, identities resueltas y health gating (identities en rojo no postean). Handler `dryRun(id)` cablea contexto real (ids.list + health.get por identity + fs.existsSync) + tool `oz.publishing.dryRun` + IPC. Devuelve `{ ok, actionId, issues[], identities[{exists,health,willPublish}] }` — correr antes de `publish` para cazar problemas antes de un lote masivo. +5 tests (15 en el archivo). La validación de login/selectores EN VIVO sigue siendo del runner real (smoke en Electron, pendiente). ADR 0038.
+
 ### v2.0.0-alpha.82 — Publishing: variación de contenido por MCP (2026-06-20)
 
 [`2026-06-20`] [`publishing`] Cierra el gap MCP-first del motor de variación anti-huella. Handlers `preview(spec,identities)`/`resolve(spec,opts)`/`variety(text)` reusan la lógica pura `ui/publishing-variation` (spintax + subset de hashtags K-de-N + rotación de media, determinístico por identityId) + tools `oz.publishing.preview/resolve/variety` + IPC `oz:publishing:preview/resolve/variety`. El agente puede previsualizar exactamente qué postearía cada cuenta antes de disparar, sin el renderer. NUEVO `tests/publishing-mcp-tools.smoketest.js` (6 tests). ADR 0038.

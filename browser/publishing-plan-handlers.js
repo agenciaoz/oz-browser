@@ -9,6 +9,7 @@
 
 'use strict'
 
+const fs = require('fs')
 const { app } = require('electron')
 const { PublishingPlanStore } = require('./publishing-plan-store')
 const { PublishingLibraryStore } = require('./publishing-library-store')
@@ -148,6 +149,49 @@ function buildPublishingHandlers(browser) {
     /** Exporta el plan como matriz (headers + filas) para Excel/CSV. */
     export() {
       return P.planToMatrix(store.list())
+    },
+
+    /**
+     * Dry-run / pre-flight (Etapa 2): valida una publicación SIN publicar.
+     * Resuelve identities (existen?), su salud (gating), y que la media exista
+     * en disco. Reusa la lógica pura `P.dryRunReport`. NO toca el navegador
+     * (la validación de login/selectores en vivo es trabajo del runner real).
+     */
+    async dryRun(id) {
+      const pub = store.get(id)
+      if (!pub)
+        return { __error: { code: 'NOT_FOUND', message: 'publication not found' } }
+      const idsH = browser.handlers && browser.handlers.ids
+      const healthH = browser.handlers && browser.handlers.health
+      const identitiesById = {}
+      if (idsH && typeof idsH.list === 'function') {
+        for (const it of idsH.list() || []) if (it && it.id) identitiesById[it.id] = it
+      }
+      const healthById = {}
+      const targets = (Array.isArray(pub.identities) ? pub.identities : []).filter(
+        Boolean,
+      )
+      if (healthH && typeof healthH.get === 'function') {
+        for (const idn of targets) {
+          try {
+            const rec = await healthH.get(idn)
+            if (rec && !rec.__error) healthById[idn] = rec.overall || 'unknown'
+          } catch (_e) {
+            /* health best-effort */
+          }
+        }
+      }
+      return P.dryRunReport(pub, {
+        identitiesById,
+        healthById,
+        mediaExists: (pth) => {
+          try {
+            return fs.existsSync(pth)
+          } catch (_e) {
+            return false
+          }
+        },
+      })
     },
 
     // ── Content variation (anti-footprint) — MCP-first ──────────────────

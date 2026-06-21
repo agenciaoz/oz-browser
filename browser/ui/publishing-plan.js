@@ -243,6 +243,87 @@
     return { spec: { actionId, identityIds, params } }
   }
 
+  /**
+   * Pre-flight de una publicación SIN publicar (Etapa 2 — dry-run). Valida todo
+   * lo chequeable estáticamente: plataforma soportada, media presente y EXISTE
+   * en disco, identities resueltas y su salud (gating). NO toca el navegador.
+   *
+   * ctx (todo opcional): {
+   *   identitiesById: { [id]: { name } },   // para marcar exists + nombre
+   *   healthById:     { [id]: 'red'|'yellow'|'green'|'unknown' },
+   *   mediaExists:    (path) => boolean,    // p.ej. fs.existsSync
+   * }
+   *
+   * Devuelve { ok, publicationId, actionId, issues:[{code,message}],
+   *            identities:[{ identityId, name, exists, health, willPublish }] }.
+   * `ok` = sin issues bloqueantes Y toda identity existe y no está en rojo.
+   */
+  function dryRunReport(pub, ctx) {
+    const p = pub || {}
+    const c = ctx || {}
+    const report = {
+      ok: true,
+      publicationId: p.id || null,
+      actionId: null,
+      issues: [],
+      identities: [],
+    }
+    const actionId = platformToActionId(p.platform)
+    if (!actionId) {
+      report.ok = false
+      report.issues.push({
+        code: 'UNSUPPORTED_PLATFORM',
+        message: `publish not supported for ${p.platform} (only instagram, x)`,
+      })
+      return report
+    }
+    report.actionId = actionId
+
+    // Media: requerida + debe existir en disco para ig_post.
+    const params = buildPublishParams(p.platform, p)
+    if (actionId === 'ig_post') {
+      if (!params.imagePath) {
+        report.ok = false
+        report.issues.push({
+          code: 'NO_MEDIA',
+          message: 'instagram post needs a media path',
+        })
+      } else if (
+        typeof c.mediaExists === 'function' &&
+        !c.mediaExists(params.imagePath)
+      ) {
+        report.ok = false
+        report.issues.push({
+          code: 'MEDIA_NOT_FOUND',
+          message: `media file not found on disk: ${params.imagePath}`,
+        })
+      }
+    }
+
+    // Identities: al menos una, cada una existe y no está en rojo (health gating).
+    const ids = (Array.isArray(p.identities) ? p.identities : []).filter(Boolean)
+    if (ids.length === 0) {
+      report.ok = false
+      report.issues.push({ code: 'NO_TARGETS', message: 'publication has no identities' })
+    }
+    const known = c.identitiesById || {}
+    const health = c.healthById || {}
+    for (const id of ids) {
+      const exists = !!known[id]
+      const h = health[id] || 'unknown'
+      const willPublish = exists && h !== 'red'
+      if (!exists || h === 'red') report.ok = false
+      report.identities.push({
+        identityId: id,
+        name: exists ? known[id].name || id : null,
+        exists,
+        health: h,
+        willPublish,
+      })
+    }
+    return report
+  }
+
   return {
     STATUSES,
     TRANSITIONS,
@@ -257,5 +338,6 @@
     platformToActionId,
     buildPublishParams,
     buildBulkSpec,
+    dryRunReport,
   }
 })

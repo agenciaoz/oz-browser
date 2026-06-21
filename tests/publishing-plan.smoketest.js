@@ -259,4 +259,66 @@ ok('PublishingPlanStore: bulk add + list + status + persist', () => {
   fs.rmSync(dir, { recursive: true, force: true })
 })
 
+// ── Dry-run / pre-flight (Etapa 2) ─────────────────────────────────────
+ok('dryRunReport: ok when platform/media/identities all valid', () => {
+  const r = P.dryRunReport(
+    { id: 'p1', platform: 'instagram', media: ['/tmp/a.jpg'], identities: ['i1', 'i2'] },
+    {
+      identitiesById: { i1: { name: 'Pedro' }, i2: { name: 'Ctx' } },
+      healthById: { i1: 'green', i2: 'yellow' },
+      mediaExists: () => true,
+    },
+  )
+  assert.strictEqual(r.ok, true)
+  assert.strictEqual(r.actionId, 'ig_post')
+  assert.strictEqual(r.issues.length, 0)
+  assert.strictEqual(r.identities.length, 2)
+  assert.strictEqual(r.identities[0].name, 'Pedro')
+  assert.strictEqual(
+    r.identities.every((i) => i.willPublish),
+    true,
+  )
+})
+
+ok('dryRunReport: flags missing media file on disk', () => {
+  const r = P.dryRunReport(
+    { id: 'p2', platform: 'instagram', media: ['/tmp/missing.jpg'], identities: ['i1'] },
+    {
+      identitiesById: { i1: { name: 'P' } },
+      healthById: { i1: 'green' },
+      mediaExists: () => false,
+    },
+  )
+  assert.strictEqual(r.ok, false)
+  assert(r.issues.some((i) => i.code === 'MEDIA_NOT_FOUND'))
+})
+
+ok('dryRunReport: red identity is not willPublish and blocks ok', () => {
+  const r = P.dryRunReport(
+    { id: 'p3', platform: 'x', caption: 'hi', identities: ['i1', 'i2'] },
+    {
+      identitiesById: { i1: { name: 'A' }, i2: { name: 'B' } },
+      healthById: { i1: 'green', i2: 'red' },
+    },
+  )
+  assert.strictEqual(r.ok, false)
+  const b = r.identities.find((i) => i.identityId === 'i2')
+  assert.strictEqual(b.willPublish, false)
+})
+
+ok('dryRunReport: unknown identity flagged exists=false', () => {
+  const r = P.dryRunReport(
+    { id: 'p4', platform: 'x', caption: 'hi', identities: ['ghost'] },
+    { identitiesById: {}, healthById: {} },
+  )
+  assert.strictEqual(r.ok, false)
+  assert.strictEqual(r.identities[0].exists, false)
+})
+
+ok('dryRunReport: unsupported platform short-circuits', () => {
+  const r = P.dryRunReport({ id: 'p5', platform: 'tiktok', identities: ['i1'] }, {})
+  assert.strictEqual(r.ok, false)
+  assert.strictEqual(r.issues[0].code, 'UNSUPPORTED_PLATFORM')
+})
+
 console.log(`\n✓ publishing-plan + store (E5): ${passed} checks passed`)

@@ -117,6 +117,18 @@ function buildPublishingTools({ publishing }) {
       call: ({ id }) => publishing().remove(id),
     },
     {
+      name: 'oz.publishing.dryRun',
+      description:
+        'Pre-flight a publication WITHOUT publishing (Etapa 2 dry-run). Statically validates: platform supported, media present AND exists on disk, identities resolve, and per-identity health gating (red identities are skipped). Does NOT touch the browser. Returns { ok, actionId, issues:[{code,message}], identities:[{identityId,name,exists,health,willPublish}] }. Run this before oz.publishing.publish to catch problems before a mass post.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+      call: ({ id }) => publishing().dryRun(id),
+    },
+    {
       name: 'oz.publishing.preview',
       description:
         'Preview anti-footprint content variation per identity WITHOUT publishing. `spec`: {caption (spintax {a|b} + {{vars}} allowed), hashtags[] (pool), hashtagCount (K of N), firstCommentHashtags (bool), mediaList[] (rotated), vars}. `identities`: [{id,name}]. Returns one row per identity {identityId,name,caption,mediaPath,firstComment}. Deterministic per identityId so the preview matches what would post.',

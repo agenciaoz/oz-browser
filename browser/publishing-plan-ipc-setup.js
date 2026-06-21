@@ -17,6 +17,8 @@ function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:sched', (_e, id, schedule) => h.schedule(id, schedule))
   ipcMain.handle('oz:publishing:unsched', (_e, id) => h.unschedule(id))
   ipcMain.handle('oz:publishing:export', () => h.export())
+  // Dry-run / pre-flight (validate without publishing).
+  ipcMain.handle('oz:publishing:dryRun', (_e, id) => h.dryRun(id))
   // Content variation (anti-footprint) — same engine the UI preview uses.
   ipcMain.handle('oz:publishing:preview', (_e, spec, identities) =>
     h.preview(spec, identities),
