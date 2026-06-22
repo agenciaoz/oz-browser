@@ -60,8 +60,23 @@
           else url = 'https://www.google.com/search?q=' + encodeURIComponent(raw)
           this.$.url.value = url // refleja la URL navegable post-Enter
           safe(window.oz.nav.loadURL(url), 'nav.loadURL')
+          // Soltar el foco → el blur restaura la vista de contenido y deja
+          // que la nueva página reciba el teclado.
+          this.$.url.blur()
         }
       })
+      // alpha.94: el omnibox necesita el MISMO truco que todos los modales del
+      // WebUI (ADR 0011): el WebContentsView de la página se pinta ENCIMA del
+      // HTML y se queda con el foco de teclado. Sin esto, al clickear la barra
+      // de URL con una pestaña activa no se podía escribir. Ocultar la vista
+      // mientras el omnibox tiene foco le cede el teclado al chrome; al perder
+      // foco (blur / tras navegar) la restauramos.
+      this.$.url.addEventListener('focus', () =>
+        safe(window.oz.ui.setContentVisible(false), 'ui.setContentVisible'),
+      )
+      this.$.url.addEventListener('blur', () =>
+        safe(window.oz.ui.setContentVisible(true), 'ui.setContentVisible'),
+      )
 
       // Window controls (linux only per CSS).
       this.$.minimize.addEventListener('click', () =>
