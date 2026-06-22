@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.95 — Tabstrip: clic en URL con multi-fila + zona de arrastre (2026-06-22)
+
+[`2026-06-22`] [`ui/tabstrip`] Bug (Jose): al abrirse la 2ª fila de tabs, la barra de URL dejaba de recibir el clic (no se podía editar). Causa real: `.app-drag` (zona de arrastre de ventana, `-webkit-app-region: drag`) tenía `height: calc(100% - 5px)` + `align-self: flex-end`, así que con 2+ filas se estiraba a lo alto de TODAS las filas y se montaba encima de la barra de URL, tragándose el clic. Fix: (1) `.app-drag` ahora mide 1 sola fila y va anclada arriba; (2) toda la franja de tabs (`.tab-container` + `.tab-list`) es zona de arrastre, con los controles reales exentos (`no-drag`) — cierra el pendiente "poca zona de arrastre con varias filas llenas"; (3) red de seguridad: `.toolbar` con `position:relative; z-index:5` para que la URL SIEMPRE gane el hit-test sobre el tabstrip aunque haya solape de px. CSS-only en `webui.html`, tests 19/19 verde. WebUI manifest 2.0.58. **Smoke en vivo pendiente (Jose): editar URL con 2/3/4 filas + mover ventana arrastrando hueco de fila.**
+
 ### v2.0.0-alpha.94 — Omnibox: barra de URL editable con pestaña activa (2026-06-22)
 
 [`2026-06-22`] [`ui/tabstrip`] Bug (Jose): al clickear la barra de URL con una pestaña abierta no se podía escribir. Causa (ADR 0011): el `WebContentsView` de la página se pinta ENCIMA del HTML del chrome y RETIENE el foco de teclado — por eso los 18 modales del WebUI hacen `setContentVisible(false)` para poder escribir, y el omnibox era el único elemento interactivo del chrome que NO lo hacía. Fix: el omnibox aplica el mismo patrón — al recibir foco oculta la vista de contenido (le cede el teclado al chrome) y la restaura al `blur`/tras navegar con Enter (`this.$.url.blur()`). `tabstrip.js`, sin IPC nuevo (reusa `oz.ui.setContentVisible`). WebUI manifest 2.0.57. Latest firmado+notarizado.

@@ -157,6 +157,20 @@
         display: flex;
         flex-direction: row;
         align-items: flex-start;
+        /* alpha.95: TODA la franja de tabs (incluyendo huecos de filas
+           envueltas y el espacio a la derecha) es zona de arrastre de ventana.
+           Antes solo arrastraba el angosto `.app-drag`, así que con varias
+           filas llenas casi no quedaba dónde agarrar la ventana. Los controles
+           reales se eximen con `no-drag` (regla siguiente). */
+        -webkit-app-region: drag;
+      }
+      /* alpha.95: los controles interactivos NO arrastran la ventana — así se
+         pueden clickear/seleccionar normalmente. */
+      .tab-container .tab,
+      .tab-container #createtab,
+      .tab-container .window-controls,
+      .tab-container .window-controls .control {
+        -webkit-app-region: no-drag;
       }
 
       .tab-list {
@@ -167,6 +181,10 @@
         flex-wrap: wrap;
         align-content: flex-start;
         min-width: 0;
+        /* alpha.95: el hueco vacío de la última fila también arrastra la
+           ventana (app-region no se hereda del contenedor). Las tabs son
+           no-drag, así que el reorder sigue funcionando. */
+        -webkit-app-region: drag;
       }
 
       #createtab {
@@ -347,9 +365,13 @@
       .app-drag {
         flex: 1 0 auto;
         -webkit-app-region: drag;
-        height: calc(100% - 5px);
+        /* alpha.95: una sola fila + anclada ARRIBA. Antes height:calc(100%-5px)
+           + align-self:flex-end hacían que con 2+ filas el área de arrastre se
+           estirara a lo alto de todas las filas y cubriera la barra de URL,
+           comiéndose el clic (no se podía editar la URL). */
+        height: calc(env(titlebar-area-height, 31px) - 4px);
         min-width: 2rem;
-        align-self: flex-end;
+        align-self: flex-start;
       }
 
       .window-controls {
@@ -383,6 +405,13 @@
            con un alto de fila estimado — si no coincide, el tabstrip fijo
            entierra la barra de URL y no se puede clickear. 0 a 1 fila. */
         margin-top: var(--oz-toolbar-push, 0px);
+        /* alpha.95: red de seguridad — la toolbar SIEMPRE gana el hit-test
+           sobre el .tab-container (fijo, positioned). Aunque por redondeo el
+           contenedor solape unos px la barra de URL, el clic cae en la URL y
+           no en la franja de tabs. Sin esto, dependíamos de que el push px
+           fuera perfecto. */
+        position: relative;
+        z-index: 5;
       }
       .toolbar .page-controls {
         margin-right: 0.5rem;
