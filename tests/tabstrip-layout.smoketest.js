@@ -120,27 +120,40 @@ ok('MAX_ROWS is 4', () => {
   assert.strictEqual(L.clampMaxRows(99), 4)
 })
 
-// ---- tabLayout (shrink-to-fit cuando satura) --------------------------------
+// ---- tabLayout (fija ancho + shrink-to-fit estilo Chrome) -------------------
 
-ok('tabLayout: holgura → tabWidth null (deja achicar al flex)', () => {
-  // 8 tabs entran en 1 fila a 120px (perRow=10) → sin ancho fijo.
+ok('tabLayout: holgura → fija el ancho de ajuste, sin achicar de más', () => {
+  // 8 tabs a fitWidth 120 (perRow=10) → 1 fila, ancho 120.
   assert.deepStrictEqual(
     L.tabLayout({ count: 8, containerWidth: 1200, minTabWidth: 120 }),
-    { rows: 1, tabWidth: null, compact: false },
+    { rows: 1, tabWidth: 120, compact: false },
   )
-  // 25 tabs → 3 filas, todavía dentro del tope de 4 → sin ancho fijo.
+  // 25 tabs → 3 filas, dentro del tope de 4 → ancho 120 sin achicar.
   assert.deepStrictEqual(
     L.tabLayout({ count: 25, containerWidth: 1200, minTabWidth: 120 }),
-    { rows: 3, tabWidth: null, compact: false },
+    { rows: 3, tabWidth: 120, compact: false },
   )
+})
+
+ok('REGRESIÓN: al ancho cómodo 192 nunca pasa el tope de filas', () => {
+  // El bug: 30 tabs envolvían a 192px → 6 filas. Ahora deben achicarse a ≤4.
+  const r = L.tabLayout({ count: 30, containerWidth: 1200, maxRows: 4 })
+  assert.ok(r.rows <= 4, 'no excede el tope de 4 filas')
+  assert.ok(r.tabWidth < L.PREFERRED_TAB_WIDTH, 'se achicó respecto al cómodo')
+  const perRow = Math.floor(1200 / r.tabWidth)
+  assert.ok(Math.ceil(30 / perRow) <= 4, 'todas entran en ≤4 filas')
 })
 
 ok('tabLayout: saturación → achica las tabs y respeta tope de filas', () => {
   // 60 tabs en 1200px: a 120px entrarían 10/fila = 6 filas > 4 → satura.
-  const r = L.tabLayout({ count: 60, containerWidth: 1200, minTabWidth: 120, maxRows: 4 })
+  const r = L.tabLayout({
+    count: 60,
+    containerWidth: 1200,
+    minTabWidth: 120,
+    maxRows: 4,
+  })
   assert.ok(r.rows <= 4, 'no excede el tope de filas')
-  assert.ok(r.tabWidth != null && r.tabWidth < 120, 'fija un ancho menor al piso cómodo')
-  // El ancho fijado debe permitir meter las 60 en ≤4 filas.
+  assert.ok(r.tabWidth < 120, 'fija un ancho menor al cómodo')
   const perRow = Math.floor(1200 / r.tabWidth)
   assert.ok(Math.ceil(60 / perRow) <= 4, 'todas entran dentro del tope')
 })
@@ -150,19 +163,20 @@ ok('tabLayout: muchísimas tabs → compacto (favicon-only) en el piso', () => {
   const r = L.tabLayout({ count: 500, containerWidth: 1200, maxRows: 4 })
   assert.strictEqual(r.tabWidth, L.HARD_MIN_TAB)
   assert.strictEqual(r.compact, true)
+  assert.ok(r.rows <= 4)
 })
 
 ok('tabLayout: saturación leve no necesariamente es compacta', () => {
-  // 50 tabs en 1200px, 4 filas → perRowNeeded=13, shrunk=floor(1200/13)=92 < 100
-  // (compacto). 44 tabs → perRowNeeded=11, shrunk=109 ≥ 100 → NO compacto.
+  // 44 tabs, fit 120 → perRowNeeded=11, w=floor(1200/11)=109 ≥ 100 → NO compacto.
   const mild = L.tabLayout({
     count: 44,
     containerWidth: 1200,
     minTabWidth: 120,
     maxRows: 4,
   })
-  assert.ok(mild.tabWidth != null && mild.tabWidth >= L.COMPACT_TAB_WIDTH)
+  assert.ok(mild.tabWidth >= L.COMPACT_TAB_WIDTH)
   assert.strictEqual(mild.compact, false)
+  assert.ok(mild.rows <= 4)
 })
 
 ok('tabLayout: degenerados → 1 fila, sin ancho fijo', () => {

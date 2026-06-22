@@ -118,18 +118,28 @@
     applyRows() {
       const L = window.OZ.TabstripLayout
       if (!L || !this.$.list) return
+      // Ancho disponible REAL para las tabs. Medimos sobre el contenedor (toda
+      // la barra) y descontamos el botón "+" y un margen para la zona de
+      // arrastre/controles. Medir `.tab-list` directo es engañoso: su ancho
+      // depende del wrap actual (circular) → daba cuentas mal.
+      const container = this.$.list.parentElement
+      const reserve = (this.$.createBtn ? this.$.createBtn.offsetWidth : 28) + 64
+      const avail = Math.max(
+        0,
+        (container ? container.clientWidth : this.$.list.clientWidth || 0) - reserve,
+      )
       const { rows, tabWidth, compact } = L.tabLayout({
         count: this.tabs.length,
-        containerWidth: this.$.list.clientWidth || 0,
-        minTabWidth: 120,
+        containerWidth: avail,
         maxRows: this.maxRows,
       })
       const root = document.documentElement.style
       root.setProperty('--oz-tab-rows', String(rows))
-      // alpha.86b: en saturación fijamos el ancho (basis + min) para que TODAS
-      // las tabs entren dentro del tope de filas, achicándose en vez de
-      // envolver a filas que la página tapa. Sin saturación volvemos al ancho
-      // natural (12rem → piso 120px) que maneja el flex.
+      // alpha.92: fijamos SIEMPRE el ancho (basis + min) al valor calculado. El
+      // flex-wrap rompe filas por el basis, así que fijarlo es lo único que hace
+      // que el navegador envuelve exactamente donde nosotros decidimos → el tope
+      // de filas se respeta y las tabs se achican estilo Chrome en vez de
+      // apilar filas infinitas. tabWidth null sólo con 0 tabs.
       if (tabWidth == null) {
         root.setProperty('--oz-tab-basis', '12rem')
         root.setProperty('--oz-tab-min', '120px')

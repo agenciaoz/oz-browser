@@ -28,6 +28,13 @@
   // Por debajo de este ancho el título no es legible → modo compacto: ocultar
   // título/dot, dejar solo el favicon (el ✕ queda solo en la tab activa).
   const COMPACT_TAB_WIDTH = 100
+  // Ancho "cómodo" de una tab cuando hay lugar (px, ~12rem). CLAVE: el CSS
+  // rompe filas (flex-wrap) usando el flex-basis, NO el min-width. Por eso el
+  // renderer fija SIEMPRE el basis a `tabWidth`: así el ancho con el que el
+  // navegador decide envolver es exactamente el que calculamos acá. Si en vez
+  // de fijarlo dejábamos basis=12rem, las tabs envolvían a 192px (sin achicarse
+  // primero) y aparecían muchas más filas que el tope → bug "no hay límite".
+  const PREFERRED_TAB_WIDTH = 192
 
   /**
    * Devuelve una copia de `arr` con el elemento en `from` movido a `to`.
@@ -84,20 +91,18 @@
   /**
    * Layout completo del tabstrip: cuántas filas y qué ancho fijar por tab.
    *
-   * Dos regímenes:
-   *  1. Holgura: las tabs entran en ≤ `maxRows` filas sin bajar de `minTabWidth`.
-   *     → `tabWidth: null` (el CSS achica de su ancho natural a `minTabWidth` y
-   *     recién ahí envuelve; comportamiento histórico).
-   *  2. Saturación: hay tantas tabs que ni a `minTabWidth` entran en `maxRows`.
-   *     → se ACHICAN todas a un ancho fijo (`tabWidth` px) para que TODAS entren
-   *     dentro del tope de filas, hasta el piso `hardMinTabWidth`. Esto evita que
-   *     las tabs sobrantes envuelvan a filas que quedan tapadas por la página.
+   * Fija SIEMPRE un ancho (`tabWidth`) — el renderer lo aplica como flex-basis,
+   * que es el ancho con el que el CSS decide envolver filas. Arranca del ancho
+   * cómodo (`preferredWidth`); si a ese ancho las tabs necesitarían más de
+   * `maxRows` filas, las ACHICA lo justo para que TODAS entren dentro del tope
+   * (hasta el piso `hardMinTabWidth`, estilo Chrome). `tabWidth: null` sólo si
+   * no hay tabs o el ancho es 0 (el renderer cae al default cómodo).
    *
    * @param {object} opts
    * @param {number} opts.count            cantidad de tabs.
-   * @param {number} opts.containerWidth   ancho disponible del tab-list (px).
-   * @param {number} [opts.minTabWidth=120] piso "cómodo" antes de envolver.
-   * @param {number} [opts.hardMinTabWidth=54] piso absoluto al achicar.
+   * @param {number} opts.containerWidth   ancho disponible para las tabs (px).
+   * @param {number} [opts.preferredWidth=192] ancho cómodo (alias: minTabWidth).
+   * @param {number} [opts.hardMinTabWidth=32]  piso absoluto al achicar.
    * @param {number} [opts.maxRows=4]
    * @returns {{rows:number, tabWidth:number|null, compact:boolean}}
    */
@@ -105,24 +110,27 @@
     const o = opts || {}
     const count = Math.max(0, _int(o.count))
     const width = _num(o.containerWidth)
-    const minTab = _num(o.minTabWidth, 120)
+    // `minTabWidth` se mantiene como alias del ancho de ajuste (compat tests).
+    const fitWidth = _num(o.preferredWidth, _num(o.minTabWidth, PREFERRED_TAB_WIDTH))
     const hardMin = _num(o.hardMinTabWidth, HARD_MIN_TAB)
     const maxRows = clampMaxRows(o.maxRows == null ? MAX_ROWS : o.maxRows)
-    if (count <= 0 || !(width > 0) || !(minTab > 0)) {
+    if (count <= 0 || !(width > 0) || !(fitWidth > 0)) {
       return { rows: 1, tabWidth: null, compact: false }
     }
-    const perRowAtFloor = Math.max(1, Math.floor(width / minTab))
-    const neededRows = Math.ceil(count / perRowAtFloor)
-    if (neededRows <= maxRows) {
-      // Entran con holgura: dejá que el flex achique naturalmente.
-      return { rows: Math.max(1, neededRows), tabWidth: null, compact: false }
+    // 1) Probar al ancho cómodo. El nº de filas se calcula con el MISMO ancho
+    //    con el que el CSS rompe filas (el basis que fija el renderer).
+    let w = fitWidth
+    let perRow = Math.max(1, Math.floor(width / w))
+    let rows = Math.ceil(count / perRow)
+    // 2) Si así nos pasamos del tope, achicar las tabs lo justo para que TODAS
+    //    entren en `maxRows` filas (hasta el piso clickeable).
+    if (rows > maxRows) {
+      const perRowNeeded = Math.ceil(count / maxRows)
+      w = Math.max(hardMin, Math.floor(width / perRowNeeded))
+      perRow = Math.max(1, Math.floor(width / w))
+      rows = Math.min(maxRows, Math.max(1, Math.ceil(count / perRow)))
     }
-    // Saturación: fijá un ancho achicado para meter todo en `maxRows` filas.
-    const perRowNeeded = Math.ceil(count / maxRows)
-    const shrunk = Math.max(hardMin, Math.floor(width / perRowNeeded))
-    const perRowActual = Math.max(1, Math.floor(width / shrunk))
-    const rows = Math.min(maxRows, Math.max(1, Math.ceil(count / perRowActual)))
-    return { rows, tabWidth: shrunk, compact: shrunk < COMPACT_TAB_WIDTH }
+    return { rows, tabWidth: Math.round(w), compact: w < COMPACT_TAB_WIDTH }
   }
 
   /**
@@ -174,6 +182,7 @@
     BASE_TOOLBAR_HEIGHT,
     HARD_MIN_TAB,
     COMPACT_TAB_WIDTH,
+    PREFERRED_TAB_WIDTH,
   }
 
   if (typeof module !== 'undefined' && module.exports) module.exports = api
