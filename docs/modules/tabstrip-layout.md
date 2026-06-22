@@ -16,15 +16,15 @@ El `flex-wrap` del CSS decide el salto de fila usando el **flex-basis**, NO el `
 
 ## Exporta / API
 
-| Función                                         | Descripción                                                                                                                                 |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `moveItem(arr, from, to)`                       | Copia de `arr` con el elemento movido (drag-and-drop); clampa índices.                                                                      |
-| `dropTargetIndex(fromIndex, targetIndex, side)` | Mapea el slot visual (`before`/`after`) al índice de `moveItem`.                                                                            |
-| `clampMaxRows(v)`                               | Tope de filas válido en `[1, MAX_ROWS]` (default `MAX_ROWS`).                                                                               |
-| `tabLayout(opts)`                               | `{rows, tabWidth, compact}` — filas, ancho a fijar (px) y si va en modo compacto (favicon-only).                                            |
-| `rowCountFor(opts)`                             | Compat: filas que ocupa el tabstrip. Delega en `tabLayout(opts).rows`.                                                                      |
-| `chromeTopInset(opts)`                          | Alto del chrome superior (px) según las filas (top inset del contenido).                                                                    |
-| Constantes                                      | `MAX_ROWS` (4), `ROW_HEIGHT` (32), `BASE_TOOLBAR_HEIGHT` (64), `HARD_MIN_TAB` (32), `COMPACT_TAB_WIDTH` (100), `PREFERRED_TAB_WIDTH` (192). |
+| Función                                         | Descripción                                                                                                                                    |
+| ----------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| `moveItem(arr, from, to)`                       | Copia de `arr` con el elemento movido (drag-and-drop); clampa índices.                                                                         |
+| `dropTargetIndex(fromIndex, targetIndex, side)` | Mapea el slot visual (`before`/`after`) al índice de `moveItem`.                                                                               |
+| `clampMaxRows(v)`                               | Tope de filas válido en `[1, MAX_ROWS]` (default `MAX_ROWS`).                                                                                  |
+| `tabLayout(opts)`                               | `{rows, tabWidth, compact}` — filas, ancho a fijar (px) y si va en modo compacto (favicon-only).                                               |
+| `rowCountFor(opts)`                             | Compat: filas que ocupa el tabstrip. Delega en `tabLayout(opts).rows`.                                                                         |
+| `chromeTopInset(opts)`                          | Alto del chrome superior (px) por filas. Desde alpha.93 es solo FALLBACK: el inset real lo mide el renderer del DOM y lo manda como `insetPx`. |
+| Constantes                                      | `MAX_ROWS` (4), `ROW_HEIGHT` (32), `BASE_TOOLBAR_HEIGHT` (64), `HARD_MIN_TAB` (32), `COMPACT_TAB_WIDTH` (100), `PREFERRED_TAB_WIDTH` (192).    |
 
 ### `tabLayout(opts)`
 
@@ -40,7 +40,7 @@ Devuelve `tabWidth: null` solo cuando no hay tabs o el ancho es 0 (el renderer c
 
 ## IPC / MCP
 
-No registra IPC directamente (lógica pura). El reorder se aplica vía IPC `oz:tabs:reorder` y el tool MCP `oz.tabs.reorder` (en `tabs.js`/`tab-ipc-setup.js`); el inset dinámico via `oz:chrome:setRows`.
+No registra IPC directamente (lógica pura). El reorder se aplica vía IPC `oz:tabs:reorder` y el tool MCP `oz.tabs.reorder` (en `tabs.js`/`tab-ipc-setup.js`); el inset dinámico via `oz:chrome:setRows` — desde alpha.93 el renderer le pasa `(rows, insetPx)` donde `insetPx` es el alto real medido del DOM (el handler usa `chromeTopInset` solo si no viene).
 
 ## Gotchas
 

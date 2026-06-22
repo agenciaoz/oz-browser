@@ -8,6 +8,14 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.94 — Omnibox: barra de URL editable con pestaña activa (2026-06-22)
+
+[`2026-06-22`] [`ui/tabstrip`] Bug (Jose): al clickear la barra de URL con una pestaña abierta no se podía escribir. Causa (ADR 0011): el `WebContentsView` de la página se pinta ENCIMA del HTML del chrome y RETIENE el foco de teclado — por eso los 18 modales del WebUI hacen `setContentVisible(false)` para poder escribir, y el omnibox era el único elemento interactivo del chrome que NO lo hacía. Fix: el omnibox aplica el mismo patrón — al recibir foco oculta la vista de contenido (le cede el teclado al chrome) y la restaura al `blur`/tras navegar con Enter (`this.$.url.blur()`). `tabstrip.js`, sin IPC nuevo (reusa `oz.ui.setContentVisible`). WebUI manifest 2.0.57. Latest firmado+notarizado.
+
+### v2.0.0-alpha.93 — Tabstrip: barra de URL clickeable multi-fila (inset medido) (2026-06-22)
+
+[`2026-06-22`] [`ui/tabstrip`] Con 4 filas, la barra de URL quedaba descuadrada y no se podía clickear. Causa: el push de la toolbar (30px/fila CSS) y el inset de la página (`chromeTopInset` 32px/fila + base 64) usaban constantes que NO coinciden con el alto real renderizado → el chrome multi-fila quedaba desalineado. Fix: el renderer MIDE el alto real en el DOM (filas reales por `offsetTop` + alto de fila por `getBoundingClientRect`) y (1) empuja la toolbar exacto vía `--oz-toolbar-push` en px, (2) manda a main el inset = borde inferior real de la toolbar vía `oz.chrome.setRows(rows, insetPx)`; el handler usa `insetPx` directo (fallback a `chromeTopInset` si el preload es viejo). `tabstrip.js`/`webui.html`/`ipc-handlers.js`/`preload.js`. WebUI manifest 2.0.56. Latest firmado+notarizado.
+
 ### v2.0.0-alpha.92 — Tabstrip: shrink-to-fit estilo Chrome (fix filas infinitas) (2026-06-22)
 
 [`2026-06-22`] [`ui/tabstrip`] Fix de raíz del bug "no hay límite de filas" reportado sobre alpha.91. Causa: el `flex-wrap` rompe filas por el **flex-basis** (12rem=192px), no por el `min-width` (120) con el que se contaban filas → las tabs envolvían a 192px sin achicarse y aparecían muchas más filas que el tope. `tabLayout()` ahora calcula filas con el MISMO ancho con el que el CSS envuelve y FIJA siempre ese ancho (basis+min): arranca del cómodo (192) y achica lo justo para entrar en `maxRows` (piso 32px, favicon-only). El renderer mide el ancho disponible sobre el contenedor (estable), no sobre `.tab-list` (circular). +test de regresión (30 tabs nunca > 4 filas). 19/19 verde. WebUI manifest 2.0.55. Latest firmado+notarizado.
