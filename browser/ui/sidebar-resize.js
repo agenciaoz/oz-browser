@@ -36,7 +36,7 @@
     btn.type = 'button'
     btn.title = 'Collapse / expand sidebar'
     const sync = () => {
-      btn.textContent = sidebar.classList.contains('collapsed') ? '⟩' : '⟨'
+      btn.textContent = sidebar.classList.contains('collapsed') ? '›' : '‹'
     }
     btn.addEventListener('click', () => {
       const collapsed = sidebar.classList.toggle('collapsed')

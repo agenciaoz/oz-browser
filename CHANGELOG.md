@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.96 — Sidebar: toggle de colapsar reubicado (no más pastilla flotante) (2026-06-22)
+
+[`2026-06-22`] [`ui/sidebar`] Bug visual (Jose): el botón `<` de colapsar el sidebar (`#oz-sidebar-collapse`) estaba `position:absolute; top:6px; right:8px`, así que caía en la esquina superior derecha del sidebar — que coincide con la banda de la barra de URL — y se veía como una pastilla suelta flotando en el chrome. Fix CSS (`webui.html`): ahora es una pestañita delgada (14×46px) pegada al borde derecho del sidebar, centrada verticalmente, con esquina interior redondeada (estilo Arc/VSCode), `opacity:0.55` que sube a 1 en hover del sidebar o cuando está colapsado. Sigue siendo hijo directo de `#oz-sidebar` para que la regla `.collapsed` lo conserve visible. Glifo `⟨/⟩` (fino) → `‹/›` (chevron limpio) en `sidebar-resize.js`. WebUI manifest 2.0.59. **Smoke en vivo pendiente (Jose): ver el tab en su lugar + colapsar/expandir.**
+
 ### v2.0.0-alpha.95 — Tabstrip: clic en URL con multi-fila + zona de arrastre (2026-06-22)
 
 [`2026-06-22`] [`ui/tabstrip`] Bug (Jose): al abrirse la 2ª fila de tabs, la barra de URL dejaba de recibir el clic (no se podía editar). Causa real: `.app-drag` (zona de arrastre de ventana, `-webkit-app-region: drag`) tenía `height: calc(100% - 5px)` + `align-self: flex-end`, así que con 2+ filas se estiraba a lo alto de TODAS las filas y se montaba encima de la barra de URL, tragándose el clic. Fix: (1) `.app-drag` ahora mide 1 sola fila y va anclada arriba; (2) toda la franja de tabs (`.tab-container` + `.tab-list`) es zona de arrastre, con los controles reales exentos (`no-drag`) — cierra el pendiente "poca zona de arrastre con varias filas llenas"; (3) red de seguridad: `.toolbar` con `position:relative; z-index:5` para que la URL SIEMPRE gane el hit-test sobre el tabstrip aunque haya solape de px. CSS-only en `webui.html`, tests 19/19 verde. WebUI manifest 2.0.58. **Smoke en vivo pendiente (Jose): editar URL con 2/3/4 filas + mover ventana arrastrando hueco de fila.**
