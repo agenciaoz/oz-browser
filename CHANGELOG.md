@@ -8,6 +8,14 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.92 — Tabstrip: shrink-to-fit estilo Chrome (fix filas infinitas) (2026-06-22)
+
+[`2026-06-22`] [`ui/tabstrip`] Fix de raíz del bug "no hay límite de filas" reportado sobre alpha.91. Causa: el `flex-wrap` rompe filas por el **flex-basis** (12rem=192px), no por el `min-width` (120) con el que se contaban filas → las tabs envolvían a 192px sin achicarse y aparecían muchas más filas que el tope. `tabLayout()` ahora calcula filas con el MISMO ancho con el que el CSS envuelve y FIJA siempre ese ancho (basis+min): arranca del cómodo (192) y achica lo justo para entrar en `maxRows` (piso 32px, favicon-only). El renderer mide el ancho disponible sobre el contenedor (estable), no sobre `.tab-list` (circular). +test de regresión (30 tabs nunca > 4 filas). 19/19 verde. WebUI manifest 2.0.55. Latest firmado+notarizado.
+
+### v2.0.0-alpha.91 — Tabstrip: tope duro 4 filas + achicar tabs (2026-06-21)
+
+[`2026-06-21`] [`ui/tabstrip`] Las tabs sobrantes se escondían detrás de la página al no haber tope de filas ni achicado. `MAX_ROWS` 3→4 (tope duro). Nueva `tabLayout()`: al saturarse el cupo fija un ancho achicado para que TODAS entren dentro del tope en vez de apilar filas tapadas. Modo compacto estilo Chrome (`data-compact`): por debajo de ~100px queda solo el favicon + franja de identidad (título/dot ocultos; ✕ solo en la activa), piso 32px. WebUI manifest 2.0.52→2.0.54. +6 tests. (Nota: el fix quedó incompleto por el wrap-por-basis; cerrado en alpha.92.)
+
 ### v2.0.0-alpha.90 — Publishing: history (lista + retry) → main (2026-06-20)
 
 [`2026-06-20`] [`publishing`] Cierra el último resto de lógica del renderer. NUEVOS handlers `runs(limit)` (filtra los bulk runs a actions de publicar y los hidrata con counts + label de red + ids fallidos, reusando los helpers puros `filterPublishRuns/countItems/runPlatformLabel` + `bulk-history-helpers.getFailedIdentityIds`) y `retryRun(runId)` (arma el retry spec con `buildRetrySpec` y despacha solo las identities fallidas). Tools `oz.publishing.runs/retry` + IPC + preload. `publishing-history.js` delega: `load()`→`runs()`, `_retry()`→`retryRun()`, con fallback a bulk.list/get + helpers locales. +runs/retry tests en publishing-plan (17). El renderer del Studio ya es 100% presentación (DOM); toda la lógica vive en main por MCP. ADR 0038.
