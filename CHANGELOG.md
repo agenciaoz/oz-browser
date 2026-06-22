@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.97 — Fix crash main process "Object has been destroyed" en \_sendToWebUI (2026-06-22)
+
+[`2026-06-22`] [`main/window-manager`] Crash (Jose, dialog "Uncaught exception (main process)"): `TypeError: Object has been destroyed` en `TabbedBrowserWindow._sendToWebUI`, disparado por un evento de `Tabs` (`WebContents.emit` → `Tabs.emit` → listener) que llega durante el teardown de la ventana. El guard previo solo chequeaba `this.window?.webContents.isDestroyed()` — insuficiente: si el `BrowserWindow` ya está destruido, el getter `this.window.webContents` por sí solo tira el TypeError (el `?.` no corta porque `this.window` no es null, está destruido). Fix: chequear `this.window.isDestroyed()` ANTES de tocar `.webContents`, y envolver el `send` en try/catch como red final contra el race de teardown. Solo main process (`browser/window-manager.js`), sin cambios de WebUI (manifest queda 2.0.59).
+
 ### v2.0.0-alpha.96 — Sidebar: toggle de colapsar reubicado (no más pastilla flotante) (2026-06-22)
 
 [`2026-06-22`] [`ui/sidebar`] Bug visual (Jose): el botón `<` de colapsar el sidebar (`#oz-sidebar-collapse`) estaba `position:absolute; top:6px; right:8px`, así que caía en la esquina superior derecha del sidebar — que coincide con la banda de la barra de URL — y se veía como una pastilla suelta flotando en el chrome. Fix CSS (`webui.html`): ahora es una pestañita delgada (14×46px) pegada al borde derecho del sidebar, centrada verticalmente, con esquina interior redondeada (estilo Arc/VSCode), `opacity:0.55` que sube a 1 en hover del sidebar o cuando está colapsado. Sigue siendo hijo directo de `#oz-sidebar` para que la regla `.collapsed` lo conserve visible. Glifo `⟨/⟩` (fino) → `‹/›` (chevron limpio) en `sidebar-resize.js`. WebUI manifest 2.0.59. **Smoke en vivo pendiente (Jose): ver el tab en su lugar + colapsar/expandir.**

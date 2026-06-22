@@ -145,8 +145,21 @@ class TabbedBrowserWindow {
   }
 
   _sendToWebUI(channel, payload) {
-    if (this.window?.webContents && !this.window.webContents.isDestroyed()) {
-      this.window.webContents.send(channel, payload)
+    // alpha.97: guard contra "Object has been destroyed". Durante el teardown,
+    // el WebContents de una página puede emitir un evento de Tabs que llega
+    // acá DESPUÉS de que la ventana fue destruida. Chequear solo
+    // `webContents.isDestroyed()` no alcanza: si el BrowserWindow ya está
+    // destruido, el GETTER `this.window.webContents` por sí solo tira el
+    // TypeError (el `?.` no corta porque this.window no es null, está
+    // destruido). Hay que chequear `this.window.isDestroyed()` ANTES de tocar
+    // .webContents, y envolver en try/catch como red final contra el race.
+    const win = this.window
+    if (!win || win.isDestroyed()) return
+    try {
+      const wc = win.webContents
+      if (wc && !wc.isDestroyed()) wc.send(channel, payload)
+    } catch (_e) {
+      /* ventana/webContents destruido a mitad del envío — ignorar en teardown */
     }
   }
 
