@@ -493,7 +493,7 @@ function registerTabHandlersIPC(browser) {
   // alpha.65: multi-row tabstrip. El WebUI reporta cuántas filas ocupa el tab
   // strip; main calcula el inset superior y re-layoutea los WebContentsView de
   // esa ventana para que el contenido no tape las filas extra.
-  ipcMain.handle('oz:chrome:setRows', (event, rows) => {
+  ipcMain.handle('oz:chrome:setRows', (event, rows, insetPx) => {
     const { chromeTopInset } = require('./ui/tabstrip-layout')
     const win = browser.windows.find(
       (w) =>
@@ -502,7 +502,15 @@ function registerTabHandlersIPC(browser) {
     )
     if (!win) return false
     const electronWin = win.window || win
-    electronWin.__ozTopInset = chromeTopInset({ rows: Number(rows) })
+    // alpha.93: el renderer mide el borde inferior real del chrome y lo manda
+    // como `insetPx`. Es exacto (no depende de constantes de alto de fila), así
+    // que la vista de la página nunca tapa la barra de URL. Fallback al cálculo
+    // por filas si no viene (preload viejo).
+    const px = Number(insetPx)
+    electronWin.__ozTopInset =
+      Number.isFinite(px) && px > 0
+        ? Math.round(px)
+        : chromeTopInset({ rows: Number(rows) })
     for (const t of win.tabs.tabList) if (t.materialized) t.invalidateLayout()
     return true
   })

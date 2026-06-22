@@ -378,9 +378,11 @@
         display: flex;
         align-items: center;
         padding: 0.2rem 0.5rem;
-        /* alpha.65: push the address bar down below the extra tab rows. 0 at
-           1 row → identical to pre-multi-row layout. */
-        margin-top: calc((var(--oz-tab-rows, 1) - 1) * var(--oz-tab-row-h, 30px));
+        /* alpha.65/93: push the address bar down below the extra tab rows. El
+           valor lo fija el renderer en px EXACTOS (medidos del DOM real), no
+           con un alto de fila estimado — si no coincide, el tabstrip fijo
+           entierra la barra de URL y no se puede clickear. 0 a 1 fila. */
+        margin-top: var(--oz-toolbar-push, 0px);
       }
       .toolbar .page-controls {
         margin-right: 0.5rem;

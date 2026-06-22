@@ -16,6 +16,7 @@
     // alpha.65: multi-row tabstrip + drag-reorder state.
     maxRows = 3
     _lastRows = null
+    _lastInset = null
     _dragId = null
 
     constructor() {
@@ -152,10 +153,39 @@
       // ocultos; ✕ solo en la activa). Driven por atributo en el <ul>.
       if (compact) this.$.list.dataset.compact = ''
       else delete this.$.list.dataset.compact
-      if (rows === this._lastRows) return
-      this._lastRows = rows
+
+      // alpha.93: medir el alto REAL del chrome (no estimarlo con constantes).
+      // Leer offsetTop/rects fuerza el reflow → los valores reflejan ya el
+      // basis/compact recién aplicados. Con eso:
+      //  1) empujamos la toolbar EXACTO para que quede debajo de la última fila
+      //     (antes el push usaba 30px/fila fijos ≠ alto real → la barra de URL
+      //     quedaba enterrada bajo el tabstrip fijo y no se podía clickear).
+      //  2) mandamos a main el inset = borde inferior real del chrome, para que
+      //     la vista de la página no tape la toolbar.
+      const tabEls = this.$.list.querySelectorAll('.tab')
+      let realRows = rows
+      let rowH = L.ROW_HEIGHT || 32
+      if (tabEls.length) {
+        const tops = new Set()
+        for (const el of tabEls) tops.add(Math.round(el.offsetTop))
+        realRows = Math.max(1, tops.size)
+        rowH = Math.round(tabEls[0].getBoundingClientRect().height) || rowH
+      }
+      root.setProperty('--oz-tab-rows', String(realRows))
+      root.setProperty('--oz-toolbar-push', (realRows - 1) * rowH + 'px')
+
+      // Medir el borde inferior real de la toolbar (post-push) = donde debe
+      // empezar la página. getBoundingClientRect es relativo al viewport del
+      // chrome, que coincide con el origen del WebContentsView de la página.
+      const toolbarEl = document.querySelector('.topbar .toolbar')
+      let insetPx = 0
+      if (toolbarEl) insetPx = Math.round(toolbarEl.getBoundingClientRect().bottom)
+
+      if (realRows === this._lastRows && insetPx === this._lastInset) return
+      this._lastRows = realRows
+      this._lastInset = insetPx
       if (window.oz.chrome && window.oz.chrome.setRows) {
-        safe(window.oz.chrome.setRows(rows), 'chrome.setRows')
+        safe(window.oz.chrome.setRows(realRows, insetPx), 'chrome.setRows')
       }
     }
 
