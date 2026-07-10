@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.98 — Fix visual: barra de URL desborda sobre el sidebar con multi-fila (2026-07-10)
+
+[`2026-07-10`] [`ui/tabstrip`] Bug visual (Jose, screenshot): con 2+ filas de tabs la barra de URL se veía "cortada" y el header "WORKSPACES" del sidebar salía cortado por la mitad. Causa: `.topbar` tenía `height: var(--toolbar-height)` FIJA (64px = 1 fila + toolbar); al envolver las tabs a 2+ filas, la toolbar se empuja hacia abajo con `--oz-toolbar-push` pero el contenedor `.topbar` no crecía → la toolbar se desbordaba ~30px y se montaba sobre el inicio de `.bottom` (el sidebar). Fix CSS (`webui.html`): `min-height: var(--toolbar-height); height: calc(var(--toolbar-height) + var(--oz-toolbar-push, 0px))` → `.bottom` arranca justo debajo de la toolbar empujada. CSS-only, WebUI manifest 2.0.59 → 2.0.60.
+
 ### v2.0.0-alpha.97 — Fix crash main process "Object has been destroyed" en \_sendToWebUI (2026-06-22)
 
 [`2026-06-22`] [`main/window-manager`] Crash (Jose, dialog "Uncaught exception (main process)"): `TypeError: Object has been destroyed` en `TabbedBrowserWindow._sendToWebUI`, disparado por un evento de `Tabs` (`WebContents.emit` → `Tabs.emit` → listener) que llega durante el teardown de la ventana. El guard previo solo chequeaba `this.window?.webContents.isDestroyed()` — insuficiente: si el `BrowserWindow` ya está destruido, el getter `this.window.webContents` por sí solo tira el TypeError (el `?.` no corta porque `this.window` no es null, está destruido). Fix: chequear `this.window.isDestroyed()` ANTES de tocar `.webContents`, y envolver el `send` en try/catch como red final contra el race de teardown. Solo main process (`browser/window-manager.js`), sin cambios de WebUI (manifest queda 2.0.59).

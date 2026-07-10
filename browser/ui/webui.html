@@ -58,7 +58,16 @@
       .topbar {
         background: var(--bg-color);
         flex: 0 0 auto;
-        height: var(--toolbar-height);
+        /* alpha.98: la altura DEBE crecer con el push de la toolbar. Antes era
+           height fija (--toolbar-height, 1 fila de tabs + toolbar). Cuando las
+           tabs envuelven a 2+ filas, la toolbar se empuja hacia abajo con
+           --oz-toolbar-push pero el contenedor NO crecía → la toolbar se
+           desbordaba y tapaba los primeros ~30px de `.bottom` (el sidebar:
+           "WORKSPACES" salía cortado y la barra de URL se veía enterrada).
+           Sumar el push aquí hace que `.bottom` arranque JUSTO debajo de la
+           toolbar. */
+        min-height: var(--toolbar-height);
+        height: calc(var(--toolbar-height) + var(--oz-toolbar-push, 0px));
       }
 
       /*----- v1.8.3 Footer bar — combines quick-access (social shortcuts)
