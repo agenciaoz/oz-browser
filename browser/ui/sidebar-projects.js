@@ -98,6 +98,21 @@
       }
     }
 
+    async _rename(id, currentName) {
+      const U = window.OZ.SidebarProjectsUtils
+      let name = await window.OZ.ui.prompt('Nuevo nombre del proyecto', {
+        defaultValue: currentName,
+      })
+      name = U ? U.cleanName(name) : (name || '').trim()
+      if (!name || name === currentName) return
+      try {
+        await window.oz.projects.rename(id, name)
+      } catch (_e) {
+        /* ignore */
+      }
+      this.refresh()
+    }
+
     async _remove(id, name) {
       const ok = await window.OZ.ui.confirm(`¿Borrar el proyecto "${name}"?`)
       if (!ok) return
@@ -135,6 +150,17 @@
         open.querySelector('.oz-projects-meta').textContent = summary
         open.addEventListener('click', () => this._open(p.id))
         row.appendChild(open)
+
+        const ren = document.createElement('button')
+        ren.type = 'button'
+        ren.className = 'oz-projects-rename'
+        ren.title = 'Renombrar'
+        ren.textContent = '✎'
+        ren.addEventListener('click', (ev) => {
+          ev.stopPropagation()
+          this._rename(p.id, p.name)
+        })
+        row.appendChild(ren)
 
         const del = document.createElement('button')
         del.type = 'button'

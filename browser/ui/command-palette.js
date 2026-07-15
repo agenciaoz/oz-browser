@@ -248,17 +248,13 @@
         else await safe(window.oz.tabs.lock(tabId), 'tabs.lock')
         return true
       },
-      'move-to-new-window': async () => {
-        // The renderer can't trigger the native menu's "Move to New Window"
-        // directly (no IPC channel — main owns window orchestration). For
-        // C-1 we close the palette silently so users at least know the
-        // command exists; binding ⌥S triggers the real action via the
-        // native Tab menu. Followup ticket: expose oz:tabs:moveToNewWindow.
-        if (window.oz?.log) {
-          window.oz.log.info(
-            'webui/command-palette',
-            'move-to-new-window from palette is a stub — use ⌥S from the tab',
-          )
+      'move-to-new-window': async (payload) => {
+        // alpha.103: real action — oz:tabs:moveToNewWindow IPC now exposed on
+        // the tabs preload bridge (was a stub in C-1). Resolve the target tab
+        // and move it; main orchestrates the new window/workspace (ADR 0015).
+        const tabId = await resolveTabId(payload)
+        if (tabId != null && window.oz.tabs.moveToNewWindow) {
+          await safe(window.oz.tabs.moveToNewWindow(tabId), 'tabs.moveToNewWindow')
         }
         return true
       },
