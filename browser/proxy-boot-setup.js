@@ -1,4 +1,5 @@
 // OZ Browser — proxy boot wiring (extracted from main.js per ADR 0005, 500 LOC).
+// Doc: docs/modules/proxy-boot-setup.md
 //
 // Constructs the StickyRotation, imports + auto-assigns the license proxy
 // bundle (with fail-closed enforcement), and installs the identity proxy

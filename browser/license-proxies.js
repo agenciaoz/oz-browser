@@ -1,4 +1,5 @@
 // OZ Browser — apply per-license proxy bundles (v2.0.0-alpha.100).
+// Doc: docs/modules/license-proxies.md
 //
 // The activation server (Cloudflare Worker + D1) delivers a `proxies` array on
 // /activate + /validate (see license-manager.js). This module imports that

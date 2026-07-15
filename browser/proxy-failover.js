@@ -1,4 +1,5 @@
 // OZ Browser — proxy auto-failover (v2.0.0-alpha.101).
+// Doc: docs/modules/proxy-failover.md
 //
 // Los proxies móviles (Decodo) a veces devuelven un fallo transitorio de túnel
 // ("no suitable exit node" → ERR_TUNNEL_CONNECTION_FAILED) que deja la página
