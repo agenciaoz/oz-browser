@@ -140,6 +140,19 @@ class Tab extends EventEmitter {
     this.webContents.on('did-navigate-in-page', () => {
       this.emit('updated', this.serialize())
     })
+    // alpha.101: si la carga del frame principal falla por el proxy (túnel
+    // caído / no-exit del móvil), disparar auto-failover a otro proxy sano.
+    this.webContents.on(
+      'did-fail-load',
+      (_e, errorCode, errorDesc, _url, isMainFrame) => {
+        if (!isMainFrame) return
+        try {
+          require('./proxy-failover').onNavFail(this, errorCode, errorDesc)
+        } catch (_err) {
+          /* best-effort */
+        }
+      },
+    )
 
     // If a URL was queued before materialization, load it now.
     if (this.pendingUrl) {

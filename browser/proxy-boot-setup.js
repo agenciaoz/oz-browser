@@ -23,6 +23,11 @@ function wireProxyBoot(browser, licenseManager, log) {
   })
   // alpha.100: import + auto-assign the license proxy bundle, decide fail-closed.
   bootstrapForBoot(browser, licenseManager, log)
+  // alpha.101: auto-failover — si un tab falla la carga por el proxy (túnel
+  // caído / no-exit del móvil), rotar a otro proxy sano y recargar.
+  require('./proxy-failover').registerFailoverHandler((identityId, reason) =>
+    require('./proxy-failover').rotateIdentityProxy(browser, identityId, reason),
+  )
   browser.identityManager.setProxyResolutionHook((identityId, session) => {
     // applyForIdentity rotates if stale + setProxy in one call.
     browser.stickyRotation.applyForIdentity(identityId, session).catch((err) => {
