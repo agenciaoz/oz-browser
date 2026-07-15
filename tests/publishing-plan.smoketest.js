@@ -397,6 +397,19 @@ ok('threads maps to threads_post (text)', () => {
   assert.strictEqual(built.spec.actionId, 'threads_post')
 })
 
+ok('linkedin maps to linkedin_post (text) — alpha.106', () => {
+  assert.strictEqual(P.platformToActionId('linkedin'), 'linkedin_post')
+  assert.strictEqual(P.normalizePlatform('li'), 'linkedin')
+  assert.strictEqual(P.normalizePlatform('ln'), 'linkedin')
+  assert.strictEqual(P.buildPublishParams('linkedin', { caption: 'hola' }).text, 'hola')
+  const built = P.buildBulkSpec({
+    platform: 'linkedin',
+    caption: 'hola',
+    identities: ['i1'],
+  })
+  assert.strictEqual(built.spec.actionId, 'linkedin_post')
+})
+
 ok('facebook maps to fb_post (text, no media required)', () => {
   assert.strictEqual(P.platformToActionId('facebook'), 'fb_post')
   assert.strictEqual(P.platformToActionId(P.normalizePlatform('fb')), 'fb_post')

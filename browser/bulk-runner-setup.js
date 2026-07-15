@@ -26,6 +26,7 @@ const { buildTiktokFollowAction } = require('./bulk-actions-tiktok-follow')
 const { buildFbLikeAction } = require('./bulk-actions-fb-like')
 const { buildFbPostAction } = require('./bulk-actions-fb-post')
 const { buildThreadsPostAction } = require('./bulk-actions-threads-post')
+const { buildLinkedinPostAction } = require('./bulk-actions-linkedin-post')
 const { BulkRunner } = require('./bulk-runner')
 const { BulkRateLimit } = require('./bulk-rate-limit')
 
@@ -142,6 +143,14 @@ function setupBulkRunner(browser, opts = {}) {
   if (!registry.get('threads_post')) {
     registry.register(
       buildThreadsPostAction({
+        identityManager: browser.identityManager,
+        electron: opts.electron || _safeRequireElectron(),
+      }),
+    )
+  }
+  if (!registry.get('linkedin_post')) {
+    registry.register(
+      buildLinkedinPostAction({
         identityManager: browser.identityManager,
         electron: opts.electron || _safeRequireElectron(),
       }),
