@@ -21,7 +21,13 @@ Los proxies móviles devuelven fallos transitorios de túnel que dejan la págin
 
 ## Manual
 
-`rotateIdentityProxy(browser, identityId, reason)` es el núcleo reutilizable — base para un futuro botón "🔄 Reconnect" en la UI o un tool MCP. Hoy la rotación manual admin ya está disponible vía `oz.proxies.assignId` (reasignar a otro proxy).
+`rotateIdentityProxy(browser, identityId, reason)` es el núcleo reutilizable — compartido por el auto-failover y el **Reconnect manual (alpha.102)**:
+
+- **UI:** clic derecho en la identity (sidebar) → "🔄 Reconnect proxy" (`identity-context-menu.js`). Rota + recarga los tabs de la identity; si no hay proxy sano muestra un dialog informativo.
+- **MCP:** `oz.proxies.reconnect({identityId})` → `{ok, from, to, reloaded}` o `{ok:false, reason}`.
+- **Handler:** `proxy-handlers.js#reconnect(identityId)` — rota, recarga tabs vía `tabs.refreshAllInIdentity` y emite `oz:proxies:changed`. Tests: `tests/proxy-reconnect.smoketest.js` (15).
+
+La reasignación manual a un proxy específico sigue disponible vía `oz.proxies.assignId`.
 
 ## Registro
 

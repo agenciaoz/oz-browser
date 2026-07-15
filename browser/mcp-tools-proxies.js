@@ -1,6 +1,6 @@
 // OZ Browser — MCP tool catalog: proxies (1.8).
 //
-// Qué hace: 16 tools `oz.proxies.*` para que un agente externo pueda
+// Qué hace: 23 tools `oz.proxies.*` para que un agente externo pueda
 // gestionar el ProxyManager + ProxyAssignment + Health daemon.
 //
 // Doc: docs/modules/mcp-tools-proxies.md
@@ -289,6 +289,18 @@ function buildProxyTools({ proxies }) {
         additionalProperties: false,
       },
       call: ({ providerId, opts }) => proxies().expandProvider(providerId, opts),
+    },
+    {
+      name: 'oz.proxies.reconnect',
+      description:
+        'Manual failover ("Reconnect"): rotate an identity to another healthy proxy (lowest failureCount, excluding the current one) and reload its materialized tabs. Same core as the alpha.101 auto-failover. Returns {ok, from, to, reloaded} or {ok:false, reason:"no_healthy_proxy"|...}.',
+      inputSchema: {
+        type: 'object',
+        properties: { identityId: { type: 'string' } },
+        required: ['identityId'],
+        additionalProperties: false,
+      },
+      call: ({ identityId }) => proxies().reconnect(identityId),
     },
   ]
 }

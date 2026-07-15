@@ -44,4 +44,4 @@ Migración de proveedor de proxies Oxylabs → **Decodo** (móvil, ex-Smartproxy
 ## Próximo paso
 
 - Seed de usuarios restantes (Ata/Marcela/Daniela) en el panel + limpiar claves de test.
-- Opcional: botón UI "🔄 Reconnect" para el usuario final (el núcleo `rotateIdentityProxy` ya existe).
+- ~~Opcional: botón UI "🔄 Reconnect" para el usuario final~~ → **hecho en alpha.102** (menú contextual de identity + `oz.proxies.reconnect`).

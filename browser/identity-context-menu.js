@@ -82,6 +82,27 @@ function buildIdentityContextMenu({ browser, identityId }) {
       }
     },
   })
+  // alpha.102 — Reconnect proxy: manual failover del usuario final. Rota a
+  // otro proxy sano (mismo núcleo que el auto-failover) y recarga los tabs.
+  template.push({
+    label: '🔄 Reconnect proxy',
+    click: async () => {
+      const hp = browser.handlers && browser.handlers.proxies
+      if (!hp || !hp.reconnect) return
+      const r = await hp.reconnect(ident.id)
+      if (!r || r.ok === false) {
+        const { dialog } = require('electron')
+        dialog.showMessageBox({
+          type: 'info',
+          message: 'Could not switch proxy',
+          detail:
+            r && r.reason === 'no_healthy_proxy'
+              ? 'No other healthy proxy is available for this identity.'
+              : `Reason: ${(r && r.reason) || 'unknown'}.`,
+        })
+      }
+    },
+  })
   // C-6 — open Anti-Detect Health modal for this identity. Available on
   // every identity (incluyendo Default + locked) — el dashboard es read-only
   // por default; los inline fixes respetan los locks downstream.

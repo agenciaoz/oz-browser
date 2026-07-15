@@ -265,6 +265,36 @@ function buildProxyHandlers(browser) {
       return proxy
     },
 
+    /**
+     * alpha.102 — Reconnect: manual failover. Rota la identity a otro proxy
+     * sano (mismo núcleo que el auto-failover de alpha.101) y recarga sus
+     * tabs materializados. Returns {ok, from, to, reloaded} o {ok:false, reason}.
+     */
+    async reconnect(identityId) {
+      if (!identityId) return { ok: false, reason: 'bad_args' }
+      const { rotateIdentityProxy } = require('./proxy-failover')
+      const r = await rotateIdentityProxy(browser, identityId, 'manual')
+      if (r && r.ok) {
+        try {
+          const tabs = browser.handlers && browser.handlers.tabs
+          const rr =
+            tabs && tabs.refreshAllInIdentity
+              ? tabs.refreshAllInIdentity(identityId)
+              : null
+          r.reloaded = (rr && rr.count) || 0
+        } catch (e) {
+          log.warn('proxy-handlers', 'reconnect reload failed', {
+            identityId,
+            message: e && e.message,
+          })
+          r.reloaded = 0
+        }
+        browser.broadcastToWebUI('oz:proxies:changed')
+      }
+      log.info('proxy-handlers', 'reconnect', { identityId, ...r })
+      return r
+    },
+
     /** Bulk add (used by CSV import in 1.8d). */
     bulkAdd(items) {
       if (!pm()) return []
