@@ -162,11 +162,17 @@ function buildXPostAction({ identityManager, electron }) {
           throw err
         }
 
+        const ev = await require('./bulk-action-evidence').captureEvidence(win, {
+          identityId: identity.id,
+          actionId: 'x_post',
+          electron,
+        })
         return {
           text,
           identityId: identity.id,
           identityName: identity.name || null,
           durationMs: Date.now() - t0,
+          ...ev,
         }
       } finally {
         safeClose(win)

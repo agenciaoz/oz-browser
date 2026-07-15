@@ -168,11 +168,17 @@ function buildFbPostAction({ identityManager, electron }) {
           throw err
         }
 
+        const ev = await require('./bulk-action-evidence').captureEvidence(win, {
+          identityId: identity.id,
+          actionId: 'fb_post',
+          electron,
+        })
         return {
           text,
           identityId: identity.id,
           identityName: identity.name || null,
           durationMs: Date.now() - t0,
+          ...ev,
         }
       } finally {
         safeClose(win)

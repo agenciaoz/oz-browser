@@ -222,6 +222,13 @@
         }
         actions.appendChild(btn)
       }
+      // E2 (alpha.105): dry-run / pre-flight sin publicar.
+      if (p.status !== 'published' && window.oz.publishing.dryRun) {
+        const dry = el('button', { class: 'pub-plan-btn', text: '🔎 Dry-run' })
+        dry.title = 'Validar sin publicar'
+        dry.addEventListener('click', () => this._dryRun(p.id, card))
+        actions.appendChild(dry)
+      }
       if (p.status !== 'published') {
         const del = el('button', { class: 'pub-plan-btn danger', text: '✕' })
         del.title = 'Borrar'
@@ -230,6 +237,30 @@
       }
       card.appendChild(actions)
       return card
+    }
+
+    async _dryRun(id, card) {
+      const rep = await safe(window.oz.publishing.dryRun(id), null)
+      const old = card.querySelector('.pub-plan-dry')
+      if (old) old.remove()
+      const box = el('div', { class: 'pub-plan-dry' })
+      if (!rep || rep.__error) {
+        box.setAttribute('data-tone', 'red')
+        box.textContent =
+          (rep && rep.__error && rep.__error.message) || 'Error en dry-run'
+        card.appendChild(box)
+        return
+      }
+      box.setAttribute('data-tone', rep.ok ? 'green' : 'red')
+      const lines = []
+      lines.push(rep.ok ? '✓ Listo para publicar' : '✕ Con problemas')
+      for (const iss of rep.issues || []) lines.push(`· ${iss.message}`)
+      for (const idn of rep.identities || []) {
+        const mark = idn.willPublish ? '✓' : '✕'
+        lines.push(`${mark} ${idn.name || idn.identityId} (${idn.health})`)
+      }
+      box.textContent = lines.join('\n')
+      card.appendChild(box)
     }
   }
 

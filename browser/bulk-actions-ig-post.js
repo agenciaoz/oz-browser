@@ -284,12 +284,19 @@ function buildIgPostAction({ identityManager, electron }) {
           throw err
         }
 
+        // E2 (alpha.105): capture posting evidence (best-effort).
+        const ev = await require('./bulk-action-evidence').captureEvidence(win, {
+          identityId: identity.id,
+          actionId: 'ig_post',
+          electron,
+        })
         return {
           imagePath,
           caption,
           identityId: identity.id,
           identityName: identity.name,
           durationMs: Date.now() - t0,
+          ...ev,
         }
       } finally {
         await safeClose(win)
@@ -457,7 +464,7 @@ async function _injectFile(win, fileInputSelector, filePath) {
       files: [filePath],
     })
     return true
-  } catch (err) {
+  } catch (_err) {
     return false
   } finally {
     try {

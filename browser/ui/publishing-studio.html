@@ -366,6 +366,82 @@
       .pub-plan-btn.danger {
         color: #f87171;
       }
+      .pub-plan-dry {
+        white-space: pre-wrap;
+        font-size: 11px;
+        margin-top: 6px;
+        padding: 6px;
+        border-radius: 6px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        line-height: 1.4;
+      }
+      .pub-plan-dry[data-tone='green'] {
+        color: #34d399;
+      }
+      .pub-plan-dry[data-tone='red'] {
+        color: #f87171;
+      }
+      /* E7 analytics */
+      .pub-analytics-kpis {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .pub-analytics-kpi {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 10px;
+        text-align: center;
+      }
+      .pub-analytics-kpi-val {
+        font-size: 22px;
+        font-weight: 700;
+      }
+      .pub-analytics-kpi[data-tone='green'] .pub-analytics-kpi-val {
+        color: #34d399;
+      }
+      .pub-analytics-kpi[data-tone='yellow'] .pub-analytics-kpi-val {
+        color: #fbbf24;
+      }
+      .pub-analytics-kpi[data-tone='red'] .pub-analytics-kpi-val {
+        color: #f87171;
+      }
+      .pub-analytics-kpi-lbl {
+        font-size: 11px;
+        opacity: 0.6;
+        text-transform: uppercase;
+        letter-spacing: 0.04em;
+      }
+      .pub-analytics-h {
+        font-weight: 600;
+        font-size: 12px;
+        opacity: 0.7;
+        margin: 10px 0 6px;
+        text-transform: uppercase;
+      }
+      .pub-analytics-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 4px 0;
+        font-size: 13px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      }
+      .pub-analytics-row-val[data-tone='green'] {
+        color: #34d399;
+      }
+      .pub-analytics-row-val[data-tone='yellow'] {
+        color: #fbbf24;
+      }
+      .pub-analytics-row-val[data-tone='red'] {
+        color: #f87171;
+      }
+      .pub-analytics-note {
+        font-size: 12px;
+        opacity: 0.75;
+        margin-top: 10px;
+      }
       .pub-hist-list {
         display: flex;
         flex-direction: column;
@@ -651,6 +727,11 @@
         <h2 data-i18n="publishingStudio.hist.heading">Recent publications</h2>
         <div id="pub-history"></div>
       </section>
+
+      <section class="card pub-hist-section">
+        <h2 data-i18n="publishingStudio.analytics.heading">Analytics</h2>
+        <div id="pub-analytics"></div>
+      </section>
     </div>
 
     <script src="./i18n.js"></script>
@@ -666,6 +747,7 @@
     <script src="./publishing-variation-ui.js"></script>
     <script src="./publishing-plan.js"></script>
     <script src="./publishing-plan-ui.js"></script>
+    <script src="./publishing-analytics-ui.js"></script>
     <script src="./publishing-history.js"></script>
     <script src="./publishing-studio.js"></script>
   </body>

@@ -87,9 +87,18 @@
         onChange: () => {
           if (state.scheduledList) state.scheduledList.load()
           if (state.history) state.history.load()
+          if (state.analytics) state.analytics.load()
         },
       })
       state.plan.mount()
+    }
+
+    // E7 (alpha.105): analytics panel.
+    if (window.OZ.PublishingAnalyticsUI && $('pub-analytics')) {
+      state.analytics = new window.OZ.PublishingAnalyticsUI({
+        container: $('pub-analytics'),
+      })
+      state.analytics.mount()
     }
 
     await loadActions()
@@ -97,6 +106,7 @@
     if (state.scheduledList) await state.scheduledList.load()
     if (state.history) await state.history.load()
     if (state.plan) await state.plan.load()
+    if (state.analytics) await state.analytics.load()
     wireEvents()
     refreshPublishButton()
   }
