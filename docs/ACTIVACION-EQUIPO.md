@@ -37,6 +37,8 @@ Revocar corta el acceso en el **próximo chequeo online** del usuario (o cuando 
 
 Cada clave puede llevar su **propio set de proxies**. Al activar (y en cada revalidación), el servidor los entrega y la app los **importa + auto-asigna a las identidades solo** — el usuario no configura nada. Además la app queda en **fail-closed**: si en algún momento no hay proxy disponible, **bloquea la navegación** (blackhole `socks5://127.0.0.1:1`) en vez de caer a la IP real. Un install con proxies de licencia **no puede navegar sin proxy**.
 
+**Auto-failover (alpha.101):** si un proxy falla la carga (túnel caído / "no exit node" transitorio del móvil), la app **rota la identidad a otro proxy sano y recarga el tab automáticamente** — el usuario no queda trabado. Cooldown de 12s por identidad para evitar loops. Ver `docs/modules/proxy-failover.md`. La rotación manual admin está en `oz.proxies.assignId`.
+
 ### Cargar proxies a un usuario
 
 **Desde el panel:** en la fila de la licencia, botón **🌐 Proxies** → se abre un textarea. Pegás un proxy por línea con el formato:
