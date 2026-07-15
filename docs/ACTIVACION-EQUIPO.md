@@ -33,6 +33,48 @@ curl -s -X POST $BASE/admin/revoke -H "authorization: Bearer $ADMIN" \
 
 Revocar corta el acceso en el **próximo chequeo online** del usuario (o cuando venza su gracia offline).
 
+## Proxies por usuario (Decodo) — alpha.100
+
+Cada clave puede llevar su **propio set de proxies**. Al activar (y en cada revalidación), el servidor los entrega y la app los **importa + auto-asigna a las identidades solo** — el usuario no configura nada. Además la app queda en **fail-closed**: si en algún momento no hay proxy disponible, **bloquea la navegación** (blackhole `socks5://127.0.0.1:1`) en vez de caer a la IP real. Un install con proxies de licencia **no puede navegar sin proxy**.
+
+### Cargar proxies a un usuario
+
+**Desde el panel:** en la fila de la licencia, botón **🌐 Proxies** → se abre un textarea. Pegás un proxy por línea con el formato:
+
+```
+host:puerto:usuario:password
+gate.decodo.com:10001:user-Juanja-country-us-city-miami-sessionduration-30:yMLusga8n+...
+```
+
+La ciudad se deduce del `-city-<slug>` del usuario. También hay un botón **⚡ Generar 10 Decodo Miami** que arma 10 sesiones sticky con un prefijo único por usuario (pide user/pass master la primera vez).
+
+### Modelo recomendado: un sub-user Decodo por persona
+
+Para aislamiento real (bandwidth + credenciales separadas por persona), creá un **sub-user en Decodo** para cada miembro y cargale SUS proxies. Ejemplo: "Juanja" tiene su sub-user propio (`user-Juanja-country-us-city-miami-sessionduration-30`). Alternativa más barata: repartir slices de puertos de una sola cuenta master (`gate.decodo.com:10001-11000` = 1000 IPs sticky, mismo user), 10 puertos por persona sin solapar.
+
+### Onboarding de un usuario nuevo
+
+1. Creás su sub-user en Decodo (o reservás un slice de puertos del master).
+2. En el panel: generás su clave → botón 🌐 Proxies → pegás sus 10 líneas → Guardar.
+3. Le pasás el instalador (Release Latest) + su clave.
+4. Activa → le entran los proxies puestos y no puede navegar sin ellos.
+
+### API (opcional)
+
+```bash
+# reemplaza TODOS los proxies de una clave
+curl -s -X POST $BASE/admin/setproxies -H "authorization: Bearer $ADMIN" \
+  -H 'content-type: application/json' \
+  -d '{"key":"OZ-XXXX-XXXX-XXXX","proxies":[{"host":"gate.decodo.com","port":10001,"protocol":"https","username":"user-...-city-miami","password":"...","city":"miami","country":"US","tags":["decodo"]}]}'
+# leer los proxies de una clave
+curl -s -X POST $BASE/admin/getproxies -H "authorization: Bearer $ADMIN" \
+  -H 'content-type: application/json' -d '{"key":"OZ-XXXX-XXXX-XXXX"}'
+```
+
+App-side: `browser/license-proxies.js` (import + auto-assign, idempotente, dedup por `host:port:username`) + `proxy-boot-setup.js` (wiring en boot) + enforcement fail-closed en `proxy-sticky-rotation.js`. Ver `docs/modules/license-proxies.md`.
+
+> ⚠️ **Costo:** el trial de Decodo trae poco bandwidth (100 MB). Uso real de varias personas requiere un plan pago.
+
 ## Qué se ve de actividad
 
 Hoy: evento `app-open` por cada validación (quién, máquina, versión, cuándo). Próximo: eventos por acción (bulk runs, scrapes) para ver "en qué trabajaron".
