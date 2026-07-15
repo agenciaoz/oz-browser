@@ -25,11 +25,10 @@ Cablear `browser/ui/publishing-plan.js` (escrito, hoy huérfano — no está en 
 
 Actions nuevas en `bulk-runner-setup.js`: TikTok, Reels/video IG, LinkedIn, YouTube. `ig_post` con soporte de video. Cierra Publishing 7/7 etapas.
 
-## Fase 5 — Sync production-ready (alpha.107)
+## Fase 5 — Sync production-ready (parcial)
 
-- `OZ_DROPBOX_APP_KEY` build-time (hoy vacío en `.env.example`).
-- Long-poll real de Dropbox (hoy poll `listFolderContinue` cada 30s).
-- GC de tombstones.
+- ✅ **App Key**: guía completa `docs/guides/sync-setup-dropbox.md` (crear app Dropbox, permisos, redirect, build con `OZ_DROPBOX_APP_KEY`). El wiring ya lee la key; falta que Jose cree la app y buildee con ella (ops, no código).
+- ⏸ **Long-poll real** y **GC de tombstones**: DIFERIDOS. Ambos tocan la capa Dropbox y pueden **corromper el sync cross-device** si se escriben a ciegas (long-poll = semántica cursor/backoff/notify de Dropbox; GC por edad = un device offline resucita registros sin ack-tracking). Requieren diseño + validación contra Dropbox real. No shippear blind.
 
 ## Fase 6 — V3 anti-detect remate (alpha.108-110)
 
