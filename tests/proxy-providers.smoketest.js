@@ -19,6 +19,7 @@ Module._load = function (req, parent, ...rest) {
 delete require.cache[require.resolve('../browser/proxy-providers.js')]
 const {
   expandOxylabs,
+  expandDecodo,
   expandProvider,
   listProviders,
   PROVIDERS,
@@ -221,11 +222,12 @@ console.log('\nlistProviders + expandProvider')
 // ============================================================================
 
 const provs = listProviders()
-ok('listProviders returns 4 providers', Array.isArray(provs) && provs.length === 4)
+ok('listProviders returns 5 providers', Array.isArray(provs) && provs.length === 5)
 ok(
-  'oxylabs + brightdata available, smartproxy + iproyal coming-soon (v2.0.0-alpha.22)',
+  'oxylabs + brightdata + decodo available, smartproxy + iproyal coming-soon',
   provs.find((p) => p.id === 'oxylabs').status === 'available' &&
     provs.find((p) => p.id === 'brightdata').status === 'available' &&
+    provs.find((p) => p.id === 'decodo').status === 'available' &&
     provs.filter((p) => p.status === 'coming-soon').length === 2,
 )
 ok(
@@ -239,6 +241,64 @@ ok(
 ok(
   'expandProvider("nonsense") → UNKNOWN_PROVIDER',
   expandProvider('nonsense', {}).__error.code === 'UNKNOWN_PROVIDER',
+)
+
+// ============================================================================
+console.log('\nexpandDecodo — mobile/residential city targeting')
+// ============================================================================
+
+ok(
+  'missing customer → MISSING_FIELDS',
+  expandDecodo({ password: 'y', count: 1 }).__error.code === 'MISSING_FIELDS',
+)
+ok(
+  'missing password → MISSING_FIELDS',
+  expandDecodo({ customer: 'x', count: 1 }).__error.code === 'MISSING_FIELDS',
+)
+ok(
+  'count out of range → INVALID_COUNT',
+  expandDecodo({ customer: 'x', password: 'y', count: 0 }).__error.code ===
+    'INVALID_COUNT',
+)
+
+const dec = expandDecodo({
+  endpoint: 'gate.decodo.com:10001',
+  customer: 'sp2f1ft6in',
+  password: 'zocpass',
+  count: 10,
+  city: 'miami',
+})
+ok('decodo expands 10 items', dec.ok && dec.items.length === 10)
+ok(
+  'sequential ports 10001..10010',
+  dec.items[0].port === 10001 && dec.items[9].port === 10010,
+)
+ok(
+  'username carries city targeting',
+  dec.items[0].username === 'user-sp2f1ft6in-city-miami',
+)
+ok(
+  'shared username across ports (per-port sticky)',
+  dec.items[0].username === dec.items[5].username,
+)
+ok('decodo tag + country/city passthrough', dec.items[0].tags.includes('decodo'))
+ok(
+  'country-only targeting (no city)',
+  expandDecodo({
+    customer: 'sp2f1ft6in',
+    password: 'p',
+    count: 1,
+    country: 'US',
+  }).items[0].username === 'user-sp2f1ft6in-country-us',
+)
+ok(
+  'expandProvider("decodo") routes to expandDecodo',
+  expandProvider('decodo', {
+    customer: 'sp2f1ft6in',
+    password: 'p',
+    count: 1,
+    city: 'miami',
+  }).ok === true,
 )
 
 // ============================================================================

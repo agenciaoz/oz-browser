@@ -226,12 +226,13 @@ section('listProviders + COMING_SOON for Smartproxy / IPRoyal')
 {
   const { listProviders, expandProvider } = require('../browser/proxy-providers.js')
   const ps = listProviders()
-  ok('4 providers', ps.length === 4)
+  ok('5 providers', ps.length === 5)
   ok('oxylabs available', ps.find((p) => p.id === 'oxylabs').status === 'available')
   ok(
     'brightdata available (v2.0.0-alpha.22)',
     ps.find((p) => p.id === 'brightdata').status === 'available',
   )
+  ok('decodo available', ps.find((p) => p.id === 'decodo').status === 'available')
   ok(
     'smartproxy coming-soon',
     ps.find((p) => p.id === 'smartproxy').status === 'coming-soon',

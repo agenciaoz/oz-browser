@@ -228,8 +228,8 @@ ok(
   provs.find((p) => p.id === 'brightdata').status === 'available',
 )
 ok(
-  '2 providers available, 2 coming-soon',
-  provs.filter((p) => p.status === 'available').length === 2 &&
+  '3 providers available, 2 coming-soon',
+  provs.filter((p) => p.status === 'available').length === 3 &&
     provs.filter((p) => p.status === 'coming-soon').length === 2,
 )
 ok(

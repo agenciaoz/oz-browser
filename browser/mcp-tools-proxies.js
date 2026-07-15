@@ -271,14 +271,14 @@ function buildProxyTools({ proxies }) {
     {
       name: 'oz.proxies.providers',
       description:
-        'List provider templates (id, label, status, fields). v1: oxylabs available, brightdata/smartproxy/iproyal coming-soon.',
+        'List provider templates (id, label, status, fields). Available: oxylabs, brightdata, decodo. Coming-soon: smartproxy (legacy id → use decodo), iproyal.',
       inputSchema: { type: 'object', properties: {}, additionalProperties: false },
       call: () => proxies().listProviders(),
     },
     {
       name: 'oz.proxies.expand',
       description:
-        'Expand a provider template into N proxies and add them. Oxylabs example: {endpoint:"us-pr.oxylabs.io:10001",customer:"mzewama",password:"...",count:10,country:"US",sesstimeMin:30}. The 3 stubs return {__error:{code:"COMING_SOON"}}.',
+        'Expand a provider template into N proxies and add them. Oxylabs example: {endpoint:"us-pr.oxylabs.io:10001",customer:"mzewama",password:"...",count:10,country:"US",sesstimeMin:30}. Decodo example: {endpoint:"gate.decodo.com:10001",customer:"sp2f1ft6in",password:"...",count:10,city:"miami"} (each port = one sticky session). The coming-soon stubs return {__error:{code:"COMING_SOON"}}.',
       inputSchema: {
         type: 'object',
         properties: {

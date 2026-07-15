@@ -1,8 +1,8 @@
 // OZ Browser — Proxy provider templates (1.8d + v2.0.0-alpha.22).
 //
-// Qué hace: expansión de proxies por provider. Oxylabs + Bright Data son
-// providers de primera clase (real expand). Smartproxy + IPRoyal siguen
-// como stubs COMING_SOON hasta que alguien con cuenta los pida.
+// Qué hace: expansión de proxies por provider. Oxylabs + Bright Data + Decodo
+// son providers de primera clase (real expand). Smartproxy (legacy id, rebrand
+// de Decodo) + IPRoyal siguen como stubs COMING_SOON.
 //
 // Por qué Oxylabs + Bright Data ahora:
 //   - Jose YA usa Oxylabs (us-pr.oxylabs.io:10001 + `customer-X-sessid-Y-sesstime-Z`).
@@ -228,6 +228,96 @@ function expandBrightData(opts = {}) {
   return { ok: true, items }
 }
 
+/**
+ * Decodo (ex-Smartproxy) — mobile/residential sticky via endpoint:port.
+ * Decodo exposes a single gateway host (e.g. `gate.decodo.com`) with a range
+ * of ports; each port is its own sticky session (~10 min), so we generate N
+ * proxy specs over sequential ports (startPort..startPort+N-1) sharing one
+ * username. City targeting rides in the username as
+ * `user-{customer}-city-{slug}` (Decodo infers the country from the city);
+ * country-only uses `country-{cc}`. City and ASN targeting are mutually
+ * exclusive on Decodo's side — we only surface city here.
+ *
+ * Username pattern:
+ *   user-{customer}[-country-{cc}][-city-{slug}]
+ *
+ * @param {object} opts
+ * @param {string} opts.endpoint - host:startPort, e.g. "gate.decodo.com:10001"
+ * @param {string} opts.customer - Decodo auth username, e.g. "sp2f1ft6in"
+ * @param {string} opts.password - the account password
+ * @param {number} opts.count - how many proxies/ports to generate (1..1000)
+ * @param {string} [opts.country] - 2-letter ISO, e.g. "US"
+ * @param {string} [opts.city] - city slug, e.g. "miami"
+ */
+function expandDecodo(opts = {}) {
+  const {
+    endpoint = 'gate.decodo.com:10001',
+    customer,
+    password,
+    count,
+    country = null,
+    city = null,
+  } = opts
+  if (!customer || !password) {
+    return {
+      __error: {
+        code: 'MISSING_FIELDS',
+        message: 'Decodo needs endpoint, customer, password.',
+      },
+    }
+  }
+  const n = Number(count)
+  if (!Number.isInteger(n) || n < 1 || n > 1000) {
+    return {
+      __error: {
+        code: 'INVALID_COUNT',
+        message: `Count must be 1-1000, got: ${count}`,
+      },
+    }
+  }
+  const m = String(endpoint).match(/^([^:]+):(\d+)$/)
+  if (!m) {
+    return {
+      __error: {
+        code: 'INVALID_ENDPOINT',
+        message: `Endpoint must be host:port. Got "${endpoint}".`,
+      },
+    }
+  }
+  const [, host, portStr] = m
+  const startPort = parseInt(portStr, 10)
+  const citySlug = city ? String(city).trim().toLowerCase().replace(/\s+/g, '_') : null
+  const userParts = [`user-${customer}`]
+  if (country) userParts.push(`country-${country.toLowerCase()}`)
+  if (citySlug) userParts.push(`city-${citySlug}`)
+  const username = userParts.join('-')
+  const labelGeo = [country, city].filter(Boolean).join('/')
+  const items = []
+  for (let i = 0; i < n; i++) {
+    const port = startPort + i
+    items.push({
+      protocol: 'https',
+      host,
+      port,
+      username,
+      password,
+      tags: ['decodo', country, city].filter(Boolean),
+      country,
+      city: city || null,
+      // Each port is its own sticky session on Decodo's gateway, so N ports
+      // give N independent sticky IPs while sharing one username.
+      name: `Decodo ${labelGeo || ''} :${port}`.replace(/\s+/g, ' ').trim(),
+    })
+  }
+  log.info('proxy-providers', 'decodo expanded', {
+    count: items.length,
+    endpoint,
+    country,
+    city: citySlug,
+  })
+  return { ok: true, items }
+}
+
 const PROVIDERS = {
   oxylabs: {
     id: 'oxylabs',
@@ -272,9 +362,30 @@ const PROVIDERS = {
     ],
     expand: expandBrightData,
   },
+  decodo: {
+    id: 'decodo',
+    label: 'Decodo',
+    status: 'available',
+    fields: [
+      {
+        id: 'endpoint',
+        label: 'Endpoint (host:port)',
+        placeholder: 'gate.decodo.com:10001',
+      },
+      { id: 'customer', label: 'Username', placeholder: 'sp2f1ft6in' },
+      { id: 'password', label: 'Password', type: 'password' },
+      { id: 'count', label: 'How many proxies?', type: 'number', placeholder: '10' },
+      { id: 'country', label: 'Country code (optional)', placeholder: 'US' },
+      { id: 'city', label: 'City (optional)', placeholder: 'miami' },
+    ],
+    expand: expandDecodo,
+  },
+  // Decodo is the rebrand of Smartproxy (gate.smartproxy.com → gate.decodo.com);
+  // keep the legacy `smartproxy` id as a coming-soon stub so old references
+  // don't crash. New setups should use the `decodo` provider above.
   smartproxy: {
     id: 'smartproxy',
-    label: 'Smartproxy',
+    label: 'Smartproxy (legacy → use Decodo)',
     status: 'coming-soon',
     fields: [],
     expand: COMING_SOON('Smartproxy'),
@@ -313,4 +424,5 @@ module.exports = {
   listProviders,
   expandOxylabs,
   expandBrightData,
+  expandDecodo,
 }
