@@ -285,6 +285,87 @@
       .pub-hist-section {
         margin-top: 18px;
       }
+      /* E5 content-plan approval board */
+      .pub-plan-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 12px;
+      }
+      .pub-plan-msg {
+        font-size: 12px;
+        opacity: 0.85;
+      }
+      .pub-plan-msg[data-tone='green'] {
+        color: #34d399;
+      }
+      .pub-plan-msg[data-tone='yellow'] {
+        color: #fbbf24;
+      }
+      .pub-plan-msg[data-tone='red'] {
+        color: #f87171;
+      }
+      .pub-plan-board {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 10px;
+      }
+      .pub-plan-col-head {
+        font-weight: 600;
+        font-size: 12px;
+        opacity: 0.7;
+        margin-bottom: 6px;
+        text-transform: uppercase;
+        letter-spacing: 0.03em;
+      }
+      .pub-plan-empty {
+        opacity: 0.6;
+        font-size: 13px;
+        padding: 8px 0;
+      }
+      .pub-plan-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 8px;
+        padding: 8px;
+        margin-bottom: 8px;
+      }
+      .pub-plan-plat {
+        font-size: 10px;
+        font-weight: 700;
+        opacity: 0.7;
+        letter-spacing: 0.05em;
+      }
+      .pub-plan-cap {
+        font-size: 12px;
+        margin: 4px 0;
+        line-height: 1.3;
+      }
+      .pub-plan-meta {
+        font-size: 11px;
+        opacity: 0.6;
+        margin-bottom: 6px;
+      }
+      .pub-plan-actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 4px;
+      }
+      .pub-plan-btn {
+        font-size: 11px;
+        padding: 3px 7px;
+        border-radius: 5px;
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        background: rgba(255, 255, 255, 0.05);
+        color: inherit;
+        cursor: pointer;
+      }
+      .pub-plan-btn:hover {
+        background: rgba(255, 255, 255, 0.12);
+      }
+      .pub-plan-btn.danger {
+        color: #f87171;
+      }
       .pub-hist-list {
         display: flex;
         flex-direction: column;
@@ -557,6 +638,11 @@
       <div id="pub-progress" class="pub-progress"></div>
 
       <section class="card pub-hist-section">
+        <h2 data-i18n="publishingStudio.plan.heading">Content plan</h2>
+        <div id="pub-plan"></div>
+      </section>
+
+      <section class="card pub-hist-section">
         <h2 data-i18n="publishingStudio.sched.heading">Scheduled publications</h2>
         <div id="pub-scheduled"></div>
       </section>
@@ -578,6 +664,8 @@
     <script src="./publishing-variation.js"></script>
     <script src="./publishing-store.js"></script>
     <script src="./publishing-variation-ui.js"></script>
+    <script src="./publishing-plan.js"></script>
+    <script src="./publishing-plan-ui.js"></script>
     <script src="./publishing-history.js"></script>
     <script src="./publishing-studio.js"></script>
   </body>

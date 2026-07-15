@@ -18,6 +18,9 @@ function buildPublishingApi(ipcRenderer) {
     },
     // E5: content plan (main-process store, MCP-first; UI reads via these).
     importPlan: (payload) => ipcRenderer.invoke('oz:publishing:import', payload),
+    // E5/alpha.104: pick + import an .xlsx plan (dialog opens if no path).
+    importPlanFile: (filePath) =>
+      ipcRenderer.invoke('oz:publishing:importFile', filePath),
     listPlan: (status) => ipcRenderer.invoke('oz:publishing:list', status),
     getPlan: (id) => ipcRenderer.invoke('oz:publishing:get', id),
     setPlanStatus: (id, action) => ipcRenderer.invoke('oz:publishing:status', id, action),

@@ -76,6 +76,31 @@ function buildPublishingHandlers(browser) {
       return { added, errors }
     },
 
+    /**
+     * E5/alpha.104: importa un plan desde un .xlsx en disco (lee la primera
+     * hoja como matriz vía excel-io.readSheetMatrix, luego parse + addMany).
+     * Async. Usado por la UI (oz:publishing:importFile). Devuelve
+     * { added, errors } o { __error }.
+     */
+    async importFile(filePath) {
+      if (!filePath || typeof filePath !== 'string') {
+        return { __error: { code: 'NO_FILE', message: 'no file path given' } }
+      }
+      try {
+        const matrix = await require('./excel-io').readSheetMatrix(filePath)
+        const { publications, errors } = P.parsePlanRows(P.matrixToPlanRows(matrix))
+        const added = store.addMany(publications)
+        log.info('publishing', 'plan imported from file', {
+          added,
+          errors: errors.length,
+        })
+        return { added, errors }
+      } catch (err) {
+        log.error('publishing', 'importFile failed', { message: err && err.message })
+        return { __error: { code: 'IMPORT_FAILED', message: err.message } }
+      }
+    },
+
     list(status) {
       return status ? store.listByStatus(status) : store.list()
     },

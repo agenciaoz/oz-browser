@@ -12,7 +12,7 @@ function buildPublishingTools({ publishing }) {
     {
       name: 'oz.publishing.import',
       description:
-        'Import a content plan into the Publishing Studio. Pass `matrix` (a spreadsheet as array-of-arrays, row 0 = headers like date/platform/caption/media/identities) OR `rows` (already-mapped objects). Creates draft publications. Returns { added, errors }.',
+        'Import a content plan into the Publishing Studio. Pass `matrix` (a spreadsheet as array-of-arrays, row 0 = headers like date/platform/caption/media/identities) OR `rows` (already-mapped objects). Creates draft publications. Returns { added, errors }. (The Studio UI can also import straight from an .xlsx file.)',
       inputSchema: {
         type: 'object',
         properties: {

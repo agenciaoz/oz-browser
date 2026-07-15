@@ -8,6 +8,22 @@
 
 function registerPublishingPlanIpc(ipcMain, h) {
   ipcMain.handle('oz:publishing:import', (_e, payload) => h.import(payload))
+  // E5/alpha.104: pick an .xlsx and import it in one call (opens dialog if no
+  // path). Returns {added, errors} | {canceled:true} | {__error}.
+  ipcMain.handle('oz:publishing:importFile', async (event, filePath) => {
+    if (!filePath) {
+      const { dialog, BrowserWindow } = require('electron')
+      const win = BrowserWindow.fromWebContents(event.sender)
+      const res = await dialog.showOpenDialog(win, {
+        title: 'Import content plan from Excel',
+        filters: [{ name: 'Excel', extensions: ['xlsx'] }],
+        properties: ['openFile'],
+      })
+      if (res.canceled || !res.filePaths || !res.filePaths[0]) return { canceled: true }
+      filePath = res.filePaths[0]
+    }
+    return h.importFile(filePath)
+  })
   ipcMain.handle('oz:publishing:list', (_e, status) => h.list(status))
   ipcMain.handle('oz:publishing:get', (_e, id) => h.get(id))
   ipcMain.handle('oz:publishing:status', (_e, id, action) => h.status(id, action))

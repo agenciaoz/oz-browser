@@ -80,10 +80,23 @@
       state.history.mount()
     }
 
+    // E5 (alpha.104): content-plan import + approval board.
+    if (window.OZ.PublishingPlanUI && $('pub-plan')) {
+      state.plan = new window.OZ.PublishingPlanUI({
+        container: $('pub-plan'),
+        onChange: () => {
+          if (state.scheduledList) state.scheduledList.load()
+          if (state.history) state.history.load()
+        },
+      })
+      state.plan.mount()
+    }
+
     await loadActions()
     await state.targets.load()
     if (state.scheduledList) await state.scheduledList.load()
     if (state.history) await state.history.load()
+    if (state.plan) await state.plan.load()
     wireEvents()
     refreshPublishButton()
   }

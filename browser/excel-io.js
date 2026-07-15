@@ -195,9 +195,39 @@ async function importAccounts(filePath) {
   }
 }
 
+/**
+ * Read the first worksheet of an .xlsx into a raw matrix (array of arrays,
+ * row 0 = headers). Generic — used by the Publishing plan import (E5), which
+ * maps headers itself via ui/publishing-plan.js. exceljs rich cells are
+ * flattened to strings; empty cells become ''.
+ * @param {string} filePath
+ * @returns {Promise<Array<Array<string>>>}
+ */
+async function readSheetMatrix(filePath) {
+  const workbook = new ExcelJS.Workbook()
+  await workbook.xlsx.readFile(filePath)
+  const sheet = workbook.worksheets[0]
+  if (!sheet) throw new Error('Excel file has no worksheets')
+  const flat = (v) => {
+    if (v === null || v === undefined) return ''
+    if (typeof v === 'object' && v.text) return String(v.text)
+    if (v instanceof Date) return v.toISOString()
+    return String(v)
+  }
+  const matrix = []
+  for (let r = 1; r <= sheet.rowCount; r++) {
+    const row = sheet.getRow(r)
+    const cells = []
+    for (let c = 1; c <= sheet.columnCount; c++) cells.push(flat(row.getCell(c).value))
+    matrix.push(cells)
+  }
+  return matrix
+}
+
 module.exports = {
   exportAccounts,
   importAccounts,
+  readSheetMatrix,
   COLUMN_DEFS,
   IMPORT_MODES,
 }
