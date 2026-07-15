@@ -632,23 +632,9 @@ class Browser {
     // expira el sticky window (30 min). Mantiene IP estable mientras está
     // dentro del window; rota al re-activar identity DESPUÉS del window.
     // El ephemeral sessid no persiste — boot fresh = sessid fresh.
-    const { toProxyRulesString } = require('./proxy-assignment')
-    const { StickyRotation } = require('./proxy-sticky-rotation')
-    this.stickyRotation = new StickyRotation({
-      proxyAssignment: this.proxyAssignment,
-      toProxyRulesString,
-      identityManager: this.identityManager,
-      logger: log,
-    })
-    this.identityManager.setProxyResolutionHook((identityId, session) => {
-      // applyForIdentity rotates if stale + setProxy en una sola llamada.
-      this.stickyRotation.applyForIdentity(identityId, session).catch((err) => {
-        log.error('browser', 'sticky rotation apply failed', {
-          identityId,
-          message: err && err.message,
-        })
-      })
-    })
+    // alpha.30 sticky rotation + alpha.100 license proxy bootstrap + resolution
+    // hook — extracted to proxy-boot-setup.js per ADR 0005 (500 LOC).
+    require('./proxy-boot-setup').wireProxyBoot(this, licenseManager, log)
 
     // 1.8c: Health daemon — tests assignable proxies every 30 min,
     // auto-disables after 3 fails. Notification on auto-disable.

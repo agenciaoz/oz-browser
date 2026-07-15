@@ -228,6 +228,34 @@ console.log('\n--- buildRulesForIdentity ---')
   )
 }
 
+console.log('\n--- enforce (fail-closed) ---')
+{
+  // enforce ON: no proxy → blackhole, never direct.
+  const sr = new StickyRotation({
+    proxyAssignment: makeFakeAssignment({ withProxy: OXY, withoutProxy: null }),
+    toProxyRulesString,
+    enforce: true,
+    now: () => 1,
+    sessidGenerator: () => 'rotX',
+  })
+  const np = sr.buildRulesForIdentity('withoutProxy')
+  ok('enforced no-proxy → NOT direct', np.rules !== 'direct://')
+  ok('enforced no-proxy → blackhole', np.rules === 'socks5://127.0.0.1:1')
+  ok('enforced no-proxy → blackholed flag', np.blackholed === true)
+  // identity WITH a proxy is unaffected by enforce.
+  ok(
+    'enforce does not touch identities with a proxy',
+    sr.buildRulesForIdentity('withProxy').rules.includes('sessid-rotX'),
+  )
+  // runtime toggle back off → direct again.
+  sr.setEnforce(false)
+  eq(
+    'setEnforce(false) → direct again',
+    sr.buildRulesForIdentity('withoutProxy').rules,
+    'direct://',
+  )
+}
+
 console.log('\n--- applyForIdentity ---')
 
 {

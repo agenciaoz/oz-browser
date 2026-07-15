@@ -20,6 +20,9 @@
 'use strict'
 
 const DEFAULT_STICKY_WINDOW_MS = 30 * 60 * 1000 // 30 min — match Oxylabs sesstime
+// Fail-closed sink: nothing listens on port 1, so every request errors with
+// ERR_PROXY_CONNECTION_FAILED instead of silently going direct (real-IP leak).
+const BLACKHOLE_RULES = 'socks5://127.0.0.1:1'
 
 /**
  * Replace `-sessid-XXX-` (or `-sessid-XXX$`) in a proxy username with a new
@@ -73,8 +76,17 @@ class StickyRotation {
     this.now = opts.now || Date.now
     this.sessidGenerator = opts.sessidGenerator || generateSessid
     this.log = opts.logger || _silentLogger()
+    // Fail-closed: when enforce is ON and no proxy resolves, route to a
+    // blackhole instead of direct — so a managed install can NEVER leak the
+    // real IP (Jose: "el browser no puede navegar sin proxies").
+    this.enforce = !!opts.enforce
     // identityId → { sessid: string, generatedAt: number }
     this._state = new Map()
+  }
+
+  /** Toggle fail-closed enforcement at runtime. */
+  setEnforce(on) {
+    this.enforce = !!on
   }
 
   /** Predicate exposed for tests. */
@@ -112,7 +124,17 @@ class StickyRotation {
    */
   buildRulesForIdentity(identityId) {
     const proxy = this.proxyAssignment.resolve({ identityId })
-    if (!proxy) return { proxy: null, rules: 'direct://', sessid: null }
+    if (!proxy) {
+      // No proxy resolved. Fail-closed if enforcing (blackhole = every request
+      // errors, no real-IP leak); otherwise direct as before.
+      const rules = this.enforce ? BLACKHOLE_RULES : 'direct://'
+      if (this.enforce) {
+        this.log.warn('proxy-sticky-rotation', 'no proxy — blackholing (enforced)', {
+          identityId,
+        })
+      }
+      return { proxy: null, rules, sessid: null, blackholed: this.enforce }
+    }
     const sessid = this.getOrRotateSessid(identityId, proxy)
     if (!sessid) {
       return { proxy, rules: this.toProxyRulesString(proxy), sessid: null }

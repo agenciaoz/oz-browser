@@ -114,6 +114,28 @@ async function activate(request, env, isValidate) {
     .bind(key, machineId, isValidate ? 'validate' : 'activate', '', t)
     .run()
 
+  // Per-license proxy bundle — the app imports + auto-assigns these on activate
+  // (and re-syncs on every validate, so edits from the dashboard propagate).
+  const proxRows =
+    (
+      await env.DB.prepare(
+        'SELECT name,protocol,host,port,username,password,country,city,tags FROM proxies WHERE key = ? ORDER BY id',
+      )
+        .bind(key)
+        .all()
+    ).results || []
+  const proxies = proxRows.map((p) => ({
+    name: p.name || '',
+    protocol: p.protocol || 'https',
+    host: p.host,
+    port: p.port,
+    username: p.username || '',
+    password: p.password || '',
+    country: p.country || null,
+    city: p.city || null,
+    tags: p.tags ? String(p.tags).split(',').filter(Boolean) : [],
+  }))
+
   const token = await signToken({ key, machineId, iat: t }, env.HMAC_SECRET)
   return json({
     ok: true,
@@ -122,6 +144,7 @@ async function activate(request, env, isValidate) {
     name: lic.name,
     expiresAt: lic.expires_at || null,
     offlineGraceDays: OFFLINE_GRACE_DAYS,
+    proxies,
     token,
   })
 }
@@ -161,7 +184,8 @@ async function adminRoute(request, env, pathname) {
     const licenses = (await env.DB.prepare('SELECT * FROM licenses ORDER BY created_at DESC').all()).results
     const activations = (await env.DB.prepare('SELECT * FROM activations ORDER BY last_seen DESC').all()).results
     const events = (await env.DB.prepare('SELECT * FROM events ORDER BY ts DESC LIMIT 300').all()).results
-    return json({ ok: true, licenses, activations, events })
+    const proxies = (await env.DB.prepare('SELECT key,name,host,port,city FROM proxies ORDER BY id').all()).results
+    return json({ ok: true, licenses, activations, events, proxies })
   }
 
   const b = await readBody(request)
@@ -189,6 +213,47 @@ async function adminRoute(request, env, pathname) {
 
   const key = String(b.key || '').trim().toUpperCase()
   if (!key) return json({ ok: false, reason: 'missing_key' }, 400)
+  if (pathname === '/admin/getproxies' && request.method === 'POST') {
+    const rows =
+      (
+        await env.DB.prepare(
+          'SELECT name,protocol,host,port,username,password,country,city,tags FROM proxies WHERE key=? ORDER BY id',
+        )
+          .bind(key)
+          .all()
+      ).results || []
+    return json({ ok: true, proxies: rows })
+  }
+  if (pathname === '/admin/setproxies' && request.method === 'POST') {
+    // Full replace: wipe this key's proxies, insert the new set.
+    const list = Array.isArray(b.proxies) ? b.proxies : []
+    await env.DB.prepare('DELETE FROM proxies WHERE key=?').bind(key).run()
+    const t = now()
+    let count = 0
+    for (const p of list) {
+      if (!p || !p.host || !p.port) continue
+      await env.DB.prepare(
+        `INSERT INTO proxies (key,name,protocol,host,port,username,password,country,city,tags,created_at)
+         VALUES (?,?,?,?,?,?,?,?,?,?,?)`,
+      )
+        .bind(
+          key,
+          String(p.name || ''),
+          String(p.protocol || 'https'),
+          String(p.host),
+          Number(p.port),
+          String(p.username || ''),
+          String(p.password || ''),
+          String(p.country || ''),
+          String(p.city || ''),
+          Array.isArray(p.tags) ? p.tags.join(',') : String(p.tags || ''),
+          t,
+        )
+        .run()
+      count++
+    }
+    return json({ ok: true, count })
+  }
   if (pathname === '/admin/revoke' && request.method === 'POST') {
     await env.DB.prepare("UPDATE licenses SET status='revoked' WHERE key=?").bind(key).run()
     return json({ ok: true })
@@ -200,6 +265,7 @@ async function adminRoute(request, env, pathname) {
   if (pathname === '/admin/delete' && request.method === 'POST') {
     await env.DB.prepare('DELETE FROM licenses WHERE key=?').bind(key).run()
     await env.DB.prepare('DELETE FROM activations WHERE key=?').bind(key).run()
+    await env.DB.prepare('DELETE FROM proxies WHERE key=?').bind(key).run()
     return json({ ok: true })
   }
   if (pathname === '/admin/setcap' && request.method === 'POST') {
@@ -298,8 +364,24 @@ canvas{max-height:140px}
   <div class="card"><h2>Actividad reciente (<span id="nev">0</span>)</h2><div class="row" style="margin-bottom:10px"><input id="evfilter" placeholder="Filtrar (tipo, clave, host)…" oninput="renderEvents()" style="flex:1"/></div><div style="overflow:auto;max-height:360px"><table id="tev"></table></div></div>
 </div>
 </div>
+<div id="pxmodal" class="hide" style="position:fixed;inset:0;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;z-index:50">
+  <div class="card" style="width:660px;max-width:92vw;margin:0">
+    <h2>Proxies de <span id="pxname" class="mono"></span></h2>
+    <p class="mut" style="margin:0 0 8px">Un proxy por línea: <span class="mono">host:puerto:usuario:password</span>. Se entregan y auto-asignan a las identidades al activar la clave.</p>
+    <div class="row" style="margin-bottom:8px">
+      <button class="ghost" onclick="genDecodo()">⚡ Generar 10 Decodo Miami</button>
+      <span class="mut" id="pxinfo"></span>
+    </div>
+    <textarea id="pxta" style="width:100%;height:230px;background:#0d0f15;border:1px solid var(--bd);border-radius:6px;color:var(--tx);font-family:ui-monospace,Menlo,monospace;font-size:12px;padding:10px" placeholder="gate.decodo.com:10001:user-sp2f1ft6in-city-miami:PASSWORD"></textarea>
+    <div class="row" style="margin-top:12px;justify-content:flex-end">
+      <button class="ghost" onclick="closePx()">Cancelar</button>
+      <button class="ok" onclick="savePx()">Guardar proxies</button>
+    </div>
+  </div>
+</div>
 <script>
 let TOK=localStorage.getItem('oz_admin_tok')||''
+let PXKEY=null
 let DATA=null
 function saveTok(){TOK=document.getElementById('tok').value.trim();localStorage.setItem('oz_admin_tok',TOK);load()}
 function logout(){localStorage.removeItem('oz_admin_tok');location.reload()}
@@ -315,12 +397,14 @@ async function load(){
 }
 function renderLicenses(){
   const acts={};(DATA.activations||[]).forEach(a=>{(acts[a.key]=acts[a.key]||[]).push(a)})
+  const px={};(DATA.proxies||[]).forEach(p=>{px[p.key]=(px[p.key]||0)+1})
   document.getElementById('nlic').textContent=DATA.licenses.length
-  document.getElementById('tlic').innerHTML='<tr><th>Clave</th><th>Nombre</th><th>Estado</th><th>Disp.</th><th>Versiones</th><th>Últ. visto</th><th>Vto</th><th></th></tr>'+
-   DATA.licenses.map(l=>{const a=acts[l.key]||[];const last=a.length?Math.max(...a.map(x=>x.last_seen)):0;const cap=l.max_devices||2;
+  document.getElementById('tlic').innerHTML='<tr><th>Clave</th><th>Nombre</th><th>Estado</th><th>Disp.</th><th>Proxies</th><th>Versiones</th><th>Últ. visto</th><th>Vto</th><th></th></tr>'+
+   DATA.licenses.map(l=>{const a=acts[l.key]||[];const last=a.length?Math.max(...a.map(x=>x.last_seen)):0;const cap=l.max_devices||2;const np=px[l.key]||0;
    return '<tr><td class="mono">'+l.key+'</td><td>'+(l.name||'')+'<div class=mut style="font-size:11px">'+(l.email||'')+'</div></td>'+
    '<td><span class="tag '+l.status+'">'+l.status+'</span></td>'+
    '<td>'+a.length+'/'+cap+' <button class="ghost" title="Editar cap" onclick="setcap(\\''+l.key+'\\','+cap+')">✎</button>'+(a.length?' <button class="ghost" title="Liberar dispositivos" onclick="freedev(\\''+l.key+'\\')">⎋</button>':'')+'</td>'+
+   '<td>'+(np?'<b>'+np+'</b>':'<span class=mut>0</span>')+' <button class="ghost" title="Editar proxies" onclick="editProxies(\\''+l.key+'\\',\\''+(l.name||'').replace(/\\x27/g,'')+'\\')">🌐</button></td>'+
    '<td class="mut">'+(a.map(x=>x.app_version||'?').join(', ')||'—')+'</td>'+
    '<td class="mut">'+fmt(last)+'</td><td class="mut">'+(l.expires_at?fmt(l.expires_at):'—')+'</td>'+
    '<td class="row">'+(l.status==='revoked'?'<button class="ok" onclick="act(\\''+l.key+'\\',\\'unrevoke\\')">Reactivar</button>':'<button class="danger" onclick="act(\\''+l.key+'\\',\\'revoke\\')">Revocar</button>')+
@@ -345,5 +429,54 @@ async function act(key,a){if(!confirm(a+' '+key+'?'))return;await api('/admin/'+
 async function del(key){if(!confirm('Eliminar '+key+' y sus activaciones?'))return;await api('/admin/delete','POST',{key});load()}
 function setcap(key,cur){const v=prompt('Máx dispositivos para '+key,cur);if(v===null)return;api('/admin/setcap','POST',{key,maxDevices:Number(v)||2}).then(load)}
 function freedev(key){if(!confirm('Liberar TODOS los dispositivos de '+key+'? (tendrá que reactivar)'))return;api('/admin/deactivate','POST',{key}).then(load)}
+// ---- proxies por usuario ----
+function pxLine(p){return [p.host,p.port,p.username||'',p.password||''].join(':')}
+async function editProxies(key,name){
+  PXKEY=key
+  document.getElementById('pxname').textContent=(name||'')+' · '+key
+  document.getElementById('pxinfo').textContent=''
+  const r=await api('/admin/getproxies','POST',{key})
+  const rows=(r&&r.proxies)||[]
+  document.getElementById('pxta').value=rows.map(pxLine).join('\\n')
+  document.getElementById('pxmodal').classList.remove('hide')
+}
+function closePx(){document.getElementById('pxmodal').classList.add('hide');PXKEY=null}
+function parsePx(text){
+  const out=[]
+  ;(text||'').split('\\n').map(s=>s.trim()).filter(Boolean).forEach(line=>{
+    // host:port:user:pass  (pass may contain ':', so split first 3 only)
+    const i1=line.indexOf(':');const i2=line.indexOf(':',i1+1);const i3=line.indexOf(':',i2+1)
+    if(i1<0||i2<0)return
+    const host=line.slice(0,i1);const port=Number(line.slice(i1+1,i2))
+    let user='',pass=''
+    if(i3<0){user=line.slice(i2+1)}else{user=line.slice(i2+1,i3);pass=line.slice(i3+1)}
+    if(!host||!port)return
+    const cm=/-city-([a-z_]+)/i.exec(user);const city=cm?cm[1]:''
+    out.push({host,port,protocol:'https',username:user,password:pass,city,country:city?'US':'',tags:['decodo']})
+  })
+  return out
+}
+async function savePx(){
+  const list=parsePx(document.getElementById('pxta').value)
+  const r=await api('/admin/setproxies','POST',{key:PXKEY,proxies:list})
+  if(r&&r.ok){closePx();load()}else{alert('Error guardando proxies')}
+}
+function genDecodo(){
+  let cust=localStorage.getItem('oz_decodo_user')||''
+  let pass=localStorage.getItem('oz_decodo_pass')||''
+  if(!cust){cust=prompt('Usuario master Decodo','sp2f1ft6in')||'';if(!cust)return;localStorage.setItem('oz_decodo_user',cust)}
+  if(!pass){pass=prompt('Password master Decodo')||'';if(!pass)return;localStorage.setItem('oz_decodo_pass',pass)}
+  const city=prompt('Ciudad (slug)','miami')||'miami'
+  // Prefijo de sesión único por usuario → sus 10 IPs sticky no chocan con otros.
+  const pref=(PXKEY||'').replace(/[^A-Z0-9]/gi,'').slice(-4).toLowerCase()||'u'+Date.now().toString(36).slice(-4)
+  const lines=[]
+  for(let i=1;i<=10;i++){
+    const sid=pref+String(i).padStart(2,'0')
+    const user='user-'+cust+'-country-us-city-'+city+'-sessionduration-30-session-'+sid
+    lines.push('gate.decodo.com:10001:'+user+':'+pass)
+  }
+  document.getElementById('pxta').value=lines.join('\\n')
+  document.getElementById('pxinfo').textContent='10 sesiones sticky Miami (session '+pref+'01..'+pref+'10) — revisá y Guardá'
+}
 if(TOK)load()
 </script></body></html>`

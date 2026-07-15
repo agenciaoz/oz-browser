@@ -165,6 +165,7 @@ async function ensureActivated() {
       expiresAt: online.expiresAt || null,
       token: online.token || rec.token,
       graceDays: online.offlineGraceDays || DEFAULT_GRACE_DAYS,
+      proxies: Array.isArray(online.proxies) ? online.proxies : rec.proxies || [],
       lastValidatedAt: Date.now(),
     })
     fireEvent('app-open', rec, machineId)
@@ -197,6 +198,7 @@ async function activateWithKey(key) {
       expiresAt: r.expiresAt || null,
       token: r.token,
       graceDays: r.offlineGraceDays || DEFAULT_GRACE_DAYS,
+      proxies: Array.isArray(r.proxies) ? r.proxies : [],
       lastValidatedAt: Date.now(),
     })
     return { ok: true }
@@ -321,4 +323,19 @@ async function gate() {
   }
 }
 
-module.exports = { gate, ensureActivated, activateWithKey, getMachineId, reportEvent }
+// Proxies delivered by the activation server on the last activate/validate.
+// main.js feeds these to license-proxies.applyManagedProxies after the
+// ProxyManager is up. Returns [] when not activated or none configured.
+function getStoredProxies() {
+  const rec = loadLocal()
+  return (rec && Array.isArray(rec.proxies) && rec.proxies) || []
+}
+
+module.exports = {
+  gate,
+  ensureActivated,
+  activateWithKey,
+  getMachineId,
+  reportEvent,
+  getStoredProxies,
+}
