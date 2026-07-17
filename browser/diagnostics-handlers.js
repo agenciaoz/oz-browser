@@ -105,6 +105,25 @@ function buildDiagnosticsHandlers(browser) {
      * @returns {Promise<{ok, path, target, bytes, width, height, url?}|{__error}>}
      */
     async screenshot(opts = {}) {
+      // alpha.115: target 'full' → captura chrome + contenido en UNA llamada y
+      // devuelve ambos PNG. El capturePage del chrome deja el área de contenido
+      // en negro (el WebContentsView es una capa nativa aparte), así que para
+      // "ver todo" el agente necesita las dos: el shell + la página.
+      if ((opts.target || '') === 'full') {
+        const parts = []
+        for (const t of ['chrome', 'content']) {
+          const r = await this.screenshot({ ...opts, target: t })
+          if (r && r.ok) parts.push({ part: t, ...r })
+          else parts.push({ part: t, error: (r && r.__error) || { code: 'FAILED' } })
+        }
+        const okParts = parts.filter((p) => !p.error)
+        return {
+          ok: okParts.length > 0,
+          target: 'full',
+          parts,
+          note: 'chrome = OZ WebUI shell; content = active page. Read both paths.',
+        }
+      }
       const resolved = resolveTarget(opts)
       if (resolved.error) return resolved.error
       const { wc, label, tab } = resolved

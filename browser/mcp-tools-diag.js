@@ -52,11 +52,14 @@ function buildDiagTools({ diag }) {
     {
       name: 'oz.diag.screenshot',
       description:
-        "Capture a PNG of the browser and save it to disk; returns { ok, path, target, bytes, width, height, url }. The agent can then read the file at `path` to visually analyze it. target: 'content' (active tab page, default), 'chrome' (the OZ WebUI chrome/sidebar/tabstrip), 'tab' (+tabId), or 'identity' (+identityId, first materialized tab). Use to SEE the current UI or a page, not just its state.",
+        "Capture a PNG of the browser and save it to disk; returns { ok, path, target, bytes, width, height, url }. The agent can then read the file at `path` to visually analyze it. target: 'content' (active tab page, default), 'chrome' (the OZ WebUI chrome/sidebar/tabstrip), 'full' (BOTH chrome + content in one call → returns { parts:[{part,path,...}] }, read both), 'tab' (+tabId), or 'identity' (+identityId, first materialized tab). Use to SEE the current UI or a page, not just its state.",
       inputSchema: {
         type: 'object',
         properties: {
-          target: { type: 'string', enum: ['content', 'chrome', 'tab', 'identity'] },
+          target: {
+            type: 'string',
+            enum: ['content', 'chrome', 'full', 'tab', 'identity'],
+          },
           tabId: { type: 'string' },
           identityId: { type: 'string' },
         },

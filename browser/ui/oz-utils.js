@@ -32,8 +32,16 @@
   }
 
   function identityName(identities, identityId) {
-    const i = identities.find((x) => x.id === identityId)
-    return i ? i.name : 'Unknown'
+    const list = Array.isArray(identities) ? identities : []
+    const i = list.find((x) => x.id === identityId)
+    if (i) return i.name
+    // alpha.115: un tab cuyo identityId no resuelve (identity borrada, o tab
+    // sin binding creado por window.open) corre en la sesión Default. Mostrar
+    // "Unknown" confundía (visto en smoke visual): mejor reflejar la sesión
+    // real → el nombre de la identity Default. Solo cae a 'Unknown' si ni
+    // siquiera hay una Default en la lista.
+    const def = list.find((x) => x.isDefault)
+    return def ? def.name : 'Unknown'
   }
 
   window.OZ = window.OZ || {}

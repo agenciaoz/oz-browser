@@ -44,6 +44,7 @@ Que el agente (Claude) pueda **revisar todo** el estado del navegador de una sol
 
 - `content` (default): página del tab activo.
 - `chrome`: el chrome de la WebUI (sidebar + tabstrip + omnibox).
+- `full` (alpha.115): chrome + contenido en una llamada → `{ parts:[{part,path,...}] }`. El agente lee ambos PNG (el capturePage del chrome deja el contenido en negro porque el WebContentsView es capa nativa aparte).
 - `tab` (+`tabId`) / `identity` (+`identityId`): un tab materializado específico.
 
 Usa `webContents.capturePage()` → guarda en `userData/diagnostics/diag-<label>-<ts>.png`. El módulo no hace visión; el agente lee el PNG y lo analiza.

@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.115 — Fix etiqueta "Unknown" en tabs + captura compuesta del diagnóstico (2026-07-16)
+
+[`2026-07-16`] [`ui/diag`] Dos fixes salidos del smoke visual. (1) **`oz-utils.identityName`**: un tab con `identityId` que no resuelve (identity borrada o tab sin binding) mostraba "Unknown" en el tabstrip — corre en la sesión Default, así que ahora cae al nombre de la identity Default (solo "Unknown" si ni hay Default). WebUI manifest 2.0.65. (2) **`oz.diag.screenshot` target 'full'**: captura chrome + contenido en UNA llamada (`{parts:[{part,path}]}`) — el capturePage del chrome deja el contenido en negro porque el WebContentsView es capa nativa aparte, así que 'full' da las dos para "ver todo". +7 tests (identityName fallback). ADR 0043.
+
 ### v2.0.0-alpha.114 — Mejoras post-smoke: leak-risk en diagnóstico + fix auto-updater blockmap (2026-07-16)
 
 [`2026-07-16`] [`diag/auto-update`] Salido de revisar los smokes visuales en vivo (alpha.112). (1) **leak-risk en `oz.diag.snapshot`:** cruza cada identity contra su ruteo de proxy y lista las que navegarían SIN proxy (modo 'none', ni 'direct') — con `enforceProxy` OFF eso es fuga de IP real. El snapshot en vivo mostró enforce OFF, así que esta red de seguridad es clave para "todo proxiado siempre". `leakRiskFor` puro. (2) **Auto-updater:** `disableDifferentialDownload = true` — mata el ERROR `blockmap 404` visto en el log del smoke (electron-forge no genera blockmaps); va directo a descarga completa (que ya funciona). +8 tests. Solo main (manifest 2.0.64). Incluye lo de alpha.113 (bandwidth + evidencia) sin publicar aún.
