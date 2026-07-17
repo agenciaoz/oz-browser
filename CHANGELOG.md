@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.113 — Bandwidth meter real + evidencia visual del worker de scraping (Fase 6b/7) (2026-07-16)
+
+[`2026-07-16`] [`proxy/scrape`] **Fase 7:** `proxy-bandwidth.js` mide bytes reales por proxy (deja de ser el placeholder 0): `estimateBytesFromHeaders` (encodedDataLength/Content-Length) + `BandwidthAccumulator` (batch) + `attachBandwidthMeter` (hookea onCompleted por sesión) + `proxyManager.addBandwidth`. Wiring en proxy-boot (acumulador global + flush 30s + attach por sesión, WeakSet). **Fase 6b:** `makeRecipeWorker` gana `captureEvidence` → screenshot por página (`userData/scrape-evidence/`) que alimenta el timeline del observer 6c + surfacea bytes; expuesto en `oz.scrape.run`. +26 tests. Núcleo puro testeado; onCompleted/capturePage reales requieren smoke Electron. Solo main (manifest 2.0.64). ADR 0044.
+
 ### v2.0.0-alpha.112 — Módulo de diagnóstico total oz.diag.\* (revisar todo, con pantallazos) (2026-07-16)
 
 [`2026-07-16`] [`diag`] Idea de Jose: "un módulo para que [Claude] pueda siempre revisar todo... hasta con pantallazos". Subsistema `oz.diag.*` MCP-first: `snapshot` (estado completo en 1 call: runtime, identidades, salud de proxies, sesiones, tabs, sync, settings, último scrape, selfCheck + cola WARN/ERROR del log), `logs` (tail filtrado por nivel), `selfCheck` (el diagnóstico se verifica a sí mismo), y `screenshot` (Electron capturePage del chrome o de un tab → PNG en userData/diagnostics/ cuyo path el agente lee y analiza con su visión). `system-diagnostics.js` puro (buildDiagnostics/parseLogTail/summarizeProxies/selfCheck) + `diagnostics-handlers.js` (Electron). +36 tests. Solo main process — requiere reiniciar OZ para que las tools aparezcan; screenshot necesita smoke vivo. ADR 0043.

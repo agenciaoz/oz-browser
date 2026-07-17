@@ -30,6 +30,11 @@ function buildScrapeTools({ scrape }) {
             description:
               'Optional label for this job (shows in the observability report).',
           },
+          captureEvidence: {
+            type: 'boolean',
+            description:
+              'If true, capture a screenshot of each page and add it to the observability timeline (oz.scrape.lastReport). Slower; use for auditing a crawl.',
+          },
         },
         required: ['identityId', 'urls'],
         additionalProperties: false,

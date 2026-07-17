@@ -314,6 +314,24 @@ class ProxyManager {
   _getRaw(id) {
     return this.proxies.find((p) => p.id === id) || null
   }
+
+  /**
+   * Fase 7: acumula bytes reales consumidos por un proxy (medidos por
+   * proxy-bandwidth.js sobre las respuestas de red). Suma sobre
+   * `bandwidthBytesUsed` (deja de ser el placeholder 0). El persist se hace
+   * throttled por el caller (flush periódico) para no escribir en cada byte;
+   * aquí opcionalmente se saltea el _save con {persist:false}.
+   * @returns {number|null} nuevo total, o null si el proxy no existe.
+   */
+  addBandwidth(id, bytes, { persist = true } = {}) {
+    const proxy = this._getRaw(id)
+    if (!proxy) return null
+    const n = Number(bytes)
+    if (!Number.isFinite(n) || n <= 0) return proxy.bandwidthBytesUsed || 0
+    proxy.bandwidthBytesUsed = (proxy.bandwidthBytesUsed || 0) + Math.floor(n)
+    if (persist) this._save()
+    return proxy.bandwidthBytesUsed
+  }
 }
 
 module.exports = {

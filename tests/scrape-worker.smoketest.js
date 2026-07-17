@@ -101,6 +101,49 @@ function fakeDriver(overrides) {
     assert.deepStrictEqual(res.links, ['https://a.com/2', 'https://a.com/3'])
   })
 
+  await okAsync(
+    'captureEvidence → screenshot path + strips evidence de data',
+    async () => {
+      const driver = fakeDriver({
+        screenshot: async () => ({ ok: true, base64: 'QUJD', mime: 'image/png' }),
+      })
+      const written = []
+      const worker = makeRecipeWorker({
+        driver,
+        identityId: 'id-9',
+        recipe: { steps: [{ op: 'getText', name: 'text' }] },
+        captureEvidence: true,
+        writeEvidence: ({ identityId, base64, url }) => {
+          written.push({ identityId, base64, url })
+          return `/fake/ev/${identityId}.png`
+        },
+      })
+      const res = await worker({ url: 'https://a.com/1' })
+      assert.strictEqual(res.ok, true)
+      assert.strictEqual(res.screenshot, '/fake/ev/id-9.png')
+      assert.ok(!('__ozEvidence' in res.data), 'evidence step stripped from data')
+      assert.deepStrictEqual(res.data.text, { text: 'hi' })
+      assert.strictEqual(written.length, 1)
+      assert.strictEqual(written[0].base64, 'QUJD')
+      assert.ok(typeof res.bytes === 'number' && res.bytes > 0, 'bytes estimado')
+    },
+  )
+
+  await okAsync('sin captureEvidence → sin screenshot, sin step extra', async () => {
+    let shotCalled = false
+    const driver = fakeDriver({
+      screenshot: async () => {
+        shotCalled = true
+        return { ok: true, base64: 'X' }
+      },
+    })
+    const worker = makeRecipeWorker({ driver, identityId: 'id-1' })
+    const res = await worker({ url: 'https://a.com/1' })
+    assert.strictEqual(res.ok, true)
+    assert.strictEqual(res.screenshot, undefined)
+    assert.strictEqual(shotCalled, false)
+  })
+
   console.log(`\n✓ scrape-worker: ${passed} checks passed`)
 })().catch((e) => {
   console.error('\n✗ scrape-worker FAILED:', e && e.stack ? e.stack : e)

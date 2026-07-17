@@ -63,6 +63,8 @@ function buildScrapeHandlers(browser) {
           recipe,
           clock: realClock(),
           linksName: opts.linksName,
+          // V3-D+6c: evidencia visual por página → timeline del observer.
+          captureEvidence: !!opts.captureEvidence,
         })
         // V3-E (obs): observador del job. Consume onProgress → action log,
         // timeline de screenshots y cost tracker. El reporte va en el summary

@@ -29,6 +29,27 @@ function wireProxyBoot(browser, licenseManager, log) {
   require('./proxy-failover').registerFailoverHandler((identityId, reason) =>
     require('./proxy-failover').rotateIdentityProxy(browser, identityId, reason),
   )
+  // Fase 7: medidor real de bandwidth por proxy. Acumula bytes por proxyId y
+  // los vuelca al proxy-manager cada 30s (flush en batch, no por request).
+  const { BandwidthAccumulator, attachBandwidthMeter } = require('./proxy-bandwidth')
+  browser.bandwidthAccumulator = new BandwidthAccumulator({
+    sink: (batch) => {
+      for (const [pid, bytes] of batch) {
+        browser.proxyManager.addBandwidth(pid, bytes, { persist: false })
+      }
+      if (typeof browser.proxyManager._save === 'function') browser.proxyManager._save()
+    },
+  })
+  browser._bandwidthFlushTimer = setInterval(() => {
+    try {
+      browser.bandwidthAccumulator.flush()
+    } catch (_e) {
+      /* best-effort */
+    }
+  }, 30000)
+  if (browser._bandwidthFlushTimer.unref) browser._bandwidthFlushTimer.unref()
+  const _bwAttached = new WeakSet()
+
   browser.identityManager.setProxyResolutionHook((identityId, session) => {
     // applyForIdentity rotates if stale + setProxy in one call.
     browser.stickyRotation.applyForIdentity(identityId, session).catch((err) => {
@@ -37,6 +58,23 @@ function wireProxyBoot(browser, licenseManager, log) {
         message: err && err.message,
       })
     })
+    // Fase 7: enganchar el medidor de bandwidth a esta sesión una sola vez.
+    if (session && !_bwAttached.has(session)) {
+      const ok = attachBandwidthMeter({
+        session,
+        identityId,
+        resolveProxyId: (id) => {
+          try {
+            const p = browser.proxyAssignment.resolve({ identityId: id })
+            return p && p.id ? p.id : null
+          } catch (_e) {
+            return null
+          }
+        },
+        accumulator: browser.bandwidthAccumulator,
+      })
+      if (ok) _bwAttached.add(session)
+    }
   })
 
   // alpha.109: resolver de política WebRTC por identity. Usa resolveRouting
