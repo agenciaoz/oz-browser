@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.117 — Instagram Reels: ig_post ahora acepta video (Fase 6, video posts) (2026-07-16)
+
+[`2026-07-16`] [`bulk/video`] Primer video post (el pendiente de features más grande). `ig_post` gana `videoPath` (mp4/mov) además de `imagePath` — mutuamente excluyentes; con video IG lo trata como Reel. Reusa el flujo probado de imagen (spawn window + inyección CDP + login/captcha + Next×2 + caption + Share + evidencia); solo agrega el diálogo best-effort "compartir como reel" (OK/Aceptar, no rompe si no aparece) + timeout mayor (180s) + selector de file input con accept\*=video. Result incluye `videoPath`+`mediaType`. Expuesto por el mismo `ig_post` (publishing plan puede pasar videoPath). +6 tests (happy path video, skip diálogo, video-missing, ambos-a-la-vez). **Selectores nuevos = tune live (norma de las post actions). TikTok/Reels-nativo/YouTube siguen pendientes.** Solo main.
+
 ### v2.0.0-alpha.116 — Fix UX: botón "Connect Dropbox" directo en Settings → Sync (2026-07-16)
 
 [`2026-07-16`] [`ui/sync`] Bug de UX (Jose, bloqueado conectando Dropbox): el panel Sync y Backup decían "Connect Dropbox from Cloud Backup settings first" pero NO había ningún link para llegar ahí — el botón real de OAuth vivía escondido en Time Machine → "☁ Cloud backup…". Nueva fila "Dropbox connection" en Settings → Sync con botón **"Connect Dropbox…"** + fila "Cloud backup (Dropbox)" con **"Open Cloud Backup…"** en el panel **Backup** (pedido de Jose: "que todos lo puedan hacer" — Backup es donde el equipo busca primero). Ambos abren el modal de Cloud Backup directo (`window.OZ.CloudBackup.open()`). WebUI manifest 2.0.67.

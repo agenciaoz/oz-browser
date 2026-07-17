@@ -64,7 +64,11 @@ const SELECTORS = {
     'a[href="/create/select/"]',
     'a[href*="/create/"]',
   ],
-  fileInput: ['input[type="file"][accept*="image"]', 'input[type="file"]'],
+  fileInput: [
+    'input[type="file"][accept*="video"]',
+    'input[type="file"][accept*="image"]',
+    'input[type="file"]',
+  ],
   nextButton: [
     // IG uses div role=button most places.
     'div[role="button"]:has-text("Next")',
@@ -105,10 +109,10 @@ const SELECTORS = {
 function buildIgPostAction({ identityManager, electron }) {
   return {
     id: 'ig_post',
-    label: 'Instagram: Post image with caption',
+    label: 'Instagram: Post image or video (Reel) with caption',
     platform: 'instagram.com',
     description:
-      "Post an image (with optional caption) to Instagram using each identity's session. Requires identity is logged in. imagePath must be an absolute path to a local image file (jpg, png, webp). Returns {imagePath, caption, identityName, durationMs} or throws with error.code: needs_login | captcha | not-found | image-missing | submit-failed. IG image processing is slow — default timeout 120s. NOTE: IG DOM changes frequently — selectors may need updates.",
+      "Post an image OR a video/Reel (with optional caption) to Instagram using each identity's session. Requires identity is logged in. Pass EITHER imagePath (jpg/png/webp) OR videoPath (mp4/mov) — an absolute path to a local file. When videoPath is given, IG treats it as a Reel and an extra confirmation dialog is handled best-effort. Returns {imagePath|videoPath, caption, identityName, durationMs} or throws with error.code: needs_login | captcha | not-found | image-missing | submit-failed. Video/Reel processing is slower — default timeout 180s for video. NOTE: IG DOM changes frequently — selectors may need updates (tune live).",
     paramsSchema: {
       type: 'object',
       properties: {
@@ -116,7 +120,13 @@ function buildIgPostAction({ identityManager, electron }) {
           type: 'string',
           minLength: 1,
           description:
-            'Absolute path to local image file. e.g. /Users/jose/Pictures/post.jpg',
+            'Absolute path to local image file (jpg/png/webp). Mutually exclusive with videoPath.',
+        },
+        videoPath: {
+          type: 'string',
+          minLength: 1,
+          description:
+            'Absolute path to local video file (mp4/mov) → posted as a Reel. Mutually exclusive with imagePath.',
         },
         caption: {
           type: 'string',
@@ -129,14 +139,21 @@ function buildIgPostAction({ identityManager, electron }) {
           maximum: 600_000,
         },
       },
-      required: ['imagePath'],
       additionalProperties: false,
     },
     async run(identity, params, ctx) {
-      const { imagePath, caption = '', timeoutMs = 120_000 } = params || {}
-      if (!imagePath) throw new Error('imagePath required')
-      if (!fs.existsSync(imagePath)) {
-        const err = new Error(`image not found: ${imagePath}`)
+      const { imagePath, videoPath, caption = '' } = params || {}
+      // alpha.117: aceptar imagen O video (Reel). mediaPath es el que se
+      // inyecta; isVideo activa el manejo del diálogo de reel + timeout mayor.
+      const mediaPath = videoPath || imagePath
+      const isVideo = !!videoPath
+      if (imagePath && videoPath) {
+        throw new Error('pass either imagePath or videoPath, not both')
+      }
+      if (!mediaPath) throw new Error('imagePath or videoPath required')
+      const timeoutMs = (params && params.timeoutMs) || (isVideo ? 180_000 : 120_000)
+      if (!fs.existsSync(mediaPath)) {
+        const err = new Error(`${isVideo ? 'video' : 'image'} not found: ${mediaPath}`)
         err.code = 'image-missing'
         throw err
       }
@@ -197,15 +214,35 @@ function buildIgPostAction({ identityManager, electron }) {
         //    DebuggerProtocol's DOM.setFileInputFiles. We attach the
         //    debugger, find the backend node id of the input, and set
         //    files. Detach when done.
-        const fileInjected = await _injectFile(win, fileInputSel, imagePath)
+        const fileInjected = await _injectFile(win, fileInputSel, mediaPath)
         if (!fileInjected) {
-          const err = new Error('failed to inject image into IG file input')
+          const err = new Error(
+            `failed to inject ${isVideo ? 'video' : 'image'} into IG file input`,
+          )
           err.code = 'submit-failed'
           throw err
         }
 
-        // 6. Wait for processing — Next button appears once image is ready.
-        await _sleep(2000, signal) // give IG a moment to process
+        // 6. Wait for processing — Next button appears once media is ready.
+        //    Video processing is slower than image.
+        await _sleep(isVideo ? 4000 : 2000, signal)
+
+        // 6b (video/Reel only, alpha.117): IG a veces muestra un diálogo
+        //    informativo "Now you can turn any post into a reel — OK" al subir
+        //    un video. Best-effort: si aparece un OK/Aceptar lo clickeamos; si
+        //    no, seguimos con el flujo normal (no rompe si el selector cambia).
+        if (isVideo) {
+          try {
+            await _findAndClickByText(
+              win,
+              ['OK', 'Aceptar', 'OK, got it', 'Entendido', 'Got it'],
+              { maxWaitMs: 4000, signal },
+            )
+          } catch (_e) {
+            /* best-effort — el diálogo puede no aparecer */
+          }
+          await _sleep(1500, signal)
+        }
 
         // 7. Click Next twice (Crop screen → Filter/Edit screen → Caption).
         const next1 = await _findAndClickByText(win, ['Next', 'Siguiente'], {
@@ -291,7 +328,8 @@ function buildIgPostAction({ identityManager, electron }) {
           electron,
         })
         return {
-          imagePath,
+          ...(isVideo ? { videoPath: mediaPath } : { imagePath: mediaPath }),
+          mediaType: isVideo ? 'video' : 'image',
           caption,
           identityId: identity.id,
           identityName: identity.name,

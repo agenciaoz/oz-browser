@@ -166,6 +166,16 @@ function makeStatefulResponder(state) {
       ) {
         return s.createClickable ? { ok: true, label: 'new post' } : { ok: false }
       }
+      // alpha.117: diálogo best-effort de reel ("OK/Aceptar/Got it") al subir
+      // video. Se chequea ANTES de next para no confundir con nada.
+      if (
+        lowScript.includes('"ok"') ||
+        lowScript.includes('"aceptar"') ||
+        lowScript.includes('"entendido"') ||
+        lowScript.includes('"got it"')
+      ) {
+        return s.reelDialogClickable !== false ? { ok: true, label: 'ok' } : { ok: false }
+      }
       if (lowScript.includes('"next"') || lowScript.includes('"siguiente"')) {
         s.nextClickCount++
         return s.nextClickable ? { ok: true, label: 'next' } : { ok: false }
@@ -215,6 +225,8 @@ async function main() {
     'test.jpg',
   )
   fs.writeFileSync(TEST_IMAGE, Buffer.from('fake-jpeg-bytes'))
+  const TEST_VIDEO = path.join(path.dirname(TEST_IMAGE), 'test.mp4')
+  fs.writeFileSync(TEST_VIDEO, Buffer.from('fake-mp4-bytes'))
 
   const im = fakeIdentityManager([{ id: 'id1', name: 'Alice', isDefault: false }])
 
@@ -226,7 +238,12 @@ async function main() {
   })
   ok('id is ig_post', meta.id === 'ig_post')
   ok('label has Instagram', /Instagram/.test(meta.label))
-  ok('imagePath required', (meta.paramsSchema.required || []).includes('imagePath'))
+  // alpha.117: ig_post ahora acepta imagen O video (Reel) — ya no hay
+  // `required:['imagePath']`; la validación "uno de los dos" vive en run().
+  ok(
+    'schema acepta imagePath y videoPath',
+    !!meta.paramsSchema.properties.imagePath && !!meta.paramsSchema.properties.videoPath,
+  )
 
   // 2. Happy path with caption
   section('Happy path: with caption')
@@ -245,6 +262,57 @@ async function main() {
     ok('returns identityId', result.identityId === 'id1')
     ok('returns identityName', result.identityName === 'Alice')
     ok('durationMs > 0', typeof result.durationMs === 'number' && result.durationMs >= 0)
+  }
+
+  // 2b. Happy path: video/Reel (alpha.117)
+  section('Happy path: video (Reel)')
+  {
+    const action = buildIgPostAction({
+      identityManager: im,
+      electron: buildElectronWithResponder(makeStatefulResponder({})),
+    })
+    const result = await action.run(
+      { id: 'id1', name: 'Alice' },
+      { videoPath: TEST_VIDEO, caption: 'Mi reel' },
+      {},
+    )
+    ok('returns videoPath', result.videoPath === TEST_VIDEO)
+    ok('mediaType = video', result.mediaType === 'video')
+    ok('no devuelve imagePath', result.imagePath === undefined)
+    ok('returns caption', result.caption === 'Mi reel')
+  }
+
+  // 2c. Video sigue funcionando si el diálogo de reel NO aparece (best-effort)
+  section('Video: sin diálogo de reel (best-effort skip)')
+  {
+    const action = buildIgPostAction({
+      identityManager: im,
+      electron: buildElectronWithResponder(
+        makeStatefulResponder({ reelDialogClickable: false }),
+      ),
+    })
+    const result = await action.run(
+      { id: 'id1', name: 'Alice' },
+      { videoPath: TEST_VIDEO },
+      {},
+    )
+    ok('completa igual sin el diálogo', result.mediaType === 'video')
+  }
+
+  // video-missing
+  section('Error: video not found')
+  {
+    const action = buildIgPostAction({
+      identityManager: im,
+      electron: buildElectronWithResponder(makeStatefulResponder({})),
+    })
+    let err
+    try {
+      await action.run({ id: 'id1', name: 'Alice' }, { videoPath: '/nope/x.mp4' }, {})
+    } catch (e) {
+      err = e
+    }
+    ok('video inexistente → image-missing code', err && err.code === 'image-missing')
   }
 
   // 3. Happy path without caption
@@ -383,11 +451,29 @@ async function main() {
     })
     let err
     try {
-      await action.run({ id: 'id1', name: 'Alice' }, { caption: 'no image' }, {})
+      await action.run({ id: 'id1', name: 'Alice' }, { caption: 'no media' }, {})
     } catch (e) {
       err = e
     }
-    ok('missing imagePath throws', err && /imagePath required/.test(err.message))
+    ok(
+      'missing image/video throws',
+      err && /imagePath or videoPath required/.test(err.message),
+    )
+    // imagePath + videoPath juntos → error.
+    let errBoth
+    try {
+      await action.run(
+        { id: 'id1', name: 'Alice' },
+        { imagePath: '/a.jpg', videoPath: '/b.mp4' },
+        {},
+      )
+    } catch (e) {
+      errBoth = e
+    }
+    ok(
+      'imagePath + videoPath juntos → throws',
+      errBoth && /not both/.test(errBoth.message),
+    )
   }
 
   // Done
