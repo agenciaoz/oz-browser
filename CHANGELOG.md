@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.114 — Mejoras post-smoke: leak-risk en diagnóstico + fix auto-updater blockmap (2026-07-16)
+
+[`2026-07-16`] [`diag/auto-update`] Salido de revisar los smokes visuales en vivo (alpha.112). (1) **leak-risk en `oz.diag.snapshot`:** cruza cada identity contra su ruteo de proxy y lista las que navegarían SIN proxy (modo 'none', ni 'direct') — con `enforceProxy` OFF eso es fuga de IP real. El snapshot en vivo mostró enforce OFF, así que esta red de seguridad es clave para "todo proxiado siempre". `leakRiskFor` puro. (2) **Auto-updater:** `disableDifferentialDownload = true` — mata el ERROR `blockmap 404` visto en el log del smoke (electron-forge no genera blockmaps); va directo a descarga completa (que ya funciona). +8 tests. Solo main (manifest 2.0.64). Incluye lo de alpha.113 (bandwidth + evidencia) sin publicar aún.
+
 ### v2.0.0-alpha.113 — Bandwidth meter real + evidencia visual del worker de scraping (Fase 6b/7) (2026-07-16)
 
 [`2026-07-16`] [`proxy/scrape`] **Fase 7:** `proxy-bandwidth.js` mide bytes reales por proxy (deja de ser el placeholder 0): `estimateBytesFromHeaders` (encodedDataLength/Content-Length) + `BandwidthAccumulator` (batch) + `attachBandwidthMeter` (hookea onCompleted por sesión) + `proxyManager.addBandwidth`. Wiring en proxy-boot (acumulador global + flush 30s + attach por sesión, WeakSet). **Fase 6b:** `makeRecipeWorker` gana `captureEvidence` → screenshot por página (`userData/scrape-evidence/`) que alimenta el timeline del observer 6c + surfacea bytes; expuesto en `oz.scrape.run`. +26 tests. Núcleo puro testeado; onCompleted/capturePage reales requieren smoke Electron. Solo main (manifest 2.0.64). ADR 0044.

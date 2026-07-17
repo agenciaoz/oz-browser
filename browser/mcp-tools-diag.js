@@ -16,7 +16,7 @@ function buildDiagTools({ diag }) {
     {
       name: 'oz.diag.snapshot',
       description:
-        'Full structured health snapshot of the running browser in ONE call: runtime (version/uptime/memory), enforceProxy flag, identities, proxy health summary (active/disabled/failing/avgLatency), cached sessions, tabs per window, workspaces, sync status, key settings toggles, last scrape report, a self-check of the diagnostics subsystem, and (by default) the recent WARN/ERROR log tail. Use this to review the whole app state without asking the user. Opts: {includeLog, logLevel, logLimit}.',
+        'Full structured health snapshot of the running browser in ONE call: runtime (version/uptime/memory), enforceProxy flag, identities, proxy health summary (active/disabled/failing/avgLatency), leakRisk (identities that would browse WITHOUT a proxy — real-IP leak when enforce is off), cached sessions, tabs per window, workspaces, sync status, key settings toggles, last scrape report, a self-check of the diagnostics subsystem, and (by default) the recent WARN/ERROR log tail. Use this to review the whole app state without asking the user. Opts: {includeLog, logLevel, logLimit}.',
       inputSchema: {
         type: 'object',
         properties: {

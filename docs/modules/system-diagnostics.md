@@ -28,6 +28,7 @@ Que el agente (Claude) pueda **revisar todo** el estado del navegador de una sol
 {
   generatedAt, runtime:{ozVersion,uptimeSec,memoryMB,heapMB,node,platform},
   enforceProxy,
+  leakRisk:{ enforced, count, identities:[{id,name,workspaceId}] }, // identities que navegarían SIN proxy (fuga si enforce off)
   identities:{ count, list:[{id,name,workspaceId,isDefault,locked}] },
   proxies:{ total,active,disabled,failing,avgLatencyMs,worst },
   sessionsCached, tabs:{ total,materialized,lazy,windows:[...] },

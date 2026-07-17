@@ -60,6 +60,7 @@ Es la regla 4 de [`../DOCUMENTATION-RULES.md`](../DOCUMENTATION-RULES.md): un bl
 | [`53-bloque-fase6c-scrape-obs-resultado.md`](53-bloque-fase6c-scrape-obs-resultado.md)                             | Fase 6c — observabilidad de scraping V3-E (alpha.111)                           |
 | [`54-bloque-diag-module-resultado.md`](54-bloque-diag-module-resultado.md)                                         | Módulo diagnóstico total oz.diag.\* con screenshots (alpha.112)                 |
 | [`55-bloque-fase6b7-bandwidth-evidencia-resultado.md`](55-bloque-fase6b7-bandwidth-evidencia-resultado.md)         | Fase 6b/7 — bandwidth meter + evidencia worker scraping (alpha.113)             |
+| [`56-bloque-post-smoke-leakrisk-blockmap-resultado.md`](56-bloque-post-smoke-leakrisk-blockmap-resultado.md)       | Post-smoke — leak-risk en diagnóstico + fix auto-updater blockmap (alpha.114)   |
 
 > ⚠️ **Gap conocido:** la era v2 (alpha.2 → alpha.98: Bulk Runner, scheduling, history dashboard, sidebar parity, activación, publishing, tabstrip multi-fila) se cerró por bloques **sin** entradas de history — el detalle vive en los ADRs 0030–0038, `docs/PLAN-*.md` y los mensajes de commit. Desde el 45 (2026-07-15) se retoma la regla 4.
 

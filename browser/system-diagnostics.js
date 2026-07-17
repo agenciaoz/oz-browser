@@ -128,6 +128,36 @@ function readLogTail(logPath, opts = {}) {
 }
 
 /**
+ * Cruza cada identity contra su ruteo de proxy y devuelve las que navegarían
+ * SIN proxy y sin opt-out 'direct' explícito (modo 'none'). Con enforce OFF eso
+ * es una fuga de IP real; con enforce ON quedan blackholed (no navegan). Puro.
+ *
+ * @returns {{enforced:boolean, count:number, identities:Array<{id,name,workspaceId}>}}
+ */
+function leakRiskFor(browser, identities) {
+  const b = browser || {}
+  const pa = b.proxyAssignment
+  const enforced = !!b.enforceProxy
+  const list = Array.isArray(identities) ? identities : []
+  const risky = []
+  if (pa && typeof pa.resolveRouting === 'function') {
+    for (const i of list) {
+      if (!i || !i.id) continue
+      let mode = 'none'
+      try {
+        mode = pa.resolveRouting({ identityId: i.id, workspaceId: i.workspaceId }).mode
+      } catch (_e) {
+        mode = 'none'
+      }
+      if (mode === 'none') {
+        risky.push({ id: i.id, name: i.name, workspaceId: i.workspaceId })
+      }
+    }
+  }
+  return { enforced, count: risky.length, identities: risky }
+}
+
+/**
  * Snapshot completo del estado del navegador. Cada bloque es best-effort.
  *
  * @param {object} browser — instancia Browser.
@@ -208,6 +238,11 @@ function buildDiagnostics(browser, opts = {}) {
       })),
     },
     proxies: summarizeProxies(proxyList),
+    // Red de seguridad "todo proxiado siempre" (regla Jose): cruza cada
+    // identity contra su ruteo de proxy. Una identity en modo 'none' (sin
+    // proxy y sin opt-out 'direct' explícito) navegaría por la IP real si el
+    // install NO enforcea (blackhole). Si enforce está OFF, esto es fuga real.
+    leakRisk: _safe(() => leakRiskFor(b, identities), null),
     sessionsCached: _safe(
       () =>
         b.identityManager && b.identityManager.sessionCache
@@ -302,4 +337,5 @@ module.exports = {
   parseLogTail,
   readLogTail,
   selfCheck,
+  leakRiskFor,
 }

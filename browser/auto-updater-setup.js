@@ -127,6 +127,15 @@ function setupAutoUpdater(browser) {
   autoUpdater.autoDownload = true
   autoUpdater.autoInstallOnAppQuit = true
 
+  // alpha.114: desactivar descarga diferencial. electron-updater intenta bajar
+  // un `<zip>.blockmap` para hacer updates incrementales, pero el pipeline de
+  // publish (electron-forge + publish-yml.js) NO genera blockmaps → 404 y un
+  // ERROR ruidoso en el log (visto en smoke alpha.112) antes de caer a la
+  // descarga completa. Con differential OFF va directo a la descarga completa
+  // (que ya funciona), sin el 404. Generar blockmaps reales queda como mejora
+  // futura (requiere app-builder-bin, hoy no está en deps).
+  autoUpdater.disableDifferentialDownload = true
+
   // ------- Event wiring → WebUI broadcast -------
 
   autoUpdater.on('checking-for-update', () => {

@@ -15,6 +15,7 @@ const {
   summarizeProxies,
   parseLogTail,
   selfCheck,
+  leakRiskFor,
 } = require('../browser/system-diagnostics.js')
 
 let passed = 0
@@ -92,6 +93,31 @@ console.log('system-diagnostics smoke test')
   ok('selfCheck sin browser no tira', selfCheck(null).ok === false)
 }
 
+// ---- leakRiskFor ----
+{
+  const ids = [
+    { id: 'a', name: 'A', workspaceId: 'w1' },
+    { id: 'b', name: 'B', workspaceId: 'w1' },
+    { id: 'c', name: 'C', workspaceId: 'w2' },
+  ]
+  const pa = {
+    resolveRouting: ({ identityId }) => {
+      if (identityId === 'a') return { mode: 'proxy' }
+      if (identityId === 'b') return { mode: 'none' } // fuga
+      if (identityId === 'c') return { mode: 'direct' } // intencional
+      return { mode: 'none' }
+    },
+  }
+  const r = leakRiskFor({ proxyAssignment: pa, enforceProxy: false }, ids)
+  ok('leakRisk detecta solo B (mode none)', r.count === 1 && r.identities[0].id === 'b')
+  ok('leakRisk reporta enforced=false', r.enforced === false)
+  ok('direct NO cuenta como fuga', !r.identities.some((i) => i.id === 'c'))
+  ok('proxy NO cuenta como fuga', !r.identities.some((i) => i.id === 'a'))
+  const rEnf = leakRiskFor({ proxyAssignment: pa, enforceProxy: true }, ids)
+  ok('leakRisk refleja enforce ON', rEnf.enforced === true)
+  ok('sin proxyAssignment → count 0', leakRiskFor({}, ids).count === 0)
+}
+
 // ---- buildDiagnostics con browser fake ----
 {
   const fakeBrowser = {
@@ -109,6 +135,10 @@ console.log('system-diagnostics smoke test')
       ],
     },
     workspaceManager: { list: () => [{ id: 'general' }, { id: 'ws1' }] },
+    proxyAssignment: {
+      resolveRouting: ({ identityId }) =>
+        identityId === 'i2' ? { mode: 'none' } : { mode: 'proxy' },
+    },
     settingsManager: {
       getAll: () => ({
         performance: { warmProxiesOnWorkspace: true },
@@ -157,6 +187,11 @@ console.log('system-diagnostics smoke test')
   ok('settings.performance', d.settings.performance.warmProxiesOnWorkspace === true)
   ok('lastScrape resumido', d.lastScrape.jobId === 'j1' && d.lastScrape.cost.pages === 5)
   ok('selfCheck embebido ok', d.selfCheck && typeof d.selfCheck.ok === 'boolean')
+  ok(
+    'leakRisk detecta i2 (mode none)',
+    d.leakRisk && d.leakRisk.count === 1 && d.leakRisk.identities[0].id === 'i2',
+  )
+  ok('leakRisk.enforced refleja enforceProxy', d.leakRisk.enforced === true)
   ok('sin log block cuando includeLog=false', d.log === undefined)
 }
 
