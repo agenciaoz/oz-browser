@@ -138,6 +138,21 @@
       if (syncNowBtn) {
         syncNowBtn.addEventListener('click', () => this.handleSyncNow())
       }
+      // alpha.116 (fix UX Jose): el mensaje "Connect Dropbox from Cloud Backup
+      // settings" no tenía cómo llegar ahí. Este botón abre el modal de Cloud
+      // Backup directo desde el panel Sync (ahí vive el OAuth de Dropbox).
+      const connectDbxBtn = document.getElementById('oz-stg-syncConnectDropboxBtn')
+      if (connectDbxBtn) {
+        connectDbxBtn.addEventListener('click', () => {
+          if (window.OZ && window.OZ.CloudBackup && window.OZ.CloudBackup.open) {
+            window.OZ.CloudBackup.open()
+          } else {
+            window.alert(
+              'Cloud Backup no está disponible. Abrí Time Machine (Cmd+K) → “☁ Cloud backup…”.',
+            )
+          }
+        })
+      }
       // I-2 (v1.6.0): auto-updater controls in About panel
       this._setupAutoUpdaterPane()
       // Bind every input
