@@ -420,6 +420,12 @@ function buildProfile(seed) {
     // perturb pixels deterministically (so same canvas operation always
     // produces same noisy output for this identity).
     canvasNoiseSeed: rng.next32(),
+    // audioNoiseSeed (v3-C-audio / alpha.110): 32-bit int derived from seed.
+    // El preload lo usa para perturbar levísimamente las muestras de audio
+    // (AudioBuffer.getChannelData + AnalyserNode.getFloatFrequencyData) de
+    // forma determinista → el AudioContext fingerprint es estable per-identity
+    // pero distinto entre identities. Mismo patrón que canvasNoiseSeed.
+    audioNoiseSeed: rng.next32(),
     generatedAt: Date.now(),
   }
 }

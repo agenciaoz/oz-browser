@@ -90,6 +90,7 @@ section('buildProfile: determinístico — mismo seed siempre igual')
   ok('screen igual', JSON.stringify(a.screen) === JSON.stringify(b.screen))
   ok('webgl igual', JSON.stringify(a.webgl) === JSON.stringify(b.webgl))
   ok('canvasNoiseSeed igual', a.canvasNoiseSeed === b.canvasNoiseSeed)
+  ok('audioNoiseSeed igual', a.audioNoiseSeed === b.audioNoiseSeed)
 }
 
 // ---------- 2. diversity ---------------------------------------------------
@@ -155,6 +156,7 @@ section('buildProfile: 11 vectores presentes en el output')
   ok('8. battery', p.battery && typeof p.battery.level === 'number')
   ok('9. speechVoices', Array.isArray(p.speechVoices) && p.speechVoices.length > 0)
   ok('10. canvasNoiseSeed', typeof p.canvasNoiseSeed === 'number')
+  ok('10b. audioNoiseSeed', typeof p.audioNoiseSeed === 'number')
   ok('11. webgl.vendor + renderer', !!p.webgl.vendor && !!p.webgl.renderer)
 }
 

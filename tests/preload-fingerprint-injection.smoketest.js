@@ -147,6 +147,21 @@ function makePageWorld() {
   }
   class FakeWebGL2RenderingContext extends FakeWebGLRenderingContext {}
 
+  // Minimal AudioContext stubs (alpha.110 audio FP noise).
+  class FakeAudioBuffer {
+    getChannelData(_ch) {
+      // Predictable ramp in [-1, 1] so noise is detectable.
+      const arr = new Float32Array(1000)
+      for (let i = 0; i < arr.length; i++) arr[i] = (i % 200) / 100 - 1
+      return arr
+    }
+  }
+  class FakeAnalyserNode {
+    getFloatFrequencyData(arr) {
+      for (let i = 0; i < arr.length; i++) arr[i] = -50 + (i % 50)
+    }
+  }
+
   const ctx = {
     Object,
     Array,
@@ -167,6 +182,9 @@ function makePageWorld() {
     CanvasRenderingContext2D: FakeCanvasRenderingContext2D,
     WebGLRenderingContext: FakeWebGLRenderingContext,
     WebGL2RenderingContext: FakeWebGL2RenderingContext,
+    AudioBuffer: FakeAudioBuffer,
+    AnalyserNode: FakeAnalyserNode,
+    Float32Array,
     speechSynthesis: { getVoices: () => [] },
     Notification: { permission: 'granted' },
   }
@@ -393,6 +411,46 @@ section('apply: getBattery + speechSynthesis.getVoices')
         if (a.data[i] !== native.data[i]) diffCount++
       }
       ok('noise actually changes some bytes (vs native)', diffCount > 0)
+    }
+
+    // --------- 6b. Audio noise (alpha.110) --------------------------------
+    section('apply: audio getChannelData has determinístic noise')
+    {
+      const feA = new FingerprintEngine()
+      const fpA = feA.getOrCreate('id-audio', 'seed-audio-fixed')
+      const ctxA = makePageWorld()
+      applyScriptToContext(buildOverridesScript(fpA), ctxA)
+      const buf = new ctxA.AudioBuffer()
+      const a = buf.getChannelData(0)
+      const b = buf.getChannelData(0)
+      // Deterministic: same seed → same perturbation at touched indices.
+      let allEqual = true
+      for (let i = 0; i < a.length; i += 100) {
+        if (a[i] !== b[i]) {
+          allEqual = false
+          break
+        }
+      }
+      ok('audio noise determinístico (mismo seed = mismo output)', allEqual)
+      // vs native (no script): must differ at some touched index.
+      const ctxNative = makePageWorld()
+      const bufNative = new ctxNative.AudioBuffer()
+      const native = bufNative.getChannelData(0)
+      let diffCount = 0
+      for (let i = 0; i < a.length; i += 100) {
+        if (a[i] !== native[i]) diffCount++
+      }
+      ok('audio noise cambia muestras (vs native)', diffCount > 0)
+      // Distinta identity → distinto ruido (audioNoiseSeed distinto).
+      const fpB = feA.getOrCreate('id-audio-2', 'seed-audio-other')
+      const ctxB = makePageWorld()
+      applyScriptToContext(buildOverridesScript(fpB), ctxB)
+      const other = new ctxB.AudioBuffer().getChannelData(0)
+      let crossDiff = 0
+      for (let i = 0; i < a.length; i += 100) {
+        if (a[i] !== other[i]) crossDiff++
+      }
+      ok('distinta identity → distinto ruido de audio', crossDiff > 0)
     }
 
     // --------- 7. Idempotency --------------------------------------------

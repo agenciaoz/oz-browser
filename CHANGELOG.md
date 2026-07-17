@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.110 — Anti-detect: audio fingerprint noise (Fase 6a) (2026-07-16)
+
+[`2026-07-16`] [`fingerprint`] 12º vector de fingerprint: ruido determinista en AudioContext. `audioNoiseSeed` (32-bit derivado del seed) en `buildProfile`; el preload perturba `AudioBuffer.getChannelData` + `AnalyserNode.getFloatFrequencyData` con ±1e-5 (mulberry32 re-sembrado por llamada = determinista, imperceptible al oído) — el audio FP queda estable por identity y distinto entre identities, igual patrón que canvas. Cierra el vector de audio que estaba diferido (fingerprint-engine.js lo listaba como pendiente). +5 tests (determinismo + inyección + cross-identity). La humanización de scroll/typing (V3-B: Bézier + typos + momentum) ya estaba escrita y wireada con el flag `human`. Solo main process (manifest 2.0.64).
+
 ### v2.0.0-alpha.109 — Anti-leak WebRTC por política + warm-up de proxies al abrir workspace (2026-07-16)
 
 [`2026-07-16`] [`proxy/anti-detect`] Dos pedidos de Jose: "todo proxiado siempre" + "al clickear el workspace, que todas las identities hagan el handshake con su proxy". (1) `setWebRTCIPHandlingPolicy` por tab: identity proxeada/enforce → `disable_non_proxied_udp` (WebRTC también por proxy, cero leak de IP real); direct → `default_public_interface_only`; decider puro `webrtc-policy.js` + resolver en boot (ADR 0041). Cierra en la fuente lo que `leak-tests.js` solo detectaba. (2) Warm-up: `setActive` de workspace precalienta el túnel de cada identity con `session.preconnect` hacia su origin ya abierto (gated `performance.warmProxiesOnWorkspace`, default ON). +24 tests. Solo main process (manifest sigue 2.0.64).

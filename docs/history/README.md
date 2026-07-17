@@ -56,6 +56,7 @@ Es la regla 4 de [`../DOCUMENTATION-RULES.md`](../DOCUMENTATION-RULES.md): un bl
 | [`49-bloque-fase4-publishing-e6-linkedin-resultado.md`](49-bloque-fase4-publishing-e6-linkedin-resultado.md)       | Fase 4 — action linkedin_post (alpha.106)                                       |
 | [`50-bloque-perf-direct-routing-resultado.md`](50-bloque-perf-direct-routing-resultado.md)                         | Perf — routing directo explícito + preconnect omnibox (alpha.108)               |
 | [`51-bloque-webrtc-warmup-resultado.md`](51-bloque-webrtc-warmup-resultado.md)                                     | Anti-detect — WebRTC policy + warm-up de proxies al abrir workspace (alpha.109) |
+| [`52-bloque-fase6a-audio-fp-resultado.md`](52-bloque-fase6a-audio-fp-resultado.md)                                 | Fase 6a — audio fingerprint noise (alpha.110)                                   |
 
 > ⚠️ **Gap conocido:** la era v2 (alpha.2 → alpha.98: Bulk Runner, scheduling, history dashboard, sidebar parity, activación, publishing, tabstrip multi-fila) se cerró por bloques **sin** entradas de history — el detalle vive en los ADRs 0030–0038, `docs/PLAN-*.md` y los mensajes de commit. Desde el 45 (2026-07-15) se retoma la regla 4.
 

@@ -1,6 +1,6 @@
 // OZ Browser — Fingerprint override-script builder (1.9b + 1.9.5).
 //
-// Qué hace: construye el IIFE string que aplica los 11 vectores de
+// Qué hace: construye el IIFE string que aplica los 12 vectores de
 // fingerprint en el page world. Extraído del preload-fingerprint.js a un
 // módulo separado para que sea testeable sin Electron (el preload
 // real requiere `electron`, este módulo es puro string-builder).
@@ -28,6 +28,8 @@
  *   - speechSynthesis.getVoices
  *   - Canvas: HTMLCanvasElement.prototype.toDataURL/toBlob +
  *     CanvasRenderingContext2D.prototype.getImageData (deterministic noise)
+ *   - Audio: AudioBuffer.prototype.getChannelData +
+ *     AnalyserNode.prototype.getFloatFrequencyData (deterministic noise)
  *   - WebGL: WebGLRenderingContext.prototype.getParameter (vendor + renderer)
  *
  * Idempotent: re-running the script is a no-op (window.__OZ_FP_APPLIED__).
@@ -243,6 +245,46 @@ function buildOverridesScript(fp) {
         };
       }
     }
+
+    // --- AudioContext noise (v3-C-audio, alpha.110) -----------------------
+    // Anti-detect: el AudioContext fingerprint (procesar un oscilador y leer
+    // el buffer / el espectro) es un vector estable que los anti-bots usan.
+    // Perturbamos las muestras con un ruido determinista por identity
+    // (mulberry32 con audioNoiseSeed) — mismo patrón que canvas: estable para
+    // esta identity, distinto entre identities, imperceptible al oído.
+    (function () {
+      if (typeof fp.audioNoiseSeed !== 'number') return;
+      // Amplitud ínfima: ±1e-5 sobre muestras normalizadas [-1,1]. No audible,
+      // pero cambia el hash del buffer/espectro de forma consistente. El RNG
+      // se RE-SIEMBRA por llamada (igual que canvas noiseImageData) para que
+      // dos lecturas del mismo buffer den el MISMO ruido (determinismo).
+      function perturb(arr) {
+        var arng = mulberry32(fp.audioNoiseSeed);
+        for (var i = 0; i < arr.length; i += 100) {
+          arr[i] = arr[i] + (arng() - 0.5) * 2e-5;
+        }
+        return arr;
+      }
+      try {
+        if (typeof AudioBuffer !== 'undefined' && AudioBuffer.prototype.getChannelData) {
+          var origGetChannelData = AudioBuffer.prototype.getChannelData;
+          AudioBuffer.prototype.getChannelData = function () {
+            var data = origGetChannelData.apply(this, arguments);
+            try { perturb(data); } catch (e) {}
+            return data;
+          };
+        }
+      } catch (e) {}
+      try {
+        if (typeof AnalyserNode !== 'undefined' && AnalyserNode.prototype.getFloatFrequencyData) {
+          var origFloatFreq = AnalyserNode.prototype.getFloatFrequencyData;
+          AnalyserNode.prototype.getFloatFrequencyData = function (array) {
+            origFloatFreq.apply(this, arguments);
+            try { perturb(array); } catch (e) {}
+          };
+        }
+      } catch (e) {}
+    })();
 
     // --- WebGL vendor / renderer (1.9c) -----------------------------------
     function spoofGL(GLClass) {
