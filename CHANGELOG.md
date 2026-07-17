@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.108 — Perf: routing directo explícito por identity + preconnect de omnibox (2026-07-16)
+
+[`2026-07-16`] [`proxy/perf`] Jose: "quiero que vuele". Medido: directo 0.35-0.65s vs proxy móvil 1.0-1.8s/request — el boot managed auto-asignaba proxy hasta a Default. Nuevo assignment `'direct'` (opt-out explícito, gana sobre fail-closed; ADR 0040) + `resolveRouting()` + fila Default reasignable en dashboard + preconnect con debounce en omnibox (`oz:nav:preconnect`, warm-up del CONNECT+TLS de 600-900ms mientras se tipea). +9 tests. WebUI manifest 2.0.64.
+
 ### v2.0.0-alpha.98 — Fix visual: barra de URL desborda sobre el sidebar con multi-fila (2026-07-10)
 
 [`2026-07-10`] [`ui/tabstrip`] Bug visual (Jose, screenshot): con 2+ filas de tabs la barra de URL se veía "cortada" y el header "WORKSPACES" del sidebar salía cortado por la mitad. Causa: `.topbar` tenía `height: var(--toolbar-height)` FIJA (64px = 1 fila + toolbar); al envolver las tabs a 2+ filas, la toolbar se empuja hacia abajo con `--oz-toolbar-push` pero el contenedor `.topbar` no crecía → la toolbar se desbordaba ~30px y se montaba sobre el inicio de `.bottom` (el sidebar). Fix CSS (`webui.html`): `min-height: var(--toolbar-height); height: calc(var(--toolbar-height) + var(--oz-toolbar-push, 0px))` → `.bottom` arranca justo debajo de la toolbar empujada. CSS-only, WebUI manifest 2.0.59 → 2.0.60.

@@ -47,5 +47,31 @@
     return v
   }
 
-  window.OZ_DashboardUtils = { fmtAgo, fmtCountry, fmtMs, esc, t }
+  // alpha.108: identity-row cell builders (extraídos de proxy-dashboard.js
+  // por presupuesto LOC — ADR 0005). Devuelve {proxyCell, reassignOpts}.
+  function buildIdentityRowBits(i, proxyOptions) {
+    const isDirect = i.routingMode === 'direct'
+    const proxyCell = i.proxy
+      ? `${esc(i.proxy.name || '?')} <span class="small">${esc(
+          i.proxy.host,
+        )}:${esc(i.proxy.port)}</span>`
+      : isDirect
+        ? `<span class="small">${t('proxyDashboard.directCell', 'Direct (no proxy)')}</span>`
+        : `<span class="leak-flag">${t('proxyDashboard.noProxy', 'No proxy — leak risk')}</span>`
+    const reassignOpts = [
+      `<option value="(none)">${t('proxyDashboard.actions.none', 'None')}</option>`,
+      `<option value="direct"${isDirect ? ' selected' : ''}>${t('proxyDashboard.actions.direct', 'Direct (no proxy — fast)')}</option>`,
+      `<option value="auto-random">${t('proxyDashboard.actions.autoRandom', 'auto-random')}</option>`,
+      `<option value="auto-round-robin">${t('proxyDashboard.actions.autoRoundRobin', 'auto-round-robin')}</option>`,
+      ...(proxyOptions || []).map(
+        (p) =>
+          `<option value="${esc(p.id)}"${
+            i.proxy && i.proxy.id === p.id ? ' selected' : ''
+          }>${esc(p.name)} (${esc(p.country || '—')})</option>`,
+      ),
+    ].join('')
+    return { proxyCell, reassignOpts }
+  }
+
+  window.OZ_DashboardUtils = { fmtAgo, fmtCountry, fmtMs, esc, t, buildIdentityRowBits }
 })()

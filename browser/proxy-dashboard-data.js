@@ -40,12 +40,25 @@ function getDashboardData({
       : []
   for (const i of identitiesList) {
     let resolved = null
-    if (proxyAssignment && typeof proxyAssignment.resolve === 'function') {
+    let routingMode = 'none' // 'proxy' | 'direct' | 'none' (alpha.108)
+    if (proxyAssignment && typeof proxyAssignment.resolveRouting === 'function') {
+      try {
+        const routing = proxyAssignment.resolveRouting({
+          identityId: i.id,
+          workspaceId: i.workspaceId,
+        })
+        resolved = routing.proxy
+        routingMode = routing.mode
+      } catch (_err) {
+        resolved = null
+      }
+    } else if (proxyAssignment && typeof proxyAssignment.resolve === 'function') {
       try {
         resolved = proxyAssignment.resolve({
           identityId: i.id,
           workspaceId: i.workspaceId,
         })
+        if (resolved) routingMode = 'proxy'
       } catch (_err) {
         resolved = null
       }
@@ -71,8 +84,10 @@ function getDashboardData({
             protocol: resolved.protocol,
           }
         : null,
+      routingMode,
       // Risk: non-default identity with no proxy resolved = leak risk.
-      leakRisk: !i.isDefault && !resolved,
+      // Explicit 'direct' opt-out is a deliberate choice, not a leak.
+      leakRisk: !i.isDefault && !resolved && routingMode !== 'direct',
     })
   }
 

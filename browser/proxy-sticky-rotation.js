@@ -123,6 +123,17 @@ class StickyRotation {
    * ephemeral sessid if applicable. Returns 'direct://' if no proxy assigned.
    */
   buildRulesForIdentity(identityId) {
+    // alpha.108: explicit 'direct' opt-out wins over enforce (fail-closed).
+    // resolveRouting distingue "user eligió directo" de "no hay proxy".
+    if (typeof this.proxyAssignment.resolveRouting === 'function') {
+      const routing = this.proxyAssignment.resolveRouting({ identityId })
+      if (routing.mode === 'direct') {
+        this.log.info('proxy-sticky-rotation', 'explicit direct opt-out', {
+          identityId,
+        })
+        return { proxy: null, rules: 'direct://', sessid: null, direct: true }
+      }
+    }
     const proxy = this.proxyAssignment.resolve({ identityId })
     if (!proxy) {
       // No proxy resolved. Fail-closed if enforcing (blackhole = every request

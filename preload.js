@@ -437,6 +437,7 @@ if (isOzPage) {
       forward: () => ipcRenderer.invoke('oz:nav:forward'),
       reload: () => ipcRenderer.invoke('oz:nav:reload'),
       loadURL: (url) => ipcRenderer.invoke('oz:nav:loadURL', url),
+      preconnect: (url) => ipcRenderer.invoke('oz:nav:preconnect', url),
     },
     ui: {
       // Hide / show the active tab's WebContentsView. Required when the WebUI

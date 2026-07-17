@@ -108,7 +108,7 @@ function registerIpcHandlers(browser) {
   registerBookmarkHandlersIPC(browser)
   registerCookieHandlersIPC(browser)
   registerExtraIpcHandlers(browser) // 1.10b: proxies + fingerprint + settings + browsing-data
-  registerNavHandlers(browser)
+  require('./nav-handlers').registerNavHandlers(browser)
   registerUiHandlers(browser)
   registerHudHandlersIPC(browser)
   registerAutoUpdaterHandlersIPC(browser)
@@ -578,58 +578,6 @@ function registerTabHandlersIPC(browser) {
       identityId,
       windowId: (win.window || win).id,
     })
-    return true
-  })
-}
-
-// ----- Navigation controls (operate on focused tab) -------------------------
-// These don't go through MCP yet — they're chrome shell controls, not data
-// primitives. Tab-level navigation (oz.tabs.navigate) entra como tool MCP en
-// el Bloque 1.5 cuando el Vault necesite manejar login flows.
-
-function registerNavHandlers(browser) {
-  const focusedTab = () => {
-    const win = browser.getFocusedWindow()
-    return win && win.tabs && win.tabs.selected ? win.tabs.selected : null
-  }
-
-  ipcMain.handle('oz:nav:back', () => {
-    const t = focusedTab()
-    if (!t || !t.webContents) return false
-    if (t.webContents.navigationHistory.canGoBack()) {
-      t.webContents.navigationHistory.goBack()
-      return true
-    }
-    return false
-  })
-
-  ipcMain.handle('oz:nav:forward', () => {
-    const t = focusedTab()
-    if (!t || !t.webContents) return false
-    if (t.webContents.navigationHistory.canGoForward()) {
-      t.webContents.navigationHistory.goForward()
-      return true
-    }
-    return false
-  })
-
-  ipcMain.handle('oz:nav:reload', () => {
-    const t = focusedTab()
-    if (!t) return false
-    t.reload()
-    return true
-  })
-
-  ipcMain.handle('oz:nav:loadURL', (_e, url) => {
-    const t = focusedTab()
-    if (!t) return false
-    // Normalize defensive: aunque tabstrip.js ya normaliza antes de invocar,
-    // MCP / programmatic callers pueden pasar URL sin scheme. Sin esto,
-    // webContents.loadURL('x.com') falla con ERR_INVALID_ARGUMENT silente.
-    const { normalizeOmniboxInput } = require('./url-normalize')
-    const normalized = normalizeOmniboxInput(url)
-    if (!normalized) return false
-    t.loadURL(normalized)
     return true
   })
 }

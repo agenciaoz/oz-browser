@@ -5,7 +5,14 @@
 - `browser/proxy-sticky-rotation.js` — class StickyRotation + pure helpers
 - `tests/proxy-sticky-rotation.smoketest.js` — 40 assertions
 
-**ADR:** [`0034-sticky-sessid-rotation.md`](../architecture/0034-sticky-sessid-rotation.md).
+**ADR:** [`0034-sticky-sessid-rotation.md`](../architecture/0034-sticky-sessid-rotation.md). Fail-closed: [`0039`](../architecture/0039-fail-closed-proxy-enforcement.md). Direct opt-out: [`0040`](../architecture/0040-direct-routing-optout-preconnect.md).
+
+## Routing resolution (alpha.108)
+
+`buildRulesForIdentity()` consulta `proxyAssignment.resolveRouting({identityId})` primero:
+
+- mode `'direct'` (assignment explícito `'direct'`) → `direct://` **incluso con enforce ON** — es un opt-out deliberado del operador, se loggea `explicit direct opt-out`.
+- mode `'proxy'`/`'none'` → camino previo: proxy con sessid rotation, o blackhole si enforce (ADR 0039) / `direct://` si no.
 
 ## How it works
 

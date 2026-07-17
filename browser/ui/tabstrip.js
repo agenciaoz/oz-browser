@@ -42,6 +42,23 @@
       this.$.reload.addEventListener('click', () =>
         safe(window.oz.nav.reload(), 'nav.reload'),
       )
+      // alpha.108: preconnect (warm-up TCP+TLS, y CONNECT del proxy si la
+      // identity navega proxeada) mientras el user todavía está escribiendo.
+      // Debounce 250ms; solo si el texto ya parece un dominio navegable.
+      let preconnectTimer = null
+      this.$.url.addEventListener('input', () => {
+        if (preconnectTimer) clearTimeout(preconnectTimer)
+        preconnectTimer = setTimeout(() => {
+          const raw = this.$.url.value.trim()
+          if (!raw || !window.oz.nav.preconnect) return
+          const SCHEME_RE = /^(https?):/i
+          const DOMAIN_LIKE_RE =
+            /^([a-z0-9][a-z0-9-]*\.)+[a-z]{2,}(:\d+)?(\/[^\s]*)?(\?[^\s]*)?$/i
+          if (SCHEME_RE.test(raw) || DOMAIN_LIKE_RE.test(raw)) {
+            safe(window.oz.nav.preconnect(raw), 'nav.preconnect')
+          }
+        }, 250)
+      })
       this.$.url.addEventListener('keypress', (ev) => {
         if (ev.code === 'Enter') {
           const raw = this.$.url.value.trim()

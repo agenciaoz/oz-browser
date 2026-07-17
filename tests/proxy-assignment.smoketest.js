@@ -234,6 +234,42 @@ section('toProxyRulesString: per protocol')
   ok('null → null', toProxyRulesString(null) === null)
 }
 
+// N. explicit 'direct' opt-out (alpha.108)
+section("resolve: 'direct' opt-out corta el fallthrough")
+{
+  const { pm, pa } = freshSetup()
+  pm.create({ name: 'a', host: 'a.com', port: 80 })
+  pa.setDefaultStrategy('auto-round-robin')
+  pa.assignToIdentity('id-direct', 'direct')
+
+  // resolve() → null (sin caer a defaultStrategy).
+  ok('direct → resolve null', pa.resolve({ identityId: 'id-direct' }) === null)
+
+  // resolveRouting() distingue direct de none.
+  const r1 = pa.resolveRouting({ identityId: 'id-direct' })
+  ok("direct → mode 'direct'", r1.mode === 'direct' && r1.proxy === null)
+  const r2 = pa.resolveRouting({ identityId: 'id-unbound' })
+  ok("unbound + defaultStrategy → mode 'proxy'", r2.mode === 'proxy' && !!r2.proxy)
+
+  // Workspace-level direct también corta.
+  pa.assignToWorkspace('ws-direct', 'direct')
+  const r3 = pa.resolveRouting({ identityId: 'id-z', workspaceId: 'ws-direct' })
+  ok("workspace direct → mode 'direct'", r3.mode === 'direct')
+
+  // Sin nada asignado y sin defaultStrategy → none.
+  pa.setDefaultStrategy(null)
+  const r4 = pa.resolveRouting({ identityId: 'id-nothing' })
+  ok("nothing → mode 'none'", r4.mode === 'none' && r4.proxy === null)
+
+  // Identity direct gana sobre workspace con proxy... (jerarquía intacta)
+  const { pm: pm2, pa: pa2 } = freshSetup()
+  const b = pm2.create({ name: 'b', host: 'b.com', port: 80 })
+  pa2.assignToWorkspace('ws-1', b.id)
+  pa2.assignToIdentity('id-1', 'direct')
+  const r5 = pa2.resolveRouting({ identityId: 'id-1', workspaceId: 'ws-1' })
+  ok('identity direct gana sobre workspace proxy', r5.mode === 'direct')
+}
+
 // ---------- Cleanup ---------------------------------------------------------
 
 Module._load = originalLoad

@@ -256,6 +256,37 @@ console.log('\n--- enforce (fail-closed) ---')
   )
 }
 
+console.log('\n--- explicit direct opt-out (alpha.108) ---')
+{
+  // resolveRouting mode 'direct' → direct:// EVEN with enforce ON. El opt-out
+  // es una elección deliberada del user; fail-closed cubre el caso "sin
+  // proxy por accidente", no este.
+  const fake = {
+    resolve: () => null,
+    resolveRouting: ({ identityId }) =>
+      identityId === 'directIdent'
+        ? { mode: 'direct', proxy: null }
+        : { mode: 'none', proxy: null },
+  }
+  const sr = new StickyRotation({
+    proxyAssignment: fake,
+    toProxyRulesString,
+    enforce: true,
+    now: () => 1,
+    sessidGenerator: () => 'rotD',
+  })
+  const d = sr.buildRulesForIdentity('directIdent')
+  eq('direct opt-out → direct:// (a pesar de enforce)', d.rules, 'direct://')
+  ok('direct opt-out → direct flag', d.direct === true)
+  ok('direct opt-out → not blackholed', !d.blackholed)
+  // 'none' sigue blackholeado bajo enforce.
+  eq(
+    "mode 'none' sigue blackhole bajo enforce",
+    sr.buildRulesForIdentity('otherIdent').rules,
+    'socks5://127.0.0.1:1',
+  )
+}
+
 console.log('\n--- applyForIdentity ---')
 
 {

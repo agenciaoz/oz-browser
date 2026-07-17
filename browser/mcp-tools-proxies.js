@@ -134,7 +134,7 @@ function buildProxyTools({ proxies }) {
     {
       name: 'oz.proxies.assignId',
       description:
-        'Bind a proxy to an identity. value can be a proxyId, "auto-random", "auto-round-robin", or null (clears the binding).',
+        'Bind a proxy to an identity. value can be a proxyId, "auto-random", "auto-round-robin", "direct" (explicit no-proxy opt-out, wins over fail-closed), or null (clears the binding).',
       inputSchema: {
         type: 'object',
         properties: {

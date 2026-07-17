@@ -50,6 +50,11 @@ Es la regla 4 de [`../DOCUMENTATION-RULES.md`](../DOCUMENTATION-RULES.md): un bl
 | [`43-bloque-k1-onboarding-wizard-resultado.md`](43-bloque-k1-onboarding-wizard-resultado.md)                       | K1 — Onboarding wizard 5 pasos (cierra K1-extras)                             |
 | [`44-bloque-i18n-v15x-sweep-resultado.md`](44-bloque-i18n-v15x-sweep-resultado.md)                                 | i18n v1.5.x sweep — 5 superficies EN/ES                                       |
 | [`45-bloque-decodo-license-proxies-failover-resultado.md`](45-bloque-decodo-license-proxies-failover-resultado.md) | Decodo + proxies por licencia + fail-closed + auto-failover (v2 alpha.99–101) |
+| [`46-bloque-fase1-rename-proyectos-stubs-resultado.md`](46-bloque-fase1-rename-proyectos-stubs-resultado.md)       | Fase 1 — rename Proyectos + move-to-new-window real (alpha.103)               |
+| [`47-bloque-fase2-publishing-e5-ui-resultado.md`](47-bloque-fase2-publishing-e5-ui-resultado.md)                   | Fase 2 — Publishing E5 UI import Excel + aprobación (alpha.104)               |
+| [`48-bloque-fase3-publishing-e2e7-resultado.md`](48-bloque-fase3-publishing-e2e7-resultado.md)                     | Fase 3 — E7 analytics UI + E2 dry-run + evidencia screenshot (alpha.105)      |
+| [`49-bloque-fase4-publishing-e6-linkedin-resultado.md`](49-bloque-fase4-publishing-e6-linkedin-resultado.md)       | Fase 4 — action linkedin_post (alpha.106)                                     |
+| [`50-bloque-perf-direct-routing-resultado.md`](50-bloque-perf-direct-routing-resultado.md)                         | Perf — routing directo explícito + preconnect omnibox (alpha.108)             |
 
 > ⚠️ **Gap conocido:** la era v2 (alpha.2 → alpha.98: Bulk Runner, scheduling, history dashboard, sidebar parity, activación, publishing, tabstrip multi-fila) se cerró por bloques **sin** entradas de history — el detalle vive en los ADRs 0030–0038, `docs/PLAN-*.md` y los mensajes de commit. Desde el 45 (2026-07-15) se retoma la regla 4.
 

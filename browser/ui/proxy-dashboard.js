@@ -184,23 +184,9 @@
     tbody.innerHTML = slice
       .map((i) => {
         const cb = bulkApi ? bulkApi.rowCheckboxHtml('ident', i.id) : ''
-        const proxyCell = i.proxy
-          ? `${esc(i.proxy.name || '?')} <span class="small">${esc(
-              i.proxy.host,
-            )}:${esc(i.proxy.port)}</span>`
-          : `<span class="leak-flag">${t('proxyDashboard.noProxy', 'No proxy — leak risk')}</span>`
+        // alpha.108: cell builders viven en proxy-dashboard-utils.js (LOC).
+        const { proxyCell, reassignOpts } = utils.buildIdentityRowBits(i, proxyOptions)
         const isDefault = i.isDefault
-        const reassignOpts = [
-          `<option value="(none)">${t('proxyDashboard.actions.none', 'None')}</option>`,
-          `<option value="auto-random">${t('proxyDashboard.actions.autoRandom', 'auto-random')}</option>`,
-          `<option value="auto-round-robin">${t('proxyDashboard.actions.autoRoundRobin', 'auto-round-robin')}</option>`,
-          ...proxyOptions.map(
-            (p) =>
-              `<option value="${esc(p.id)}"${
-                i.proxy && i.proxy.id === p.id ? ' selected' : ''
-              }>${esc(p.name)} (${esc(p.country || '—')})</option>`,
-          ),
-        ].join('')
         // H-2i: inline "Apply geo" button surfaces when ipTimezone vector
         // is yellow/red AND its fix kind is APPLY_GEO. Hidden for default
         // identity (no proxy to copy geo from).
@@ -211,8 +197,14 @@
         const leakBtn = leaksApi
           ? leaksApi.renderLeakButton(i, leakMap.get(i.id), t, esc)
           : ''
+        // alpha.108: la identity Default SÍ es reasignable (el boot managed
+        // le auto-asigna proxy; el user puede elegir 'direct' para navegar
+        // rápido en su browsing diario). Solo se ocultan fix/leak.
         const actions = isDefault
-          ? `<span class="small">${t('proxyDashboard.actions.defaultIdent', 'default — n/a')}</span>`
+          ? `<div class="row-actions">
+            <button class="primary" data-act="reload" data-id="${esc(i.id)}" title="Re-apply assigned proxy on current session">↻ ${t('proxyDashboard.actions.reload', 'Reload')}</button>
+            <select class="reassign-select" data-act="reassign" data-id="${esc(i.id)}">${reassignOpts}</select>
+          </div>`
           : `<div class="row-actions">
             ${fixBtn}
             <button class="primary" data-act="reload" data-id="${esc(i.id)}" title="Re-apply assigned proxy on current session">↻ ${t('proxyDashboard.actions.reload', 'Reload')}</button>

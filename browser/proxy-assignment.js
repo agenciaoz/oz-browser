@@ -32,6 +32,13 @@ const log = require('./logger')
 
 const AUTO_STRATEGIES = ['auto-random', 'auto-round-robin']
 
+// alpha.108: explicit "no proxy, go direct" opt-out. Distinto de null/unset:
+// null = "sin elección" (cae a workspace/defaultStrategy → en installs
+// managed termina en proxy o blackhole), 'direct' = elección deliberada del
+// user de navegar sin proxy. Corta la resolución (no fallthrough) y
+// sticky-rotation la respeta incluso con enforce (fail-closed) activo.
+const DIRECT = 'direct'
+
 class ProxyAssignment {
   constructor(opts = {}) {
     this.dataDir = opts.dataDir || app.getPath('userData')
@@ -143,21 +150,29 @@ class ProxyAssignment {
    * @param {string} [ctx.workspaceId]
    */
   resolve(ctx = {}) {
-    const tryStrategy = (val) => this._materialize(val)
+    return this.resolveRouting(ctx).proxy
+  }
 
-    if (ctx.identityId && ctx.identityId in this.assignments.byIdentity) {
-      const r = tryStrategy(this.assignments.byIdentity[ctx.identityId])
-      if (r) return r
+  /**
+   * Like resolve() but distinguishes WHY there is no proxy:
+   *   { mode: 'proxy',  proxy }  — a concrete proxy resolved.
+   *   { mode: 'direct', proxy: null } — explicit 'direct' opt-out (no
+   *     fallthrough; wins over defaultStrategy and fail-closed enforce).
+   *   { mode: 'none',   proxy: null } — nothing assigned/resolvable.
+   */
+  resolveRouting(ctx = {}) {
+    const levels = [
+      ctx.identityId != null ? this.assignments.byIdentity[ctx.identityId] : undefined,
+      ctx.workspaceId != null ? this.assignments.byWorkspace[ctx.workspaceId] : undefined,
+      this.assignments.defaultStrategy,
+    ]
+    for (const val of levels) {
+      if (val === undefined || val === null) continue
+      if (val === DIRECT) return { mode: 'direct', proxy: null }
+      const r = this._materialize(val)
+      if (r) return { mode: 'proxy', proxy: r }
     }
-    if (ctx.workspaceId && ctx.workspaceId in this.assignments.byWorkspace) {
-      const r = tryStrategy(this.assignments.byWorkspace[ctx.workspaceId])
-      if (r) return r
-    }
-    if (this.assignments.defaultStrategy) {
-      const r = tryStrategy(this.assignments.defaultStrategy)
-      if (r) return r
-    }
-    return null
+    return { mode: 'none', proxy: null }
   }
 
   /**
@@ -208,4 +223,5 @@ module.exports = {
   ProxyAssignment,
   toProxyRulesString,
   AUTO_STRATEGIES,
+  DIRECT,
 }
