@@ -125,6 +125,8 @@ async function _workerLoop(workerId, state, deps) {
         }
       }
 
+      // V3-E (obs): cronometramos el worker para el action log / cost tracker.
+      const _startedAt = clock && clock.now ? clock.now() : Date.now()
       let res
       try {
         res = await worker(task, { workerId })
@@ -135,6 +137,7 @@ async function _workerLoop(workerId, state, deps) {
           error: e && e.message ? e.message : String(e),
         }
       }
+      const _endedAt = clock && clock.now ? clock.now() : Date.now()
 
       const success = !!(res && res.ok)
       if (success) {
@@ -157,10 +160,19 @@ async function _workerLoop(workerId, state, deps) {
 
       state.results.push({ url: task.url, ok: success, workerId })
       if (typeof onProgress === 'function') {
+        // V3-E (obs): payload enriquecido. Campos nuevos son opcionales —
+        // consumidores viejos (que solo leen url/ok/workerId/stats) no rompen.
         onProgress({
           url: task.url,
           ok: success,
           workerId,
+          startedAt: _startedAt,
+          endedAt: _endedAt,
+          durationMs: _endedAt - _startedAt,
+          bytes: _resBytes(res),
+          screenshot: (res && res.screenshot) || null,
+          error: success ? null : (res && res.error) || null,
+          depth: task.depth || 0,
           stats: frontier.stats ? frontier.stats() : {},
         })
       }
@@ -182,6 +194,21 @@ function _intOr(v, fallback) {
 function _numOr(v, fallback) {
   const n = Number(v)
   return Number.isFinite(n) && n > 0 ? n : fallback
+}
+
+// V3-E (obs): estima bytes de la respuesta del worker (best-effort). Si el
+// worker reporta `bytes` explícito lo usa; si no, mide el tamaño serializado
+// de `data`. 0 si no hay nada medible.
+function _resBytes(res) {
+  if (!res) return 0
+  if (Number.isFinite(res.bytes) && res.bytes >= 0) return res.bytes
+  if (res.data == null) return 0
+  try {
+    if (typeof res.data === 'string') return res.data.length
+    return JSON.stringify(res.data).length
+  } catch (_e) {
+    return 0
+  }
 }
 
 module.exports = { runScrapeJob, DEFAULT_CONCURRENCY }

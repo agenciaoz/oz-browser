@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.111 — Observabilidad de scraping (Fase 6c / V3-E) (2026-07-16)
+
+[`2026-07-16`] [`scrape/obs`] Cierra "6c V3-E observabilidad (NO existe)": `scrape-observer.js` (ScrapeObserver puro) consume el `onProgress` del orquestador y arma un reporte por job — cost tracker (pages/ok/failed/bytes/avgPageMs/pagesPerMin), desglose byWorker + byDomain, timeline de screenshots, action log y errores (capados a 5000/200). `scrape-orchestrator.js` enriquece onProgress con timing/bytes/screenshot/error (compat hacia atrás). `scrape-handlers.run` adjunta `report` al summary + cachea el último; nuevo MCP `oz.scrape.lastReport`. +23 tests. Solo main process (manifest 2.0.64). ADR 0042.
+
 ### v2.0.0-alpha.110 — Anti-detect: audio fingerprint noise (Fase 6a) (2026-07-16)
 
 [`2026-07-16`] [`fingerprint`] 12º vector de fingerprint: ruido determinista en AudioContext. `audioNoiseSeed` (32-bit derivado del seed) en `buildProfile`; el preload perturba `AudioBuffer.getChannelData` + `AnalyserNode.getFloatFrequencyData` con ±1e-5 (mulberry32 re-sembrado por llamada = determinista, imperceptible al oído) — el audio FP queda estable por identity y distinto entre identities, igual patrón que canvas. Cierra el vector de audio que estaba diferido (fingerprint-engine.js lo listaba como pendiente). +5 tests (determinismo + inyección + cross-identity). La humanización de scroll/typing (V3-B: Bézier + typos + momentum) ya estaba escrita y wireada con el flag `human`. Solo main process (manifest 2.0.64).

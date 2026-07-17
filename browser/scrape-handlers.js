@@ -15,6 +15,7 @@ const { DomainRateLimiter } = require('./scrape-ratelimit-domain')
 const { runScrapeJob } = require('./scrape-orchestrator')
 const { makeRecipeWorker } = require('./scrape-worker')
 const { realClock } = require('./bulk-runner-clock')
+const { ScrapeObserver } = require('./scrape-observer')
 const log = require('./logger')
 
 function buildScrapeHandlers(browser) {
@@ -63,6 +64,10 @@ function buildScrapeHandlers(browser) {
           clock: realClock(),
           linksName: opts.linksName,
         })
+        // V3-E (obs): observador del job. Consume onProgress → action log,
+        // timeline de screenshots y cost tracker. El reporte va en el summary
+        // y queda cacheado en browser._lastScrapeReport (MCP oz.scrape.lastReport).
+        const observer = new ScrapeObserver({ jobId: opts.jobId, identityId }).start()
         const summary = await runScrapeJob({
           frontier,
           worker,
@@ -71,18 +76,40 @@ function buildScrapeHandlers(browser) {
           concurrency: concurrency || 2,
           maxPages: maxPages || undefined,
           followLinks: !!opts.followLinks,
+          onProgress: (evt) => {
+            try {
+              observer.record(evt)
+            } catch (_e) {
+              /* obs nunca rompe el job */
+            }
+          },
         })
+        observer.finish(summary)
+        const report = observer.report()
+        browser._lastScrapeReport = report
         log.info('scrape-handlers', 'run done', {
           identityId,
+          jobId: report.jobId,
           processed: summary.processed,
           ok: summary.ok,
           failed: summary.failed,
+          bytes: report.cost.bytes,
+          wallMs: report.wallMs,
         })
-        return summary
+        return { ...summary, report }
       } catch (err) {
         log.error('scrape-handlers', 'run crashed', { message: err.message })
         return { __error: { code: 'SCRAPE_CRASH', message: err.message } }
       }
+    },
+
+    /**
+     * V3-E (obs): devuelve el reporte de observabilidad del último scrape job
+     * corrido en esta sesión (action log + timeline + cost tracker), o null si
+     * no hubo ninguno todavía.
+     */
+    lastReport() {
+      return browser._lastScrapeReport || null
     },
   }
 }

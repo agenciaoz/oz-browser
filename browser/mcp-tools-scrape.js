@@ -25,11 +25,23 @@ function buildScrapeTools({ scrape }) {
           minIntervalMs: { type: 'number' },
           followLinks: { type: 'boolean' },
           linksName: { type: 'string' },
+          jobId: {
+            type: 'string',
+            description:
+              'Optional label for this job (shows in the observability report).',
+          },
         },
         required: ['identityId', 'urls'],
         additionalProperties: false,
       },
       call: (args) => scrape().run(args),
+    },
+    {
+      name: 'oz.scrape.lastReport',
+      description:
+        'Observability report for the LAST scrape job run this session (V3-E): { jobId, wallMs, cost:{pages,ok,failed,successRate,bytes,avgPageMs,pagesPerMin}, byWorker[], byDomain[], timeline[] (screenshots), errors[], actionLog[] }. Returns null if no job has run yet. Use to answer "how did the last crawl go / where did it spend time / what failed".',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+      call: () => scrape().lastReport(),
     },
   ]
 }
