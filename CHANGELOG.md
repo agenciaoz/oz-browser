@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.112 — Módulo de diagnóstico total oz.diag.\* (revisar todo, con pantallazos) (2026-07-16)
+
+[`2026-07-16`] [`diag`] Idea de Jose: "un módulo para que [Claude] pueda siempre revisar todo... hasta con pantallazos". Subsistema `oz.diag.*` MCP-first: `snapshot` (estado completo en 1 call: runtime, identidades, salud de proxies, sesiones, tabs, sync, settings, último scrape, selfCheck + cola WARN/ERROR del log), `logs` (tail filtrado por nivel), `selfCheck` (el diagnóstico se verifica a sí mismo), y `screenshot` (Electron capturePage del chrome o de un tab → PNG en userData/diagnostics/ cuyo path el agente lee y analiza con su visión). `system-diagnostics.js` puro (buildDiagnostics/parseLogTail/summarizeProxies/selfCheck) + `diagnostics-handlers.js` (Electron). +36 tests. Solo main process — requiere reiniciar OZ para que las tools aparezcan; screenshot necesita smoke vivo. ADR 0043.
+
 ### v2.0.0-alpha.111 — Observabilidad de scraping (Fase 6c / V3-E) (2026-07-16)
 
 [`2026-07-16`] [`scrape/obs`] Cierra "6c V3-E observabilidad (NO existe)": `scrape-observer.js` (ScrapeObserver puro) consume el `onProgress` del orquestador y arma un reporte por job — cost tracker (pages/ok/failed/bytes/avgPageMs/pagesPerMin), desglose byWorker + byDomain, timeline de screenshots, action log y errores (capados a 5000/200). `scrape-orchestrator.js` enriquece onProgress con timing/bytes/screenshot/error (compat hacia atrás). `scrape-handlers.run` adjunta `report` al summary + cachea el último; nuevo MCP `oz.scrape.lastReport`. +23 tests. Solo main process (manifest 2.0.64). ADR 0042.

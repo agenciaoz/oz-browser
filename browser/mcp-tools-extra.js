@@ -9,6 +9,7 @@
 const { buildProjectTools } = require('./mcp-tools-projects')
 const { buildScrapeTools } = require('./mcp-tools-scrape')
 const { buildPublishingTools } = require('./mcp-tools-publishing')
+const { buildDiagTools } = require('./mcp-tools-diag')
 
 function buildExtraTools(browser) {
   const get = (k) => () => browser.handlers && browser.handlers[k]
@@ -16,6 +17,7 @@ function buildExtraTools(browser) {
     ...buildProjectTools({ projects: get('projects') }),
     ...buildScrapeTools({ scrape: get('scrape') }),
     ...buildPublishingTools({ publishing: get('publishing') }),
+    ...buildDiagTools({ diag: get('diag') }),
   ]
 }
 

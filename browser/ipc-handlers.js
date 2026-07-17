@@ -46,6 +46,7 @@ const { buildBulkHandlers } = require('./bulk-handlers')
 const { buildProjectHandlers } = require('./project-handlers')
 const { buildScrapeHandlers } = require('./scrape-handlers')
 const { buildPublishingHandlers } = require('./publishing-plan-handlers')
+const { buildDiagnosticsHandlers } = require('./diagnostics-handlers')
 // 1.10b: register* for proxies/fingerprint/settings/browsing-data live in
 // ipc-handlers-extra.js to keep this file under the 500-LOC budget (ADR 0005).
 const { registerExtraIpcHandlers } = require('./ipc-handlers-extra')
@@ -95,6 +96,7 @@ function registerIpcHandlers(browser) {
     projects: buildProjectHandlers(browser),
     scrape: buildScrapeHandlers(browser),
     publishing: buildPublishingHandlers(browser),
+    diag: buildDiagnosticsHandlers(browser),
   })
 
   registerLogHandlers(browser)
