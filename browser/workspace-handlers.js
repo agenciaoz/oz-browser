@@ -22,6 +22,19 @@ const log = require('./logger')
 function buildWorkspaceHandlers(browser) {
   const wm = () => browser.workspaceManager
 
+  // alpha.109 (idea Jose): precalentar los proxies del workspace al activarlo.
+  // Best-effort, gated por settings.performance.warmProxiesOnWorkspace.
+  const warmWorkspace = (workspaceId) => {
+    try {
+      const sm = browser.settingsManager
+      const perf = sm && typeof sm.get === 'function' ? sm.get('performance') : null
+      if (perf && perf.warmProxiesOnWorkspace === false) return
+      require('./proxy-warmup').runWarmup(browser, workspaceId, { log })
+    } catch (_e) {
+      /* best-effort */
+    }
+  }
+
   return {
     list() {
       return wm().list()
@@ -75,6 +88,7 @@ function buildWorkspaceHandlers(browser) {
           windowId: win.id,
           workspaceId,
         })
+        warmWorkspace(workspaceId)
         log.info('workspace-handlers', 'setActive ok', {
           windowId: win.id,
           workspaceId,

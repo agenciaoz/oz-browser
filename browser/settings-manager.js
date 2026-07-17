@@ -94,6 +94,10 @@ const DEFAULTS = Object.freeze({
   performance: {
     autoTabDiscard: true,
     discardIdleMin: 30,
+    // alpha.109 (idea Jose): al activar un workspace, precalentar el túnel de
+    // proxy de cada identity con tabs ahí (preconnect al origin ya abierto)
+    // para que el primer click no pague el CONNECT+TLS de 600-900ms.
+    warmProxiesOnWorkspace: true,
   },
   // E2-C-5: notification preferences. Panel always records alerts; OS-level
   // alerts (Notification API) controlled by showOSAlert (default true).

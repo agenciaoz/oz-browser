@@ -38,6 +38,46 @@ function wireProxyBoot(browser, licenseManager, log) {
       })
     })
   })
+
+  // alpha.109: resolver de política WebRTC por identity. Usa resolveRouting
+  // (alpha.108) + el flag enforce del install para decidir. tabs.js lo llama
+  // al materializar cada webContents. Cierra el leak de IP real por WebRTC en
+  // la fuente (complementa "todo proxiado siempre").
+  try {
+    const { decideWebRtcPolicy } = require('./webrtc-policy')
+    const { setWebRtcPolicyResolver } = require('./tabs')
+    setWebRtcPolicyResolver((identityId) => {
+      let routingMode = 'none'
+      try {
+        const pa = browser.proxyAssignment
+        if (pa && typeof pa.resolveRouting === 'function') {
+          const ident =
+            browser.identityManager && browser.identityManager.get
+              ? browser.identityManager.get(identityId)
+              : null
+          routingMode = pa.resolveRouting({
+            identityId,
+            workspaceId: ident && ident.workspaceId,
+          }).mode
+        }
+      } catch (_e) {
+        /* default routingMode */
+      }
+      const override =
+        browser.settingsManager && browser.settingsManager.get
+          ? (browser.settingsManager.get('privacy') || {}).webrtcPolicy
+          : undefined
+      return decideWebRtcPolicy({
+        routingMode,
+        enforce: !!browser.enforceProxy,
+        override,
+      })
+    })
+  } catch (e) {
+    log.warn('proxy-boot-setup', 'webrtc policy resolver wiring failed', {
+      message: e && e.message,
+    })
+  }
 }
 
 module.exports = { wireProxyBoot }

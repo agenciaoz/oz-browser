@@ -8,6 +8,10 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ## Sin liberar (próximo)
 
+### v2.0.0-alpha.109 — Anti-leak WebRTC por política + warm-up de proxies al abrir workspace (2026-07-16)
+
+[`2026-07-16`] [`proxy/anti-detect`] Dos pedidos de Jose: "todo proxiado siempre" + "al clickear el workspace, que todas las identities hagan el handshake con su proxy". (1) `setWebRTCIPHandlingPolicy` por tab: identity proxeada/enforce → `disable_non_proxied_udp` (WebRTC también por proxy, cero leak de IP real); direct → `default_public_interface_only`; decider puro `webrtc-policy.js` + resolver en boot (ADR 0041). Cierra en la fuente lo que `leak-tests.js` solo detectaba. (2) Warm-up: `setActive` de workspace precalienta el túnel de cada identity con `session.preconnect` hacia su origin ya abierto (gated `performance.warmProxiesOnWorkspace`, default ON). +24 tests. Solo main process (manifest sigue 2.0.64).
+
 ### v2.0.0-alpha.108 — Perf: routing directo explícito por identity + preconnect de omnibox (2026-07-16)
 
 [`2026-07-16`] [`proxy/perf`] Jose: "quiero que vuele". Medido: directo 0.35-0.65s vs proxy móvil 1.0-1.8s/request — el boot managed auto-asignaba proxy hasta a Default. Nuevo assignment `'direct'` (opt-out explícito, gana sobre fail-closed; ADR 0040) + `resolveRouting()` + fila Default reasignable en dashboard + preconnect con debounce en omnibox (`oz:nav:preconnect`, warm-up del CONNECT+TLS de 600-900ms mientras se tipea). +9 tests. WebUI manifest 2.0.64.

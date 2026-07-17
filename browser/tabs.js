@@ -11,6 +11,15 @@
 
 const { EventEmitter } = require('events')
 const { WebContentsView } = require('electron')
+
+// alpha.109: resolver de política WebRTC por identity (instalado en
+// proxy-boot-setup.js con acceso a proxyAssignment + enforce). Devuelve el
+// string de política para webContents.setWebRTCIPHandlingPolicy, o null para
+// no tocar. Module-level singleton (mismo patrón que el proxy resolution hook).
+let _webRtcPolicyResolver = null
+function setWebRtcPolicyResolver(fn) {
+  _webRtcPolicyResolver = typeof fn === 'function' ? fn : null
+}
 const crypto = require('crypto')
 const log = require('./logger')
 
@@ -123,6 +132,21 @@ class Tab extends EventEmitter {
     this.webContents = webContents
     this.window.contentView.addChildView(this.view)
     this.materialized = true
+
+    // alpha.109: aplicar política WebRTC anti-leak apenas existe el
+    // webContents. Si la identity va por proxy → 'disable_non_proxied_udp'
+    // (WebRTC también por el proxy, nunca UDP directo con la IP real). Pura
+    // prevención en la fuente; leak-tests.js solo detectaba.
+    if (_webRtcPolicyResolver) {
+      try {
+        const policy = _webRtcPolicyResolver(this.identityId)
+        if (policy && typeof this.webContents.setWebRTCIPHandlingPolicy === 'function') {
+          this.webContents.setWebRTCIPHandlingPolicy(policy)
+        }
+      } catch (_e) {
+        /* best-effort — nunca romper la materialización por esto */
+      }
+    }
 
     // Wire metadata events
     this.webContents.on('page-title-updated', (_e, title) => {
@@ -502,3 +526,4 @@ class Tabs extends EventEmitter {
 
 exports.Tabs = Tabs
 exports.Tab = Tab
+exports.setWebRtcPolicyResolver = setWebRtcPolicyResolver
