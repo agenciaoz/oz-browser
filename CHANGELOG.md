@@ -10,7 +10,7 @@ Formato: [`YYYY-MM-DD`] [`bloque`] resumen.
 
 ### v2.0.0-alpha.116 — Fix UX: botón "Connect Dropbox" directo en Settings → Sync (2026-07-16)
 
-[`2026-07-16`] [`ui/sync`] Bug de UX (Jose, bloqueado conectando Dropbox): el panel Sync y Backup decían "Connect Dropbox from Cloud Backup settings first" pero NO había ningún link para llegar ahí — el botón real de OAuth vivía escondido en Time Machine → "☁ Cloud backup…". Nueva fila "Dropbox connection" en Settings → Sync con botón **"Connect Dropbox…"** que abre el modal de Cloud Backup directo (`window.OZ.CloudBackup.open()`). WebUI manifest 2.0.66.
+[`2026-07-16`] [`ui/sync`] Bug de UX (Jose, bloqueado conectando Dropbox): el panel Sync y Backup decían "Connect Dropbox from Cloud Backup settings first" pero NO había ningún link para llegar ahí — el botón real de OAuth vivía escondido en Time Machine → "☁ Cloud backup…". Nueva fila "Dropbox connection" en Settings → Sync con botón **"Connect Dropbox…"** + fila "Cloud backup (Dropbox)" con **"Open Cloud Backup…"** en el panel **Backup** (pedido de Jose: "que todos lo puedan hacer" — Backup es donde el equipo busca primero). Ambos abren el modal de Cloud Backup directo (`window.OZ.CloudBackup.open()`). WebUI manifest 2.0.67.
 
 ### v2.0.0-alpha.115 — Fix etiqueta "Unknown" en tabs + captura compuesta del diagnóstico (2026-07-16)
 
